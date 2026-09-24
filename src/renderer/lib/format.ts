@@ -36,11 +36,11 @@ export function roomUrl(ep: { address: string; port: number; tls: boolean }): st
 /** Explain why system audio could not be captured, with a fix when we know one. */
 export function audioUnavailableMessage(error: string | null): string {
   if (error === 'NotReadableError' && /Windows/.test(navigator.userAgent)) {
-    // WASAPI loopback fails (AUDCLNT_E_UNSUPPORTED_FORMAT) on surround endpoints.
+    // Only reached when both Chromium's loopback and the native helper failed.
     return (
-      "Couldn't capture system audio: Windows refuses it when the output device is in surround (5.1/7.1) mode. " +
-      'Switch the device to stereo (turn off 7.1 surround in the headset software, or Sound settings → device → ' +
-      'Properties → Advanced → 2 channel), then use Change source. Sharing video only for now.'
+      "Couldn't capture system audio from the default output device. If it is in surround (5.1/7.1) mode, " +
+      'switching it to stereo usually helps (Sound settings → device → Properties → Advanced → 2 channel), then use ' +
+      'Change source. Sharing video only for now.'
     )
   }
   if (error === 'NotReadableError' || error === 'NotAllowedError') {

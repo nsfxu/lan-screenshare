@@ -32,6 +32,21 @@ const api: ScreenShareApi = {
     listSources: () => ipcRenderer.invoke(IPC.listSources),
     select: (id, audio) => ipcRenderer.invoke(IPC.selectSource, id, audio),
     audioSupported: () => ipcRenderer.invoke(IPC.audioSupported),
+    nativeAudio: {
+      available: () => ipcRenderer.invoke(IPC.nativeAudioAvailable),
+      start: () => ipcRenderer.invoke(IPC.nativeAudioStart),
+      stop: (id) => ipcRenderer.invoke(IPC.nativeAudioStop, id),
+      onData: (cb) => {
+        const listener = (_e: IpcRendererEvent, id: number, chunk: Uint8Array): void => cb(id, chunk)
+        ipcRenderer.on(IPC.nativeAudioData, listener)
+        return () => ipcRenderer.removeListener(IPC.nativeAudioData, listener)
+      },
+      onEnded: (cb) => {
+        const listener = (_e: IpcRendererEvent, id: number, reason: string): void => cb(id, reason)
+        ipcRenderer.on(IPC.nativeAudioEnded, listener)
+        return () => ipcRenderer.removeListener(IPC.nativeAudioEnded, listener)
+      }
+    },
     permission: () => ipcRenderer.invoke(IPC.screenPermission),
     openPermissionSettings: () => ipcRenderer.invoke(IPC.openPermissionSettings)
   },

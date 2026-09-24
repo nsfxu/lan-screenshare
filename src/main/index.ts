@@ -6,6 +6,7 @@ import { IPC } from '../shared/ipc'
 import type { AppInfo, CreateRoomRequest, Settings, SystemStats, UpdateRoomRequest } from '../shared/types'
 import { parseHostPort } from '../utils/network'
 import { createFileLogger } from './logger'
+import { NativeLoopback } from './nativeAudio'
 import { RoomManager } from './roomManager'
 import { ScreenCapture } from './screenCapture'
 import { SettingsStore } from './settings'
@@ -42,6 +43,7 @@ const log = createFileLogger(logDir, !app.isPackaged)
 const settings = new SettingsStore(app.getPath('userData'))
 const rooms = new RoomManager(settings, app.getPath('userData'), log)
 const capture = new ScreenCapture(log)
+const nativeAudio = new NativeLoopback(log)
 
 let mainWindow: BrowserWindow | null = null
 let quitting = false
@@ -139,6 +141,9 @@ function registerIpc(): void {
   ipcMain.handle(IPC.listSources, () => capture.listSources())
   ipcMain.handle(IPC.selectSource, (_e, id: string, audio: boolean) => capture.select(String(id), !!audio))
   ipcMain.handle(IPC.audioSupported, () => capture.audioSupported())
+  ipcMain.handle(IPC.nativeAudioAvailable, () => nativeAudio.available())
+  ipcMain.handle(IPC.nativeAudioStart, (e) => nativeAudio.start(e.sender))
+  ipcMain.handle(IPC.nativeAudioStop, (_e, id?: number) => nativeAudio.stop(typeof id === 'number' ? id : undefined))
   ipcMain.handle(IPC.screenPermission, () => capture.permission())
   ipcMain.handle(IPC.openPermissionSettings, () => capture.openPermissionSettings())
 
@@ -204,6 +209,7 @@ app.on('before-quit', () => {
 })
 
 app.on('window-all-closed', () => app.quit())
+app.on('before-quit', () => nativeAudio.stop())
 
 // Tell viewers the room is over and withdraw the mDNS advert before exiting.
 let cleanedUp = false

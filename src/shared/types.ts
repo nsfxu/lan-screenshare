@@ -264,3 +264,11 @@ export interface AppInfo {
 }
 
 export type ScreenPermission = 'granted' | 'denied' | 'not-determined' | 'restricted' | 'unknown'
+
+/** PCM format produced by the native Windows loopback helper (float32 interleaved). */
+export interface NativeAudioFormat {
+  /** Identifies one helper run; events from earlier runs must be ignored. */
+  id: number
+  sampleRate: number
+  channels: number
+}

@@ -10,6 +10,7 @@ import type {
 } from '../../shared/types'
 import { applyCodecOrder, chooseCodecOrder, mungeBitrates, mungeOpus, shortCodecName } from './codecs'
 import { Emitter } from './emitter'
+import { startNativeLoopback, type NativeAudioCapture } from './nativeAudio'
 import type { RoomClient } from './roomClient'
 import { TcpAudioEncoder, TcpEncoder } from './tcpStream'
 
@@ -80,6 +81,9 @@ export class HostStreamer extends Emitter<Events> {
 
   private track: MediaStreamTrack | null = null
   private audioTrack: MediaStreamTrack | null = null
+  /** Windows helper capture, used when Chromium loopback rejects the device format. */
+  private nativeAudio: NativeAudioCapture | null = null
+  private preferNativeAudio = false
   private readonly peers = new Map<string, Peer>()
   private readonly tcpViewers = new Set<string>()
   private tcp: TcpEncoder | null = null
@@ -136,18 +140,38 @@ export class HostStreamer extends Emitter<Events> {
     }
 
     let stream: MediaStream
+    let native: NativeAudioCapture | null = null
     this.audioError = null
-    await window.api.capture.select(sourceId, withAudio)
+    // Once Chromium's loopback has failed on this device, go straight to the helper.
+    const chromiumAudio = withAudio && !this.preferNativeAudio
+    await window.api.capture.select(sourceId, chromiumAudio)
     try {
-      stream = await navigator.mediaDevices.getDisplayMedia({ video, audio: withAudio ? audio : false })
+      stream = await navigator.mediaDevices.getDisplayMedia({ video, audio: chromiumAudio ? audio : false })
     } catch (err) {
-      if (!withAudio) throw err
+      if (!chromiumAudio) throw err
       this.audioError = err instanceof DOMException ? err.name : String(err)
       log(`capture with audio failed (${String(err)}); retrying video only`)
       await window.api.capture.select(sourceId, false)
       stream = await navigator.mediaDevices.getDisplayMedia({ video, audio: false })
     }
+    // Windows: Chromium can't open surround (5.1/7.1) devices for loopback, but
+    // the native helper can (it downmixes to stereo).
+    const needNative = withAudio && (this.preferNativeAudio || this.audioError === 'NotReadableError')
+    if (needNative && stream.getAudioTracks().length === 0 && (await window.api.capture.nativeAudio.available())) {
+      this.nativeAudio?.stop() // the helper is a single process; free it first
+      this.nativeAudio = null
+      try {
+        native = await startNativeLoopback(log)
+        stream.addTrack(native.track)
+        this.audioError = null
+        this.preferNativeAudio = true
+      } catch (err) {
+        log(`native loopback failed: ${String(err)}`)
+        this.audioError ??= 'NotReadableError'
+      }
+    }
     if (this.disposed) {
+      native?.stop()
       stream.getTracks().forEach((t) => t.stop())
       return
     }
@@ -162,11 +186,19 @@ export class HostStreamer extends Emitter<Events> {
     const a = audioTrack?.getSettings()
     log(
       `capturing ${s.width}x${s.height}@${s.frameRate} from ${sourceId}` +
-        (audioTrack ? ` + audio ${a?.sampleRate ?? '?'} Hz x${a?.channelCount ?? '?'}` : withAudio ? ' (no audio available)' : '')
+        (audioTrack
+          ? native
+            ? ' + audio (native loopback)'
+            : ` + audio ${a?.sampleRate ?? '?'} Hz x${a?.channelCount ?? '?'}`
+          : withAudio
+            ? ' (no audio available)'
+            : '')
     )
 
     const oldVideo = this.track
     const oldAudio = this.audioTrack
+    const oldNative = this.nativeAudio
+    this.nativeAudio = native
     this.stream = stream
     this.track = track
     this.audioTrack = audioTrack
@@ -184,6 +216,7 @@ export class HostStreamer extends Emitter<Events> {
       this.syncTcpAudio()
       oldVideo.stop()
       oldAudio?.stop()
+      oldNative?.stop()
     }
     this.emit('stream', stream)
     this.publishSharing()
@@ -220,6 +253,8 @@ export class HostStreamer extends Emitter<Events> {
     this.tcpViewers.clear()
     this.track?.stop()
     this.audioTrack?.stop()
+    this.nativeAudio?.stop()
+    this.nativeAudio = null
     this.track = null
     this.audioTrack = null
     this.stream = null

@@ -4,6 +4,7 @@ import type {
   CreateRoomRequest,
   DiscoveredRoom,
   HostedRoom,
+  NativeAudioFormat,
   ScreenPermission,
   Settings,
   SystemStats,
@@ -27,6 +28,11 @@ export const IPC = {
   listSources: 'capture:list',
   selectSource: 'capture:select',
   audioSupported: 'capture:audio-supported',
+  nativeAudioAvailable: 'native-audio:available',
+  nativeAudioStart: 'native-audio:start',
+  nativeAudioStop: 'native-audio:stop',
+  nativeAudioData: 'native-audio:data',
+  nativeAudioEnded: 'native-audio:ended',
   screenPermission: 'capture:permission',
   openPermissionSettings: 'capture:open-settings',
   systemStats: 'system:stats',
@@ -67,6 +73,16 @@ export interface ScreenShareApi {
     /** Choose the source (and whether to include system audio) for the next getDisplayMedia(). */
     select(id: string, audio: boolean): Promise<void>
     audioSupported(): Promise<boolean>
+    /** Windows helper that captures system audio from surround (5.1/7.1) devices. */
+    nativeAudio: {
+      available(): Promise<boolean>
+      start(): Promise<NativeAudioFormat>
+      stop(id?: number): Promise<void>
+      /** Interleaved float32 stereo PCM, frame-aligned. */
+      onData(cb: (id: number, chunk: Uint8Array) => void): () => void
+      /** The helper exited on its own (device removed, crash); not sent after stop(). */
+      onEnded(cb: (id: number, reason: string) => void): () => void
+    }
     permission(): Promise<ScreenPermission>
     openPermissionSettings(): Promise<void>
   }
