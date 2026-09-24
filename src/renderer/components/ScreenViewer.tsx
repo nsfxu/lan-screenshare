@@ -1,0 +1,148 @@
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Icon } from './Icon'
+
+interface Props {
+  stream: MediaStream | null
+  /** Shown centered when there is nothing to display (or over a paused stream). */
+  placeholder?: ReactNode
+  overlay?: ReactNode
+  /** Local preview on the host: never mirror, no zoom persistence needed. */
+  local?: boolean
+}
+
+const MIN_ZOOM = 1
+const MAX_ZOOM = 8
+
+/**
+ * Remote (or local preview) screen display with zoom (mouse wheel, anchored
+ * at the cursor), click-drag panning while zoomed, double-click to reset, and
+ * a full-screen toggle.
+ */
+export function ScreenViewer({ stream, placeholder, overlay, local }: Props) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const [zoom, setZoom] = useState(1)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [dragging, setDragging] = useState(false)
+  const [fullscreen, setFullscreen] = useState(false)
+  const dragStart = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null)
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    if (video.srcObject !== stream) {
+      video.srcObject = stream
+      if (stream) void video.play().catch(() => {})
+    }
+  }, [stream])
+
+  useEffect(() => {
+    const onChange = (): void => setFullscreen(document.fullscreenElement === containerRef.current)
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
+
+  const clampPan = useCallback((x: number, y: number, z: number) => {
+    const el = containerRef.current
+    if (!el) return { x, y }
+    const maxX = (el.clientWidth * (z - 1)) / 2
+    const maxY = (el.clientHeight * (z - 1)) / 2
+    return { x: Math.max(-maxX, Math.min(maxX, x)), y: Math.max(-maxY, Math.min(maxY, y)) }
+  }, [])
+
+  const zoomAt = useCallback(
+    (nextZoom: number, clientX?: number, clientY?: number) => {
+      const el = containerRef.current
+      const z = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, nextZoom))
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      // Keep the point under the cursor fixed while zooming.
+      const cx = (clientX ?? rect.left + rect.width / 2) - rect.left - rect.width / 2
+      const cy = (clientY ?? rect.top + rect.height / 2) - rect.top - rect.height / 2
+      const ratio = z / zoom
+      const nx = cx - (cx - pan.x) * ratio
+      const ny = cy - (cy - pan.y) * ratio
+      setZoom(z)
+      setPan(z === 1 ? { x: 0, y: 0 } : clampPan(nx, ny, z))
+    },
+    [zoom, pan, clampPan]
+  )
+
+  // Wheel listener must be non-passive to prevent page scroll.
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent): void => {
+      e.preventDefault()
+      zoomAt(zoom * Math.exp(-e.deltaY * 0.0015), e.clientX, e.clientY)
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [zoom, zoomAt])
+
+  const reset = (): void => {
+    setZoom(1)
+    setPan({ x: 0, y: 0 })
+  }
+
+  const toggleFullscreen = (): void => {
+    if (document.fullscreenElement) void document.exitFullscreen()
+    else void containerRef.current?.requestFullscreen()
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className={`screen-viewer ${zoom > 1 ? 'zoomed' : ''} ${dragging ? 'dragging' : ''}`}
+      onMouseDown={(e) => {
+        if (zoom <= 1 || e.button !== 0) return
+        dragStart.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y }
+        setDragging(true)
+      }}
+      onMouseMove={(e) => {
+        const s = dragStart.current
+        if (!s) return
+        setPan(clampPan(s.panX + e.clientX - s.x, s.panY + e.clientY - s.y, zoom))
+      }}
+      onMouseUp={() => {
+        dragStart.current = null
+        setDragging(false)
+      }}
+      onMouseLeave={() => {
+        dragStart.current = null
+        setDragging(false)
+      }}
+      onDoubleClick={() => (zoom > 1 ? reset() : zoomAt(2))}
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      <video
+        ref={videoRef}
+        className={stream ? '' : 'hidden'}
+        autoPlay
+        playsInline
+        muted
+        disablePictureInPicture
+        controls={false}
+        style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
+        data-local={local ? '1' : undefined}
+      />
+      {placeholder && <div className="screen-placeholder">{placeholder}</div>}
+      {overlay && <div className="screen-overlay">{overlay}</div>}
+      <div className="screen-controls" onMouseDown={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+        <button className="icon-btn" title="Zoom out" onClick={() => zoomAt(zoom / 1.25)} disabled={zoom <= MIN_ZOOM}>
+          <Icon name="zoomOut" />
+        </button>
+        <span className="zoom-label">{Math.round(zoom * 100)}%</span>
+        <button className="icon-btn" title="Zoom in" onClick={() => zoomAt(zoom * 1.25)} disabled={zoom >= MAX_ZOOM}>
+          <Icon name="zoomIn" />
+        </button>
+        <button className="icon-btn" title="Fit to window" onClick={reset} disabled={zoom === 1}>
+          <Icon name="fit" />
+        </button>
+        <button className="icon-btn" title={fullscreen ? 'Exit full screen' : 'Full screen'} onClick={toggleFullscreen}>
+          <Icon name={fullscreen ? 'exitFullscreen' : 'fullscreen'} />
+        </button>
+      </div>
+    </div>
+  )
+}

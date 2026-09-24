@@ -1,0 +1,41 @@
+{
+  "name": "lan-screenshare",
+  "productName": "ScreenShare",
+  "version": "1.0.0",
+  "description": "LAN/VPN desktop screen sharing with rooms, PIN access control and chat",
+  "main": "out/main/index.js",
+  "author": "ScreenShare",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dist:win": "npm run build && electron-builder --win --config electron-builder.json",
+    "dist:mac": "npm run build && electron-builder --mac --config electron-builder.json",
+    "dist": "npm run build && electron-builder --config electron-builder.json"
+  },
+  "dependencies": {
+    "bonjour-service": "^1.4.4",
+    "selfsigned": "^5.5.0",
+    "ws": "^8.21.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/ws": "^8.18.1",
+    "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.6",
+    "vitest": "^3.2.7"
+  }
+}

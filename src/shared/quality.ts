@@ -1,0 +1,190 @@
+/**
+ * Quality ladder and the adaptive controller that walks it.
+ *
+ * The controller is pure (no WebRTC types) so it can be unit tested and reused
+ * by both the WebRTC path (per viewer) and the TCP fallback encoder (shared).
+ */
+
+export type QualityPresetId = 'native60' | '1080p60' | '720p60' | '720p30' | '480p30'
+
+export interface QualityPreset {
+  id: QualityPresetId
+  label: string
+  /** Target height in pixels; 0 means "source resolution". */
+  height: number
+  fps: number
+  maxBitrate: number
+}
+
+/** Ordered best → worst. */
+export const QUALITY_PRESETS: readonly QualityPreset[] = [
+  { id: 'native60', label: 'Native @ 60 fps', height: 0, fps: 60, maxBitrate: 20_000_000 },
+  { id: '1080p60', label: '1080p @ 60 fps', height: 1080, fps: 60, maxBitrate: 15_000_000 },
+  { id: '720p60', label: '720p @ 60 fps', height: 720, fps: 60, maxBitrate: 10_000_000 },
+  { id: '720p30', label: '720p @ 30 fps', height: 720, fps: 30, maxBitrate: 5_000_000 },
+  { id: '480p30', label: '480p @ 30 fps', height: 480, fps: 30, maxBitrate: 2_500_000 }
+]
+
+export function getPreset(id: QualityPresetId): QualityPreset {
+  return QUALITY_PRESETS.find((p) => p.id === id) ?? QUALITY_PRESETS[1]
+}
+
+/** The presets the controller may use, starting at the user's maximum. */
+export function qualityLadder(max: QualityPresetId): QualityPreset[] {
+  const start = QUALITY_PRESETS.findIndex((p) => p.id === max)
+  return QUALITY_PRESETS.slice(start < 0 ? 1 : start)
+}
+
+export interface EncodingParams {
+  scaleResolutionDownBy: number
+  maxFramerate: number
+  maxBitrate: number
+}
+
+/** RTCRtpEncodingParameters for a preset given the captured source height. */
+export function encodingFor(preset: QualityPreset, sourceHeight: number): EncodingParams {
+  const scale = preset.height > 0 && sourceHeight > preset.height ? sourceHeight / preset.height : 1
+  return {
+    scaleResolutionDownBy: Math.round(scale * 1000) / 1000,
+    maxFramerate: preset.fps,
+    maxBitrate: preset.maxBitrate
+  }
+}
+
+/** Output size for an encoder that scales itself (TCP fallback). Dimensions are even. */
+export function scaledSize(preset: QualityPreset, width: number, height: number): { width: number; height: number } {
+  const scale = preset.height > 0 && height > preset.height ? preset.height / height : 1
+  const even = (n: number): number => Math.max(2, Math.round((n * scale) / 2) * 2)
+  return { width: even(width), height: even(height) }
+}
+
+export interface NetworkSample {
+  /** Packet loss over the last interval, in percent. */
+  lossPct: number
+  rttMs: number | null
+  /** WebRTC's outbound-rtp.qualityLimitationReason (or an equivalent). */
+  limitation: 'none' | 'cpu' | 'bandwidth' | 'other'
+}
+
+export interface AdaptiveOptions {
+  /** Ignore bandwidth limitation this long after (re)starting or switching level (BWE ramp-up). */
+  warmupMs: number
+  /** Consecutive bad samples needed to step down. */
+  badSamplesToDegrade: number
+  /** Minimum time between two decisions. */
+  holdMs: number
+  /** Initial time of good samples needed to step up; doubles on each failed step-up. */
+  upgradeAfterMs: number
+  maxUpgradeAfterMs: number
+  /** A step-up that degrades again within this window counts as failed. */
+  failedUpgradeWindowMs: number
+  lossBadPct: number
+  lossGoodPct: number
+  rttBadMs: number
+  rttGoodMs: number
+}
+
+export const DEFAULT_ADAPTIVE_OPTIONS: AdaptiveOptions = {
+  warmupMs: 10_000,
+  badSamplesToDegrade: 2,
+  holdMs: 4_000,
+  upgradeAfterMs: 10_000,
+  maxUpgradeAfterMs: 120_000,
+  failedUpgradeWindowMs: 15_000,
+  lossBadPct: 5,
+  lossGoodPct: 1,
+  rttBadMs: 200,
+  rttGoodMs: 100
+}
+
+export type AdaptiveDecision = 'up' | 'down' | 'hold'
+
+export class AdaptiveController {
+  private level = 0
+  private badStreak = 0
+  private goodSince: number | null = null
+  private lastChange: number
+  private lastUpgradeAt: number | null = null
+  private upgradeAfter: number
+  private readonly opts: AdaptiveOptions
+
+  constructor(
+    private readonly ladder: readonly QualityPreset[],
+    now: number,
+    opts: Partial<AdaptiveOptions> = {}
+  ) {
+    if (ladder.length === 0) throw new Error('empty quality ladder')
+    this.opts = { ...DEFAULT_ADAPTIVE_OPTIONS, ...opts }
+    this.upgradeAfter = this.opts.upgradeAfterMs
+    this.lastChange = now
+  }
+
+  get preset(): QualityPreset {
+    return this.ladder[this.level]
+  }
+
+  get levelIndex(): number {
+    return this.level
+  }
+
+  /** Feed one stats sample; returns what changed. */
+  update(sample: NetworkSample, now: number): AdaptiveDecision {
+    const o = this.opts
+    const warmingUp = now - this.lastChange < o.warmupMs
+    const bad =
+      sample.lossPct > o.lossBadPct ||
+      (sample.rttMs !== null && sample.rttMs > o.rttBadMs) ||
+      sample.limitation === 'cpu' ||
+      (sample.limitation === 'bandwidth' && !warmingUp)
+    const good =
+      sample.lossPct < o.lossGoodPct &&
+      (sample.rttMs === null || sample.rttMs < o.rttGoodMs) &&
+      sample.limitation === 'none'
+
+    if (bad) {
+      this.badStreak++
+      this.goodSince = null
+    } else {
+      this.badStreak = 0
+      if (good) this.goodSince ??= now
+      else this.goodSince = null
+    }
+
+    if (now - this.lastChange < o.holdMs) return 'hold'
+
+    if (this.badStreak >= o.badSamplesToDegrade && this.level < this.ladder.length - 1) {
+      if (this.lastUpgradeAt !== null && now - this.lastUpgradeAt < o.failedUpgradeWindowMs) {
+        this.upgradeAfter = Math.min(this.upgradeAfter * 2, o.maxUpgradeAfterMs)
+      }
+      this.lastUpgradeAt = null
+      this.setLevel(this.level + 1, now)
+      return 'down'
+    }
+
+    if (this.level > 0 && this.goodSince !== null && now - this.goodSince >= this.upgradeAfter) {
+      this.lastUpgradeAt = now
+      this.setLevel(this.level - 1, now)
+      return 'up'
+    }
+
+    // Staying healthy for a long time forgives earlier failed upgrades.
+    if (this.goodSince !== null && now - this.goodSince >= o.maxUpgradeAfterMs) {
+      this.upgradeAfter = o.upgradeAfterMs
+    }
+    return 'hold'
+  }
+
+  /** Restart warm-up, e.g. after the capture source changed. */
+  reset(now: number): void {
+    this.lastChange = now
+    this.badStreak = 0
+    this.goodSince = null
+  }
+
+  private setLevel(level: number, now: number): void {
+    this.level = level
+    this.badStreak = 0
+    this.goodSince = null
+    this.lastChange = now
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.screenshare.lan",
+  "productName": "ScreenShare",
+  "copyright": "ScreenShare",
+  "directories": {
+    "output": "release/${version}",
+    "buildResources": "build"
+  },
+  "files": ["out/**/*", "package.json"],
+  "asar": true,
+  "win": {
+    "target": [{ "target": "nsis", "arch": ["x64", "arm64"] }],
+    "artifactName": "ScreenShare-Setup-${version}-${arch}.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "shortcutName": "ScreenShare"
+  },
+  "mac": {
+    "target": [{ "target": "dmg", "arch": ["universal"] }],
+    "category": "public.app-category.productivity",
+    "hardenedRuntime": true,
+    "entitlements": "build/entitlements.mac.plist",
+    "entitlementsInherit": "build/entitlements.mac.plist",
+    "artifactName": "ScreenShare-${version}-${arch}.${ext}",
+    "extendInfo": {
+      "NSLocalNetworkUsageDescription": "ScreenShare finds and connects to screen-sharing rooms on your local network.",
+      "NSBonjourServices": ["_lanshare._tcp"],
+      "NSScreenCaptureUsageDescription": "ScreenShare needs to record your screen so you can share it with others."
+    }
+  },
+  "dmg": {
+    "title": "ScreenShare ${version}"
+  }
+}
