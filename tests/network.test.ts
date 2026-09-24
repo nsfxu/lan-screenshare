@@ -3,7 +3,7 @@ import { generate } from 'selfsigned'
 import { createHash, X509Certificate } from 'node:crypto'
 import { RoomServer } from '../src/main/server'
 import { addressRank, endpointUrl, fingerprintFromPem, parseHostPort, probeRoom } from '../src/utils/network'
-import { chooseCodecOrder, mungeBitrates } from '../src/shared/codecs'
+import { chooseCodecOrder, mungeBitrates, mungeOpus } from '../src/shared/codecs'
 
 describe('parseHostPort', () => {
   it('parses addresses with and without ports', () => {
@@ -89,6 +89,30 @@ describe('codec selection', () => {
     const order = chooseCodecOrder('h265', [enc('video/H264', true), enc('video/H265', true)], [enc('video/H264', false)])
     expect(order).toEqual(['video/H264'])
     expect(chooseCodecOrder('vp9', [enc('video/H264', true), enc('video/VP9', false)], [])[0]).toBe('video/VP9')
+  })
+
+  it('configures Opus for stereo, high-bitrate system audio', () => {
+    const sdp = [
+      'v=0',
+      'm=audio 9 UDP/TLS/RTP/SAVPF 111 63',
+      'a=rtpmap:111 opus/48000/2',
+      'a=fmtp:111 minptime=10;useinbandfec=1;usedtx=1',
+      'a=rtpmap:63 red/48000/2',
+      'm=video 9 UDP/TLS/RTP/SAVPF 96',
+      'a=rtpmap:96 VP8/90000',
+      ''
+    ].join('\r\n')
+    const out = mungeOpus(sdp).split('\r\n')
+    const fmtp = out.find((l) => l.startsWith('a=fmtp:111 '))!
+    expect(fmtp).toContain('minptime=10')
+    expect(fmtp).toContain('stereo=1')
+    expect(fmtp).toContain('maxaveragebitrate=128000')
+    expect(fmtp).toContain('usedtx=0')
+    expect(fmtp.match(/usedtx/g)).toHaveLength(1)
+    expect(out.filter((l) => l.startsWith('a=fmtp:'))).toHaveLength(1)
+    // No audio section: unchanged.
+    const videoOnly = 'v=0\r\nm=video 9 UDP/TLS/RTP/SAVPF 96\r\na=rtpmap:96 VP8/90000\r\n'
+    expect(mungeOpus(videoOnly)).toBe(videoOnly)
   })
 
   it('adds start/min bitrate hints to video codecs only', () => {

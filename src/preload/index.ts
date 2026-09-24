@@ -30,7 +30,8 @@ const api: ScreenShareApi = {
   },
   capture: {
     listSources: () => ipcRenderer.invoke(IPC.listSources),
-    select: (id) => ipcRenderer.invoke(IPC.selectSource, id),
+    select: (id, audio) => ipcRenderer.invoke(IPC.selectSource, id, audio),
+    audioSupported: () => ipcRenderer.invoke(IPC.audioSupported),
     permission: () => ipcRenderer.invoke(IPC.screenPermission),
     openPermissionSettings: () => ipcRenderer.invoke(IPC.openPermissionSettings)
   },

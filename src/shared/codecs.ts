@@ -79,3 +79,47 @@ export function mungeBitrates(sdp: string, startKbps: number, minKbps: number): 
 export function shortCodecName(mime: string): string {
   return mime.replace(/^video\//i, '').toUpperCase()
 }
+
+/**
+ * Configure Opus for system audio (music, games, videos) instead of WebRTC's
+ * voice defaults: stereo, a high average bitrate, in-band FEC for loss
+ * resilience and no DTX (which would chop quiet passages). Applied to the
+ * viewer's answer on the host, because a sender follows the receiver's fmtp.
+ */
+export function mungeOpus(sdp: string, bitrate = 128_000): string {
+  const lines = sdp.split('\r\n')
+  let inAudio = false
+  let opusPt: string | null = null
+  for (const line of lines) {
+    if (line.startsWith('m=')) inAudio = line.startsWith('m=audio')
+    const m = inAudio && /^a=rtpmap:(\d+) opus\/48000/i.exec(line)
+    if (m) opusPt = m[1]
+  }
+  if (!opusPt) return sdp
+  const wanted: Record<string, string> = {
+    stereo: '1',
+    'sprop-stereo': '1',
+    maxaveragebitrate: String(bitrate),
+    maxplaybackrate: '48000',
+    useinbandfec: '1',
+    usedtx: '0'
+  }
+  const format = (params: Map<string, string>): string => [...params].map(([k, v]) => `${k}=${v}`).join(';')
+  let found = false
+  const out = lines.map((line) => {
+    if (!line.startsWith(`a=fmtp:${opusPt} `)) return line
+    found = true
+    const params = new Map<string, string>()
+    for (const part of line.slice(`a=fmtp:${opusPt} `.length).split(';')) {
+      const [k, v = ''] = part.split('=')
+      if (k.trim()) params.set(k.trim(), v.trim())
+    }
+    for (const [k, v] of Object.entries(wanted)) params.set(k, v)
+    return `a=fmtp:${opusPt} ${format(params)}`
+  })
+  if (!found) {
+    const idx = out.findIndex((l) => l.startsWith(`a=rtpmap:${opusPt} `))
+    out.splice(idx + 1, 0, `a=fmtp:${opusPt} ${format(new Map(Object.entries(wanted)))}`)
+  }
+  return out.join('\r\n')
+}

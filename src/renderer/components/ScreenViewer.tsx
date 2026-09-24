@@ -6,19 +6,33 @@ interface Props {
   /** Shown centered when there is nothing to display (or over a paused stream). */
   placeholder?: ReactNode
   overlay?: ReactNode
-  /** Local preview on the host: never mirror, no zoom persistence needed. */
+  /** Local preview on the host: always muted (no echo of our own system audio). */
   local?: boolean
+  /** Show volume controls; false greys them out (host is not sending audio). */
+  audioAvailable?: boolean
 }
 
 const MIN_ZOOM = 1
 const MAX_ZOOM = 8
+const VOLUME_KEY = 'screenshare.volume'
+
+function loadVolume(): { volume: number; muted: boolean } {
+  try {
+    const saved = JSON.parse(localStorage.getItem(VOLUME_KEY) ?? 'null') as { volume: number; muted: boolean } | null
+    if (saved && typeof saved.volume === 'number') return { volume: Math.min(1, Math.max(0, saved.volume)), muted: !!saved.muted }
+  } catch {
+    // storage unavailable
+  }
+  return { volume: 1, muted: false }
+}
 
 /**
  * Remote (or local preview) screen display with zoom (mouse wheel, anchored
  * at the cursor), click-drag panning while zoomed, double-click to reset, and
- * a full-screen toggle.
+ * a full-screen toggle. Viewers also get volume/mute for the host's system
+ * audio (remembered on this machine); the host's own preview is always muted.
  */
-export function ScreenViewer({ stream, placeholder, overlay, local }: Props) {
+export function ScreenViewer({ stream, placeholder, overlay, local, audioAvailable }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [zoom, setZoom] = useState(1)
@@ -26,6 +40,19 @@ export function ScreenViewer({ stream, placeholder, overlay, local }: Props) {
   const [dragging, setDragging] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
   const dragStart = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null)
+  const [audio, setAudio] = useState(loadVolume)
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    video.muted = !!local || audio.muted
+    video.volume = audio.volume
+    try {
+      localStorage.setItem(VOLUME_KEY, JSON.stringify(audio))
+    } catch {
+      // storage unavailable
+    }
+  }, [audio, local, stream])
 
   useEffect(() => {
     const video = videoRef.current
@@ -120,7 +147,7 @@ export function ScreenViewer({ stream, placeholder, overlay, local }: Props) {
         className={stream ? '' : 'hidden'}
         autoPlay
         playsInline
-        muted
+        muted={!!local || audio.muted}
         disablePictureInPicture
         controls={false}
         style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
@@ -129,6 +156,26 @@ export function ScreenViewer({ stream, placeholder, overlay, local }: Props) {
       {placeholder && <div className="screen-placeholder">{placeholder}</div>}
       {overlay && <div className="screen-overlay">{overlay}</div>}
       <div className="screen-controls" onMouseDown={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+        {!local && (
+          <div className={`volume ${audioAvailable ? '' : 'unavailable'}`} title={audioAvailable ? undefined : 'The host is not sharing audio'}>
+            <button
+              className="icon-btn"
+              title={audio.muted || audio.volume === 0 ? 'Unmute' : 'Mute'}
+              onClick={() => setAudio((a) => (a.muted || a.volume === 0 ? { volume: a.volume || 1, muted: false } : { ...a, muted: true }))}
+            >
+              <Icon name={audio.muted || audio.volume === 0 || !audioAvailable ? 'volumeOff' : 'volume'} />
+            </button>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.02}
+              value={audio.muted ? 0 : audio.volume}
+              aria-label="Volume"
+              onChange={(e) => setAudio({ volume: Number(e.target.value), muted: Number(e.target.value) === 0 })}
+            />
+          </div>
+        )}
         <button className="icon-btn" title="Zoom out" onClick={() => zoomAt(zoom / 1.25)} disabled={zoom <= MIN_ZOOM}>
           <Icon name="zoomOut" />
         </button>

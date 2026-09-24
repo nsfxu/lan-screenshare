@@ -1,5 +1,5 @@
 import type { CodecSupport } from '../../shared/types'
-export { chooseCodecOrder, mungeBitrates, shortCodecName } from '../../shared/codecs'
+export { chooseCodecOrder, mungeBitrates, mungeOpus, shortCodecName } from '../../shared/codecs'
 
 const ALL = ['video/H264', 'video/H265', 'video/VP9', 'video/AV1', 'video/VP8']
 const AUX = new Set(['video/rtx', 'video/red', 'video/ulpfec', 'video/flexfec-03'])

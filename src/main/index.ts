@@ -25,8 +25,14 @@ if (profileArg) {
 // names (those don't resolve across VPNs), and never throttle a minimized or
 // occluded window that is capturing/encoding.
 app.commandLine.appendSwitch('disable-features', 'WebRtcHideLocalIpsWithMdns,CalculateNativeWinOcclusion')
-// Allow H.265 in WebRTC where the platform has a hardware codec for it.
-app.commandLine.appendSwitch('enable-features', 'WebRtcAllowH265Send,WebRtcAllowH265Receive')
+// Allow H.265 in WebRTC where the platform has a hardware codec for it. On
+// macOS, also enable system-audio loopback for screen sharing (ScreenCaptureKit,
+// macOS 13+), which Chromium keeps behind feature flags.
+const enabledFeatures = ['WebRtcAllowH265Send', 'WebRtcAllowH265Receive']
+if (process.platform === 'darwin') enabledFeatures.push('MacLoopbackAudioForScreenShare', 'MacSckSystemAudioLoopbackOverride')
+app.commandLine.appendSwitch('enable-features', enabledFeatures.join(','))
+// Let viewers hear the stream without clicking first.
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
 app.commandLine.appendSwitch('disable-renderer-backgrounding')
 app.commandLine.appendSwitch('disable-background-timer-throttling')
 app.commandLine.appendSwitch('disable-backgrounding-occluded-windows')
@@ -131,7 +137,8 @@ function registerIpc(): void {
   ipcMain.handle(IPC.getHosted, () => rooms.getHosted())
 
   ipcMain.handle(IPC.listSources, () => capture.listSources())
-  ipcMain.handle(IPC.selectSource, (_e, id: string) => capture.select(String(id)))
+  ipcMain.handle(IPC.selectSource, (_e, id: string, audio: boolean) => capture.select(String(id), !!audio))
+  ipcMain.handle(IPC.audioSupported, () => capture.audioSupported())
   ipcMain.handle(IPC.screenPermission, () => capture.permission())
   ipcMain.handle(IPC.openPermissionSettings, () => capture.openPermissionSettings())
 

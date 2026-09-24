@@ -16,9 +16,14 @@ import type { Logger } from './server'
  * The renderer shows its own picker (listSources), tells us the choice
  * (select), then calls getDisplayMedia(); our display-media handler answers
  * with the chosen source instead of showing a system dialog.
+ *
+ * System audio uses loopback capture: WASAPI loopback on Windows (the whole
+ * system mix, even when a single window is shared) and ScreenCaptureKit audio
+ * on macOS 13+ (behind Chromium feature flags enabled in index.ts).
  */
 export class ScreenCapture {
   private selectedId: string | null = null
+  private withAudio = false
 
   constructor(private readonly log: Logger) {}
 
@@ -35,8 +40,10 @@ export class ScreenCapture {
               callback({})
               return
             }
-            this.log.info(`capturing "${source.name}" (${source.id})`)
-            callback({ video: source })
+            // Only offer audio when the page asked for it, or Chromium rejects the request.
+            const audio = this.withAudio && _request.audioRequested ? ({ audio: 'loopback' } as const) : {}
+            this.log.info(`capturing "${source.name}" (${source.id}) audio=${'audio' in audio}`)
+            callback({ video: source, ...audio })
           })
           .catch((err: unknown) => {
             this.log.error('getSources failed', err)
@@ -70,8 +77,14 @@ export class ScreenCapture {
       })
   }
 
-  select(id: string): void {
+  select(id: string, audio: boolean): void {
     this.selectedId = id
+    this.withAudio = audio
+  }
+
+  /** Whether this platform can capture system audio at all. */
+  audioSupported(): boolean {
+    return process.platform === 'win32' || process.platform === 'darwin'
   }
 
   permission(): ScreenPermission {

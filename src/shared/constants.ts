@@ -4,7 +4,7 @@ export const APP_NAME = 'ScreenShare'
 export const MDNS_SERVICE_TYPE = 'lanshare'
 
 /** Bumped whenever the wire protocol changes incompatibly. */
-export const PROTOCOL_VERSION = 1
+export const PROTOCOL_VERSION = 2
 
 /** First port tried when hosting; the next free port is used if it is taken. */
 export const DEFAULT_PORT = 47800
@@ -43,8 +43,9 @@ export const STATS_INTERVAL_MS = 1_000
 /** If WebRTC has not connected within this time the viewer falls back to TCP. */
 export const WEBRTC_CONNECT_TIMEOUT_MS = 8_000
 
-/** Binary TCP-fallback packets start with [kind, flags]; flags bit 0 = keyframe. */
+/** Binary TCP-fallback packets start with [kind, flags]; flags bit 0 = keyframe (video only). */
 export const BINARY_KIND_VIDEO = 1
+export const BINARY_KIND_AUDIO = 2
 export const BINARY_FLAG_KEY = 1
 
 /** Server-side send buffer limit per TCP-fallback viewer before frames are dropped. */

@@ -16,6 +16,8 @@ export interface RoomInfo {
   maxUsers: number
   sharing: boolean
   paused: boolean
+  /** The host is sending system audio (captured and not muted). */
+  audio: boolean
   protocol: number
   startedAt: number
 }
@@ -83,6 +85,8 @@ export interface ViewerStats {
   transport: Transport | null
   decoder: string
   framesDropped: number
+  /** Received audio bitrate; 0 when no audio is arriving. */
+  audioKbps: number
 }
 
 /** Stats computed by the host for its own overlay. */
@@ -99,6 +103,8 @@ export interface HostStats {
   memoryMB: number
   viewers: number
   qualityLimitation: string
+  /** Sent audio bitrate summed over viewers; null when not sharing audio. */
+  audioKbps: number | null
 }
 
 export interface CodecSupport {
@@ -158,7 +164,7 @@ export type ClientMessage =
   | { type: 'kick'; userId: string }
   | { type: 'delete-message'; id: string }
   | { type: 'mute-chat'; muted: boolean }
-  | { type: 'sharing'; sharing: boolean; paused: boolean }
+  | { type: 'sharing'; sharing: boolean; paused: boolean; audio: boolean }
   | { type: 'host-stats'; encodeMs: number | null }
   | { type: 'end-room' }
 
@@ -209,6 +215,8 @@ export interface Settings {
   notifications: boolean
   pauseOnMinimize: boolean
   showStatsOverlay: boolean
+  /** Capture system audio along with the screen when sharing. */
+  shareAudio: boolean
 }
 
 export interface CreateRoomRequest {

@@ -1,6 +1,6 @@
 import http from 'node:http'
 import { afterEach, describe, expect, it } from 'vitest'
-import { BINARY_FLAG_KEY, BINARY_KIND_VIDEO } from '../src/shared/constants'
+import { BINARY_FLAG_KEY, BINARY_KIND_AUDIO, BINARY_KIND_VIDEO } from '../src/shared/constants'
 import { RoomServer } from '../src/main/server'
 import { PinGuard } from '../src/utils/crypto'
 import { TestClient } from './helpers'
@@ -237,6 +237,45 @@ describe('RoomServer', () => {
     tcpViewer.ws.send(key)
     await new Promise((r) => setTimeout(r, 100))
     expect(rtcViewer.binary).toHaveLength(0)
+  })
+
+  it('relays TCP audio without letting it open the video keyframe gate', async () => {
+    const port = await startServer()
+    const host = await connect(port, { hostToken: HOST_TOKEN })
+    await host.wait('welcome')
+    const viewer = await connect(port, { name: 'Tcp' })
+    await viewer.wait('welcome')
+    viewer.send({ type: 'request-stream', transport: 'tcp' })
+    await host.wait('request-stream')
+
+    const audio = Buffer.from([BINARY_KIND_AUDIO, 0, 7, 7])
+    const delta = Buffer.from([BINARY_KIND_VIDEO, 0, 1])
+    const key = Buffer.from([BINARY_KIND_VIDEO, BINARY_FLAG_KEY, 2])
+    host.ws.send(audio) // delivered even before any keyframe
+    host.ws.send(delta) // still dropped: audio must not have reset the gate
+    host.ws.send(key)
+    host.ws.send(audio)
+    await new Promise((r) => setTimeout(r, 200))
+    expect(viewer.binary.map((b) => [b[0], b[1]])).toEqual([
+      [BINARY_KIND_AUDIO, 0],
+      [BINARY_KIND_VIDEO, BINARY_FLAG_KEY],
+      [BINARY_KIND_AUDIO, 0]
+    ])
+  })
+
+  it('publishes the audio flag only while sharing', async () => {
+    const port = await startServer()
+    const host = await connect(port, { hostToken: HOST_TOKEN })
+    await host.wait('welcome')
+    const bob = await connect(port, { name: 'Bob' })
+    await bob.wait('welcome')
+
+    host.send({ type: 'sharing', sharing: true, paused: false, audio: true })
+    await bob.wait('room', (m) => m.room.sharing && m.room.audio)
+    expect(JSON.parse((await getJson(port, '/info')).body).audio).toBe(true)
+
+    host.send({ type: 'sharing', sharing: false, paused: false, audio: true })
+    await bob.wait('room', (m) => !m.room.sharing && !m.room.audio)
   })
 
   it('tells everyone when the room ends', async () => {

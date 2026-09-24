@@ -26,6 +26,7 @@ export const IPC = {
   hostedChanged: 'host:changed',
   listSources: 'capture:list',
   selectSource: 'capture:select',
+  audioSupported: 'capture:audio-supported',
   screenPermission: 'capture:permission',
   openPermissionSettings: 'capture:open-settings',
   systemStats: 'system:stats',
@@ -63,7 +64,9 @@ export interface ScreenShareApi {
   }
   capture: {
     listSources(): Promise<CaptureSource[]>
-    select(id: string): Promise<void>
+    /** Choose the source (and whether to include system audio) for the next getDisplayMedia(). */
+    select(id: string, audio: boolean): Promise<void>
+    audioSupported(): Promise<boolean>
     permission(): Promise<ScreenPermission>
     openPermissionSettings(): Promise<void>
   }

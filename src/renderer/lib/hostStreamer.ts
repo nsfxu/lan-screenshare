@@ -8,23 +8,25 @@ import type {
   Transport,
   ViewerStats
 } from '../../shared/types'
-import { applyCodecOrder, chooseCodecOrder, mungeBitrates, shortCodecName } from './codecs'
+import { applyCodecOrder, chooseCodecOrder, mungeBitrates, mungeOpus, shortCodecName } from './codecs'
 import { Emitter } from './emitter'
 import type { RoomClient } from './roomClient'
-import { TcpEncoder } from './tcpStream'
+import { TcpAudioEncoder, TcpEncoder } from './tcpStream'
 
 interface Peer {
   pc: RTCPeerConnection
   sender: RTCRtpSender
+  audioSender: RTCRtpSender
   controller: AdaptiveController
   pendingCandidates: RTCIceCandidateInit[]
   remoteSet: boolean
-  prev: { ts: number; bytes: number; encodeTime: number; framesEncoded: number } | null
+  prev: { ts: number; bytes: number; audioBytes: number; encodeTime: number; framesEncoded: number } | null
   sample: PeerSample | null
 }
 
 interface PeerSample {
   bitrateKbps: number
+  audioKbps: number
   fps: number
   rttMs: number | null
   lossPct: number
@@ -36,13 +38,24 @@ interface PeerSample {
   height: number
 }
 
+export interface SharingState {
+  sharing: boolean
+  paused: boolean
+  /** System audio was captured with the current source. */
+  hasAudio: boolean
+  audioMuted: boolean
+}
+
 type Events = {
   stream: MediaStream | null
-  sharing: { sharing: boolean; paused: boolean }
+  sharing: SharingState
   stats: HostStats
   viewerStats: Map<string, ViewerStats>
   error: string
 }
+
+/** Opus ceiling per viewer; the SDP asks for 128 kbps average. */
+const AUDIO_MAX_BITRATE = 160_000
 
 const log = (msg: string): void => {
   console.info(`[host] ${msg}`)
@@ -50,23 +63,28 @@ const log = (msg: string): void => {
 }
 
 /**
- * Host side of the stream: captures the chosen screen/window once and fans it
- * out to each viewer with its own RTCPeerConnection (so every viewer gets its
- * own congestion control and adaptive quality), plus one shared WebCodecs
- * encoder for viewers on the TCP fallback.
+ * Host side of the stream: captures the chosen screen/window (plus system
+ * audio) once and fans it out to each viewer with its own RTCPeerConnection,
+ * so every viewer gets its own congestion control and adaptive quality. One
+ * shared WebCodecs encoder pair serves viewers on the TCP fallback.
  */
 export class HostStreamer extends Emitter<Events> {
   stream: MediaStream | null = null
   paused = false
+  audioMuted = false
+  /** Why system audio could not be captured with the current source (DOMException name). */
+  audioError: string | null = null
   sourceId: string | null = null
   readonly viewerStats = new Map<string, ViewerStats>()
   lastStats: HostStats | null = null
 
   private track: MediaStreamTrack | null = null
+  private audioTrack: MediaStreamTrack | null = null
   private readonly peers = new Map<string, Peer>()
   private readonly tcpViewers = new Set<string>()
   private tcp: TcpEncoder | null = null
-  private tcpPrev: { ts: number; bytes: number } | null = null
+  private tcpAudio: TcpAudioEncoder | null = null
+  private tcpPrev: { ts: number; bytes: number; audioBytes: number } | null = null
   private readonly statsTimer: number
   private readonly unsubscribe: () => void
   private tick = 0
@@ -86,44 +104,86 @@ export class HostStreamer extends Emitter<Events> {
     return !!this.track
   }
 
+  get hasAudio(): boolean {
+    return !!this.audioTrack
+  }
+
+  get state(): SharingState {
+    return { sharing: !!this.track, paused: this.paused, hasAudio: !!this.audioTrack, audioMuted: this.audioMuted }
+  }
+
   updateSettings(settings: Settings): void {
     this.settings = settings
     if (this.track) this.track.contentHint = settings.contentHint
   }
 
-  /** Start capturing (or switch to another source without renegotiating). */
-  async startCapture(sourceId: string): Promise<void> {
-    await window.api.capture.select(sourceId)
+  /**
+   * Start capturing (or switch to another source without renegotiating).
+   * With `withAudio`, system audio is captured too; if the platform refuses
+   * audio, sharing continues video-only.
+   */
+  async startCapture(sourceId: string, withAudio = this.settings.shareAudio): Promise<void> {
     const preset = getPreset(this.settings.maxQuality)
     const video: MediaTrackConstraints = { frameRate: { ideal: preset.fps, max: preset.fps } }
     if (preset.height > 0) video.height = { max: preset.height }
-    const stream = await navigator.mediaDevices.getDisplayMedia({ video, audio: false })
+    // System audio should reach viewers untouched: no voice processing.
+    const audio: MediaTrackConstraints = {
+      echoCancellation: false,
+      noiseSuppression: false,
+      autoGainControl: false,
+      channelCount: 2,
+      sampleRate: 48_000
+    }
+
+    let stream: MediaStream
+    this.audioError = null
+    await window.api.capture.select(sourceId, withAudio)
+    try {
+      stream = await navigator.mediaDevices.getDisplayMedia({ video, audio: withAudio ? audio : false })
+    } catch (err) {
+      if (!withAudio) throw err
+      this.audioError = err instanceof DOMException ? err.name : String(err)
+      log(`capture with audio failed (${String(err)}); retrying video only`)
+      await window.api.capture.select(sourceId, false)
+      stream = await navigator.mediaDevices.getDisplayMedia({ video, audio: false })
+    }
     if (this.disposed) {
       stream.getTracks().forEach((t) => t.stop())
       return
     }
     const track = stream.getVideoTracks()[0]
+    const audioTrack = stream.getAudioTracks()[0] ?? null
     track.contentHint = this.settings.contentHint
     track.addEventListener('ended', () => {
       if (this.track === track) this.stopSharing()
     })
-    const settings = track.getSettings()
-    log(`capturing ${settings.width}x${settings.height}@${settings.frameRate} from ${sourceId}`)
+    if (audioTrack) audioTrack.contentHint = 'music'
+    const s = track.getSettings()
+    const a = audioTrack?.getSettings()
+    log(
+      `capturing ${s.width}x${s.height}@${s.frameRate} from ${sourceId}` +
+        (audioTrack ? ` + audio ${a?.sampleRate ?? '?'} Hz x${a?.channelCount ?? '?'}` : withAudio ? ' (no audio available)' : '')
+    )
 
-    const old = this.track
+    const oldVideo = this.track
+    const oldAudio = this.audioTrack
     this.stream = stream
     this.track = track
+    this.audioTrack = audioTrack
     this.sourceId = sourceId
 
-    if (old) {
-      // Source switch: swap the track on every live connection.
+    if (oldVideo) {
+      // Source switch: swap tracks on every live connection.
       for (const peer of this.peers.values()) {
         await peer.sender.replaceTrack(this.paused ? null : track).catch(() => {})
+        await peer.audioSender.replaceTrack(this.audioSendTrack()).catch(() => {})
         peer.controller.reset(Date.now())
         await this.applyEncoding(peer)
       }
       this.tcp?.replaceTrack(track)
-      old.stop()
+      this.syncTcpAudio()
+      oldVideo.stop()
+      oldAudio?.stop()
     }
     this.emit('stream', stream)
     this.publishSharing()
@@ -132,8 +192,21 @@ export class HostStreamer extends Emitter<Events> {
   setPaused(paused: boolean): void {
     if (!this.track || this.paused === paused) return
     this.paused = paused
-    for (const peer of this.peers.values()) void peer.sender.replaceTrack(paused ? null : this.track).catch(() => {})
+    for (const peer of this.peers.values()) {
+      void peer.sender.replaceTrack(paused ? null : this.track).catch(() => {})
+      void peer.audioSender.replaceTrack(this.audioSendTrack()).catch(() => {})
+    }
     this.tcp?.setPaused(paused)
+    this.tcpAudio?.setMuted(paused || this.audioMuted)
+    this.publishSharing()
+  }
+
+  /** Stop sending system audio while the screen keeps streaming. */
+  setAudioMuted(muted: boolean): void {
+    if (this.audioMuted === muted) return
+    this.audioMuted = muted
+    for (const peer of this.peers.values()) void peer.audioSender.replaceTrack(this.audioSendTrack()).catch(() => {})
+    this.tcpAudio?.setMuted(this.paused || muted)
     this.publishSharing()
   }
 
@@ -142,9 +215,13 @@ export class HostStreamer extends Emitter<Events> {
     for (const id of [...this.peers.keys()]) this.closePeer(id)
     this.tcp?.stop()
     this.tcp = null
+    this.tcpAudio?.stop()
+    this.tcpAudio = null
     this.tcpViewers.clear()
     this.track?.stop()
+    this.audioTrack?.stop()
     this.track = null
+    this.audioTrack = null
     this.stream = null
     this.paused = false
     this.sourceId = null
@@ -160,9 +237,15 @@ export class HostStreamer extends Emitter<Events> {
     this.removeAllListeners()
   }
 
+  /** The audio track viewers should currently receive (null = silence). */
+  private audioSendTrack(): MediaStreamTrack | null {
+    return this.paused || this.audioMuted ? null : this.audioTrack
+  }
+
   private publishSharing(): void {
-    const state = { sharing: !!this.track, paused: this.paused }
-    this.client.send({ type: 'sharing', ...state })
+    const state = this.state
+    const audio = state.sharing && state.hasAudio && !state.audioMuted && !state.paused
+    this.client.send({ type: 'sharing', sharing: state.sharing, paused: state.paused, audio })
     this.emit('sharing', state)
   }
 
@@ -180,7 +263,9 @@ export class HostStreamer extends Emitter<Events> {
         if (!peer) return
         if (msg.data.kind === 'answer') {
           const preset = peer.controller.preset
-          const sdp = mungeBitrates(msg.data.sdp, Math.min(preset.maxBitrate * 0.6, 8_000_000) / 1000, 300)
+          const sdp = mungeOpus(
+            mungeBitrates(msg.data.sdp, Math.min(preset.maxBitrate * 0.6, 8_000_000) / 1000, 300)
+          )
           try {
             await peer.pc.setRemoteDescription({ type: 'answer', sdp })
             peer.remoteSet = true
@@ -222,6 +307,7 @@ export class HostStreamer extends Emitter<Events> {
         this.tcp = new TcpEncoder(this.track, this.client, this.settings.maxQuality, this.settings.adaptiveQuality, log)
         this.tcp.setPaused(this.paused)
       }
+      this.syncTcpAudio()
       this.tcp?.requestKeyframe()
       log(`viewer ${viewerId} on TCP fallback`)
       return
@@ -238,11 +324,20 @@ export class HostStreamer extends Emitter<Events> {
       streams: [this.stream],
       sendEncodings: [{ ...enc, priority: 'high', networkPriority: 'high' }]
     })
+    // Always negotiate an audio line (in the same stream, so WebRTC keeps
+    // lip-sync). Muting or switching sources then only swaps the track.
+    const audioTransceiver = pc.addTransceiver('audio', {
+      direction: 'sendonly',
+      streams: [this.stream],
+      sendEncodings: [{ maxBitrate: AUDIO_MAX_BITRATE, priority: 'high', networkPriority: 'high' }]
+    })
+    await audioTransceiver.sender.replaceTrack(this.audioSendTrack())
     const order = chooseCodecOrder(this.settings.codec, this.encoders, decoders)
     applyCodecOrder(transceiver, order)
     const peer: Peer = {
       pc,
       sender: transceiver.sender,
+      audioSender: audioTransceiver.sender,
       controller,
       pendingCandidates: [],
       remoteSet: false,
@@ -265,7 +360,7 @@ export class HostStreamer extends Emitter<Events> {
       await pc.setLocalDescription(offer)
       await this.applyEncoding(peer)
       this.client.send({ type: 'signal', to: viewerId, data: { kind: 'offer', sdp: pc.localDescription!.sdp } })
-      log(`offer sent to ${viewerId} (codecs: ${order.map(shortCodecName).join(' > ')})`)
+      log(`offer sent to ${viewerId} (codecs: ${order.map(shortCodecName).join(' > ')}, audio: ${this.hasAudio})`)
     } catch (err) {
       log(`offer failed for ${viewerId}: ${String(err)}`)
       this.closePeer(viewerId)
@@ -296,11 +391,24 @@ export class HostStreamer extends Emitter<Events> {
     peer.pc.close()
   }
 
+  /** Keep the TCP audio encoder in line with the captured track and TCP viewers. */
+  private syncTcpAudio(): void {
+    if (this.tcpViewers.size === 0 || !this.audioTrack) {
+      this.tcpAudio?.stop()
+      this.tcpAudio = null
+      return
+    }
+    if (this.tcpAudio) this.tcpAudio.replaceTrack(this.audioTrack)
+    else this.tcpAudio = new TcpAudioEncoder(this.audioTrack, this.client, log)
+    this.tcpAudio.setMuted(this.paused || this.audioMuted)
+  }
+
   private removeTcpViewer(id: string): void {
     if (!this.tcpViewers.delete(id)) return
     if (this.tcpViewers.size === 0) {
       this.tcp?.stop()
       this.tcp = null
+      this.syncTcpAudio()
     }
   }
 
@@ -326,10 +434,15 @@ export class HostStreamer extends Emitter<Events> {
 
     const samples = [...this.peers.values()].map((p) => p.sample).filter((s): s is PeerSample => !!s)
     let tcpKbps = 0
+    let tcpAudioKbps = 0
     if (this.tcp) {
       const prev = this.tcpPrev
-      if (prev) tcpKbps = ((this.tcp.sentBytes - prev.bytes) * 8) / (now - prev.ts)
-      this.tcpPrev = { ts: now, bytes: this.tcp.sentBytes }
+      const audioBytes = this.tcpAudio?.sentBytes ?? 0
+      if (prev) {
+        tcpKbps = ((this.tcp.sentBytes - prev.bytes) * 8) / (now - prev.ts)
+        tcpAudioKbps = ((audioBytes - prev.audioBytes) * 8) / (now - prev.ts)
+      }
+      this.tcpPrev = { ts: now, bytes: this.tcp.sentBytes, audioBytes }
     } else this.tcpPrev = null
 
     const system = await window.api.system.stats().catch(() => ({ cpuPercent: 0, memoryMB: 0 }))
@@ -344,6 +457,9 @@ export class HostStreamer extends Emitter<Events> {
       width: main?.width ?? this.tcp?.width ?? trackSettings?.width ?? 0,
       height: main?.height ?? this.tcp?.height ?? trackSettings?.height ?? 0,
       bitrateKbps: Math.round(samples.reduce((sum, s) => sum + s.bitrateKbps, 0) + tcpKbps),
+      audioKbps: this.audioTrack
+        ? Math.round(samples.reduce((sum, s) => sum + s.audioKbps, 0) + tcpAudioKbps)
+        : null,
       avgRttMs: rtts.length ? Math.round(rtts.reduce((a, b) => a + b, 0) / rtts.length) : null,
       encodeMs: encodes.length ? Math.round((encodes.reduce((a, b) => a + b, 0) / encodes.length) * 10) / 10 : null,
       encoder: main?.encoder || (this.tcp ? `WebCodecs${this.tcp.hardware ? ' (hw)' : ''}` : ''),
@@ -366,27 +482,31 @@ export class HostStreamer extends Emitter<Events> {
       return
     }
     let out: Record<string, any> | undefined
+    let audioOut: Record<string, any> | undefined
     let remote: Record<string, any> | undefined
     let pair: Record<string, any> | undefined
     const codecs = new Map<string, string>()
     report.forEach((s: Record<string, any>) => {
       if (s.type === 'outbound-rtp' && s.kind === 'video') out = s
+      else if (s.type === 'outbound-rtp' && s.kind === 'audio') audioOut = s
       else if (s.type === 'remote-inbound-rtp' && s.kind === 'video') remote = s
       else if (s.type === 'candidate-pair' && s.nominated && s.state === 'succeeded') pair = s
       else if (s.type === 'codec') codecs.set(s.id, s.mimeType)
     })
     if (!out) return
     const bytes = Number(out.bytesSent ?? 0)
+    const audioBytes = Number(audioOut?.bytesSent ?? 0)
     const encodeTime = Number(out.totalEncodeTime ?? 0)
     const framesEncoded = Number(out.framesEncoded ?? 0)
     const prev = peer.prev
-    peer.prev = { ts: now, bytes, encodeTime, framesEncoded }
+    peer.prev = { ts: now, bytes, audioBytes, encodeTime, framesEncoded }
     if (!prev) return
     const dt = (now - prev.ts) / 1000
     const frames = framesEncoded - prev.framesEncoded
     const rtt = remote?.roundTripTime ?? pair?.currentRoundTripTime
     peer.sample = {
       bitrateKbps: dt > 0 ? ((bytes - prev.bytes) * 8) / 1000 / dt : 0,
+      audioKbps: dt > 0 ? ((audioBytes - prev.audioBytes) * 8) / 1000 / dt : 0,
       fps: Number(out.framesPerSecond ?? (dt > 0 ? frames / dt : 0)),
       rttMs: typeof rtt === 'number' ? Math.round(rtt * 1000) : null,
       lossPct: typeof remote?.fractionLost === 'number' ? remote.fractionLost * 100 : 0,

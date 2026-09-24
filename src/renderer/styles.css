@@ -1299,3 +1299,31 @@ input[type='checkbox']:checked::after {
     display: none;
   }
 }
+
+/* volume control (screen viewer) */
+.volume {
+  display: flex;
+  align-items: center;
+  margin-right: 4px;
+  padding-right: 6px;
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+}
+.volume.unavailable {
+  opacity: 0.45;
+}
+.volume input[type='range'] {
+  width: 84px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.stat-badge.muted-badge {
+  color: var(--ok);
+}
+.card-audio {
+  margin-left: 8px;
+  display: inline-flex;
+}

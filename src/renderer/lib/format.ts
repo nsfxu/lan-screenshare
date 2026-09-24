@@ -33,6 +33,22 @@ export function roomUrl(ep: { address: string; port: number; tls: boolean }): st
   return `${ep.tls ? 'wss' : 'ws'}://${host}:${ep.port}/ws`
 }
 
+/** Explain why system audio could not be captured, with a fix when we know one. */
+export function audioUnavailableMessage(error: string | null): string {
+  if (error === 'NotReadableError' && /Windows/.test(navigator.userAgent)) {
+    // WASAPI loopback fails (AUDCLNT_E_UNSUPPORTED_FORMAT) on surround endpoints.
+    return (
+      "Couldn't capture system audio: Windows refuses it when the output device is in surround (5.1/7.1) mode. " +
+      'Switch the device to stereo (turn off 7.1 surround in the headset software, or Sound settings → device → ' +
+      'Properties → Advanced → 2 channel), then use Change source. Sharing video only for now.'
+    )
+  }
+  if (error === 'NotReadableError' || error === 'NotAllowedError') {
+    return "Couldn't capture system audio (on macOS this needs macOS 13+ and Screen Recording permission). Sharing video only."
+  }
+  return 'System audio is not available here; sharing video only.'
+}
+
 export function latencyClass(ms: number | null): 'good' | 'ok' | 'bad' | 'unknown' {
   if (ms === null) return 'unknown'
   if (ms < 100) return 'good'

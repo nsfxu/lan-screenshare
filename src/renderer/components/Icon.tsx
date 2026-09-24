@@ -30,7 +30,9 @@ const PATHS: Record<string, string> = {
   globe: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M3 12h18 M12 3a14 14 0 0 1 0 18 M12 3a14 14 0 0 0 0 18',
   key: 'M15 7a4 4 0 1 1-3.9 4.9L4 19v2h3v-2h2v-2h2l1.1-1.1A4 4 0 0 1 15 7z',
   search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M21 21l-5-5',
-  folder: 'M3 6h6l2 2h10v11H3z'
+  folder: 'M3 6h6l2 2h10v11H3z',
+  volume: 'M4 9v6h4l5 4V5L8 9z M16 9a4 4 0 0 1 0 6 M18.5 6.5a8 8 0 0 1 0 11',
+  volumeOff: 'M4 9v6h4l5 4V5L8 9z M17 9l5 6 M22 9l-5 6'
 }
 
 export type IconName = keyof typeof PATHS

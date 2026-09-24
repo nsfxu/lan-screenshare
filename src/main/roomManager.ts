@@ -436,6 +436,7 @@ function placeholder(
     maxUsers: 0,
     sharing: false,
     paused: false,
+    audio: false,
     protocol: 0,
     startedAt: 0
   }

@@ -4,7 +4,7 @@ import { CreateRoomDialog, PinDialog, SettingsPanel, type CreateRoomResult } fro
 import { HomeScreen } from './components/HomeScreen'
 import { RoomView } from './components/RoomView'
 import { detectDecoders, detectEncoders } from './lib/codecs'
-import { errorMessage } from './lib/format'
+import { audioUnavailableMessage, errorMessage } from './lib/format'
 import { disposeSession, hostRoom, joinRoom, JoinError, type Session } from './lib/session'
 
 interface Toast {
@@ -37,7 +37,7 @@ export function App() {
   const toast = useCallback((message: string, tone: 'error' | 'info' = 'info') => {
     const id = Date.now() + Math.random()
     setToasts((t) => [...t.slice(-3), { id, message, tone }])
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), tone === 'error' ? 6000 : 3000)
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), tone === 'error' ? Math.max(6000, message.length * 60) : 3000)
   }, [])
 
   // --- startup -----------------------------------------------------------------
@@ -127,7 +127,8 @@ export function App() {
       hostedCreated = true
       const s = await hostRoom(hosted, settings, codecs.encoders)
       try {
-        await s.streamer.startCapture(req.sourceId)
+        await s.streamer.startCapture(req.sourceId, req.audio)
+        if (req.audio && !s.streamer.hasAudio) toast(audioUnavailableMessage(s.streamer.audioError), 'error')
       } catch (err) {
         toast(`Room created, but capture failed: ${errorMessage(err)}`, 'error')
       }
@@ -182,6 +183,7 @@ export function App() {
       {creating && !session && (
         <CreateRoomDialog
           defaultName={`${settings.displayName}'s room`}
+          defaultAudio={settings.shareAudio}
           busy={createBusy}
           error={createError}
           onCancel={() => setCreating(false)}

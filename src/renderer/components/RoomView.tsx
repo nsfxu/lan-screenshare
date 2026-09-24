@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { ChatMessage, HostedRoom, HostStats, MediaState, Participant, RoomState, Settings, ViewerStats } from '../../shared/types'
-import { errorMessage, formatBitrate, formatDuration, latencyClass } from '../lib/format'
+import { audioUnavailableMessage, errorMessage, formatBitrate, formatDuration, latencyClass } from '../lib/format'
 import type { ConnectionState } from '../lib/roomClient'
+import type { SharingState } from '../lib/hostStreamer'
 import type { Session } from '../lib/session'
 import { ChatPanel } from './ChatPanel'
 import { ChangeSourceDialog } from './Dialogs'
@@ -33,7 +34,7 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
   const [hostStats, setHostStats] = useState<HostStats | null>(null)
   const [viewerStats, setViewerStats] = useState<Map<string, ViewerStats>>(new Map())
   const [hosted, setHosted] = useState<HostedRoom | null>(session.role === 'host' ? session.hosted : null)
-  const [sharing, setSharing] = useState({ sharing: false, paused: false })
+  const [sharing, setSharing] = useState<SharingState>({ sharing: false, paused: false, hasAudio: false, audioMuted: false })
   const [showStats, setShowStats] = useState(false)
   const [pickSource, setPickSource] = useState(false)
   const [, setNow] = useState(Date.now())
@@ -65,7 +66,7 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
   useEffect(() => {
     if (session.role === 'host') {
       const s = session.streamer
-      setSharing({ sharing: s.sharing, paused: s.paused })
+      setSharing(s.state)
       const offs = [
         s.on('stream', setStream),
         s.on('sharing', setSharing),
@@ -109,11 +110,12 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
   }, [])
 
   // --- actions ---------------------------------------------------------------
-  const shareSource = async (id: string): Promise<void> => {
+  const shareSource = async (id: string, audio: boolean): Promise<void> => {
     if (session.role !== 'host') return
     setPickSource(false)
     try {
-      await session.streamer.startCapture(id)
+      await session.streamer.startCapture(id, audio)
+      if (audio && !session.streamer.hasAudio) onToast(audioUnavailableMessage(session.streamer.audioError), 'error')
     } catch (err) {
       onToast(`Could not capture: ${errorMessage(err)}`, 'error')
     }
@@ -181,6 +183,11 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
         <div className="stat-badges">
           <span className="stat-badge">{Math.round(hostStats.fps)} fps</span>
           <span className="stat-badge">{formatBitrate(hostStats.bitrateKbps)}</span>
+          {sharing.hasAudio && (
+            <span className={`stat-badge ${sharing.audioMuted ? 'muted-badge' : ''}`}>
+              {sharing.audioMuted ? 'audio muted' : `audio ${hostStats.audioKbps ?? 0} kbps`}
+            </span>
+          )}
           <span className={`stat-badge ${hostStats.cpuPercent < 20 ? 'good' : 'ok'}`}>CPU {hostStats.cpuPercent.toFixed(0)}%</span>
         </div>
       ) : null
@@ -196,6 +203,7 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
         <span className="stat-badge">
           {ownStats.codec || '…'} · {ownStats.transport === 'tcp' ? 'TCP' : 'WebRTC'}
         </span>
+        {!room?.audio && <span className="stat-badge muted-badge">no audio</span>}
       </div>
     ) : null
   ) : null
@@ -224,7 +232,13 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
 
       <div className="room-body">
         <main className="stage">
-          <ScreenViewer stream={stream} placeholder={placeholder} overlay={overlay} local={isHost} />
+          <ScreenViewer
+            stream={stream}
+            placeholder={placeholder}
+            overlay={overlay}
+            local={isHost}
+            audioAvailable={!!room?.audio && mediaState === 'streaming'}
+          />
           {isHost && showStats && (
             <div className="stats-popover">
               <HostStatsPanel stats={hostStats} />
@@ -237,6 +251,15 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
                   <>
                     <button className="btn" onClick={() => session.streamer.setPaused(!sharing.paused)}>
                       <Icon name={sharing.paused ? 'play' : 'pause'} /> {sharing.paused ? 'Resume' : 'Pause'}
+                    </button>
+                    <button
+                      className={`btn ${sharing.hasAudio && sharing.audioMuted ? 'active' : ''}`}
+                      disabled={!sharing.hasAudio}
+                      title={sharing.hasAudio ? 'Mute or unmute the system audio viewers hear' : 'Audio is not being captured (enable it via Change source)'}
+                      onClick={() => session.streamer.setAudioMuted(!sharing.audioMuted)}
+                    >
+                      <Icon name={sharing.hasAudio && !sharing.audioMuted ? 'volume' : 'volumeOff'} />
+                      {!sharing.hasAudio ? 'No audio' : sharing.audioMuted ? 'Unmute audio' : 'Mute audio'}
                     </button>
                     <button className="btn" onClick={() => setPickSource(true)}>
                       <Icon name="swap" /> Change source
@@ -263,6 +286,7 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
                 {ownStats && mediaState === 'streaming' && (
                   <span className="muted small toolbar-stats">
                     {formatBitrate(ownStats.bitrateKbps)}
+                    {ownStats.audioKbps > 0 ? ` + ${ownStats.audioKbps} kbps audio` : ''}
                     {ownStats.packetLossPct >= 0.5 ? ` · ${ownStats.packetLossPct.toFixed(1)}% loss` : ''}
                     {ownStats.decoder ? ` · ${ownStats.decoder}` : ''}
                   </span>
@@ -306,7 +330,12 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
       </div>
 
       {pickSource && session.role === 'host' && (
-        <ChangeSourceDialog current={session.streamer.sourceId} onCancel={() => setPickSource(false)} onPick={shareSource} />
+        <ChangeSourceDialog
+          current={session.streamer.sourceId}
+          currentAudio={session.streamer.sharing ? session.streamer.hasAudio : settings.shareAudio}
+          onCancel={() => setPickSource(false)}
+          onPick={(id, audio) => void shareSource(id, audio)}
+        />
       )}
     </div>
   )

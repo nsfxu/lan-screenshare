@@ -5,6 +5,7 @@ import type { AddressInfo } from 'node:net'
 import { WebSocketServer, WebSocket, type RawData } from 'ws'
 import {
   BINARY_FLAG_KEY,
+  BINARY_KIND_AUDIO,
   BINARY_KIND_VIDEO,
   CHAT_HISTORY_LIMIT,
   CHAT_MAX_LENGTH,
@@ -104,6 +105,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
   private chatMuted = false
   private sharing = false
   private paused = false
+  private audio = false
   private boundPort = 0
   private ended = false
   private tcpStats = { sent: 0, dropped: 0 }
@@ -193,6 +195,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       maxUsers: this.opts.maxUsers ?? MAX_USERS,
       sharing: this.sharing,
       paused: this.paused,
+      audio: this.audio,
       protocol: PROTOCOL_VERSION,
       startedAt: this.startedAt
     }
@@ -235,7 +238,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
     ws.on('message', (data: RawData, isBinary: boolean) => {
       const seat = this.byWs.get(ws)
       if (isBinary) {
-        if (seat?.participant.role === 'host') this.relayVideo(toBuffer(data))
+        if (seat?.participant.role === 'host') this.relayMedia(toBuffer(data))
         return
       }
       let msg: ClientMessage
@@ -427,6 +430,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       case 'sharing':
         this.sharing = !!msg.sharing
         this.paused = !!msg.paused
+        this.audio = this.sharing && !!msg.audio
         this.broadcastRoom()
         return
       case 'host-stats':
@@ -471,13 +475,23 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
     this.broadcast({ type: 'chat', message })
   }
 
-  /** Forward a host video packet to every TCP-fallback viewer, with per-viewer backpressure. */
-  private relayVideo(packet: Buffer): void {
-    if (packet.length < 2 || packet[0] !== BINARY_KIND_VIDEO) return
+  /**
+   * Forward a host media packet to every TCP-fallback viewer, with per-viewer
+   * backpressure. Video resumes only on a keyframe after drops; audio packets
+   * are independently decodable, so they bypass (and never reset) that gate.
+   */
+  private relayMedia(packet: Buffer): void {
+    if (packet.length < 2) return
+    const kind = packet[0]
+    if (kind !== BINARY_KIND_VIDEO && kind !== BINARY_KIND_AUDIO) return
     const isKey = (packet[1] & BINARY_FLAG_KEY) !== 0
     for (const seat of this.seats.values()) {
       if (seat.participant.role !== 'viewer' || seat.participant.transport !== 'tcp' || !seat.ws) continue
       if (seat.ws.readyState !== WebSocket.OPEN) continue
+      if (kind === BINARY_KIND_AUDIO) {
+        if (seat.ws.bufferedAmount <= TCP_MAX_BUFFERED_BYTES) seat.ws.send(packet, { binary: true })
+        continue
+      }
       if (seat.tcpWaitingKey && !isKey) {
         this.tcpStats.dropped++
         continue

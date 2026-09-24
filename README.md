@@ -44,6 +44,7 @@ npx electron . --profile=viewer
 * **Capture.** Chromium's capture stack uses **DXGI Desktop Duplication** on Windows (Windows.Graphics.Capture for single windows) and **ScreenCaptureKit** on macOS. Frames stay on the GPU and go to the hardware encoder.
 * **Codec selection** (`src/shared/codecs.ts`). At startup the app asks `MediaCapabilities` which codecs are hardware-accelerated (`powerEfficient`), and each viewer reports its decoders when it joins. Automatic mode prefers hardware H.264, then H.265 if both ends have hardware support, then software H.264, VP9 and VP8. The Settings panel lets you force a codec, and it shows the detected hardware support.
 * **Transport.** WebRTC media over UDP comes first, and ICE also tries TCP candidates. If WebRTC hasn't connected within 8 s, or it fails, the viewer switches to the **TCP fallback**. In fallback the host encodes with WebCodecs (hardware H.264), the room's WebSocket carries the encoded chunks, and the viewer decodes them into a `MediaStreamTrack`. Relay backpressure drops frames up to the next keyframe so the stream stays live.
+* **System audio.** When sharing, the host can include everything playing on the computer: WASAPI loopback on Windows, ScreenCaptureKit on macOS 13+. On Windows this is always the whole system mix, even when a single window is shared. Audio travels as a second WebRTC track in the same stream, so WebRTC keeps it in lip-sync with the video. Opus is set up for music rather than voice: stereo, 128 kbps, in-band FEC, no DTX, and no echo cancellation, noise suppression or auto-gain. The host can mute audio without stopping the video, and pausing silences it too. Viewers get a volume slider and a mute button, and the setting is remembered. On the TCP fallback, audio is encoded as Opus with WebCodecs and follows the same path as the video.
 * **Adaptive quality** (`src/shared/quality.ts`). Every second the controller reads packet loss, RTT and WebRTC's `qualityLimitationReason` for each viewer and moves along the ladder **Native60 → 1080p60 (15 Mbps) → 720p60 (10) → 720p30 (5) → 480p30 (2.5)**. It uses hysteresis, and when an upgrade fails the wait before the next one grows exponentially. Chromium's own per-frame adaptation still runs underneath.
 * **Discovery** (`src/main/roomManager.ts`, `src/utils/mdns.ts`). Each room advertises `_lanshare._tcp` over mDNS using a pure-JS responder, so Bonjour/Avahi is not required. Every 3 s, each room found by mDNS or added by hand is polled at `GET /info` for live data such as viewer count, privacy and sharing state. Rooms appear and disappear on their own. Use **Connect by IP** for VPNs and other subnets, where multicast doesn't reach.
 
@@ -64,6 +65,7 @@ npx electron . --profile=viewer
 | Chat with timestamps, avatars, emoji, history | `ChatPanel.tsx`, server history (in memory, 500 messages) |
 | Viewer list, status, kick | `ViewerList.tsx` |
 | Pause/resume, change source, stop, end room, live stats (bandwidth, RTT, FPS, encode time, encoder, CPU, memory) | `RoomView.tsx`, `HostControls.tsx`, `hostStreamer.ts` |
+| System audio (share toggle, host mute, viewer volume) | `hostStreamer.ts`, `tcpStream.ts`, `ScreenViewer.tsx`, `Dialogs.tsx` |
 | Chat moderation (delete, mute) | `ChatPanel.tsx`, `server.ts` |
 | Reconnection | `roomClient.ts` resumes the same seat without the PIN within 30 s; the stream renegotiates automatically |
 | Minimize/close | Streaming keeps running when minimized (optional pause-on-minimize setting). Closing asks for confirmation, then ends the room and tells viewers |
@@ -76,6 +78,7 @@ npx electron . --profile=viewer
 | WebRTC, 1 viewer | 1920×1080 @ 57–58 fps, H.265 through `MediaFoundationVideoEncodeAccelerator (NVIDIA HEVC Encoder MFT)`, encode 4.3 ms/frame, estimated glass-to-glass latency ~30–65 ms |
 | WebRTC, 2 viewers | Both at 1080p ~58 fps; host ~5 % of total CPU (OS-measured, 24 threads) |
 | TCP fallback | 1920×1080 @ 57 fps, WebCodecs hardware H.264 |
+| Audio (WebRTC and TCP) | A 440 Hz test tone was received as 439 Hz at the viewer. WebRTC used ~160 kbps next to 1080p57 video; TCP carried stereo Opus at 128 kbps. Host mute and pause silence it, and unmuting brings it back without renegotiating |
 | PIN, kick, privacy change, end room, mDNS discovery | Tested end to end |
 
 Automatic codec selection picked H.265 on this machine because it reported hardware HEVC encoding but not hardware H.264 encoding for WebRTC.
@@ -86,7 +89,9 @@ Automatic codec selection picked H.265 on this machine because it reported hardw
 * The macOS build has not been compiled or run: it has to be built on a Mac, and distributing it needs code signing and notarisation. On first use the app asks for Screen Recording and Local Network permissions.
 * The adaptive controller is unit-tested. Real packet loss wasn't simulated because all testing ran over loopback.
 * Discovery depends on multicast. On VPNs, use Connect by IP (default port 47800, or the next free one).
-* Out of scope for v1, as specified: remote control, audio, multi-monitor, recording, Linux.
+* **Windows audio and surround devices.** Chromium opens WASAPI loopback as stereo. If the default output device runs in 5.1 or 7.1 mode (common with gaming headsets and their virtual surround), Windows refuses with `AUDCLNT_E_UNSUPPORTED_FORMAT`. The app then shares video only and tells the host how to fix it: switch the device to stereo. The end-to-end audio tests above used a synthetic tone for this reason, since the test machine's headset is in 7.1 mode.
+* **macOS audio** depends on Chromium's ScreenCaptureKit loopback, which is behind feature flags (`MacLoopbackAudioForScreenShare`) that the app turns on. It needs macOS 13+ and hasn't been tested yet. If it fails, sharing continues with video only.
+* Out of scope for v1, as specified: remote control, microphone audio, multi-monitor, recording, Linux.
 
 ## Project layout
 

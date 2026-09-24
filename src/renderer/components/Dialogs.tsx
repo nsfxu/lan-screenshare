@@ -36,16 +36,44 @@ export interface CreateRoomResult {
   privacy: Privacy
   pinLength: number
   sourceId: string
+  audio: boolean
+}
+
+/** "Share system audio" switch; hidden on platforms that cannot capture it. */
+function AudioToggle({ value, onChange }: { value: boolean; onChange(v: boolean): void }) {
+  const [supported, setSupported] = useState<boolean | null>(null)
+  const [platform, setPlatform] = useState('')
+  useEffect(() => {
+    void window.api.capture.audioSupported().then(setSupported)
+    void window.api.system.info().then((i) => setPlatform(i.platform))
+  }, [])
+  if (supported === false) return null
+  return (
+    <label className="toggle-row">
+      <div>
+        <span>
+          <Icon name="volume" size={14} /> Share system audio
+        </span>
+        <span className="muted small block">
+          Everything playing on this computer is shared, even when you pick a single window.
+          {platform === 'darwin' ? ' Requires macOS 13 or later.' : ''}
+        </span>
+      </div>
+      <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
+    </label>
+  )
 }
 
 export function CreateRoomDialog({
   defaultName,
+  defaultAudio,
   busy,
   error,
   onCancel,
   onCreate
 }: {
   defaultName: string
+  defaultAudio: boolean
   busy: boolean
   error: string | null
   onCancel(): void
@@ -55,11 +83,12 @@ export function CreateRoomDialog({
   const [privacy, setPrivacy] = useState<Privacy>('public')
   const [pinLength, setPinLength] = useState(DEFAULT_PIN_LENGTH)
   const [sourceId, setSourceId] = useState<string | null>(null)
+  const [audio, setAudio] = useState(defaultAudio)
 
   const submit = (e: FormEvent): void => {
     e.preventDefault()
     if (!sourceId) return
-    onCreate({ name: name.trim() || defaultName, privacy, pinLength, sourceId })
+    onCreate({ name: name.trim() || defaultName, privacy, pinLength, sourceId, audio })
   }
 
   return (
@@ -108,6 +137,7 @@ export function CreateRoomDialog({
           <label>What do you want to share?</label>
           <SourcePicker selected={sourceId} onSelect={setSourceId} />
         </div>
+        <AudioToggle value={audio} onChange={setAudio} />
         {error && <div className="notice error">{error}</div>}
         <footer className="modal-footer">
           <button type="button" className="btn ghost" onClick={onCancel}>
@@ -124,17 +154,29 @@ export function CreateRoomDialog({
 
 // ---------------------------------------------------------------------------
 
-export function ChangeSourceDialog({ current, onCancel, onPick }: { current: string | null; onCancel(): void; onPick(id: string): void }) {
+export function ChangeSourceDialog({
+  current,
+  currentAudio,
+  onCancel,
+  onPick
+}: {
+  current: string | null
+  currentAudio: boolean
+  onCancel(): void
+  onPick(id: string, audio: boolean): void
+}) {
   const [sourceId, setSourceId] = useState<string | null>(current)
+  const [audio, setAudio] = useState(currentAudio)
   return (
     <Modal title="Choose what to share" onClose={onCancel} wide>
       <div className="modal-body">
         <SourcePicker selected={sourceId} onSelect={setSourceId} />
+        <AudioToggle value={audio} onChange={setAudio} />
         <footer className="modal-footer">
           <button className="btn ghost" onClick={onCancel}>
             Cancel
           </button>
-          <button className="btn primary" disabled={!sourceId} onClick={() => sourceId && onPick(sourceId)}>
+          <button className="btn primary" disabled={!sourceId} onClick={() => sourceId && onPick(sourceId, audio)}>
             Share
           </button>
         </footer>
@@ -323,6 +365,7 @@ export function SettingsPanel({
           {toggle('notifications', 'Chat notifications when the window is in the background')}
           {toggle('pauseOnMinimize', 'Pause sharing while minimized', 'Sharing resumes automatically when restored')}
           {toggle('showStatsOverlay', 'Show FPS and latency overlay')}
+          {toggle('shareAudio', 'Share system audio by default', 'Pre-selects the audio switch when you start sharing')}
         </section>
 
         <footer className="modal-footer spread">

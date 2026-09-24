@@ -26,7 +26,8 @@ const EMPTY_STATS: ViewerStats = {
   codec: '',
   transport: null,
   decoder: '',
-  framesDropped: 0
+  framesDropped: 0,
+  audioKbps: 0
 }
 
 /**
@@ -47,7 +48,17 @@ export class ViewerReceiver extends Emitter<Events> {
   private connectTimer: number | null = null
   private readonly statsTimer: number
   private readonly unsubscribers: (() => void)[] = []
-  private prev: { ts: number; bytes: number; lost: number; received: number; jbDelay: number; jbCount: number; decodeTime: number; decoded: number } | null = null
+  private prev: {
+    ts: number
+    bytes: number
+    audioBytes: number
+    lost: number
+    received: number
+    jbDelay: number
+    jbCount: number
+    decodeTime: number
+    decoded: number
+  } | null = null
   private hostEncodeMs: number | null = null
   private tick = 0
   private wasSharing = false
@@ -228,7 +239,7 @@ export class ViewerReceiver extends Emitter<Events> {
     const now = performance.now()
     const s = tcp.stats
     const prev = this.prev
-    this.prev = { ts: now, bytes: s.bytes, lost: s.framesDropped, received: s.framesDecoded, jbDelay: 0, jbCount: 0, decodeTime: 0, decoded: 0 }
+    this.prev = { ts: now, bytes: s.bytes, audioBytes: s.audioBytes, lost: s.framesDropped, received: s.framesDecoded, jbDelay: 0, jbCount: 0, decodeTime: 0, decoded: 0 }
     if (s.framesDecoded > 0 && this.state === 'negotiating') this.setState('streaming')
     if (!prev) return null
     const dt = (now - prev.ts) / 1000
@@ -244,7 +255,8 @@ export class ViewerReceiver extends Emitter<Events> {
       codec: s.codec.split('.')[0].toUpperCase(),
       transport: 'tcp',
       decoder: 'WebCodecs',
-      framesDropped: s.framesDropped
+      framesDropped: s.framesDropped,
+      audioKbps: dt > 0 ? Math.round(((s.audioBytes - prev.audioBytes) * 8) / 1000 / dt) : 0
     }
   }
 
@@ -257,10 +269,12 @@ export class ViewerReceiver extends Emitter<Events> {
       return null
     }
     let inb: Record<string, any> | undefined
+    let audioIn: Record<string, any> | undefined
     let pair: Record<string, any> | undefined
     const codecs = new Map<string, string>()
     report.forEach((s: Record<string, any>) => {
       if (s.type === 'inbound-rtp' && s.kind === 'video') inb = s
+      else if (s.type === 'inbound-rtp' && s.kind === 'audio') audioIn = s
       else if (s.type === 'candidate-pair' && s.nominated && s.state === 'succeeded') pair = s
       else if (s.type === 'codec') codecs.set(s.id, s.mimeType)
     })
@@ -269,6 +283,7 @@ export class ViewerReceiver extends Emitter<Events> {
     const cur = {
       ts: now,
       bytes: Number(inb.bytesReceived ?? 0),
+      audioBytes: Number(audioIn?.bytesReceived ?? 0),
       lost: Number(inb.packetsLost ?? 0),
       received: Number(inb.packetsReceived ?? 0),
       jbDelay: Number(inb.jitterBufferDelay ?? 0),
@@ -304,7 +319,8 @@ export class ViewerReceiver extends Emitter<Events> {
       codec: shortCodecName(codecs.get(inb.codecId) ?? ''),
       transport: 'webrtc',
       decoder: String(inb.decoderImplementation ?? ''),
-      framesDropped: Number(inb.framesDropped ?? 0)
+      framesDropped: Number(inb.framesDropped ?? 0),
+      audioKbps: dt > 0 ? Math.round(((cur.audioBytes - prev.audioBytes) * 8) / 1000 / dt) : 0
     }
   }
 }

@@ -127,6 +127,11 @@ function RoomCard({ room, busy, onJoin }: { room: DiscoveredRoom; busy: boolean;
         <span title="Viewers">
           <Icon name="users" size={14} /> {room.viewerCount}
           {room.maxUsers ? ` / ${room.maxUsers - 1}` : ''}
+          {room.sharing && (
+            <span title={room.audio ? 'Sharing audio' : 'No audio'} className="card-audio">
+              <Icon name={room.audio ? 'volume' : 'volumeOff'} size={14} />
+            </span>
+          )}
         </span>
         <span className="mono small muted" title={room.source === 'mdns' ? 'Discovered via mDNS' : 'Added manually'}>
           {room.address}:{room.port}
