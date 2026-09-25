@@ -18,6 +18,8 @@ interface Props {
 
 const MIN_ZOOM = 1
 const MAX_ZOOM = 8
+/** In full screen, controls and cursor hide after this long without mouse movement. */
+const FULLSCREEN_IDLE_MS = 2500
 const VOLUME_KEY = 'screenshare.volume'
 
 /** Saved volume for `key`, falling back to the last volume used anywhere. */
@@ -46,6 +48,8 @@ export function ScreenViewer({ stream, placeholder, overlay, local, audioAvailab
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [dragging, setDragging] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
+  const [idle, setIdle] = useState(false)
+  const idleTimer = useRef<number | null>(null)
   const dragStart = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null)
   const storageKey = volumeKey ? `${VOLUME_KEY}:${volumeKey}` : VOLUME_KEY
   const [audio, setAudio] = useState(() => loadVolume(storageKey))
@@ -79,6 +83,23 @@ export function ScreenViewer({ stream, placeholder, overlay, local, audioAvailab
     document.addEventListener('fullscreenchange', onChange)
     return () => document.removeEventListener('fullscreenchange', onChange)
   }, [])
+
+  // In full screen the pointer never leaves the viewer, so hovering can't hide
+  // the controls as it does in a window: hide them (and the cursor) after a
+  // moment without movement instead, like a video player.
+  const wake = useCallback((): void => {
+    setIdle(false)
+    if (idleTimer.current) clearTimeout(idleTimer.current)
+    idleTimer.current = window.setTimeout(() => setIdle(true), FULLSCREEN_IDLE_MS)
+  }, [])
+  useEffect(() => {
+    if (fullscreen) wake()
+    else setIdle(false)
+    return () => {
+      if (idleTimer.current) clearTimeout(idleTimer.current)
+      idleTimer.current = null
+    }
+  }, [fullscreen, wake])
 
   // Report how many pixels of the stream are actually visible, so the sender
   // can match it. Recomputed on resize, zoom, fullscreen and video size changes.
@@ -140,11 +161,12 @@ export function ScreenViewer({ stream, placeholder, overlay, local, audioAvailab
     if (!el) return
     const onWheel = (e: WheelEvent): void => {
       e.preventDefault()
+      if (fullscreen) wake()
       zoomAt(zoom * Math.exp(-e.deltaY * 0.0015), e.clientX, e.clientY)
     }
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
-  }, [zoom, zoomAt])
+  }, [zoom, zoomAt, fullscreen, wake])
 
   const reset = (): void => {
     setZoom(1)
@@ -159,13 +181,15 @@ export function ScreenViewer({ stream, placeholder, overlay, local, audioAvailab
   return (
     <div
       ref={containerRef}
-      className={`screen-viewer ${zoom > 1 ? 'zoomed' : ''} ${dragging ? 'dragging' : ''}`}
+      className={`screen-viewer ${zoom > 1 ? 'zoomed' : ''} ${dragging ? 'dragging' : ''} ${fullscreen && idle ? 'idle' : ''}`}
       onMouseDown={(e) => {
+        if (fullscreen) wake()
         if (zoom <= 1 || e.button !== 0) return
         dragStart.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y }
         setDragging(true)
       }}
       onMouseMove={(e) => {
+        if (fullscreen) wake()
         const s = dragStart.current
         if (!s) return
         setPan(clampPan(s.panX + e.clientX - s.x, s.panY + e.clientY - s.y, zoom))

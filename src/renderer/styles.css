@@ -1080,9 +1080,19 @@ input[type='checkbox']:checked::after {
   opacity: 0;
   transition: opacity 0.15s;
 }
-.screen-viewer:hover .screen-controls,
-.screen-viewer:fullscreen .screen-controls {
+.screen-viewer:hover .screen-controls {
   opacity: 1;
+}
+/* Full screen, no recent mouse movement: hide the controls and the cursor,
+   unless the pointer rests on the controls or they have keyboard focus. */
+.screen-viewer.idle {
+  cursor: none;
+}
+.screen-viewer.idle .screen-controls {
+  cursor: default;
+}
+.screen-viewer.idle .screen-controls:not(:hover):not(:has(:focus-visible)) {
+  opacity: 0;
 }
 .screen-controls .icon-btn {
   color: #ddd;
