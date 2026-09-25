@@ -29,7 +29,7 @@ npx electron . --profile=bob
 * **Nothing plays automatically.** Live streams appear as preview cards (a thumbnail refreshed every 5 s). Click **Watch**, or **Watch all**, to open them. Watched streams play in a grid. Focus one to put it in the spotlight while the others keep playing in a strip. Every watched stream plays audio, and each has its own remembered volume.
 * **Your own stream isn't played back either**, which saves GPU time on the machine that is capturing and encoding it. It appears as a "You" card (or chip) with its preview; click **Show** to open it as a tile, and close the tile to hide it again. Sharing continues either way.
 * **Quality can change mid-session, both ways.** A streamer picks the maximum it sends from the toolbar (or Settings), and it applies immediately: the capture is re-constrained and every viewer's adaptive quality restarts from the new maximum, without reconnecting. A viewer picks what it receives per stream from the tile's menu: **Auto** (follows the size you watch at), 1080p, 720p, or 720p/480p/360p at 30 fps. The choice is remembered per streamer, like the volume.
-* **Profile picture.** Choose one in Settings → Profile. It is cropped to a square and shrunk to a 128 px JPEG (~5–10 KB) on your machine, then shown to everyone in the room (people list, chat, stream cards, tiles) instead of your initials. Changing or removing it applies immediately.
+* **Profile picture.** Choose one in Settings → Profile, then frame it in the crop dialog: drag to move, scroll or use the slider to zoom (arrow keys and +/− work too); a circle and a live preview show what others will see. The chosen square is shrunk to a 128 px JPEG (~5–10 KB) on your machine, then shown to everyone in the room (people list, chat, stream cards, tiles) instead of your initials. Changing or removing it applies immediately.
 * The **host** can stop anyone's stream, kick people, mute the chat and delete messages.
 
 ## How it works
@@ -80,7 +80,7 @@ npx electron . --profile=bob
 | Live-now preview cards, Watch all, "also live" bar, grid + spotlight, per-stream volume | `RoomView.tsx`, `ScreenViewer.tsx` |
 | Zoom (wheel), pan (drag), fullscreen, FPS/latency overlay per tile | `ScreenViewer.tsx`, `RoomView.tsx` |
 | Chat with timestamps, avatars, emoji, history, moderation | `ChatPanel.tsx`, `server.ts` (in memory, 500 messages) |
-| Profile pictures | `Dialogs.tsx` (Settings), `lib/images.ts`, `Avatar.tsx`, `roomClient.ts`, `server.ts`, `shared/images.ts` |
+| Profile pictures | `Dialogs.tsx` (Settings, crop dialog), `shared/crop.ts`, `lib/images.ts`, `Avatar.tsx`, `roomClient.ts`, `server.ts`, `shared/images.ts` |
 | People list: who shares, who watches whom, per-watcher stats, kick / stop stream | `ViewerList.tsx` |
 | Pause/resume, change source, stop sharing, live stats (bandwidth, RTT, FPS, encode time, encoder, CPU, memory) | `RoomView.tsx`, `HostControls.tsx`, `publisher.ts` |
 | System audio (share toggle, mute, per-stream volume, leave out Discord) | `publisher.ts`, `nativeAudio.ts`, `tcpStream.ts`, `ScreenViewer.tsx`, `native/win-audio-capture` |
