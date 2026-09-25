@@ -183,6 +183,8 @@ export type ClientMessage =
   // as a streamer
   | { type: 'stream-state'; sharing: boolean; paused: boolean; audio: boolean }
   | { type: 'publisher-stats'; encodeMs: number | null }
+  /** Small preview of the shared screen (JPEG/WebP data URL), sent periodically. */
+  | { type: 'snapshot'; image: string }
   // as a watcher
   | { type: 'watch'; streamer: string; transport: Transport }
   | { type: 'unwatch'; streamer: string }
@@ -225,6 +227,9 @@ export type ServerMessage =
   | { type: 'publisher-stats'; from: string; encodeMs: number | null }
   /** The streamer stopped sharing or left; the subscription is gone. */
   | { type: 'stream-ended'; streamer: string }
+  // delivered to everyone
+  /** Latest preview of someone's stream; null when their stream ended. */
+  | { type: 'snapshot'; from: string; image: string | null }
 
 // ---------------------------------------------------------------------------
 // Local (IPC) types

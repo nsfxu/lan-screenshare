@@ -56,7 +56,7 @@ export function ViewerList({ participants, selfId, isHost, myWatchers, watching,
           const isSelf = p.id === selfId
           return (
             <li key={p.id}>
-              <span className="avatar" style={{ background: p.color }}>
+              <span className="avatar" style={{ background: p.color }} aria-hidden="true">
                 {initials(p.name)}
                 <span className={`presence ${p.stream ? 'good' : status.tone}`} />
               </span>

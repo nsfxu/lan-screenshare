@@ -48,5 +48,13 @@ export const BINARY_KIND_VIDEO = 1
 export const BINARY_KIND_AUDIO = 2
 export const BINARY_FLAG_KEY = 1
 
+/** Stream previews: small JPEG thumbnails a streamer shares with the whole room. */
+export const SNAPSHOT_INTERVAL_MS = 5_000
+export const SNAPSHOT_WIDTH = 320
+/** Max length of a snapshot data URL (~70 KB of JPEG). */
+export const SNAPSHOT_MAX_CHARS = 96_000
+/** The server ignores snapshots sent more often than this. */
+export const SNAPSHOT_MIN_INTERVAL_MS = 1_000
+
 /** Server-side send buffer limit per TCP-fallback viewer before frames are dropped. */
 export const TCP_MAX_BUFFERED_BYTES = 2 * 1024 * 1024

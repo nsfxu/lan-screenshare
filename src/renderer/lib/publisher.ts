@@ -1,4 +1,4 @@
-import { STATS_INTERVAL_MS } from '../../shared/constants'
+import { SNAPSHOT_INTERVAL_MS, SNAPSHOT_MAX_CHARS, SNAPSHOT_WIDTH, STATS_INTERVAL_MS } from '../../shared/constants'
 import { AdaptiveController, encodingFor, getPreset, qualityLadder } from '../../shared/quality'
 import type {
   CodecSupport,
@@ -103,6 +103,8 @@ export class Publisher extends Emitter<Events> {
   private readonly statsTimer: number
   private readonly unsubscribe: () => void
   private tick = 0
+  private readonly snapshotTimer: number
+  private snapshotSoon: number | null = null
   private disposed = false
 
   constructor(
@@ -113,6 +115,7 @@ export class Publisher extends Emitter<Events> {
     super()
     this.unsubscribe = client.on('message', (m) => void this.onMessage(m))
     this.statsTimer = window.setInterval(() => void this.collectStats(), STATS_INTERVAL_MS)
+    this.snapshotTimer = window.setInterval(() => void this.sendSnapshot(), SNAPSHOT_INTERVAL_MS)
   }
 
   get sharing(): boolean {
@@ -231,6 +234,7 @@ export class Publisher extends Emitter<Events> {
     }
     this.emit('stream', stream)
     this.publishSharing()
+    this.snapshotShortly()
   }
 
   setPaused(paused: boolean): void {
@@ -243,6 +247,7 @@ export class Publisher extends Emitter<Events> {
     this.tcp?.setPaused(paused)
     this.tcpAudio?.setMuted(paused || this.audioMuted)
     this.publishSharing()
+    if (!paused) this.snapshotShortly()
   }
 
   /** Stop sending system audio while the screen keeps streaming. */
@@ -282,7 +287,37 @@ export class Publisher extends Emitter<Events> {
     this.stopSharing()
     this.unsubscribe()
     clearInterval(this.statsTimer)
+    clearInterval(this.snapshotTimer)
+    if (this.snapshotSoon) clearTimeout(this.snapshotSoon)
     this.removeAllListeners()
+  }
+
+/** Send a preview soon (the first frames after starting can still be black). */
+  private snapshotShortly(): void {
+    if (this.snapshotSoon) clearTimeout(this.snapshotSoon)
+    this.snapshotSoon = window.setTimeout(() => {
+      this.snapshotSoon = null
+      void this.sendSnapshot()
+    }, 1200)
+  }
+
+  /** Share a small JPEG preview of the current frame with the room. */
+  private async sendSnapshot(): Promise<void> {
+    const track = this.track
+    if (!track || this.paused || track.readyState !== 'live') return
+    try {
+      const bitmap = await new ImageCapture(track).grabFrame()
+      const width = Math.min(SNAPSHOT_WIDTH, bitmap.width)
+      const height = Math.max(1, Math.round((bitmap.height * width) / bitmap.width))
+      const canvas = new OffscreenCanvas(width, height)
+      canvas.getContext('2d')!.drawImage(bitmap, 0, 0, width, height)
+      bitmap.close()
+      const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.6 })
+      const image = await blobToDataUrl(blob)
+      if (this.track === track && image.length <= SNAPSHOT_MAX_CHARS) this.client.send({ type: 'snapshot', image })
+    } catch (err) {
+      log(`snapshot failed: ${String(err)}`)
+    }
   }
 
   /** The audio track viewers should currently receive (null = silence). */
@@ -584,4 +619,13 @@ export class Publisher extends Emitter<Events> {
       height: Number(out.frameHeight ?? 0)
     }
   }
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(blob)
+  })
 }

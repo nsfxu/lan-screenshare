@@ -40,6 +40,7 @@ type Events = {
   message: ServerMessage
   binary: ArrayBuffer
   latency: number
+  snapshots: ReadonlyMap<string, string>
 }
 
 const PING_INTERVAL_MS = 2000
@@ -56,6 +57,8 @@ export class RoomClient extends Emitter<Events> {
   selfId = ''
   room: RoomState | null = null
   participants: Participant[] = []
+  /** Latest stream previews by participant id. */
+  readonly snapshots = new Map<string, string>()
   messages: ChatMessage[] = []
   state: ConnectionState = 'connecting'
   /** Round trip to the room server in ms. */
@@ -170,6 +173,8 @@ export class RoomClient extends Emitter<Events> {
   private handle(msg: ServerMessage): void {
     switch (msg.type) {
       case 'welcome':
+        // The server re-sends current previews after welcoming us.
+        this.snapshots.clear()
         this.selfId = msg.selfId
         this.resumeToken = msg.resumeToken
         this.room = msg.room
@@ -190,11 +195,20 @@ export class RoomClient extends Emitter<Events> {
         break
       case 'participants':
         this.participants = msg.participants
+        // Drop previews of people who left or stopped sharing.
+        for (const id of [...this.snapshots.keys()]) {
+          if (!msg.participants.some((p) => p.id === id && p.stream)) this.snapshots.delete(id)
+        }
         this.emit('participants', msg.participants)
         break
       case 'chat':
         this.messages = [...this.messages, msg.message].slice(-500)
         this.emit('chat', this.messages)
+        break
+      case 'snapshot':
+        if (msg.image) this.snapshots.set(msg.from, msg.image)
+        else this.snapshots.delete(msg.from)
+        this.emit('snapshots', this.snapshots)
         break
       case 'chat-deleted':
         this.messages = this.messages.filter((m) => m.id !== msg.id)

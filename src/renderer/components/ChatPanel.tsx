@@ -86,7 +86,7 @@ export function ChatPanel({ messages, selfId, isHost, muted, onSend, onDelete, o
           return (
             <div key={m.id} className={`chat-message ${grouped ? 'grouped' : ''} ${m.userId === selfId ? 'own' : ''}`}>
               {!grouped ? (
-                <span className="avatar" style={{ background: m.color }}>
+                <span className="avatar" style={{ background: m.color }} aria-hidden="true">
                   {initials(m.name)}
                 </span>
               ) : (

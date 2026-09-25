@@ -17,6 +17,8 @@ import {
   PROTOCOL_VERSION,
   RESUME_GRACE_MS,
   ROOM_NAME_MAX_LENGTH,
+  SNAPSHOT_MAX_CHARS,
+  SNAPSHOT_MIN_INTERVAL_MS,
   TCP_MAX_BUFFERED_BYTES
 } from '../shared/constants'
 import type {
@@ -87,6 +89,9 @@ interface Seat {
   watchers: Map<string, Subscription>
   /** TCP relay counters for this seat's stream, reported back to it. */
   tcpStats: { sent: number; dropped: number }
+  /** Latest preview image of this seat's stream. */
+  snapshot: string | null
+  lastSnapshotAt: number
 }
 
 const HOST_ID = 'host'
@@ -384,6 +389,15 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
           this.send(sub.watcher.ws, { type: 'publisher-stats', from: me.id, encodeMs: msg.encodeMs })
         }
         return
+      case 'snapshot': {
+        if (!me.stream || !isSnapshot(msg.image)) return
+        const now = Date.now()
+        if (now - seat.lastSnapshotAt < SNAPSHOT_MIN_INTERVAL_MS) return
+        seat.lastSnapshotAt = now
+        seat.snapshot = msg.image
+        this.broadcast({ type: 'snapshot', from: me.id, image: msg.image }, seat)
+        return
+      }
       case 'watch': {
         const streamer = this.seats.get(msg.streamer)
         if (!streamer || streamer === seat) {
@@ -511,6 +525,10 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
     }
     seat.watchers.clear()
     seat.tcpStats = { sent: 0, dropped: 0 }
+    if (seat.snapshot) {
+      seat.snapshot = null
+      this.broadcast({ type: 'snapshot', from: seat.participant.id, image: null }, seat)
+    }
     if (announcement) this.systemMessage(announcement)
     this.broadcastParticipants()
     this.broadcastRoom()
@@ -673,7 +691,9 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       decoders,
       chatTimes: [],
       watchers: new Map(),
-      tcpStats: { sent: 0, dropped: 0 }
+      tcpStats: { sent: 0, dropped: 0 },
+      snapshot: null,
+      lastSnapshotAt: 0
     }
     this.seats.set(id, seat)
     return seat
@@ -703,6 +723,12 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       participants: this.participantList(),
       history: this.history
     })
+    // Late joiners get the current previews of everyone sharing.
+    for (const other of this.seats.values()) {
+      if (other !== seat && other.snapshot) {
+        this.send(seat.ws, { type: 'snapshot', from: other.participant.id, image: other.snapshot })
+      }
+    }
   }
 
   private fail(
@@ -798,6 +824,12 @@ function colorFor(seed: string): string {
   let h = 0
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0
   return COLORS[Math.abs(h) % COLORS.length]
+}
+
+const SNAPSHOT_PATTERN = /^data:image\/(jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/
+
+function isSnapshot(image: unknown): image is string {
+  return typeof image === 'string' && image.length <= SNAPSHOT_MAX_CHARS && SNAPSHOT_PATTERN.test(image)
 }
 
 function toBuffer(data: RawData): Buffer {

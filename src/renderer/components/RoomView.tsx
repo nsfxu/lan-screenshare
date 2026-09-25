@@ -39,6 +39,7 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
   const [myWatchers, setMyWatchers] = useState<ReadonlyMap<string, WatcherInfo>>(new Map())
   const [subs, setSubs] = useState<ReadonlyMap<string, Subscription>>(new Map(watches.all))
   const [focus, setFocus] = useState<string | null>(null)
+  const [snapshots, setSnapshots] = useState<ReadonlyMap<string, string>>(new Map(client.snapshots))
   const [hosted, setHosted] = useState<HostedRoom | null>(session.hosted)
   const [showStats, setShowStats] = useState(false)
   const [pickSource, setPickSource] = useState(false)
@@ -51,6 +52,7 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
     const offs = [
       client.on('room', setRoom),
       client.on('participants', setParticipants),
+      client.on('snapshots', (m) => setSnapshots(new Map(m))),
       client.on('state', setConnection),
       client.on('chat', (list) => {
         setMessages(list)
@@ -132,6 +134,7 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
   const byId = (id: string): Participant | undefined => participants.find((p) => p.id === id)
   const liveOthers = participants.filter((p) => p.stream && p.id !== client.selfId)
   const unwatched = liveOthers.filter((p) => !subs.has(p.id))
+  const watcherCount = (id: string): number => participants.filter((p) => p.watching.includes(id)).length
 
   // --- stage -----------------------------------------------------------------
   const tiles: string[] = [...(ownStream ? [SELF] : []), ...subs.keys()]
@@ -152,6 +155,7 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
         key={id}
         sub={subs.get(id)!}
         participant={byId(id)}
+        snapshot={snapshots.get(id) ?? null}
         showOverlay={settings.showStatsOverlay}
         focused={focus === id}
         small={small}
@@ -174,13 +178,29 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
             </button>
           </div>
         ) : (
-          <div className="placeholder-content">
-            <Icon name="screen" size={40} />
-            <h3>
-              {liveOthers.length === 1 ? '1 person is sharing' : `${liveOthers.length} people are sharing`}
-            </h3>
-            <p className="muted">Choose what you want to watch.</p>
-            <StreamPicker streams={liveOthers} onWatch={(id) => watches.watch(id)} />
+          <div className="live-now">
+            <div className="live-now-header">
+              <div>
+                <h3>{liveOthers.length === 1 ? '1 person is sharing' : `${liveOthers.length} people are sharing`}</h3>
+                <p className="muted small">Nothing plays until you choose. Pick what you want to watch.</p>
+              </div>
+              {liveOthers.length > 1 && (
+                <button className="btn" onClick={() => liveOthers.forEach((p) => watches.watch(p.id))}>
+                  <Icon name="play" /> Watch all
+                </button>
+              )}
+            </div>
+            <div className="stream-cards">
+              {liveOthers.map((p) => (
+                <StreamCard
+                  key={p.id}
+                  participant={p}
+                  snapshot={snapshots.get(p.id) ?? null}
+                  watchers={watcherCount(p.id)}
+                  onWatch={() => watches.watch(p.id)}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -224,8 +244,10 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
         <main className="stage">
           {tiles.length > 0 && unwatched.length > 0 && (
             <div className="stream-bar">
-              <span className="muted small">Also live:</span>
-              <StreamPicker streams={unwatched} onWatch={(id) => watches.watch(id)} compact />
+              <span className="muted small">Also live</span>
+              {unwatched.map((p) => (
+                <StreamChip key={p.id} participant={p} snapshot={snapshots.get(p.id) ?? null} onWatch={() => watches.watch(p.id)} />
+              ))}
             </div>
           )}
           <div className="stage-area">{stage}</div>
@@ -322,23 +344,57 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
 
 // ---------------------------------------------------------------------------
 
-function StreamPicker({ streams, onWatch, compact }: { streams: Participant[]; onWatch(id: string): void; compact?: boolean }) {
+/** Preview card for a live stream the user isn't watching yet. */
+function StreamCard({
+  participant: p,
+  snapshot,
+  watchers,
+  onWatch
+}: {
+  participant: Participant
+  snapshot: string | null
+  watchers: number
+  onWatch(): void
+}) {
   return (
-    <div className={`stream-picker ${compact ? 'compact' : ''}`}>
-      {streams.map((p) => (
-        <button key={p.id} className="stream-chip" onClick={() => onWatch(p.id)} title={`Watch ${p.name}'s stream`}>
-          <span className="avatar tiny" style={{ background: p.color }}>
-            {p.name.slice(0, 1).toUpperCase()}
-          </span>
-          <span className="stream-chip-name">{p.name}</span>
-          {p.stream?.audio && <Icon name="volume" size={12} />}
-          {p.stream?.paused && <span className="muted small">paused</span>}
-          <span className="stream-chip-action">
-            <Icon name="play" size={12} /> Watch
-          </span>
-        </button>
-      ))}
-    </div>
+    <button className="stream-card" onClick={onWatch} aria-label={`Watch ${p.name}'s stream`}>
+      <div className="stream-card-thumb">
+        {snapshot ? <img src={snapshot} alt="" /> : <Icon name="screen" size={32} />}
+        {p.stream?.paused && <span className="stream-card-flag">Paused</span>}
+        <span className="stream-card-play" aria-hidden="true">
+          <Icon name="play" size={18} /> Watch
+        </span>
+      </div>
+      <div className="stream-card-info">
+        <span className="avatar tiny" style={{ background: p.color }} aria-hidden="true">
+          {p.name.slice(0, 1).toUpperCase()}
+        </span>
+        <span className="stream-card-name">{p.name}</span>
+        {p.stream?.audio && <Icon name="volume" size={13} className="muted" />}
+        <span className="muted small">{watchers === 0 ? 'no viewers' : `${watchers} watching`}</span>
+      </div>
+    </button>
+  )
+}
+
+/** Compact "also live" entry above the stage. */
+function StreamChip({ participant: p, snapshot, onWatch }: { participant: Participant; snapshot: string | null; onWatch(): void }) {
+  return (
+    <button className="stream-chip" onClick={onWatch} title={`Watch ${p.name}'s stream`}>
+      {snapshot ? (
+        <img className="stream-chip-thumb" src={snapshot} alt="" />
+      ) : (
+        <span className="avatar tiny" style={{ background: p.color }} aria-hidden="true">
+          {p.name.slice(0, 1).toUpperCase()}
+        </span>
+      )}
+      <span className="stream-chip-name">{p.name}</span>
+      {p.stream?.audio && <Icon name="volume" size={12} />}
+      {p.stream?.paused && <span className="muted small">paused</span>}
+      <span className="stream-chip-action">
+        <Icon name="play" size={12} /> Watch
+      </span>
+    </button>
   )
 }
 
@@ -404,8 +460,9 @@ function RemoteTile({
   focused,
   small,
   onFocus,
+  snapshot,
   onStop
-}: TileChrome & { sub: Subscription; participant: Participant | undefined; onStop(): void }) {
+}: TileChrome & { sub: Subscription; participant: Participant | undefined; snapshot: string | null; onStop(): void }) {
   const [stream, setStream] = useState<MediaStream | null>(sub.stream)
   const [state, setState] = useState<SubscriptionState>(sub.state)
   const [stats, setStats] = useState<ViewerStats | null>(null)
@@ -428,10 +485,13 @@ function RemoteTile({
     )
   } else if (state === 'negotiating' || !stream) {
     placeholder = (
-      <div className="placeholder-content">
-        <div className="spinner" />
-        <h3>Connecting to {name}…</h3>
-      </div>
+      <>
+        {snapshot && <div className="placeholder-bg" style={{ backgroundImage: `url(${snapshot})` }} />}
+        <div className="placeholder-content">
+          <div className="spinner" />
+          <h3>Connecting to {name}…</h3>
+        </div>
+      </>
     )
   }
 
@@ -456,7 +516,7 @@ function RemoteTile({
     <div className={`tile ${focused ? 'focused' : ''} ${small ? 'small' : ''}`}>
       <div className="tile-bar">
         <span className="tile-name">
-          <span className="avatar tiny" style={{ background: participant?.color }}>
+          <span className="avatar tiny" style={{ background: participant?.color }} aria-hidden="true">
             {name.slice(0, 1).toUpperCase()}
           </span>
           {name}
@@ -476,6 +536,7 @@ function RemoteTile({
         placeholder={placeholder}
         overlay={overlay}
         audioAvailable={!!participant?.stream?.audio && state === 'streaming'}
+        volumeKey={participant?.name}
       />
     </div>
   )

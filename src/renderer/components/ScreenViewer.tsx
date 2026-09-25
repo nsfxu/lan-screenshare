@@ -10,18 +10,23 @@ interface Props {
   local?: boolean
   /** Show volume controls; false greys them out (host is not sending audio). */
   audioAvailable?: boolean
+  /** Remember volume under this key (e.g. per streamer); defaults to one shared setting. */
+  volumeKey?: string
 }
 
 const MIN_ZOOM = 1
 const MAX_ZOOM = 8
 const VOLUME_KEY = 'screenshare.volume'
 
-function loadVolume(): { volume: number; muted: boolean } {
-  try {
-    const saved = JSON.parse(localStorage.getItem(VOLUME_KEY) ?? 'null') as { volume: number; muted: boolean } | null
-    if (saved && typeof saved.volume === 'number') return { volume: Math.min(1, Math.max(0, saved.volume)), muted: !!saved.muted }
-  } catch {
-    // storage unavailable
+/** Saved volume for `key`, falling back to the last volume used anywhere. */
+function loadVolume(key: string): { volume: number; muted: boolean } {
+  for (const k of [key, VOLUME_KEY]) {
+    try {
+      const saved = JSON.parse(localStorage.getItem(k) ?? 'null') as { volume: number; muted: boolean } | null
+      if (saved && typeof saved.volume === 'number') return { volume: Math.min(1, Math.max(0, saved.volume)), muted: !!saved.muted }
+    } catch {
+      // storage unavailable
+    }
   }
   return { volume: 1, muted: false }
 }
@@ -32,7 +37,7 @@ function loadVolume(): { volume: number; muted: boolean } {
  * a full-screen toggle. Viewers also get volume/mute for the host's system
  * audio (remembered on this machine); the host's own preview is always muted.
  */
-export function ScreenViewer({ stream, placeholder, overlay, local, audioAvailable }: Props) {
+export function ScreenViewer({ stream, placeholder, overlay, local, audioAvailable, volumeKey }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [zoom, setZoom] = useState(1)
@@ -40,19 +45,23 @@ export function ScreenViewer({ stream, placeholder, overlay, local, audioAvailab
   const [dragging, setDragging] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
   const dragStart = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null)
-  const [audio, setAudio] = useState(loadVolume)
+  const storageKey = volumeKey ? `${VOLUME_KEY}:${volumeKey}` : VOLUME_KEY
+  const [audio, setAudio] = useState(() => loadVolume(storageKey))
 
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
     video.muted = !!local || audio.muted
     video.volume = audio.volume
+    if (local) return
     try {
+      localStorage.setItem(storageKey, JSON.stringify(audio))
+      // Also becomes the starting volume for streams without their own setting.
       localStorage.setItem(VOLUME_KEY, JSON.stringify(audio))
     } catch {
       // storage unavailable
     }
-  }, [audio, local, stream])
+  }, [audio, local, stream, storageKey])
 
   useEffect(() => {
     const video = videoRef.current

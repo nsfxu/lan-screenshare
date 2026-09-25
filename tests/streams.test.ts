@@ -392,3 +392,58 @@ describe('multi-stream: TCP fallback relay', () => {
     expect(host.c.messages.some((m) => m.type === 'tcp-feedback')).toBe(false)
   })
 })
+
+describe('multi-stream: previews', () => {
+  const IMG = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAg='
+
+  it('shares a streamer’s preview with everyone, including late joiners', async () => {
+    const port = await startServer()
+    const host = await join(port, 'Host', true)
+    const alice = await join(port, 'Alice')
+
+    share(alice.c)
+    await host.c.wait('room', (m) => m.room.streams === 1)
+    alice.c.send({ type: 'snapshot', image: IMG })
+    expect(await host.c.wait('snapshot')).toMatchObject({ from: alice.id, image: IMG })
+    // The sender doesn't get its own preview echoed back.
+    await sleep(100)
+    expect(alice.c.messages.some((m) => m.type === 'snapshot')).toBe(false)
+
+    const carol = await join(port, 'Carol')
+    expect(await carol.c.wait('snapshot')).toMatchObject({ from: alice.id, image: IMG })
+  })
+
+  it('rejects previews from non-sharers, invalid images and floods', async () => {
+    const port = await startServer()
+    const host = await join(port, 'Host', true)
+    const alice = await join(port, 'Alice')
+
+    alice.c.send({ type: 'snapshot', image: IMG }) // not sharing yet
+    share(alice.c)
+    await host.c.wait('room', (m) => m.room.streams === 1)
+    alice.c.send({ type: 'snapshot', image: 'javascript:alert(1)' })
+    alice.c.send({ type: 'snapshot', image: 'data:image/svg+xml;base64,PHN2Zz4=' })
+    alice.c.send({ type: 'snapshot', image: 'data:image/jpeg;base64,' + 'A'.repeat(100_000) })
+    alice.c.send({ type: 'snapshot', image: IMG }) // accepted
+    alice.c.send({ type: 'snapshot', image: IMG }) // too soon: dropped
+    await sleep(200)
+    expect(host.c.messages.filter((m) => m.type === 'snapshot')).toHaveLength(1)
+  })
+
+  it('clears the preview when the stream ends', async () => {
+    const port = await startServer()
+    const host = await join(port, 'Host', true)
+    const alice = await join(port, 'Alice')
+
+    share(alice.c)
+    await host.c.wait('room', (m) => m.room.streams === 1)
+    alice.c.send({ type: 'snapshot', image: IMG })
+    await host.c.wait('snapshot', (m) => m.image === IMG)
+    alice.c.send({ type: 'stream-state', sharing: false, paused: false, audio: false })
+    expect(await host.c.wait('snapshot', (m) => m.image === null)).toMatchObject({ from: alice.id })
+
+    const carol = await join(port, 'Carol')
+    await sleep(150)
+    expect(carol.c.messages.some((m) => m.type === 'snapshot')).toBe(false)
+  })
+})

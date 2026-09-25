@@ -11,6 +11,11 @@ declare global {
     readonly readable: ReadableStream<T>
   }
 
+  // Supported by Chromium, missing from lib.dom.
+  interface ImageCapture {
+    grabFrame(): Promise<ImageBitmap>
+  }
+
   class MediaStreamTrackGenerator<T = VideoFrame> extends MediaStreamTrack {
     constructor(init: { kind: 'video' | 'audio' })
     readonly writable: WritableStream<T>
