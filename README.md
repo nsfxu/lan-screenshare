@@ -1,60 +1,70 @@
 # ScreenShare — LAN screen sharing with rooms and chat
 
-A desktop app (Electron + React + TypeScript) for real-time screen sharing and chat between 2–10 people on a LAN or VPN. Rooms are discovered automatically over mDNS. They can be public or protected by a PIN, and the stream runs at 1080p60 with hardware encoding. Nothing leaves your network: no accounts, no cloud, no STUN/TURN.
+A desktop app (Electron + React + TypeScript) for real-time screen sharing and chat between 2–10 people on a LAN or VPN. **Anyone in a room can share their screen**, several people can share at once, and everyone chooses which streams to watch. Rooms are discovered automatically over mDNS and can be public or protected by a PIN. Streams run at up to 1080p60 with hardware encoding, plus system audio. Nothing leaves your network: no accounts, no cloud, no STUN/TURN.
 
 ## Quick start
 
 ```bash
 npm install
 npm run dev          # run with hot reload
-npm test             # unit + integration tests (server, PIN lockout, adaptive quality, TLS, codecs)
+npm test             # unit + integration tests (server routing, PIN lockout, adaptive quality, budgets, TLS, codecs)
 npm run typecheck
 npm run dist:win     # Windows installer (.exe, NSIS)  → release/<version>/
 npm run dist:mac     # macOS disk image (.dmg), must run on a Mac
 ```
 
-To try host and viewer on one machine, start two isolated instances:
+To try several people on one machine, start isolated instances:
 
 ```bash
-npx electron . --profile=host
-npx electron . --profile=viewer
+npx electron . --profile=alice
+npx electron . --profile=bob
 ```
 
 (`--profile=<name>` gives each instance its own settings and identity. Run `npm run build` first.)
 
+## Using it
+
+* **Create a room** to host it (public, or private with a PIN). The host's app runs the room's server.
+* **Share your screen** from the toolbar. Anyone can, at any time, and optionally with system audio.
+* **Nothing plays automatically.** Live streams appear as preview cards (a thumbnail refreshed every 5 s). Click **Watch**, or **Watch all**, to open them. Watched streams play in a grid. Focus one to put it in the spotlight while the others keep playing in a strip. Every watched stream plays audio, and each has its own remembered volume.
+* The **host** can stop anyone's stream, kick people, mute the chat and delete messages.
+
 ## How it works
 
 ```
- Host machine                                             Viewer machines
-┌──────────────────────────────────────────────┐
-│ Renderer                                     │   WebRTC (UDP, DTLS-SRTP)      ┌───────────┐
-│  getDisplayMedia ─► HW encoder ─► RTCPeer ×N ├───────────────────────────────►│ <video>   │
-│  (DXGI / ScreenCaptureKit)                   │   one PeerConnection/viewer    │           │
-│  WebCodecs encoder (TCP fallback) ──┐        │                                │           │
-│                                     ▼        │   wss:// (TLS, self-signed,    │           │
-│ Main process: RoomServer  ◄── ws ───┘        │   fingerprint-pinned)          │           │
-│  • GET /info (discovery probe)               ├───────────────────────────────►│ chat, PIN │
-│  • /ws: PIN auth, chat, presence, signaling, │   chat · presence · signaling  │ signaling │
-│    moderation, TCP video relay               │   + TCP video fallback         │           │
-│  • mDNS advert  _lanshare._tcp               │                                └───────────┘
-└──────────────────────────────────────────────┘
+  Alice (sharing)                       Host machine                           Bob (watching Alice + Host)
+┌────────────────────────┐   ┌─────────────────────────────────────┐   ┌──────────────────────────┐
+│ Publisher              │   │ Main process: RoomServer            │   │ WatchManager             │
+│  capture ─► HW encoder │   │  • GET /info (discovery probe)      │   │  Subscription(Alice) ──┐ │
+│  one RTCPeerConnection │   │  • /ws: PIN, chat, presence,        │   │  Subscription(Host)  ──┤ │
+│  per watcher ──────────┼───┼──── signaling only between a  ──────┼──►│  tiles / spotlight ◄───┘ │
+│                        │   │    streamer and its watchers        │   │                          │
+│  WebRTC (UDP) media ───┼───┼──────────── direct, peer to peer ───┼──►│                          │
+│  TCP fallback chunks ──┼──►│  • TCP relay, tagged per streamer ──┼──►│                          │
+└────────────────────────┘   │  • mDNS advert _lanshare._tcp       │   └──────────────────────────┘
+                             │ Renderer: its own Publisher / WatchManager like everyone else         │
+                             └─────────────────────────────────────┘
 ```
 
-* **Relay model.** The host runs a small relay server (`src/main/server.ts`) for its room. Viewers only talk to the host and never to each other. Video goes host → viewer over WebRTC, with one `RTCPeerConnection` per viewer. Each viewer therefore gets its own congestion control and its own adaptive quality, and a slow viewer never degrades the others.
+* **Streaming model.** Each participant has a `Publisher` (their own share) and a `WatchManager` (the streams they chose to watch, one `Subscription` each). Watching is explicit. The room server keeps track of who watches whom, relays WebRTC signaling **only between a streamer and its current watchers**, and never carries WebRTC media: video goes directly from each streamer to each watcher, with one `RTCPeerConnection` per watcher. Every watcher therefore gets its own congestion control and adaptive quality, and a slow watcher never degrades anyone else. Signaling messages name the streamer they belong to, so two people watching each other keep their two connections apart.
+* **Only send what's shown.** Each watcher reports the pixel height it actually displays a stream at: tile size × zoom × screen DPI, rounded up to 360/480/720/1080/1440/2160. The streamer caps that connection's resolution and scales its bitrate with the pixel count. A small grid tile costs ~1.7 Mbps instead of 15. Spotlight, fullscreen or zooming in raises it back to full quality within a second.
+* **Upload budget.** A streamer's total upload is limited by a setting (default 100 Mbps, "Unlimited" for wired gigabit, lower for Wi-Fi/VPN) and split fairly between watchers (max-min fair share). Watchers that need little, such as small tiles, get what they need, and the rest is shared by bigger views. It applies immediately, including mid-session from the in-room Settings.
+* **Previews.** Each streamer sends a 320 px JPEG (~10–15 KB) every 5 s. The server accepts previews only from people who are sharing, checks their type and size, rate-limits them, sends the current ones to late joiners, and clears them when a stream ends.
 * **Capture.** Chromium's capture stack uses **DXGI Desktop Duplication** on Windows (Windows.Graphics.Capture for single windows) and **ScreenCaptureKit** on macOS. Frames stay on the GPU and go to the hardware encoder.
-* **Codec selection** (`src/shared/codecs.ts`). At startup the app asks `MediaCapabilities` which codecs are hardware-accelerated (`powerEfficient`), and each viewer reports its decoders when it joins. Automatic mode prefers hardware H.264, then H.265 if both ends have hardware support, then software H.264, VP9 and VP8. The Settings panel lets you force a codec, and it shows the detected hardware support.
-* **Transport.** WebRTC media over UDP comes first, and ICE also tries TCP candidates. If WebRTC hasn't connected within 8 s, or it fails, the viewer switches to the **TCP fallback**. In fallback the host encodes with WebCodecs (hardware H.264), the room's WebSocket carries the encoded chunks, and the viewer decodes them into a `MediaStreamTrack`. Relay backpressure drops frames up to the next keyframe so the stream stays live.
-* **System audio.** When sharing, the host can include everything playing on the computer: WASAPI loopback on Windows, ScreenCaptureKit on macOS 13+. On Windows this is always the whole system mix, even when a single window is shared. Audio travels as a second WebRTC track in the same stream, so WebRTC keeps it in lip-sync with the video. Opus is set up for music rather than voice: stereo, 128 kbps, in-band FEC, no DTX, and no echo cancellation, noise suppression or auto-gain. The host can mute audio without stopping the video, and pausing silences it too. Viewers get a volume slider and a mute button, and the setting is remembered. On the TCP fallback, audio is encoded as Opus with WebCodecs and follows the same path as the video.
-* **Surround output devices on Windows** (`native/win-audio-capture`). Chromium opens WASAPI loopback as stereo. If the default output device runs in 5.1 or 7.1 mode, which is common with gaming headsets, Windows rejects that with `AUDCLNT_E_UNSUPPORTED_FORMAT`. In that case the app starts a small bundled helper instead. It captures loopback in the device's own mix format and downmixes to stereo (centre and surrounds at −3 dB, LFE dropped). The PCM goes through the main process to the renderer, which turns it into a normal `MediaStreamTrack` for WebRTC and the TCP fallback. The helper is compiled with the C# compiler that ships with Windows (`npm run build:native`, which runs automatically before `dev` and `build`), so it needs no SDK or NuGet packages.
-* **Adaptive quality** (`src/shared/quality.ts`). Every second the controller reads packet loss, RTT and WebRTC's `qualityLimitationReason` for each viewer and moves along the ladder **Native60 → 1080p60 (15 Mbps) → 720p60 (10) → 720p30 (5) → 480p30 (2.5)**. It uses hysteresis, and when an upgrade fails the wait before the next one grows exponentially. Chromium's own per-frame adaptation still runs underneath.
-* **Discovery** (`src/main/roomManager.ts`, `src/utils/mdns.ts`). Each room advertises `_lanshare._tcp` over mDNS using a pure-JS responder, so Bonjour/Avahi is not required. Every 3 s, each room found by mDNS or added by hand is polled at `GET /info` for live data such as viewer count, privacy and sharing state. Rooms appear and disappear on their own. Use **Connect by IP** for VPNs and other subnets, where multicast doesn't reach.
+* **Codec selection** (`src/shared/codecs.ts`). At startup the app asks `MediaCapabilities` which codecs are hardware-accelerated (`powerEfficient`), and every participant reports its decoders when it joins. Automatic mode prefers hardware H.264, then H.265 if both ends have hardware support, then software H.264, VP9 and VP8. The choice is made per watcher, and the Settings panel can force a codec.
+* **Transport.** WebRTC media over UDP comes first, and ICE also tries TCP candidates. If a watch hasn't connected within 8 s, or it fails, that subscription switches to the **TCP fallback**. The streamer encodes once with WebCodecs (hardware H.264 + Opus). The room's WebSocket carries the chunks, and the server tags each packet with the streamer's slot so each watcher's app sends it to the right tile. Per-watcher backpressure drops video up to the next keyframe so the stream stays live.
+* **System audio.** Sharing can include everything playing on the computer: WASAPI loopback on Windows, ScreenCaptureKit on macOS 13+. On Windows this is always the whole system mix, even when a single window is shared. Audio is a second WebRTC track in the same stream, which keeps it in lip-sync with the video. Opus is tuned for music rather than voice: stereo, 128 kbps, in-band FEC, no DTX, and no echo cancellation, noise suppression or auto-gain. The streamer can mute audio without stopping the video, and pausing silences it too.
+* **Surround output devices on Windows** (`native/win-audio-capture`). Chromium opens WASAPI loopback as stereo, and Windows rejects that (`AUDCLNT_E_UNSUPPORTED_FORMAT`) when the default output device runs in 5.1/7.1 mode, which is common with gaming headsets. The app then starts a small bundled helper instead. It captures in the device's own mix format and downmixes to stereo (centre and surrounds at −3 dB, LFE dropped), and its output feeds the same audio pipeline as a normal track. It is compiled with the C# compiler that ships with Windows (`npm run build:native`, run automatically before `dev` and `build`).
+* **Adaptive quality** (`src/shared/quality.ts`). Every second each connection's controller reads packet loss, RTT and WebRTC's `qualityLimitationReason`, and moves along the ladder **Native60 → 1080p60 (15 Mbps) → 720p60 (10) → 720p30 (5) → 480p30 (2.5)**, with hysteresis and exponential back-off after failed upgrades. The view-size cap and the budget apply on top.
+* **Discovery** (`src/main/roomManager.ts`, `src/utils/mdns.ts`). Rooms advertise `_lanshare._tcp` over mDNS using a pure-JS responder, so Bonjour/Avahi is not required. Every 3 s, known rooms are polled at `GET /info` for live data (people, privacy, number of live streams). Use **Connect by IP** for VPNs and other subnets.
+* **Reconnection.** After a network drop the app reconnects and resumes the same seat without the PIN (within 30 s). It re-announces its own stream, and every watched stream renegotiates automatically. If a watched streamer drops and comes back within 30 s, watchers pick their stream up again by themselves.
 
 ## Security
 
-* **Private rooms** need a 4–6 digit PIN, generated with a CSPRNG. It exists only in memory and is never written to disk. The host can switch privacy, regenerate the PIN or set a custom one during a session, and people already in the room stay connected. **Three wrong PINs lock the source address out for 5 minutes.** PINs are compared in constant time.
-* **Encryption.** Video is always encrypted with DTLS-SRTP (WebRTC). Chat and signaling go over **TLS (wss://)**, which is on by default. The host uses a self-signed certificate that stays the same across sessions. Its fingerprint is advertised over mDNS or recorded on the first probe, and the app accepts a self-signed certificate only if the fingerprint matches (`setCertificateVerifyProc`).
-* **Host authority.** The host's own UI authenticates with a random per-room token. The server checks every host-only action (kick, delete message, mute chat, end room, sharing state), and viewers can't send signaling to each other or inject video. A kicked client can't rejoin that session.
-* **Viewer restrictions.** Viewers can't control the host. The app offers no recording or chat export, and while a viewer is watching, its window is hidden from OS screen capture (`setContentProtection`).
+* **Private rooms** need a 4–6 digit PIN, generated with a CSPRNG. It exists only in memory and is never written to disk. The host can switch privacy, regenerate the PIN or set a custom one mid-session, and people already in the room stay connected. **Three wrong PINs lock the source address out for 5 minutes.** PINs are compared in constant time.
+* **Encryption.** Media is always DTLS-SRTP encrypted (WebRTC). Chat, signaling, previews and the TCP fallback use **TLS (wss://)**, on by default. The host uses a self-signed certificate that stays the same across sessions. Its fingerprint is advertised over mDNS or recorded on the first probe, and the app accepts a self-signed certificate only if the fingerprint matches (`setCertificateVerifyProc`).
+* **Authority.** The host's own UI authenticates with a random per-room token. The server enforces every host-only action (kick, stop someone's stream, delete message, mute chat, end room). Signaling is only relayed within an existing streamer ↔ watcher pair and only for that streamer's connection. Only people who are sharing can send media or previews. A kicked client can't rejoin that session.
+* **No recording.** The app offers no recording or chat export, and while you're watching streams your window is hidden from OS screen capture (`setContentProtection`).
 
 ## Feature map
 
@@ -62,46 +72,55 @@ npx electron . --profile=viewer
 |---|---|
 | Room list, live refresh, search, manual IP, auto-rejoin | `HomeScreen.tsx`, `roomManager.ts`, `App.tsx` |
 | Create room, public/private, auto PIN, copy PIN | `Dialogs.tsx` (CreateRoomDialog), `HostControls.tsx` (AccessPanel) |
-| Screen view with zoom (wheel), pan (drag), fullscreen, FPS/latency | `ScreenViewer.tsx`, `RoomView.tsx` |
-| Chat with timestamps, avatars, emoji, history | `ChatPanel.tsx`, server history (in memory, 500 messages) |
-| Viewer list, status, kick | `ViewerList.tsx` |
-| Pause/resume, change source, stop, end room, live stats (bandwidth, RTT, FPS, encode time, encoder, CPU, memory) | `RoomView.tsx`, `HostControls.tsx`, `hostStreamer.ts` |
-| System audio (share toggle, host mute, viewer volume) | `hostStreamer.ts`, `tcpStream.ts`, `ScreenViewer.tsx`, `Dialogs.tsx` |
-| Chat moderation (delete, mute) | `ChatPanel.tsx`, `server.ts` |
-| Reconnection | `roomClient.ts` resumes the same seat without the PIN within 30 s; the stream renegotiates automatically |
-| Minimize/close | Streaming keeps running when minimized (optional pause-on-minimize setting). Closing asks for confirmation, then ends the room and tells viewers |
+| Anyone can share; explicit watching; several streams at once | `publisher.ts`, `subscription.ts`, `watches.ts`, `server.ts` |
+| Live-now preview cards, Watch all, "also live" bar, grid + spotlight, per-stream volume | `RoomView.tsx`, `ScreenViewer.tsx` |
+| Zoom (wheel), pan (drag), fullscreen, FPS/latency overlay per tile | `ScreenViewer.tsx`, `RoomView.tsx` |
+| Chat with timestamps, avatars, emoji, history, moderation | `ChatPanel.tsx`, `server.ts` (in memory, 500 messages) |
+| People list: who shares, who watches whom, per-watcher stats, kick / stop stream | `ViewerList.tsx` |
+| Pause/resume, change source, stop sharing, live stats (bandwidth, RTT, FPS, encode time, encoder, CPU, memory) | `RoomView.tsx`, `HostControls.tsx`, `publisher.ts` |
+| System audio (share toggle, mute, per-stream volume) | `publisher.ts`, `nativeAudio.ts`, `tcpStream.ts`, `ScreenViewer.tsx` |
+| Per-watcher view-size cap and upload budget | `shared/quality.ts`, `publisher.ts`, `subscription.ts` |
+| Reconnection | `roomClient.ts`, `subscription.ts`, `watches.ts` |
+| Minimize/close | Streaming keeps running when minimized (optional pause-on-minimize setting). Closing while hosting asks for confirmation, then ends the room for everyone |
 | Logs | `%APPDATA%\ScreenShare\logs\screenshare.log`, `~/Library/Logs/ScreenShare/screenshare.log` (Settings → Open logs) |
 
-## Measured results (Windows 10, NVIDIA GPU, both instances on one machine)
+## Measured results (Windows 10, NVIDIA GPU, all instances on one machine)
 
 | Scenario | Result |
 |---|---|
-| WebRTC, 1 viewer | 1920×1080 @ 57–58 fps, H.265 through `MediaFoundationVideoEncodeAccelerator (NVIDIA HEVC Encoder MFT)`, encode 4.3 ms/frame, estimated glass-to-glass latency ~30–65 ms |
-| WebRTC, 2 viewers | Both at 1080p ~58 fps; host ~5 % of total CPU (OS-measured, 24 threads) |
-| TCP fallback | 1920×1080 @ 57 fps, WebCodecs hardware H.264 |
-| Real system audio through a 7.1 headset (native helper) | The 880 Hz tone played on the PC was received as 879 Hz on WebRTC and on TCP (stereo). Changing source restarts the helper cleanly (always exactly one running), and it exits when the room ends |
-| Audio (WebRTC and TCP) | A 440 Hz test tone was received as 439 Hz at the viewer. WebRTC used ~160 kbps next to 1080p57 video; TCP carried stereo Opus at 128 kbps. Host mute and pause silence it, and unmuting brings it back without renegotiating |
-| PIN, kick, privacy change, end room, mDNS discovery | Tested end to end |
+| One stream, WebRTC | 1920×1080 @ 57–58 fps, H.265 through `MediaFoundationVideoEncodeAccelerator (NVIDIA HEVC Encoder MFT)`, encode 4.3 ms/frame, estimated glass-to-glass latency ~30–65 ms |
+| Hardware encoder capacity | 8 simultaneous 1080p hardware encodes (H.264 and H.265) at ~57 fps each, ~13 % total CPU, while decoding 8 streams at the same time |
+| Two people sharing, a third watching both | Both at 1080p ~57 fps; the two streamers also watched each other at the same time |
+| View-size cap | Two grid tiles (≈276 px tall) → each stream sent at 640×360. Spotlight (505 px) → 1280×720. Zooming to 212 % → 1920×1080. Thumbnail strip stays at 640×360 |
+| Upload budget | A streamer's upload went from 6.2–7.5 Mbps to 2.3–3.5 Mbps with a 3 Mbps limit, applied mid-session |
+| TCP fallback | Two streams at once over TCP, each routed to its tile by slot, 57–58 fps, WebCodecs hardware H.264 |
+| Audio | 440 Hz test tone received as 439 Hz (WebRTC ~160 kbps, TCP stereo Opus 128 kbps). Real system audio through a 7.1 headset via the native helper: 880 Hz received as 879 Hz |
+| Reconnection | A forced connection drop showed "Reconnecting…", then the app reconnected and both watched streams were renegotiated within ~45 ms |
+| Moderation | Host stopping a stream removes it for everyone and notifies the streamer; when the streamer shares again, watchers resume automatically |
+| PIN, lockout, kick, privacy change, end room, mDNS discovery, previews for late joiners | Tested end to end |
 
-Automatic codec selection picked H.265 on this machine because it reported hardware HEVC encoding but not hardware H.264 encoding for WebRTC.
+Automatic codec selection picked H.265 on this machine because the driver reports hardware HEVC encoding as power-efficient but not H.264, even though hardware H.264 encoding works when forced.
 
 ## Known limitations
 
 * Latency is an **estimate** on WebRTC: capture + encode + ½ RTT + jitter buffer + decode + display. On the TCP path it is measured with the host's clock, synchronised over the WebSocket.
+* On the TCP fallback, a streamer encodes once for all TCP watchers, so the view-size cap doesn't apply there (the budget does).
 * The macOS build has not been compiled or run: it has to be built on a Mac, and distributing it needs code signing and notarisation. On first use the app asks for Screen Recording and Local Network permissions.
-* The adaptive controller is unit-tested. Real packet loss wasn't simulated because all testing ran over loopback.
+* **macOS audio** depends on Chromium's ScreenCaptureKit loopback behind feature flags (`MacLoopbackAudioForScreenShare`) that the app turns on. It needs macOS 13+ and is untested. If it fails, sharing continues with video only.
+* The adaptive controller and budget split are unit-tested. Real packet loss wasn't simulated, since all testing ran over loopback.
 * Discovery depends on multicast. On VPNs, use Connect by IP (default port 47800, or the next free one).
-* **macOS audio** depends on Chromium's ScreenCaptureKit loopback, which is behind feature flags (`MacLoopbackAudioForScreenShare`) that the app turns on. It needs macOS 13+ and hasn't been tested yet. If it fails, sharing continues with video only.
-* Out of scope for v1, as specified: remote control, microphone audio, multi-monitor, recording, Linux.
+* All participants must run the same app version (protocol v3).
+* Out of scope: remote control, microphone audio, multi-monitor capture in one stream, recording, Linux.
 
 ## Project layout
 
 ```
 src/
-  main/        index.ts (app, IPC, security), roomManager.ts, server.ts, screenCapture.ts, settings.ts, logger.ts
+  main/        index.ts (app, IPC, security), roomManager.ts, server.ts, screenCapture.ts, nativeAudio.ts, settings.ts, logger.ts
   preload/     index.ts (contextBridge API)
-  renderer/    App.tsx, components/*, lib/ (roomClient, hostStreamer, viewerReceiver, tcpStream, codecs, session)
-  shared/      types.ts, constants.ts, quality.ts, codecs.ts, ipc.ts
+  renderer/    App.tsx, components/*, lib/ (roomClient, publisher, subscription, watches, tcpStream, nativeAudio, codecs, session)
+  shared/      types.ts (protocol v3), constants.ts, quality.ts, codecs.ts, ipc.ts
   utils/       mdns.ts, crypto.ts, network.ts
-tests/         server, crypto, quality, network/TLS/codec tests (vitest)
+native/        win-audio-capture (WASAPI loopback helper, C#)
+tests/         server, streams (multi-stream routing), crypto, quality, network/TLS/codec tests (vitest)
 ```

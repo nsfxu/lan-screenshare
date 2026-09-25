@@ -188,3 +188,77 @@ export class AdaptiveController {
     this.lastChange = now
   }
 }
+
+// ---------------------------------------------------------------------------
+// Per-watcher limits: what a watcher actually displays, and the streamer's
+// total upload budget shared between its watchers.
+// ---------------------------------------------------------------------------
+
+/** Heights a watcher's view is rounded up to (keeps renegotiation rare). */
+export const VIEW_HEIGHT_STEPS = [360, 480, 720, 1080, 1440, 2160] as const
+
+/** Never ask an encoder for less than this. */
+export const MIN_VIDEO_BITRATE = 300_000
+
+/** Round a displayed pixel height up to the next step (null = full quality). */
+export function viewHeightStep(pixels: number | null): number | null {
+  if (pixels === null || !Number.isFinite(pixels) || pixels <= 0) return null
+  return VIEW_HEIGHT_STEPS.find((s) => s >= pixels) ?? null
+}
+
+export interface WatcherLimits {
+  /** Height (pixels) the watcher displays the stream at; null = full quality. */
+  viewHeight: number | null
+  /** This watcher's share of the streamer's upload budget (bits/s); null = unlimited. */
+  bitrateBudget: number | null
+}
+
+/**
+ * Encoding for one watcher: the adaptive preset, capped to the resolution
+ * the watcher actually displays (bitrate scaled with the pixel count) and to
+ * its share of the upload budget.
+ */
+export function encodingForWatcher(preset: QualityPreset, sourceHeight: number, limits: WatcherLimits): EncodingParams {
+  const base = encodingFor(preset, sourceHeight)
+  const presetHeight = preset.height > 0 ? Math.min(preset.height, sourceHeight) : sourceHeight
+  let targetHeight = presetHeight
+  let maxBitrate = base.maxBitrate
+  if (limits.viewHeight !== null && limits.viewHeight < presetHeight) {
+    targetHeight = limits.viewHeight
+    maxBitrate = Math.max(MIN_VIDEO_BITRATE, Math.round(base.maxBitrate * (targetHeight / presetHeight) ** 2))
+  }
+  if (limits.bitrateBudget !== null) maxBitrate = Math.max(MIN_VIDEO_BITRATE, Math.min(maxBitrate, limits.bitrateBudget))
+  const scale = sourceHeight > targetHeight ? sourceHeight / targetHeight : 1
+  return {
+    scaleResolutionDownBy: Math.round(scale * 1000) / 1000,
+    maxFramerate: base.maxFramerate,
+    maxBitrate
+  }
+}
+
+/**
+ * Split an upload budget between watchers fairly (max-min / water-filling):
+ * nobody gets more than they can use (`demands`), and what small viewers
+ * don't need is shared among the rest. Returns one allocation per demand.
+ * A null budget means unlimited: everyone gets their full demand.
+ */
+export function splitBudget(budget: number | null, demands: readonly number[]): number[] {
+  if (budget === null) return [...demands]
+  const result = new Array<number>(demands.length).fill(0)
+  let remaining = budget
+  let open = demands.map((d, i) => ({ d, i })).sort((a, b) => a.d - b.d)
+  while (open.length > 0) {
+    const share = remaining / open.length
+    const satisfied = open.filter((x) => x.d <= share)
+    if (satisfied.length === 0) {
+      for (const x of open) result[x.i] = share
+      break
+    }
+    for (const x of satisfied) {
+      result[x.i] = x.d
+      remaining -= x.d
+    }
+    open = open.filter((x) => x.d > share)
+  }
+  return result.map((r) => Math.floor(r))
+}

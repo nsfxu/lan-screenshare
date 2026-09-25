@@ -223,6 +223,33 @@ describe('multi-stream: watching and signaling', () => {
   })
 })
 
+describe('multi-stream: view size hints', () => {
+  it('forwards a watcher’s display size to the streamer, validated', async () => {
+    const port = await startServer()
+    await join(port, 'Host', true)
+    const alice = await join(port, 'Alice')
+    const bob = await join(port, 'Bob')
+    const carol = await join(port, 'Carol')
+
+    share(alice.c)
+    await bob.c.wait('room', (m) => m.room.streams === 1)
+    bob.c.send({ type: 'watch', streamer: alice.id, transport: 'webrtc' })
+    await alice.c.wait('watch-request')
+
+    bob.c.send({ type: 'view-size', streamer: alice.id, height: 360 })
+    expect(await alice.c.wait('watcher-view')).toMatchObject({ from: bob.id, height: 360 })
+    bob.c.send({ type: 'view-size', streamer: alice.id, height: null })
+    await alice.c.wait('watcher-view', (m) => m.height === null)
+
+    // Junk values and non-watchers are ignored.
+    bob.c.send({ type: 'view-size', streamer: alice.id, height: -5 })
+    bob.c.send({ type: 'view-size', streamer: alice.id, height: 1e9 })
+    carol.c.send({ type: 'view-size', streamer: alice.id, height: 720 })
+    await sleep(150)
+    expect(alice.c.messages.filter((m) => m.type === 'watcher-view')).toHaveLength(2)
+  })
+})
+
 describe('multi-stream: ending streams', () => {
   it('tells watchers when a streamer stops, and closes the signaling path', async () => {
     const port = await startServer()

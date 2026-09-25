@@ -190,6 +190,8 @@ export type ClientMessage =
   | { type: 'unwatch'; streamer: string }
   | { type: 'stats'; streamer: string; stats: ViewerStats; mediaState: MediaState }
   | { type: 'keyframe-request'; streamer: string }
+  /** Pixel height I display this stream at (null = full quality), so the streamer can send less. */
+  | { type: 'view-size'; streamer: string; height: number | null }
   // host only
   | { type: 'kick'; userId: string }
   | { type: 'stop-stream'; userId: string }
@@ -221,6 +223,7 @@ export type ServerMessage =
   | { type: 'watcher-stats'; from: string; stats: ViewerStats; mediaState: MediaState }
   | { type: 'keyframe-request'; from: string }
   | { type: 'tcp-feedback'; sent: number; dropped: number }
+  | { type: 'watcher-view'; from: string; height: number | null }
   /** The host stopped this participant's stream. */
   | { type: 'stream-stopped'; reason: string }
   // delivered to a watcher, about a streamer it watches
@@ -253,6 +256,8 @@ export interface Settings {
   showStatsOverlay: boolean
   /** Capture system audio along with the screen when sharing. */
   shareAudio: boolean
+  /** Total upload for my stream, shared between my watchers (Mbps); 0 = unlimited. */
+  uploadBudgetMbps: number
 }
 
 export interface CreateRoomRequest {

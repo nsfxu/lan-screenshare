@@ -339,6 +339,24 @@ export function SettingsPanel({
               <option value="detail">Sharp text (keep resolution)</option>
             </select>
           </div>
+          <div className="form-row inline">
+            <label htmlFor="upload-budget">
+              Upload limit when sharing
+              <span className="muted small block">Shared between everyone watching you; applies immediately</span>
+            </label>
+            <select
+              id="upload-budget"
+              value={settings.uploadBudgetMbps}
+              onChange={(e) => onChange({ uploadBudgetMbps: Number(e.target.value) })}
+            >
+              <option value={0}>Unlimited (wired gigabit)</option>
+              <option value={200}>200 Mbps</option>
+              <option value={100}>100 Mbps (default)</option>
+              <option value={60}>60 Mbps (good Wi-Fi)</option>
+              <option value={30}>30 Mbps</option>
+              <option value={15}>15 Mbps (slow Wi-Fi / VPN)</option>
+            </select>
+          </div>
           <CodecTable encoders={encoders} decoders={decoders} />
         </section>
 

@@ -14,7 +14,7 @@
  *   u8  codec string length    codec string (ascii)    ...chunk bytes
  */
 import { BINARY_FLAG_KEY, BINARY_KIND_AUDIO, BINARY_KIND_VIDEO } from '../../shared/constants'
-import { AdaptiveController, qualityLadder, scaledSize, type QualityPreset } from '../../shared/quality'
+import { AdaptiveController, MIN_VIDEO_BITRATE, qualityLadder, scaledSize, type QualityPreset } from '../../shared/quality'
 import type { QualityPresetId } from '../../shared/quality'
 
 const HEADER_FIXED = 1 + 1 + 8 + 2 + 2 + 1
@@ -92,6 +92,8 @@ export class TcpEncoder {
   private framesSinceKey = 0
   private paused = false
   private stopped = false
+  /** Share of the streamer's upload budget (bits/s); null = unlimited. */
+  private bitrateCap: number | null = null
   private readonly captureTimes = new Map<number, number>()
   private readonly controller: AdaptiveController
   private encodeStarts = new Map<number, number>()
@@ -124,6 +126,12 @@ export class TcpEncoder {
 
   requestKeyframe(): void {
     this.forceKey = true
+  }
+
+  setBitrateCap(cap: number | null): void {
+    if (cap === this.bitrateCap) return
+    this.bitrateCap = cap
+    this.configuredFor = '' // reconfigure on the next frame
   }
 
   setPaused(paused: boolean): void {
@@ -188,7 +196,7 @@ export class TcpEncoder {
     this.lastFrameAt = now
 
     const size = scaledSize(preset, frame.displayWidth, frame.displayHeight)
-    const configKey = `${size.width}x${size.height}@${preset.id}`
+    const configKey = `${size.width}x${size.height}@${preset.id}:${this.bitrateCap ?? 0}`
     if (configKey !== this.configuredFor) {
       if (!(await this.configure(size.width, size.height, preset))) return
       this.configuredFor = configKey
@@ -227,7 +235,7 @@ export class TcpEncoder {
     const base = {
       width,
       height,
-      bitrate: preset.maxBitrate,
+      bitrate: Math.max(MIN_VIDEO_BITRATE, Math.min(preset.maxBitrate, this.bitrateCap ?? Infinity)),
       framerate: preset.fps,
       latencyMode: 'realtime' as const,
       avc: { format: 'annexb' as const }

@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { AdaptiveController, encodingFor, getPreset, qualityLadder, scaledSize, type NetworkSample } from '../src/shared/quality'
+import {
+  AdaptiveController,
+  encodingFor,
+  encodingForWatcher,
+  getPreset,
+  MIN_VIDEO_BITRATE,
+  qualityLadder,
+  scaledSize,
+  splitBudget,
+  viewHeightStep,
+  type NetworkSample
+} from '../src/shared/quality'
 
 const good: NetworkSample = { lossPct: 0, rttMs: 5, limitation: 'none' }
 const lossy: NetworkSample = { lossPct: 12, rttMs: 20, limitation: 'none' }
@@ -97,5 +108,49 @@ describe('AdaptiveController', () => {
     const c = new AdaptiveController(qualityLadder('1080p60').slice(0, 1), 0)
     run(c, lossy, 0, 30_000)
     expect(c.preset.id).toBe('1080p60')
+  })
+})
+
+describe('per-watcher limits', () => {
+  const p1080 = getPreset('1080p60')
+
+  it('rounds displayed heights up to a step', () => {
+    expect(viewHeightStep(null)).toBeNull()
+    expect(viewHeightStep(0)).toBeNull()
+    expect(viewHeightStep(200)).toBe(360)
+    expect(viewHeightStep(700)).toBe(720)
+    expect(viewHeightStep(721)).toBe(1080)
+    expect(viewHeightStep(5000)).toBeNull() // bigger than any step: full quality
+  })
+
+  it('caps resolution and bitrate to what the watcher displays', () => {
+    const full = encodingForWatcher(p1080, 1080, { viewHeight: null, bitrateBudget: null })
+    expect(full).toMatchObject({ scaleResolutionDownBy: 1, maxBitrate: 15_000_000, maxFramerate: 60 })
+
+    const tile = encodingForWatcher(p1080, 1080, { viewHeight: 360, bitrateBudget: null })
+    expect(tile.scaleResolutionDownBy).toBe(3)
+    expect(tile.maxBitrate).toBe(Math.round(15_000_000 / 9)) // pixel count / 9
+    expect(tile.maxFramerate).toBe(60)
+
+    // A view larger than the preset never raises quality above it.
+    const big = encodingForWatcher(p1080, 2160, { viewHeight: 1440, bitrateBudget: null })
+    expect(big).toMatchObject({ scaleResolutionDownBy: 2, maxBitrate: 15_000_000 })
+  })
+
+  it('applies the upload budget share with a floor', () => {
+    expect(encodingForWatcher(p1080, 1080, { viewHeight: null, bitrateBudget: 5_000_000 }).maxBitrate).toBe(5_000_000)
+    expect(encodingForWatcher(p1080, 1080, { viewHeight: null, bitrateBudget: 1000 }).maxBitrate).toBe(MIN_VIDEO_BITRATE)
+  })
+
+  it('splits a budget fairly, giving small viewers what they need', () => {
+    expect(splitBudget(null, [15, 15])).toEqual([15, 15])
+    expect(splitBudget(30, [15, 15])).toEqual([15, 15])
+    expect(splitBudget(20, [15, 15])).toEqual([10, 10])
+    // A small tile needs 2: the other two split what's left.
+    expect(splitBudget(30, [15, 2, 15])).toEqual([14, 2, 14])
+    expect(splitBudget(100, [])).toEqual([])
+    const shares = splitBudget(60_000_000, [15_000_000, 1_666_667, 15_000_000, 15_000_000, 15_000_000])
+    expect(shares.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(60_000_000)
+    expect(shares[1]).toBe(1_666_667)
   })
 })

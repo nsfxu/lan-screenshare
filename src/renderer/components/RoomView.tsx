@@ -16,6 +16,7 @@ interface Props {
   session: Session
   settings: Settings
   onLeave(reason?: string): void
+  onOpenSettings(): void
   onToast(message: string, tone?: 'error' | 'info'): void
 }
 
@@ -26,7 +27,7 @@ const SELF = 'self'
  * picks a stream. Watched streams (and your own preview) are shown as tiles;
  * focusing one puts it in the spotlight while the others keep playing.
  */
-export function RoomView({ session, settings, onLeave, onToast }: Props) {
+export function RoomView({ session, settings, onLeave, onOpenSettings, onToast }: Props) {
   const { client, publisher, watches } = session
   const isHost = session.role === 'host'
   const [room, setRoom] = useState<RoomState | null>(client.room)
@@ -237,6 +238,9 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
           {room && <span>{formatDuration(Date.now() - room.startedAt)}</span>}
           {client.rttMs !== null && <span title="Round trip to the room server">RTT {Math.round(client.rttMs)} ms</span>}
           {!isHost && <span className="mono">{session.endpoint.address}</span>}
+          <button className="icon-btn" title="Settings" onClick={onOpenSettings}>
+            <Icon name="settings" size={16} />
+          </button>
         </div>
       </header>
 
@@ -537,6 +541,7 @@ function RemoteTile({
         overlay={overlay}
         audioAvailable={!!participant?.stream?.audio && state === 'streaming'}
         volumeKey={participant?.name}
+        onViewHeight={(px) => sub.setViewHeight(px)}
       />
     </div>
   )

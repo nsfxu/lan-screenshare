@@ -12,6 +12,8 @@ interface Props {
   audioAvailable?: boolean
   /** Remember volume under this key (e.g. per streamer); defaults to one shared setting. */
   volumeKey?: string
+  /** Reports the device-pixel height the video is displayed at (including zoom). */
+  onViewHeight?(pixels: number): void
 }
 
 const MIN_ZOOM = 1
@@ -37,7 +39,7 @@ function loadVolume(key: string): { volume: number; muted: boolean } {
  * a full-screen toggle. Viewers also get volume/mute for the host's system
  * audio (remembered on this machine); the host's own preview is always muted.
  */
-export function ScreenViewer({ stream, placeholder, overlay, local, audioAvailable, volumeKey }: Props) {
+export function ScreenViewer({ stream, placeholder, overlay, local, audioAvailable, volumeKey, onViewHeight }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [zoom, setZoom] = useState(1)
@@ -77,6 +79,34 @@ export function ScreenViewer({ stream, placeholder, overlay, local, audioAvailab
     document.addEventListener('fullscreenchange', onChange)
     return () => document.removeEventListener('fullscreenchange', onChange)
   }, [])
+
+  // Report how many pixels of the stream are actually visible, so the sender
+  // can match it. Recomputed on resize, zoom, fullscreen and video size changes.
+  const reportRef = useRef(onViewHeight)
+  reportRef.current = onViewHeight
+  useEffect(() => {
+    const el = containerRef.current
+    const video = videoRef.current
+    if (!el || !video || !reportRef.current) return
+    let timer: number | null = null
+    const measure = (): void => {
+      if (timer) clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        const aspect = video.videoWidth > 0 && video.videoHeight > 0 ? video.videoHeight / video.videoWidth : 9 / 16
+        const shown = Math.min(el.clientHeight, el.clientWidth * aspect)
+        reportRef.current?.(Math.round(shown * zoom * window.devicePixelRatio))
+      }, 250)
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    video.addEventListener('resize', measure)
+    return () => {
+      if (timer) clearTimeout(timer)
+      observer.disconnect()
+      video.removeEventListener('resize', measure)
+    }
+  }, [zoom, fullscreen, stream])
 
   const clampPan = useCallback((x: number, y: number, z: number) => {
     const el = containerRef.current

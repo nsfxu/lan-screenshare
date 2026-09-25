@@ -1,5 +1,5 @@
 import { SNAPSHOT_INTERVAL_MS, SNAPSHOT_MAX_CHARS, SNAPSHOT_WIDTH, STATS_INTERVAL_MS } from '../../shared/constants'
-import { AdaptiveController, encodingFor, getPreset, qualityLadder } from '../../shared/quality'
+import { AdaptiveController, encodingFor, encodingForWatcher, getPreset, qualityLadder, splitBudget } from '../../shared/quality'
 import type {
   CodecSupport,
   HostStats,
@@ -25,6 +25,8 @@ interface Peer {
   remoteSet: boolean
   prev: { ts: number; bytes: number; audioBytes: number; encodeTime: number; framesEncoded: number } | null
   sample: PeerSample | null
+  /** Last parameters applied, to skip redundant setParameters calls. */
+  applied: string
 }
 
 interface PeerSample {
@@ -96,6 +98,8 @@ export class Publisher extends Emitter<Events> {
   private nativeAudio: NativeAudioCapture | null = null
   private preferNativeAudio = false
   private readonly peers = new Map<string, Peer>()
+  /** Pixel height each watcher displays us at (null = full); may arrive before its peer exists. */
+  private readonly viewHeights = new Map<string, number | null>()
   private readonly tcpViewers = new Set<string>()
   private tcp: TcpEncoder | null = null
   private tcpAudio: TcpAudioEncoder | null = null
@@ -133,6 +137,7 @@ export class Publisher extends Emitter<Events> {
   updateSettings(settings: Settings): void {
     this.settings = settings
     if (this.track) this.track.contentHint = settings.contentHint
+    void this.rebalance()
   }
 
   /**
@@ -224,8 +229,9 @@ export class Publisher extends Emitter<Events> {
         await peer.sender.replaceTrack(this.paused ? null : track).catch(() => {})
         await peer.audioSender.replaceTrack(this.audioSendTrack()).catch(() => {})
         peer.controller.reset(Date.now())
-        await this.applyEncoding(peer)
+        peer.applied = ''
       }
+      await this.rebalance()
       this.tcp?.replaceTrack(track)
       this.syncTcpAudio()
       oldVideo.stop()
@@ -292,7 +298,7 @@ export class Publisher extends Emitter<Events> {
     this.removeAllListeners()
   }
 
-/** Send a preview soon (the first frames after starting can still be black). */
+  /** Send a preview soon (the first frames after starting can still be black). */
   private snapshotShortly(): void {
     if (this.snapshotSoon) clearTimeout(this.snapshotSoon)
     this.snapshotSoon = window.setTimeout(() => {
@@ -377,9 +383,14 @@ export class Publisher extends Emitter<Events> {
         }
         return
       }
+      case 'watcher-view':
+        this.viewHeights.set(msg.from, msg.height)
+        void this.rebalance()
+        return
       case 'watcher-left':
         this.closePeer(msg.id)
         this.removeTcpViewer(msg.id)
+        this.viewHeights.delete(msg.id)
         this.watchers.delete(msg.id)
         this.emit('watchers', this.watchers)
         return
@@ -406,6 +417,7 @@ export class Publisher extends Emitter<Events> {
       }
       this.syncTcpAudio()
       this.tcp?.requestKeyframe()
+      void this.rebalance()
       log(`viewer ${viewerId} on TCP fallback`)
       return
     }
@@ -439,7 +451,8 @@ export class Publisher extends Emitter<Events> {
       pendingCandidates: [],
       remoteSet: false,
       prev: null,
-      sample: null
+      sample: null,
+      applied: ''
     }
     this.peers.set(viewerId, peer)
     if (this.paused) await peer.sender.replaceTrack(null)
@@ -455,7 +468,7 @@ export class Publisher extends Emitter<Events> {
     try {
       const offer = await pc.createOffer()
       await pc.setLocalDescription(offer)
-      await this.applyEncoding(peer)
+      await this.rebalance()
       this.signal(viewerId, { kind: 'offer', sdp: pc.localDescription!.sdp })
       log(`offer sent to ${viewerId} (codecs: ${order.map(shortCodecName).join(' > ')}, audio: ${this.hasAudio})`)
     } catch (err) {
@@ -464,16 +477,48 @@ export class Publisher extends Emitter<Events> {
     }
   }
 
-  private async applyEncoding(peer: Peer): Promise<void> {
+  /**
+   * Recompute every watcher's encoding: the adaptive preset, capped to what
+   * that watcher displays, with the upload budget split fairly between all
+   * watchers (small tiles need little, so bigger views get the rest). TCP
+   * watchers share one encode and count as a single demand.
+   */
+  private async rebalance(): Promise<void> {
+    if (!this.track) return
+    const source = this.track.getSettings().height ?? 1080
+    const budget = this.settings.uploadBudgetMbps > 0 ? this.settings.uploadBudgetMbps * 1_000_000 : null
+    const entries = [...this.peers.entries()]
+    const demands = entries.map(
+      ([id, p]) =>
+        encodingForWatcher(p.controller.preset, source, { viewHeight: this.viewHeights.get(id) ?? null, bitrateBudget: null })
+          .maxBitrate
+    )
+    if (this.tcp) demands.push(this.tcp.preset.maxBitrate)
+    const shares = splitBudget(budget, demands)
+    this.tcp?.setBitrateCap(budget === null ? null : shares[shares.length - 1])
+    await Promise.all(
+      entries.map(([id, peer], i) =>
+        this.applyEncoding(peer, source, {
+          viewHeight: this.viewHeights.get(id) ?? null,
+          bitrateBudget: budget === null ? null : shares[i]
+        })
+      )
+    )
+  }
+
+  private async applyEncoding(peer: Peer, source: number, limits: Parameters<typeof encodingForWatcher>[2]): Promise<void> {
+    const enc = encodingForWatcher(peer.controller.preset, source, limits)
+    // 'motion' content keeps the frame rate and trades resolution; 'detail' keeps text sharp.
+    const degradation = this.settings.contentHint === 'motion' ? 'maintain-framerate' : 'maintain-resolution'
+    const key = JSON.stringify([enc, degradation])
+    if (key === peer.applied) return
     const params = peer.sender.getParameters()
     if (!params.encodings?.length) return
-    const enc = encodingFor(peer.controller.preset, this.track?.getSettings().height ?? 1080)
     params.encodings[0] = { ...params.encodings[0], ...enc }
-    // 'motion' content keeps the frame rate and trades resolution; 'detail' keeps text sharp.
-    ;(params as RTCRtpSendParameters & { degradationPreference?: string }).degradationPreference =
-      this.settings.contentHint === 'motion' ? 'maintain-framerate' : 'maintain-resolution'
+    ;(params as RTCRtpSendParameters & { degradationPreference?: string }).degradationPreference = degradation
     try {
       await peer.sender.setParameters(params)
+      peer.applied = key
     } catch (err) {
       log(`setParameters failed: ${String(err)}`)
     }
@@ -490,6 +535,8 @@ export class Publisher extends Emitter<Events> {
     peer.pc.onicecandidate = null
     peer.pc.onconnectionstatechange = null
     peer.pc.close()
+    // The remaining watchers can use the freed budget.
+    void this.rebalance()
   }
 
   /** Keep the TCP audio encoder in line with the captured track and TCP viewers. */
@@ -510,6 +557,7 @@ export class Publisher extends Emitter<Events> {
       this.tcp?.stop()
       this.tcp = null
       this.syncTcpAudio()
+      void this.rebalance()
     }
   }
 
@@ -518,6 +566,7 @@ export class Publisher extends Emitter<Events> {
     const now = performance.now()
     await Promise.all([...this.peers.values()].map((p) => this.samplePeer(p, now)))
 
+    let changed = false
     for (const peer of this.peers.values()) {
       const s = peer.sample
       if (!s || !this.settings.adaptiveQuality || this.paused) continue
@@ -529,9 +578,11 @@ export class Publisher extends Emitter<Events> {
       const decision = peer.controller.update({ lossPct: s.lossPct, rttMs: s.rttMs, limitation }, Date.now())
       if (decision !== 'hold') {
         log(`quality ${decision} -> ${peer.controller.preset.id} (loss ${s.lossPct.toFixed(1)}%, rtt ${s.rttMs ?? '-'}ms, limit ${s.limitation})`)
-        await this.applyEncoding(peer)
+        changed = true
       }
     }
+
+    if (changed) await this.rebalance()
 
     const samples = [...this.peers.values()].map((p) => p.sample).filter((s): s is PeerSample => !!s)
     let tcpKbps = 0

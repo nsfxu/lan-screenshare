@@ -29,7 +29,8 @@ function defaults(): Settings {
     notifications: true,
     pauseOnMinimize: false,
     showStatsOverlay: true,
-    shareAudio: true
+    shareAudio: true,
+    uploadBudgetMbps: 100
   }
 }
 
@@ -83,6 +84,8 @@ function sanitize(s: Settings, fallback: Settings): Settings {
   out.preferredPort = Number.isInteger(port) && port >= 0 && port <= 65535 ? port : fallback.preferredPort
   out.manualServers = Array.isArray(s.manualServers) ? s.manualServers.filter(isEndpoint).slice(0, 50) : []
   out.lastRoom = isEndpoint(s.lastRoom) ? s.lastRoom : null
+  const budget = Number(s.uploadBudgetMbps)
+  out.uploadBudgetMbps = Number.isInteger(budget) && budget >= 0 && budget <= 10_000 ? budget : fallback.uploadBudgetMbps
   for (const key of ['adaptiveQuality', 'forceTcp', 'useTls', 'autoRejoin', 'notifications', 'pauseOnMinimize', 'showStatsOverlay', 'shareAudio'] as const) {
     out[key] = typeof s[key] === 'boolean' ? s[key] : fallback[key]
   }

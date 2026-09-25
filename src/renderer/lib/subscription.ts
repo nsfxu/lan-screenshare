@@ -1,4 +1,5 @@
 import { STATS_INTERVAL_MS, WEBRTC_CONNECT_TIMEOUT_MS } from '../../shared/constants'
+import { viewHeightStep } from '../../shared/quality'
 import type { MediaState, ServerMessage, SignalData, Transport, ViewerStats } from '../../shared/types'
 import { shortCodecName } from './codecs'
 import { Emitter } from './emitter'
@@ -58,6 +59,8 @@ export class Subscription extends Emitter<Events> {
     decoded: number
   } | null = null
   private publisherEncodeMs: number | null = null
+  /** Stepped pixel height we display the stream at (null = full quality). */
+  private viewHeight: number | null = null
   private tick = 0
   private readonly log: (msg: string) => void
 
@@ -92,6 +95,21 @@ export class Subscription extends Emitter<Events> {
     this.request()
   }
 
+  /**
+   * Tell the streamer how many pixels we actually display, so a small tile
+   * doesn't cost a full 1080p60 stream. Only step changes are sent.
+   */
+  setViewHeight(pixels: number | null): void {
+    const step = viewHeightStep(pixels)
+    if (step === this.viewHeight) return
+    this.viewHeight = step
+    this.sendViewHeight()
+  }
+
+  private sendViewHeight(): void {
+    if (this.state !== 'ended') this.client.send({ type: 'view-size', streamer: this.streamerId, height: this.viewHeight })
+  }
+
   /** Relayed TCP-fallback packet for this streamer (slot byte already removed). */
   pushBinary(packet: ArrayBuffer): void {
     this.tcp?.push(packet)
@@ -121,10 +139,12 @@ export class Subscription extends Emitter<Events> {
       )
       this.setStream(this.tcp.stream)
       this.client.send({ type: 'watch', streamer: this.streamerId, transport: 'tcp' })
+      this.sendViewHeight()
       this.log('requested TCP stream')
       return
     }
     this.client.send({ type: 'watch', streamer: this.streamerId, transport: 'webrtc' })
+    this.sendViewHeight()
     this.connectTimer = window.setTimeout(() => this.fallbackToTcp('WebRTC connect timeout'), WEBRTC_CONNECT_TIMEOUT_MS)
     this.log('requested WebRTC stream')
   }

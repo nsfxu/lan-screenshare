@@ -164,7 +164,14 @@ export function App() {
   return (
     <>
       {session ? (
-        <RoomView key={session.client.url} session={session} settings={settings} onLeave={leave} onToast={toast} />
+        <RoomView
+          key={session.client.url}
+          session={session}
+          settings={settings}
+          onLeave={leave}
+          onOpenSettings={() => setSettingsOpen(true)}
+          onToast={toast}
+        />
       ) : (
         <HomeScreen
           settings={settings}
