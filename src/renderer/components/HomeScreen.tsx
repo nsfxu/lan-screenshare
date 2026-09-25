@@ -108,7 +108,14 @@ export function HomeScreen({ settings, rooms, busyKey, onJoin, onCreate, onSetti
 
 function RoomCard({ room, busy, onJoin }: { room: DiscoveredRoom; busy: boolean; onJoin(): void }) {
   const full = room.maxUsers > 0 && room.viewerCount + 1 >= room.maxUsers
-  const status = !room.reachable ? 'Unreachable' : !room.sharing ? 'Not sharing yet' : room.paused ? 'Paused' : 'Live'
+  const live = room.reachable && room.streams > 0
+  const status = !room.reachable
+    ? 'Unreachable'
+    : room.streams === 0
+      ? 'No one sharing'
+      : room.streams === 1
+        ? '1 stream live'
+        : `${room.streams} streams live`
   return (
     <article className={`room-card ${room.reachable ? '' : 'offline'}`}>
       <div className="room-card-top">
@@ -116,7 +123,7 @@ function RoomCard({ room, busy, onJoin }: { room: DiscoveredRoom; busy: boolean;
           <Icon name={room.privacy === 'private' ? 'lock' : 'globe'} size={12} />
           {room.privacy === 'private' ? 'Private' : 'Public'}
         </span>
-        <span className={`status-pill ${status === 'Live' ? 'live' : ''}`}>{status}</span>
+        <span className={`status-pill ${live ? 'live' : ''}`}>{status}</span>
       </div>
       <h3 title={room.name}>{room.name}</h3>
       <p className="muted small">
@@ -124,14 +131,9 @@ function RoomCard({ room, busy, onJoin }: { room: DiscoveredRoom; busy: boolean;
         {room.startedAt > 0 && room.reachable ? ` · ${formatDuration(Date.now() - room.startedAt)}` : ''}
       </p>
       <div className="room-card-meta">
-        <span title="Viewers">
-          <Icon name="users" size={14} /> {room.viewerCount}
-          {room.maxUsers ? ` / ${room.maxUsers - 1}` : ''}
-          {room.sharing && (
-            <span title={room.audio ? 'Sharing audio' : 'No audio'} className="card-audio">
-              <Icon name={room.audio ? 'volume' : 'volumeOff'} size={14} />
-            </span>
-          )}
+        <span title="People in the room">
+          <Icon name="users" size={14} /> {room.viewerCount + 1}
+          {room.maxUsers ? ` / ${room.maxUsers}` : ''}
         </span>
         <span className="mono small muted" title={room.source === 'mdns' ? 'Discovered via mDNS' : 'Added manually'}>
           {room.address}:{room.port}

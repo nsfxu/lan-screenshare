@@ -3,7 +3,9 @@ import { AdaptiveController, encodingFor, getPreset, qualityLadder } from '../..
 import type {
   CodecSupport,
   HostStats,
+  MediaState,
   ServerMessage,
+  SignalData,
   Settings,
   Transport,
   ViewerStats
@@ -47,11 +49,19 @@ export interface SharingState {
   audioMuted: boolean
 }
 
+/** What a watcher reports about receiving this publisher's stream. */
+export interface WatcherInfo {
+  stats: ViewerStats | null
+  mediaState: MediaState
+}
+
 type Events = {
   stream: MediaStream | null
   sharing: SharingState
   stats: HostStats
-  viewerStats: Map<string, ViewerStats>
+  watchers: Map<string, WatcherInfo>
+  /** The host stopped this stream; carries the reason to show. */
+  stopped: string
   error: string
 }
 
@@ -59,24 +69,25 @@ type Events = {
 const AUDIO_MAX_BITRATE = 160_000
 
 const log = (msg: string): void => {
-  console.info(`[host] ${msg}`)
-  window.api.system.log('info', `[host] ${msg}`)
+  console.info(`[publisher] ${msg}`)
+  window.api.system.log('info', `[publisher] ${msg}`)
 }
 
 /**
- * Host side of the stream: captures the chosen screen/window (plus system
- * audio) once and fans it out to each viewer with its own RTCPeerConnection,
- * so every viewer gets its own congestion control and adaptive quality. One
- * shared WebCodecs encoder pair serves viewers on the TCP fallback.
+ * Sending side of a participant's screen share (anyone in a room can share).
+ * Captures the chosen screen/window (plus system audio) once and fans it out
+ * to each watcher with its own RTCPeerConnection, so every watcher gets its
+ * own congestion control and adaptive quality. One shared WebCodecs encoder
+ * pair serves watchers on the TCP fallback.
  */
-export class HostStreamer extends Emitter<Events> {
+export class Publisher extends Emitter<Events> {
   stream: MediaStream | null = null
   paused = false
   audioMuted = false
   /** Why system audio could not be captured with the current source (DOMException name). */
   audioError: string | null = null
   sourceId: string | null = null
-  readonly viewerStats = new Map<string, ViewerStats>()
+  readonly watchers = new Map<string, WatcherInfo>()
   lastStats: HostStats | null = null
 
   private track: MediaStreamTrack | null = null
@@ -260,6 +271,8 @@ export class HostStreamer extends Emitter<Events> {
     this.stream = null
     this.paused = false
     this.sourceId = null
+    this.watchers.clear()
+    this.emit('watchers', this.watchers)
     this.emit('stream', null)
     this.publishSharing()
   }
@@ -280,20 +293,34 @@ export class HostStreamer extends Emitter<Events> {
   private publishSharing(): void {
     const state = this.state
     const audio = state.sharing && state.hasAudio && !state.audioMuted && !state.paused
-    this.client.send({ type: 'sharing', sharing: state.sharing, paused: state.paused, audio })
+    this.client.send({ type: 'stream-state', sharing: state.sharing, paused: state.paused, audio })
     this.emit('sharing', state)
   }
 
   private async onMessage(msg: ServerMessage): Promise<void> {
     switch (msg.type) {
       case 'welcome':
-        // Reconnected to our own server: re-announce state.
+        // Reconnected: the server ended our stream when we dropped. Announce it
+        // again (watchers re-subscribe) and forget the old connections.
+        for (const id of [...this.peers.keys()]) this.closePeer(id)
+        for (const id of [...this.tcpViewers]) this.removeTcpViewer(id)
+        this.watchers.clear()
+        this.emit('watchers', this.watchers)
         if (this.track) this.publishSharing()
         return
-      case 'request-stream':
-        if (!this.track) return // the viewer asks again once we start sharing
+      case 'stream-stopped':
+        log(`stream stopped by host: ${msg.reason}`)
+        this.stopSharing()
+        this.emit('stopped', msg.reason)
+        return
+      case 'watch-request':
+        if (!this.track) return
+        this.watchers.set(msg.from, { stats: null, mediaState: 'negotiating' })
+        this.emit('watchers', this.watchers)
         return this.connect(msg.from, msg.transport, msg.decoders)
       case 'signal': {
+        // Signals for connections where we are the watcher belong to a Subscription.
+        if (msg.stream !== this.client.selfId) return
         const peer = this.peers.get(msg.from)
         if (!peer) return
         if (msg.data.kind === 'answer') {
@@ -315,15 +342,15 @@ export class HostStreamer extends Emitter<Events> {
         }
         return
       }
-      case 'viewer-left':
+      case 'watcher-left':
         this.closePeer(msg.id)
         this.removeTcpViewer(msg.id)
-        this.viewerStats.delete(msg.id)
-        this.emit('viewerStats', this.viewerStats)
+        this.watchers.delete(msg.id)
+        this.emit('watchers', this.watchers)
         return
-      case 'viewer-stats':
-        this.viewerStats.set(msg.from, msg.stats)
-        this.emit('viewerStats', this.viewerStats)
+      case 'watcher-stats':
+        this.watchers.set(msg.from, { stats: msg.stats, mediaState: msg.mediaState })
+        this.emit('watchers', this.watchers)
         return
       case 'keyframe-request':
         this.tcp?.requestKeyframe()
@@ -383,7 +410,7 @@ export class HostStreamer extends Emitter<Events> {
     if (this.paused) await peer.sender.replaceTrack(null)
 
     pc.onicecandidate = (e) => {
-      this.client.send({ type: 'signal', to: viewerId, data: { kind: 'candidate', candidate: e.candidate?.toJSON() ?? null } })
+      this.signal(viewerId, { kind: 'candidate', candidate: e.candidate?.toJSON() ?? null })
     }
     pc.onconnectionstatechange = () => {
       log(`viewer ${viewerId} connection ${pc.connectionState}`)
@@ -394,7 +421,7 @@ export class HostStreamer extends Emitter<Events> {
       const offer = await pc.createOffer()
       await pc.setLocalDescription(offer)
       await this.applyEncoding(peer)
-      this.client.send({ type: 'signal', to: viewerId, data: { kind: 'offer', sdp: pc.localDescription!.sdp } })
+      this.signal(viewerId, { kind: 'offer', sdp: pc.localDescription!.sdp })
       log(`offer sent to ${viewerId} (codecs: ${order.map(shortCodecName).join(' > ')}, audio: ${this.hasAudio})`)
     } catch (err) {
       log(`offer failed for ${viewerId}: ${String(err)}`)
@@ -415,6 +442,10 @@ export class HostStreamer extends Emitter<Events> {
     } catch (err) {
       log(`setParameters failed: ${String(err)}`)
     }
+  }
+
+  private signal(to: string, data: SignalData): void {
+    this.client.send({ type: 'signal', to, stream: this.client.selfId, data })
   }
 
   private closePeer(id: string): void {
@@ -506,7 +537,7 @@ export class HostStreamer extends Emitter<Events> {
     }
     this.lastStats = stats
     this.emit('stats', stats)
-    if (this.tick % 2 === 0) this.client.send({ type: 'host-stats', encodeMs: stats.encodeMs })
+    if (this.tick % 2 === 0 && this.track) this.client.send({ type: 'publisher-stats', encodeMs: stats.encodeMs })
   }
 
   private async samplePeer(peer: Peer, now: number): Promise<void> {

@@ -414,11 +414,14 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
         return
       }
       case 'signal': {
-        // Only a streamer and one of its watchers may exchange signaling.
+        // Only a streamer and one of its watchers may exchange signaling, and
+        // only for that streamer's connection.
         const target = this.seats.get(msg.to)
         if (!target || target === seat) return
-        if (!target.watchers.has(me.id) && !seat.watchers.has(target.participant.id)) return
-        this.send(target.ws, { type: 'signal', from: me.id, data: msg.data })
+        const fromStreamer = msg.stream === me.id && seat.watchers.has(target.participant.id)
+        const fromWatcher = msg.stream === target.participant.id && target.watchers.has(me.id)
+        if (!fromStreamer && !fromWatcher) return
+        this.send(target.ws, { type: 'signal', from: me.id, stream: msg.stream, data: msg.data })
         return
       }
       case 'stats': {

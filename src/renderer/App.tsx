@@ -5,7 +5,7 @@ import { HomeScreen } from './components/HomeScreen'
 import { RoomView } from './components/RoomView'
 import { detectDecoders, detectEncoders } from './lib/codecs'
 import { audioUnavailableMessage, errorMessage } from './lib/format'
-import { disposeSession, hostRoom, joinRoom, JoinError, type Session } from './lib/session'
+import { disposeSession, hostRoom, joinRoom, JoinError, updateSessionSettings, type Session } from './lib/session'
 
 interface Toast {
   id: number
@@ -54,7 +54,7 @@ export function App() {
   const updateSettings = useCallback(async (patch: Partial<Settings>) => {
     const next = await window.api.settings.update(patch)
     setSettings(next)
-    if (sessionRef.current?.role === 'host') sessionRef.current.streamer.updateSettings(next)
+    if (sessionRef.current) updateSessionSettings(sessionRef.current, next)
   }, [])
 
   // --- joining -------------------------------------------------------------------
@@ -70,7 +70,7 @@ export function App() {
           return
         }
         const endpoint: RoomEndpoint = { address: fresh.address, port: fresh.port, tls: fresh.tls, name: fresh.name }
-        const s = await joinRoom(endpoint, settings, codecs.decoders, pin)
+        const s = await joinRoom(endpoint, settings, codecs, pin)
         setPinPrompt(null)
         setSession(s)
         void updateSettings({ lastRoom: endpoint })
@@ -98,7 +98,7 @@ export function App() {
         setBusyKey(null)
       }
     },
-    [settings, codecs.decoders, toast, updateSettings]
+    [settings, codecs, toast, updateSettings]
   )
 
   // Optional auto-rejoin of the last room on startup.
@@ -125,10 +125,10 @@ export function App() {
     try {
       const hosted = await window.api.host.create({ name: req.name, privacy: req.privacy, pinLength: req.pinLength })
       hostedCreated = true
-      const s = await hostRoom(hosted, settings, codecs.encoders)
+      const s = await hostRoom(hosted, settings, codecs)
       try {
-        await s.streamer.startCapture(req.sourceId, req.audio)
-        if (req.audio && !s.streamer.hasAudio) toast(audioUnavailableMessage(s.streamer.audioError), 'error')
+        await s.publisher.startCapture(req.sourceId, req.audio)
+        if (req.audio && !s.publisher.hasAudio) toast(audioUnavailableMessage(s.publisher.audioError), 'error')
       } catch (err) {
         toast(`Room created, but capture failed: ${errorMessage(err)}`, 'error')
       }

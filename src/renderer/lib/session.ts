@@ -1,25 +1,21 @@
-import type { CodecSupport, HostedRoom, RoomEndpoint, Settings } from '../../shared/types'
+import type { CodecSupport, HostedRoom, RoomEndpoint, Role, Settings } from '../../shared/types'
 import { roomUrl } from './format'
-import { HostStreamer } from './hostStreamer'
+import { Publisher } from './publisher'
 import { RoomClient, type ClientError } from './roomClient'
-import { ViewerReceiver } from './viewerReceiver'
+import { WatchManager } from './watches'
 
-export interface HostSession {
-  role: 'host'
+/**
+ * A joined room. Everyone can share (publisher) and watch others (watches);
+ * the host additionally owns the room itself (`hosted`).
+ */
+export interface Session {
+  role: Role
   client: RoomClient
   endpoint: RoomEndpoint
-  streamer: HostStreamer
-  hosted: HostedRoom
+  publisher: Publisher
+  watches: WatchManager
+  hosted: HostedRoom | null
 }
-
-export interface ViewerSession {
-  role: 'viewer'
-  client: RoomClient
-  endpoint: RoomEndpoint
-  receiver: ViewerReceiver
-}
-
-export type Session = HostSession | ViewerSession
 
 export class JoinError extends Error {
   constructor(readonly detail: ClientError) {
@@ -47,43 +43,61 @@ function waitForWelcome(client: RoomClient): Promise<void> {
   })
 }
 
-export async function joinRoom(
+interface Codecs {
+  encoders: CodecSupport[]
+  decoders: CodecSupport[]
+}
+
+function createSession(
+  role: Role,
+  client: RoomClient,
   endpoint: RoomEndpoint,
   settings: Settings,
-  decoders: CodecSupport[],
-  pin?: string
-): Promise<ViewerSession> {
+  codecs: Codecs,
+  hosted: HostedRoom | null
+): Session {
+  return {
+    role,
+    client,
+    endpoint,
+    publisher: new Publisher(client, settings, codecs.encoders),
+    watches: new WatchManager(client, settings),
+    hosted
+  }
+}
+
+export async function joinRoom(endpoint: RoomEndpoint, settings: Settings, codecs: Codecs, pin?: string): Promise<Session> {
   const client = new RoomClient({
     url: roomUrl(endpoint),
     clientId: settings.clientId,
     name: settings.displayName,
     pin,
-    decoders
+    decoders: codecs.decoders
   })
   await waitForWelcome(client)
-  const receiver = new ViewerReceiver(client, settings.forceTcp)
-  return { role: 'viewer', client, endpoint, receiver }
+  return createSession('viewer', client, endpoint, settings, codecs, null)
 }
 
-export async function hostRoom(
-  hosted: HostedRoom,
-  settings: Settings,
-  encoders: CodecSupport[]
-): Promise<HostSession> {
+export async function hostRoom(hosted: HostedRoom, settings: Settings, codecs: Codecs): Promise<Session> {
   const endpoint: RoomEndpoint = { address: '127.0.0.1', port: hosted.port, tls: hosted.tls, name: hosted.info.name }
   const client = new RoomClient({
     url: roomUrl(endpoint),
     clientId: settings.clientId,
     name: settings.displayName,
-    hostToken: hosted.hostToken
+    hostToken: hosted.hostToken,
+    decoders: codecs.decoders
   })
   await waitForWelcome(client)
-  const streamer = new HostStreamer(client, settings, encoders)
-  return { role: 'host', client, endpoint, streamer, hosted }
+  return createSession('host', client, endpoint, settings, codecs, hosted)
 }
 
 export function disposeSession(session: Session): void {
-  if (session.role === 'host') session.streamer.dispose()
-  else session.receiver.dispose()
+  session.watches.dispose()
+  session.publisher.dispose()
   session.client.leave()
+}
+
+export function updateSessionSettings(session: Session, settings: Settings): void {
+  session.publisher.updateSettings(settings)
+  session.watches.updateSettings(settings)
 }

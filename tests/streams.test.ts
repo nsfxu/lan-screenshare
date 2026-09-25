@@ -138,16 +138,18 @@ describe('multi-stream: watching and signaling', () => {
     expect(req).toMatchObject({ from: bob.id, transport: 'webrtc' })
     await host.c.wait('participants', (m) => m.participants.find((p) => p.id === bob.id)?.watching[0] === alice.id)
 
-    // Streamer <-> watcher works both ways.
-    alice.c.send({ type: 'signal', to: bob.id, data: { kind: 'offer', sdp: 'offer' } })
-    expect((await bob.c.wait('signal')).from).toBe(alice.id)
-    bob.c.send({ type: 'signal', to: alice.id, data: { kind: 'answer', sdp: 'answer' } })
-    expect((await alice.c.wait('signal')).from).toBe(bob.id)
+    // Streamer <-> watcher works both ways, tagged with the streamer's id.
+    alice.c.send({ type: 'signal', to: bob.id, stream: alice.id, data: { kind: 'offer', sdp: 'offer' } })
+    expect(await bob.c.wait('signal')).toMatchObject({ from: alice.id, stream: alice.id })
+    bob.c.send({ type: 'signal', to: alice.id, stream: alice.id, data: { kind: 'answer', sdp: 'answer' } })
+    expect(await alice.c.wait('signal')).toMatchObject({ from: bob.id, stream: alice.id })
 
-    // Nobody else — not even the host — can signal into that pair.
-    carol.c.send({ type: 'signal', to: alice.id, data: { kind: 'answer', sdp: 'evil' } })
-    carol.c.send({ type: 'signal', to: bob.id, data: { kind: 'offer', sdp: 'evil' } })
-    host.c.send({ type: 'signal', to: bob.id, data: { kind: 'offer', sdp: 'evil' } })
+    // Nobody else — not even the host — can signal into that pair, and the
+    // pair can't claim a connection that doesn't exist (Bob isn't sharing).
+    carol.c.send({ type: 'signal', to: alice.id, stream: alice.id, data: { kind: 'answer', sdp: 'evil' } })
+    carol.c.send({ type: 'signal', to: bob.id, stream: carol.id, data: { kind: 'offer', sdp: 'evil' } })
+    host.c.send({ type: 'signal', to: bob.id, stream: host.id, data: { kind: 'offer', sdp: 'evil' } })
+    alice.c.send({ type: 'signal', to: bob.id, stream: bob.id, data: { kind: 'answer', sdp: 'evil' } })
     await sleep(150)
     expect(alice.c.messages.filter((m) => m.type === 'signal')).toHaveLength(1)
     expect(bob.c.messages.filter((m) => m.type === 'signal')).toHaveLength(1)
@@ -171,6 +173,15 @@ describe('multi-stream: watching and signaling', () => {
     // Host watches Alice too: streamers can watch each other.
     host.c.send({ type: 'watch', streamer: alice.id, transport: 'webrtc' })
     await alice.c.wait('watch-request', (m) => m.from === host.id)
+
+    // Alice watches the host back: the two connections between them are kept
+    // apart by the stream id on every signal.
+    alice.c.send({ type: 'watch', streamer: host.id, transport: 'webrtc' })
+    await host.c.wait('watch-request', (m) => m.from === alice.id)
+    host.c.send({ type: 'signal', to: alice.id, stream: host.id, data: { kind: 'offer', sdp: 'host-offer' } })
+    host.c.send({ type: 'signal', to: alice.id, stream: alice.id, data: { kind: 'answer', sdp: 'answer-to-alice' } })
+    await alice.c.wait('signal', (m) => m.stream === host.id)
+    await alice.c.wait('signal', (m) => m.stream === alice.id)
 
     bob.c.send({ type: 'unwatch', streamer: host.id })
     expect((await host.c.wait('watcher-left')).id).toBe(bob.id)
@@ -229,7 +240,7 @@ describe('multi-stream: ending streams', () => {
     await bob.c.wait('room', (m) => m.room.streams === 0)
     await bob.c.wait('participants', (m) => m.participants.find((p) => p.id === bob.id)?.watching.length === 0)
 
-    bob.c.send({ type: 'signal', to: alice.id, data: { kind: 'answer', sdp: 'late' } })
+    bob.c.send({ type: 'signal', to: alice.id, stream: alice.id, data: { kind: 'answer', sdp: 'late' } })
     await sleep(150)
     expect(alice.c.messages.some((m) => m.type === 'signal')).toBe(false)
   })

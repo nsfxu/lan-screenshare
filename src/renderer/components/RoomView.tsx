@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { ChatMessage, HostedRoom, HostStats, MediaState, Participant, RoomState, Settings, ViewerStats } from '../../shared/types'
+import { useEffect, useRef, useState } from 'react'
+import type { ChatMessage, HostedRoom, HostStats, Participant, RoomState, Settings, ViewerStats } from '../../shared/types'
 import { audioUnavailableMessage, errorMessage, formatBitrate, formatDuration, latencyClass } from '../lib/format'
+import type { SharingState, WatcherInfo } from '../lib/publisher'
 import type { ConnectionState } from '../lib/roomClient'
-import type { SharingState } from '../lib/hostStreamer'
 import type { Session } from '../lib/session'
+import type { Subscription, SubscriptionState } from '../lib/subscription'
 import { ChatPanel } from './ChatPanel'
 import { ChangeSourceDialog } from './Dialogs'
 import { AccessPanel, HostStatsPanel } from './HostControls'
@@ -18,23 +19,27 @@ interface Props {
   onToast(message: string, tone?: 'error' | 'info'): void
 }
 
-/** The in-room interface: stream on the left, people + chat on the right. */
+const SELF = 'self'
+
+/**
+ * The in-room interface. Anyone can share; nothing is watched until the user
+ * picks a stream. Watched streams (and your own preview) are shown as tiles;
+ * focusing one puts it in the spotlight while the others keep playing.
+ */
 export function RoomView({ session, settings, onLeave, onToast }: Props) {
-  const { client } = session
+  const { client, publisher, watches } = session
   const isHost = session.role === 'host'
   const [room, setRoom] = useState<RoomState | null>(client.room)
   const [participants, setParticipants] = useState<Participant[]>(client.participants)
   const [messages, setMessages] = useState<ChatMessage[]>(client.messages)
   const [connection, setConnection] = useState<ConnectionState>(client.state)
-  const [stream, setStream] = useState<MediaStream | null>(
-    session.role === 'host' ? session.streamer.stream : session.receiver.stream
-  )
-  const [mediaState, setMediaState] = useState<MediaState>(session.role === 'viewer' ? session.receiver.state : 'idle')
-  const [ownStats, setOwnStats] = useState<ViewerStats | null>(null)
-  const [hostStats, setHostStats] = useState<HostStats | null>(null)
-  const [viewerStats, setViewerStats] = useState<Map<string, ViewerStats>>(new Map())
-  const [hosted, setHosted] = useState<HostedRoom | null>(session.role === 'host' ? session.hosted : null)
-  const [sharing, setSharing] = useState<SharingState>({ sharing: false, paused: false, hasAudio: false, audioMuted: false })
+  const [ownStream, setOwnStream] = useState<MediaStream | null>(publisher.stream)
+  const [sharing, setSharing] = useState<SharingState>(publisher.state)
+  const [ownStats, setOwnStats] = useState<HostStats | null>(null)
+  const [myWatchers, setMyWatchers] = useState<ReadonlyMap<string, WatcherInfo>>(new Map())
+  const [subs, setSubs] = useState<ReadonlyMap<string, Subscription>>(new Map(watches.all))
+  const [focus, setFocus] = useState<string | null>(null)
+  const [hosted, setHosted] = useState<HostedRoom | null>(session.hosted)
   const [showStats, setShowStats] = useState(false)
   const [pickSource, setPickSource] = useState(false)
   const [, setNow] = useState(Date.now())
@@ -64,45 +69,44 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
   }, [client, settings.notifications, onLeave, onToast])
 
   useEffect(() => {
-    if (session.role === 'host') {
-      const s = session.streamer
-      setSharing(s.state)
-      const offs = [
-        s.on('stream', setStream),
-        s.on('sharing', setSharing),
-        s.on('stats', setHostStats),
-        s.on('viewerStats', (m) => setViewerStats(new Map(m))),
-        window.api.host.onChanged((h) => h && setHosted(h))
-      ]
-      return () => offs.forEach((o) => o())
-    }
-    const r = session.receiver
-    const offs = [r.on('stream', setStream), r.on('state', setMediaState), r.on('stats', setOwnStats)]
+    const offs = [
+      publisher.on('stream', setOwnStream),
+      publisher.on('sharing', setSharing),
+      publisher.on('stats', setOwnStats),
+      publisher.on('watchers', (m) => setMyWatchers(new Map(m))),
+      publisher.on('stopped', (reason) => onToast(reason, 'info')),
+      watches.on('changed', (m) => setSubs(new Map(m)))
+    ]
+    if (session.role === 'host') offs.push(window.api.host.onChanged((h) => h && setHosted(h)))
     return () => offs.forEach((o) => o())
-  }, [session])
+  }, [session, publisher, watches, onToast])
 
-  // Viewers may not record the stream: hide the window from screen capture.
+  // Keep the focus on something that still exists.
   useEffect(() => {
-    if (isHost) return
-    void window.api.system.setViewerProtection(!(room?.allowRecording ?? false))
+    if (focus === SELF ? !ownStream : focus !== null && !subs.has(focus)) setFocus(null)
+  }, [focus, ownStream, subs])
+
+  // Nobody may record streams they watch: hide the window from screen capture
+  // while watching anything.
+  const watchingAny = subs.size > 0
+  useEffect(() => {
+    void window.api.system.setViewerProtection(watchingAny && !(room?.allowRecording ?? false))
     return () => void window.api.system.setViewerProtection(false)
-  }, [isHost, room?.allowRecording])
+  }, [watchingAny, room?.allowRecording])
 
-  // Optional: pause while minimized, resume when restored.
+  // Optional: pause our share while minimized, resume when restored.
   useEffect(() => {
-    if (session.role !== 'host') return
-    const s = session.streamer
     return window.api.system.onWindowState((state) => {
       if (!settings.pauseOnMinimize) return
-      if (state === 'minimized' && s.sharing && !s.paused) {
+      if (state === 'minimized' && publisher.sharing && !publisher.paused) {
         autoPaused.current = true
-        s.setPaused(true)
+        publisher.setPaused(true)
       } else if (state === 'restored' && autoPaused.current) {
         autoPaused.current = false
-        s.setPaused(false)
+        publisher.setPaused(false)
       }
     })
-  }, [session, settings.pauseOnMinimize])
+  }, [publisher, settings.pauseOnMinimize])
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000)
@@ -111,11 +115,10 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
 
   // --- actions ---------------------------------------------------------------
   const shareSource = async (id: string, audio: boolean): Promise<void> => {
-    if (session.role !== 'host') return
     setPickSource(false)
     try {
-      await session.streamer.startCapture(id, audio)
-      if (audio && !session.streamer.hasAudio) onToast(audioUnavailableMessage(session.streamer.audioError), 'error')
+      await publisher.startCapture(id, audio)
+      if (audio && !publisher.hasAudio) onToast(audioUnavailableMessage(publisher.audioError), 'error')
     } catch (err) {
       onToast(`Could not capture: ${errorMessage(err)}`, 'error')
     }
@@ -126,87 +129,72 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
     onLeave()
   }
 
-  // --- rendering -------------------------------------------------------------
-  const hostName = participants.find((p) => p.role === 'host')?.name ?? room?.hostName ?? 'the host'
-  const paused = isHost ? sharing.paused : !!room?.paused
-  let placeholder: ReactNode = null
-  if (isHost) {
-    if (!sharing.sharing) {
-      placeholder = (
-        <div className="placeholder-content">
-          <Icon name="screen" size={40} />
-          <h3>You are not sharing</h3>
-          <p className="muted">Viewers stay in the room and see your screen as soon as you share.</p>
-          <button className="btn primary" onClick={() => setPickSource(true)}>
-            <Icon name="play" /> Share screen
-          </button>
-        </div>
-      )
-    } else if (paused) {
-      placeholder = (
-        <div className="placeholder-content paused">
-          <Icon name="pause" size={32} />
-          <h3>Sharing paused</h3>
-          <p className="muted">Viewers see a paused screen until you resume.</p>
-        </div>
-      )
-    }
-  } else if (!room?.sharing) {
-    placeholder = (
-      <div className="placeholder-content">
-        <div className="pulse-ring">
-          <Icon name="screen" size={36} />
-        </div>
-        <h3>Waiting for {hostName} to share</h3>
-        <p className="muted">The stream starts automatically.</p>
-      </div>
-    )
-  } else if (paused) {
-    placeholder = (
-      <div className="placeholder-content paused">
-        <Icon name="pause" size={32} />
-        <h3>Paused by {hostName}</h3>
-      </div>
-    )
-  } else if (mediaState === 'negotiating' || !stream) {
-    placeholder = (
-      <div className="placeholder-content">
-        <div className="spinner" />
-        <h3>Connecting to stream…</h3>
-      </div>
-    )
-  }
+  const byId = (id: string): Participant | undefined => participants.find((p) => p.id === id)
+  const liveOthers = participants.filter((p) => p.stream && p.id !== client.selfId)
+  const unwatched = liveOthers.filter((p) => !subs.has(p.id))
 
-  const overlay = settings.showStatsOverlay ? (
-    isHost ? (
-      hostStats && sharing.sharing ? (
-        <div className="stat-badges">
-          <span className="stat-badge">{Math.round(hostStats.fps)} fps</span>
-          <span className="stat-badge">{formatBitrate(hostStats.bitrateKbps)}</span>
-          {sharing.hasAudio && (
-            <span className={`stat-badge ${sharing.audioMuted ? 'muted-badge' : ''}`}>
-              {sharing.audioMuted ? 'audio muted' : `audio ${hostStats.audioKbps ?? 0} kbps`}
-            </span>
-          )}
-          <span className={`stat-badge ${hostStats.cpuPercent < 20 ? 'good' : 'ok'}`}>CPU {hostStats.cpuPercent.toFixed(0)}%</span>
-        </div>
-      ) : null
-    ) : ownStats && mediaState === 'streaming' ? (
-      <div className="stat-badges">
-        <span className="stat-badge">{ownStats.fps} fps</span>
-        <span className={`stat-badge ${latencyClass(ownStats.latencyMs)}`} title="Estimated glass-to-glass latency">
-          {ownStats.latencyMs === null ? '– ms' : `~${ownStats.latencyMs} ms`}
-        </span>
-        <span className="stat-badge">
-          {ownStats.width}×{ownStats.height}
-        </span>
-        <span className="stat-badge">
-          {ownStats.codec || '…'} · {ownStats.transport === 'tcp' ? 'TCP' : 'WebRTC'}
-        </span>
-        {!room?.audio && <span className="stat-badge muted-badge">no audio</span>}
+  // --- stage -----------------------------------------------------------------
+  const tiles: string[] = [...(ownStream ? [SELF] : []), ...subs.keys()]
+  const renderTile = (id: string, small: boolean) =>
+    id === SELF ? (
+      <SelfTile
+        key={SELF}
+        stream={ownStream}
+        sharing={sharing}
+        stats={ownStats}
+        showOverlay={settings.showStatsOverlay}
+        focused={focus === SELF}
+        small={small}
+        onFocus={() => setFocus(focus === SELF ? null : SELF)}
+      />
+    ) : (
+      <RemoteTile
+        key={id}
+        sub={subs.get(id)!}
+        participant={byId(id)}
+        showOverlay={settings.showStatsOverlay}
+        focused={focus === id}
+        small={small}
+        onFocus={() => setFocus(focus === id ? null : id)}
+        onStop={() => watches.unwatch(id)}
+      />
+    )
+
+  let stage
+  if (tiles.length === 0) {
+    stage = (
+      <div className="stage-empty">
+        {liveOthers.length === 0 ? (
+          <div className="placeholder-content">
+            <Icon name="screen" size={40} />
+            <h3>No one is sharing yet</h3>
+            <p className="muted">Share your screen, or wait for someone else to.</p>
+            <button className="btn primary" onClick={() => setPickSource(true)}>
+              <Icon name="play" /> Share screen
+            </button>
+          </div>
+        ) : (
+          <div className="placeholder-content">
+            <Icon name="screen" size={40} />
+            <h3>
+              {liveOthers.length === 1 ? '1 person is sharing' : `${liveOthers.length} people are sharing`}
+            </h3>
+            <p className="muted">Choose what you want to watch.</p>
+            <StreamPicker streams={liveOthers} onWatch={(id) => watches.watch(id)} />
+          </div>
+        )}
       </div>
-    ) : null
-  ) : null
+    )
+  } else if (focus && tiles.includes(focus) && tiles.length > 1) {
+    stage = (
+      <div className="stage-spotlight">
+        <div className="spotlight-main">{renderTile(focus, false)}</div>
+        <div className="spotlight-strip">{tiles.filter((t) => t !== focus).map((t) => renderTile(t, true))}</div>
+      </div>
+    )
+  } else {
+    stage = <div className={`stage-grid count-${Math.min(tiles.length, 9)}`}>{tiles.map((t) => renderTile(t, false))}</div>
+  }
 
   return (
     <div className="room">
@@ -217,12 +205,14 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
             <Icon name={room?.privacy === 'private' ? 'lock' : 'globe'} size={12} />
             {room?.privacy === 'private' ? 'Private' : 'Public'}
           </span>
-          {room?.sharing && !paused && <span className="status-pill live">Live</span>}
+          {(room?.streams ?? 0) > 0 && (
+            <span className="status-pill live">{room!.streams === 1 ? '1 live' : `${room!.streams} live`}</span>
+          )}
           {connection === 'reconnecting' && <span className="status-pill warn">Reconnecting…</span>}
         </div>
         <div className="room-meta muted small">
           <span>
-            <Icon name="users" size={13} /> {room?.viewerCount ?? 0} watching
+            <Icon name="users" size={13} /> {participants.length} in room
           </span>
           {room && <span>{formatDuration(Date.now() - room.startedAt)}</span>}
           {client.rttMs !== null && <span title="Round trip to the room server">RTT {Math.round(client.rttMs)} ms</span>}
@@ -232,75 +222,57 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
 
       <div className="room-body">
         <main className="stage">
-          <ScreenViewer
-            stream={stream}
-            placeholder={placeholder}
-            overlay={overlay}
-            local={isHost}
-            audioAvailable={!!room?.audio && mediaState === 'streaming'}
-          />
-          {isHost && showStats && (
+          {tiles.length > 0 && unwatched.length > 0 && (
+            <div className="stream-bar">
+              <span className="muted small">Also live:</span>
+              <StreamPicker streams={unwatched} onWatch={(id) => watches.watch(id)} compact />
+            </div>
+          )}
+          <div className="stage-area">{stage}</div>
+          {showStats && sharing.sharing && (
             <div className="stats-popover">
-              <HostStatsPanel stats={hostStats} />
+              <HostStatsPanel stats={ownStats} />
             </div>
           )}
           <div className="stage-toolbar">
-            {session.role === 'host' ? (
+            {sharing.sharing ? (
               <>
-                {sharing.sharing ? (
-                  <>
-                    <button className="btn" onClick={() => session.streamer.setPaused(!sharing.paused)}>
-                      <Icon name={sharing.paused ? 'play' : 'pause'} /> {sharing.paused ? 'Resume' : 'Pause'}
-                    </button>
-                    <button
-                      className={`btn ${sharing.hasAudio && sharing.audioMuted ? 'active' : ''}`}
-                      disabled={!sharing.hasAudio}
-                      title={sharing.hasAudio ? 'Mute or unmute the system audio viewers hear' : 'Audio is not being captured (enable it via Change source)'}
-                      onClick={() => session.streamer.setAudioMuted(!sharing.audioMuted)}
-                    >
-                      <Icon name={sharing.hasAudio && !sharing.audioMuted ? 'volume' : 'volumeOff'} />
-                      {!sharing.hasAudio ? 'No audio' : sharing.audioMuted ? 'Unmute audio' : 'Mute audio'}
-                    </button>
-                    <button className="btn" onClick={() => setPickSource(true)}>
-                      <Icon name="swap" /> Change source
-                    </button>
-                    <button className="btn" onClick={() => session.streamer.stopSharing()}>
-                      <Icon name="stop" /> Stop sharing
-                    </button>
-                  </>
-                ) : (
-                  <button className="btn primary" onClick={() => setPickSource(true)}>
-                    <Icon name="play" /> Share screen
-                  </button>
-                )}
+                <button className="btn" onClick={() => publisher.setPaused(!sharing.paused)}>
+                  <Icon name={sharing.paused ? 'play' : 'pause'} /> {sharing.paused ? 'Resume' : 'Pause'}
+                </button>
+                <button
+                  className={`btn ${sharing.hasAudio && sharing.audioMuted ? 'active' : ''}`}
+                  disabled={!sharing.hasAudio}
+                  title={sharing.hasAudio ? 'Mute or unmute the system audio viewers hear' : 'Audio is not being captured (enable it via Change source)'}
+                  onClick={() => publisher.setAudioMuted(!sharing.audioMuted)}
+                >
+                  <Icon name={sharing.hasAudio && !sharing.audioMuted ? 'volume' : 'volumeOff'} />
+                  {!sharing.hasAudio ? 'No audio' : sharing.audioMuted ? 'Unmute audio' : 'Mute audio'}
+                </button>
+                <button className="btn" onClick={() => setPickSource(true)}>
+                  <Icon name="swap" /> Change source
+                </button>
+                <button className="btn" onClick={() => publisher.stopSharing()}>
+                  <Icon name="stop" /> Stop sharing
+                </button>
                 <button className={`btn ${showStats ? 'active' : ''}`} onClick={() => setShowStats((v) => !v)}>
                   <Icon name="chart" /> Stats
                 </button>
-                <span className="spacer" />
-                <button className="btn danger" onClick={endRoom}>
-                  <Icon name="logout" /> End room
-                </button>
               </>
             ) : (
-              <>
-                {ownStats && mediaState === 'streaming' && (
-                  <span className="muted small toolbar-stats">
-                    {formatBitrate(ownStats.bitrateKbps)}
-                    {ownStats.audioKbps > 0 ? ` + ${ownStats.audioKbps} kbps audio` : ''}
-                    {ownStats.packetLossPct >= 0.5 ? ` · ${ownStats.packetLossPct.toFixed(1)}% loss` : ''}
-                    {ownStats.decoder ? ` · ${ownStats.decoder}` : ''}
-                  </span>
-                )}
-                {session.receiver.transport === 'tcp' && room?.sharing && (
-                  <button className="btn small" title="Try the low-latency WebRTC transport again" onClick={() => session.receiver.retry('webrtc')}>
-                    <Icon name="refresh" /> Retry WebRTC
-                  </button>
-                )}
-                <span className="spacer" />
-                <button className="btn danger" onClick={() => onLeave()}>
-                  <Icon name="logout" /> Leave
-                </button>
-              </>
+              <button className="btn primary" onClick={() => setPickSource(true)}>
+                <Icon name="play" /> Share screen
+              </button>
+            )}
+            <span className="spacer" />
+            {isHost ? (
+              <button className="btn danger" onClick={endRoom}>
+                <Icon name="logout" /> End room
+              </button>
+            ) : (
+              <button className="btn danger" onClick={() => onLeave()}>
+                <Icon name="logout" /> Leave
+              </button>
             )}
           </div>
         </main>
@@ -311,10 +283,17 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
             participants={participants}
             selfId={client.selfId}
             isHost={isHost}
-            viewerStats={viewerStats}
+            myWatchers={myWatchers}
+            watching={new Set(subs.keys())}
+            onWatch={(id) => watches.watch(id)}
+            onUnwatch={(id) => watches.unwatch(id)}
             onKick={(id) => {
-              const p = participants.find((x) => x.id === id)
+              const p = byId(id)
               if (p && confirm(`Remove ${p.name} from the room?`)) client.send({ type: 'kick', userId: id })
+            }}
+            onStopStream={(id) => {
+              const p = byId(id)
+              if (p && confirm(`Stop ${p.name}'s stream?`)) client.send({ type: 'stop-stream', userId: id })
             }}
           />
           <ChatPanel
@@ -329,14 +308,183 @@ export function RoomView({ session, settings, onLeave, onToast }: Props) {
         </aside>
       </div>
 
-      {pickSource && session.role === 'host' && (
+      {pickSource && (
         <ChangeSourceDialog
-          current={session.streamer.sourceId}
-          currentAudio={session.streamer.sharing ? session.streamer.hasAudio : settings.shareAudio}
+          current={publisher.sourceId}
+          currentAudio={publisher.sharing ? publisher.hasAudio : settings.shareAudio}
           onCancel={() => setPickSource(false)}
           onPick={(id, audio) => void shareSource(id, audio)}
         />
       )}
     </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+
+function StreamPicker({ streams, onWatch, compact }: { streams: Participant[]; onWatch(id: string): void; compact?: boolean }) {
+  return (
+    <div className={`stream-picker ${compact ? 'compact' : ''}`}>
+      {streams.map((p) => (
+        <button key={p.id} className="stream-chip" onClick={() => onWatch(p.id)} title={`Watch ${p.name}'s stream`}>
+          <span className="avatar tiny" style={{ background: p.color }}>
+            {p.name.slice(0, 1).toUpperCase()}
+          </span>
+          <span className="stream-chip-name">{p.name}</span>
+          {p.stream?.audio && <Icon name="volume" size={12} />}
+          {p.stream?.paused && <span className="muted small">paused</span>}
+          <span className="stream-chip-action">
+            <Icon name="play" size={12} /> Watch
+          </span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+interface TileChrome {
+  focused: boolean
+  small: boolean
+  showOverlay: boolean
+  onFocus(): void
+}
+
+function SelfTile({
+  stream,
+  sharing,
+  stats,
+  showOverlay,
+  focused,
+  small,
+  onFocus
+}: TileChrome & { stream: MediaStream | null; sharing: SharingState; stats: HostStats | null }) {
+  const overlay =
+    showOverlay && stats && !small ? (
+      <div className="stat-badges">
+        <span className="stat-badge">{Math.round(stats.fps)} fps</span>
+        <span className="stat-badge">{formatBitrate(stats.bitrateKbps)}</span>
+        <span className="stat-badge">{stats.viewers} watching</span>
+        {sharing.hasAudio && (
+          <span className={`stat-badge ${sharing.audioMuted ? 'muted-badge' : ''}`}>
+            {sharing.audioMuted ? 'audio muted' : `audio ${stats.audioKbps ?? 0} kbps`}
+          </span>
+        )}
+        <span className={`stat-badge ${stats.cpuPercent < 20 ? 'good' : 'ok'}`}>CPU {stats.cpuPercent.toFixed(0)}%</span>
+      </div>
+    ) : null
+  return (
+    <div className={`tile ${focused ? 'focused' : ''} ${small ? 'small' : ''}`}>
+      <div className="tile-bar">
+        <span className="tile-name">
+          <Icon name="screen" size={13} /> Your screen
+        </span>
+        <TileButton focused={focused} onFocus={onFocus} />
+      </div>
+      <ScreenViewer
+        stream={stream}
+        local
+        overlay={overlay}
+        placeholder={
+          sharing.paused ? (
+            <div className="placeholder-content paused">
+              <Icon name="pause" size={28} />
+              <h3>Sharing paused</h3>
+            </div>
+          ) : null
+        }
+      />
+    </div>
+  )
+}
+
+function RemoteTile({
+  sub,
+  participant,
+  showOverlay,
+  focused,
+  small,
+  onFocus,
+  onStop
+}: TileChrome & { sub: Subscription; participant: Participant | undefined; onStop(): void }) {
+  const [stream, setStream] = useState<MediaStream | null>(sub.stream)
+  const [state, setState] = useState<SubscriptionState>(sub.state)
+  const [stats, setStats] = useState<ViewerStats | null>(null)
+  useEffect(() => {
+    setStream(sub.stream)
+    setState(sub.state)
+    const offs = [sub.on('stream', setStream), sub.on('state', setState), sub.on('stats', setStats)]
+    return () => offs.forEach((o) => o())
+  }, [sub])
+
+  const name = participant?.name ?? 'Someone'
+  const paused = !!participant?.stream?.paused
+  let placeholder = null
+  if (paused) {
+    placeholder = (
+      <div className="placeholder-content paused">
+        <Icon name="pause" size={28} />
+        <h3>Paused by {name}</h3>
+      </div>
+    )
+  } else if (state === 'negotiating' || !stream) {
+    placeholder = (
+      <div className="placeholder-content">
+        <div className="spinner" />
+        <h3>Connecting to {name}…</h3>
+      </div>
+    )
+  }
+
+  const overlay =
+    showOverlay && stats && state === 'streaming' && !small ? (
+      <div className="stat-badges">
+        <span className="stat-badge">{stats.fps} fps</span>
+        <span className={`stat-badge ${latencyClass(stats.latencyMs)}`} title="Estimated glass-to-glass latency">
+          {stats.latencyMs === null ? '– ms' : `~${stats.latencyMs} ms`}
+        </span>
+        <span className="stat-badge">
+          {stats.width}×{stats.height}
+        </span>
+        <span className="stat-badge">
+          {stats.codec || '…'} · {stats.transport === 'tcp' ? 'TCP' : 'WebRTC'}
+        </span>
+        {!participant?.stream?.audio && <span className="stat-badge muted-badge">no audio</span>}
+      </div>
+    ) : null
+
+  return (
+    <div className={`tile ${focused ? 'focused' : ''} ${small ? 'small' : ''}`}>
+      <div className="tile-bar">
+        <span className="tile-name">
+          <span className="avatar tiny" style={{ background: participant?.color }}>
+            {name.slice(0, 1).toUpperCase()}
+          </span>
+          {name}
+        </span>
+        {!small && sub.transport === 'tcp' && (
+          <button className="icon-btn" title="Try the low-latency WebRTC transport again" onClick={() => sub.retry('webrtc')}>
+            <Icon name="refresh" size={14} />
+          </button>
+        )}
+        <TileButton focused={focused} onFocus={onFocus} />
+        <button className="icon-btn" title={`Stop watching ${name}`} onClick={onStop}>
+          <Icon name="x" size={14} />
+        </button>
+      </div>
+      <ScreenViewer
+        stream={stream}
+        placeholder={placeholder}
+        overlay={overlay}
+        audioAvailable={!!participant?.stream?.audio && state === 'streaming'}
+      />
+    </div>
+  )
+}
+
+function TileButton({ focused, onFocus }: { focused: boolean; onFocus(): void }) {
+  return (
+    <button className="icon-btn" title={focused ? 'Back to grid' : 'Focus this stream'} onClick={onFocus}>
+      <Icon name={focused ? 'exitFullscreen' : 'fit'} size={14} />
+    </button>
   )
 }

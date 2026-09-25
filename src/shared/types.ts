@@ -172,8 +172,12 @@ export type ClientMessage =
       decoders?: CodecSupport[]
     }
   | { type: 'chat'; text: string }
-  /** Only between a streamer and one of its watchers (either direction). */
-  | { type: 'signal'; to: string; data: SignalData }
+  /**
+   * Only between a streamer and one of its watchers (either direction).
+   * `stream` names the streamer whose connection this belongs to, since two
+   * people can watch each other and then share two connections.
+   */
+  | { type: 'signal'; to: string; stream: string; data: SignalData }
   | { type: 'ping'; t: number }
   | { type: 'bye' }
   // as a streamer
@@ -205,7 +209,7 @@ export type ServerMessage =
   | { type: 'participants'; participants: Participant[] }
   | { type: 'chat'; message: ChatMessage }
   | { type: 'chat-deleted'; id: string }
-  | { type: 'signal'; from: string; data: SignalData }
+  | { type: 'signal'; from: string; stream: string; data: SignalData }
   | { type: 'pong'; t: number; serverTime: number }
   | { type: 'kicked' }
   | { type: 'room-ended'; reason: string }

@@ -1,19 +1,17 @@
 import { STATS_INTERVAL_MS, WEBRTC_CONNECT_TIMEOUT_MS } from '../../shared/constants'
-import type { MediaState, RoomState, ServerMessage, Transport, ViewerStats } from '../../shared/types'
+import type { MediaState, ServerMessage, SignalData, Transport, ViewerStats } from '../../shared/types'
 import { shortCodecName } from './codecs'
 import { Emitter } from './emitter'
 import type { RoomClient } from './roomClient'
 import { TcpDecoder } from './tcpStream'
 
+/** Receiving state; 'ended' means the streamer stopped (the subscription is over). */
+export type SubscriptionState = MediaState | 'ended'
+
 type Events = {
   stream: MediaStream | null
-  state: MediaState
+  state: SubscriptionState
   stats: ViewerStats
-}
-
-const log = (msg: string): void => {
-  console.info(`[viewer] ${msg}`)
-  window.api.system.log('info', `[viewer] ${msg}`)
 }
 
 const EMPTY_STATS: ViewerStats = {
@@ -31,14 +29,14 @@ const EMPTY_STATS: ViewerStats = {
 }
 
 /**
- * Viewer side of the stream. Asks the host for a WebRTC stream and falls back
- * to the TCP (WebSocket + WebCodecs) transport when ICE can't connect in time
- * or the connection fails. Re-requests the stream after reconnects and when
- * the host (re)starts sharing.
+ * Watching one participant's stream. Asks that streamer for a WebRTC
+ * connection and falls back to the TCP (WebSocket + WebCodecs) transport when
+ * ICE can't connect in time or the connection fails. Re-subscribes after our
+ * own reconnects; ends when the streamer stops sharing.
  */
-export class ViewerReceiver extends Emitter<Events> {
+export class Subscription extends Emitter<Events> {
   stream: MediaStream | null = null
-  state: MediaState = 'idle'
+  state: SubscriptionState = 'idle'
   stats: ViewerStats = EMPTY_STATS
   transport: Transport
 
@@ -59,98 +57,112 @@ export class ViewerReceiver extends Emitter<Events> {
     decodeTime: number
     decoded: number
   } | null = null
-  private hostEncodeMs: number | null = null
+  private publisherEncodeMs: number | null = null
   private tick = 0
-  private wasSharing = false
+  private readonly log: (msg: string) => void
 
   constructor(
     private readonly client: RoomClient,
+    readonly streamerId: string,
     forceTcp: boolean
   ) {
     super()
     this.transport = forceTcp ? 'tcp' : 'webrtc'
+    this.log = (msg) => {
+      console.info(`[watch ${streamerId}] ${msg}`)
+      window.api.system.log('info', `[watch ${streamerId}] ${msg}`)
+    }
     this.unsubscribers.push(
-      client.on('welcome', () => this.requestStream()),
-      client.on('room', (room) => this.onRoom(room)),
-      client.on('message', (msg) => void this.onMessage(msg)),
-      client.on('binary', (buf) => this.tcp?.push(buf))
+      // Our own reconnect dropped the subscription server-side: ask again.
+      client.on('welcome', () => {
+        if (this.state === 'ended') return
+        if (this.streamerSharing()) this.request()
+        else this.end()
+      }),
+      client.on('message', (msg) => void this.onMessage(msg))
     )
     this.statsTimer = window.setInterval(() => void this.collectStats(), STATS_INTERVAL_MS)
-    if (client.state === 'connected') this.requestStream()
+    this.request()
   }
 
-  /** Try WebRTC again (e.g. after a TCP fallback) or re-request the stream. */
+  /** Try WebRTC again (e.g. after a TCP fallback). */
   retry(transport: Transport = 'webrtc'): void {
+    if (this.state === 'ended') return
     this.transport = transport
-    this.requestStream()
+    this.request()
   }
 
+  /** Relayed TCP-fallback packet for this streamer (slot byte already removed). */
+  pushBinary(packet: ArrayBuffer): void {
+    this.tcp?.push(packet)
+  }
+
+  /** Stop watching (tells the streamer unless the stream already ended). */
   dispose(): void {
+    if (this.state !== 'ended') this.client.send({ type: 'unwatch', streamer: this.streamerId })
     this.teardown()
     this.unsubscribers.forEach((u) => u())
     clearInterval(this.statsTimer)
     this.removeAllListeners()
   }
 
-  private onRoom(room: RoomState): void {
-    if (!room.sharing) {
-      this.wasSharing = false
-      if (this.state !== 'idle') {
-        this.teardown()
-        this.setState('idle')
-      }
-      return
-    }
-    if (!this.wasSharing && this.state === 'idle') this.requestStream()
-    this.wasSharing = true
+  private streamerSharing(): boolean {
+    return !!this.client.participants.find((p) => p.id === this.streamerId)?.stream
   }
 
-  private requestStream(): void {
-    this.wasSharing = !!this.client.room?.sharing
-    if (!this.client.room?.sharing) {
-      this.teardown()
-      this.setState('idle')
-      return
-    }
+  private request(): void {
     this.teardown()
     this.setState('negotiating')
     if (this.transport === 'tcp') {
       this.tcp = new TcpDecoder(
         () => this.client.clockOffsetMs,
-        () => this.client.send({ type: 'keyframe-request' }),
-        log
+        () => this.client.send({ type: 'keyframe-request', streamer: this.streamerId }),
+        this.log
       )
       this.setStream(this.tcp.stream)
-      this.client.send({ type: 'request-stream', transport: 'tcp' })
-      log('requested TCP stream')
+      this.client.send({ type: 'watch', streamer: this.streamerId, transport: 'tcp' })
+      this.log('requested TCP stream')
       return
     }
-    this.client.send({ type: 'request-stream', transport: 'webrtc' })
+    this.client.send({ type: 'watch', streamer: this.streamerId, transport: 'webrtc' })
     this.connectTimer = window.setTimeout(() => this.fallbackToTcp('WebRTC connect timeout'), WEBRTC_CONNECT_TIMEOUT_MS)
-    log('requested WebRTC stream')
+    this.log('requested WebRTC stream')
   }
 
   private fallbackToTcp(reason: string): void {
-    if (this.transport === 'tcp') return
-    log(`falling back to TCP: ${reason}`)
+    if (this.transport === 'tcp' || this.state === 'ended') return
+    this.log(`falling back to TCP: ${reason}`)
     this.transport = 'tcp'
-    this.requestStream()
+    this.request()
+  }
+
+  private end(): void {
+    if (this.state === 'ended') return
+    this.log('stream ended')
+    this.teardown()
+    this.setState('ended')
   }
 
   private async onMessage(msg: ServerMessage): Promise<void> {
-    if (msg.type === 'host-stats') {
-      this.hostEncodeMs = msg.encodeMs
+    if (msg.type === 'stream-ended' && msg.streamer === this.streamerId) return this.end()
+    if (msg.type === 'publisher-stats' && msg.from === this.streamerId) {
+      this.publisherEncodeMs = msg.encodeMs
       return
     }
-    if (msg.type !== 'signal' || msg.from !== 'host') return
+    // Only signals for *this streamer's* connection (not our own publisher's).
+    if (msg.type !== 'signal' || msg.from !== this.streamerId || msg.stream !== this.streamerId) return
     const data = msg.data
     if (data.kind === 'offer') {
-      if (this.transport !== 'webrtc') return
+      if (this.transport !== 'webrtc' || this.state === 'ended') return
       await this.handleOffer(data.sdp)
     } else if (data.kind === 'candidate' && data.candidate && this.pc) {
       if (this.pc.remoteDescription) await this.pc.addIceCandidate(data.candidate).catch(() => {})
       else this.pendingCandidates.push(data.candidate)
     }
+  }
+
+  private signal(data: SignalData): void {
+    this.client.send({ type: 'signal', to: this.streamerId, stream: this.streamerId, data })
   }
 
   private async handleOffer(sdp: string): Promise<void> {
@@ -159,7 +171,7 @@ export class ViewerReceiver extends Emitter<Events> {
     this.pc = pc
     pc.ontrack = (e) => {
       // Render frames as soon as they are decoded: this is a live screen, not a movie.
-      const receiver = e.receiver as RTCRtpReceiver & { jitterBufferTarget?: number; playoutDelayHint?: number }
+      const receiver = e.receiver as RTCRtpReceiver & { jitterBufferTarget?: number }
       try {
         receiver.jitterBufferTarget = 0
       } catch {
@@ -167,12 +179,10 @@ export class ViewerReceiver extends Emitter<Events> {
       }
       this.setStream(e.streams[0] ?? new MediaStream([e.track]))
     }
-    pc.onicecandidate = (e) => {
-      this.client.send({ type: 'signal', to: 'host', data: { kind: 'candidate', candidate: e.candidate?.toJSON() ?? null } })
-    }
+    pc.onicecandidate = (e) => this.signal({ kind: 'candidate', candidate: e.candidate?.toJSON() ?? null })
     pc.onconnectionstatechange = () => {
       if (this.pc !== pc) return
-      log(`connection ${pc.connectionState}`)
+      this.log(`connection ${pc.connectionState}`)
       if (pc.connectionState === 'connected') {
         if (this.connectTimer) clearTimeout(this.connectTimer)
         this.connectTimer = null
@@ -186,9 +196,9 @@ export class ViewerReceiver extends Emitter<Events> {
       for (const c of this.pendingCandidates.splice(0)) await pc.addIceCandidate(c).catch(() => {})
       const answer = await pc.createAnswer()
       await pc.setLocalDescription(answer)
-      this.client.send({ type: 'signal', to: 'host', data: { kind: 'answer', sdp: pc.localDescription!.sdp } })
+      this.signal({ kind: 'answer', sdp: pc.localDescription!.sdp })
     } catch (err) {
-      log(`negotiation failed: ${String(err)}`)
+      this.log(`negotiation failed: ${String(err)}`)
       this.fallbackToTcp('negotiation failed')
     }
   }
@@ -219,19 +229,21 @@ export class ViewerReceiver extends Emitter<Events> {
     this.emit('stream', stream)
   }
 
-  private setState(state: MediaState): void {
+  private setState(state: SubscriptionState): void {
     if (this.state === state) return
     this.state = state
     this.emit('state', state)
   }
 
   private async collectStats(): Promise<void> {
+    if (this.state === 'ended') return
     this.tick++
     const stats = this.tcp ? this.tcpStats() : await this.webrtcStats()
     if (!stats) return
     this.stats = stats
     this.emit('stats', stats)
-    if (this.tick % 2 === 0) this.client.send({ type: 'stats', stats, mediaState: this.state })
+    const mediaState = this.state as MediaState
+    if (this.tick % 2 === 0) this.client.send({ type: 'stats', streamer: this.streamerId, stats, mediaState })
   }
 
   private tcpStats(): ViewerStats | null {
@@ -261,7 +273,7 @@ export class ViewerReceiver extends Emitter<Events> {
   }
 
   private async webrtcStats(): Promise<ViewerStats | null> {
-    if (!this.pc) return this.state === 'idle' ? { ...EMPTY_STATS } : null
+    if (!this.pc) return null
     let report: RTCStatsReport
     try {
       report = await this.pc.getStats()
@@ -307,7 +319,7 @@ export class ViewerReceiver extends Emitter<Events> {
     const jitterMs = jbCount > 0 ? ((cur.jbDelay - prev.jbDelay) / jbCount) * 1000 : 0
     const decodeMs = decoded > 0 ? ((cur.decodeTime - prev.decodeTime) / decoded) * 1000 : 0
     const frameMs = fps > 0 ? 1000 / fps : 16.7
-    const latency = frameMs / 2 + (this.hostEncodeMs ?? 5) + rttMs / 2 + jitterMs + decodeMs + 8
+    const latency = frameMs / 2 + (this.publisherEncodeMs ?? 5) + rttMs / 2 + jitterMs + decodeMs + 8
 
     return {
       fps: Math.round(fps),
