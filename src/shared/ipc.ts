@@ -5,6 +5,7 @@ import type {
   DiscoveredRoom,
   HostedRoom,
   NativeAudioFormat,
+  NativeAudioOptions,
   ScreenPermission,
   Settings,
   SystemStats,
@@ -73,10 +74,13 @@ export interface ScreenShareApi {
     /** Choose the source (and whether to include system audio) for the next getDisplayMedia(). */
     select(id: string, audio: boolean): Promise<void>
     audioSupported(): Promise<boolean>
-    /** Windows helper that captures system audio from surround (5.1/7.1) devices. */
+    /**
+     * Windows helper that captures system audio: from surround (5.1/7.1)
+     * devices, or everything except Discord.
+     */
     nativeAudio: {
       available(): Promise<boolean>
-      start(): Promise<NativeAudioFormat>
+      start(options?: NativeAudioOptions): Promise<NativeAudioFormat>
       stop(id?: number): Promise<void>
       /** Interleaved float32 stereo PCM, frame-aligned. */
       onData(cb: (id: number, chunk: Uint8Array) => void): () => void

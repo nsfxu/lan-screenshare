@@ -34,7 +34,7 @@ const api: ScreenShareApi = {
     audioSupported: () => ipcRenderer.invoke(IPC.audioSupported),
     nativeAudio: {
       available: () => ipcRenderer.invoke(IPC.nativeAudioAvailable),
-      start: () => ipcRenderer.invoke(IPC.nativeAudioStart),
+      start: (options) => ipcRenderer.invoke(IPC.nativeAudioStart, options),
       stop: (id) => ipcRenderer.invoke(IPC.nativeAudioStop, id),
       onData: (cb) => {
         const listener = (_e: IpcRendererEvent, id: number, chunk: Uint8Array): void => cb(id, chunk)

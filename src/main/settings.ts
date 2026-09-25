@@ -30,6 +30,7 @@ function defaults(): Settings {
     pauseOnMinimize: false,
     showStatsOverlay: true,
     shareAudio: true,
+    excludeDiscordAudio: true,
     uploadBudgetMbps: 100
   }
 }
@@ -86,7 +87,7 @@ function sanitize(s: Settings, fallback: Settings): Settings {
   out.lastRoom = isEndpoint(s.lastRoom) ? s.lastRoom : null
   const budget = Number(s.uploadBudgetMbps)
   out.uploadBudgetMbps = Number.isInteger(budget) && budget >= 0 && budget <= 10_000 ? budget : fallback.uploadBudgetMbps
-  for (const key of ['adaptiveQuality', 'forceTcp', 'useTls', 'autoRejoin', 'notifications', 'pauseOnMinimize', 'showStatsOverlay', 'shareAudio'] as const) {
+  for (const key of ['adaptiveQuality', 'forceTcp', 'useTls', 'autoRejoin', 'notifications', 'pauseOnMinimize', 'showStatsOverlay', 'shareAudio', 'excludeDiscordAudio'] as const) {
     out[key] = typeof s[key] === 'boolean' ? s[key] : fallback[key]
   }
   return out

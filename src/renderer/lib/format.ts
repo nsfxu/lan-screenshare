@@ -49,6 +49,11 @@ export function audioUnavailableMessage(error: string | null): string {
   return 'System audio is not available here; sharing video only.'
 }
 
+/** Shown when "Leave out Discord" was on but the whole system mix is being shared. */
+export const DISCORD_NOT_EXCLUDED_MESSAGE =
+  "Couldn't leave Discord out of the shared audio (this needs Windows 10 version 2004 or newer), so viewers " +
+  'will also hear your Discord call. Use Mute audio if that is a problem.'
+
 export function latencyClass(ms: number | null): 'good' | 'ok' | 'bad' | 'unknown' {
   if (ms === null) return 'unknown'
   if (ms < 100) return 'good'

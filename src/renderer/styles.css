@@ -699,6 +699,13 @@ input[type='checkbox']:checked::after {
   gap: 16px;
   cursor: pointer;
 }
+.toggle-row.nested {
+  padding-left: 22px;
+}
+.toggle-row.disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 .codec-table {
   width: 100%;
   border-collapse: collapse;

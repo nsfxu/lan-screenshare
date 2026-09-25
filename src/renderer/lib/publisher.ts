@@ -1,4 +1,4 @@
-import { SNAPSHOT_INTERVAL_MS, SNAPSHOT_MAX_CHARS, SNAPSHOT_WIDTH, STATS_INTERVAL_MS } from '../../shared/constants'
+import { NO_PROCESS_LOOPBACK, SNAPSHOT_INTERVAL_MS, SNAPSHOT_MAX_CHARS, SNAPSHOT_WIDTH, STATS_INTERVAL_MS } from '../../shared/constants'
 import { AdaptiveController, encodingFor, encodingForWatcher, getPreset, qualityLadder, splitBudget } from '../../shared/quality'
 import type {
   CodecSupport,
@@ -12,6 +12,7 @@ import type {
 } from '../../shared/types'
 import { applyCodecOrder, chooseCodecOrder, mungeBitrates, mungeOpus, shortCodecName } from './codecs'
 import { Emitter } from './emitter'
+import { errorMessage } from './format'
 import { startNativeLoopback, type NativeAudioCapture } from './nativeAudio'
 import type { RoomClient } from './roomClient'
 import { TcpAudioEncoder, TcpEncoder } from './tcpStream'
@@ -49,6 +50,8 @@ export interface SharingState {
   /** System audio was captured with the current source. */
   hasAudio: boolean
   audioMuted: boolean
+  /** The captured audio leaves out Discord (Windows). */
+  discordExcluded: boolean
 }
 
 /** What a watcher reports about receiving this publisher's stream. */
@@ -88,6 +91,11 @@ export class Publisher extends Emitter<Events> {
   audioMuted = false
   /** Why system audio could not be captured with the current source (DOMException name). */
   audioError: string | null = null
+  /** "Leave out Discord" as chosen for the current source. */
+  excludeDiscord = false
+  /** Leaving Discord out was asked for with the current source but isn't possible here. */
+  discordExclusionFailed = false
+  discordExcluded = false
   sourceId: string | null = null
   readonly watchers = new Map<string, WatcherInfo>()
   lastStats: HostStats | null = null
@@ -97,6 +105,8 @@ export class Publisher extends Emitter<Events> {
   /** Windows helper capture, used when Chromium loopback rejects the device format. */
   private nativeAudio: NativeAudioCapture | null = null
   private preferNativeAudio = false
+  /** False once this Windows turned out not to support capturing all audio except one app. */
+  private processLoopback = true
   private readonly peers = new Map<string, Peer>()
   /** Pixel height each watcher displays us at (null = full); may arrive before its peer exists. */
   private readonly viewHeights = new Map<string, number | null>()
@@ -131,7 +141,13 @@ export class Publisher extends Emitter<Events> {
   }
 
   get state(): SharingState {
-    return { sharing: !!this.track, paused: this.paused, hasAudio: !!this.audioTrack, audioMuted: this.audioMuted }
+    return {
+      sharing: !!this.track,
+      paused: this.paused,
+      hasAudio: !!this.audioTrack,
+      audioMuted: this.audioMuted,
+      discordExcluded: !!this.audioTrack && this.discordExcluded
+    }
   }
 
   updateSettings(settings: Settings): void {
@@ -143,52 +159,16 @@ export class Publisher extends Emitter<Events> {
   /**
    * Start capturing (or switch to another source without renegotiating).
    * With `withAudio`, system audio is captured too; if the platform refuses
-   * audio, sharing continues video-only.
+   * audio, sharing continues video-only. With `excludeDiscord` (Windows), the
+   * audio leaves out Discord, so viewers in the same voice call don't hear
+   * themselves.
    */
-  async startCapture(sourceId: string, withAudio = this.settings.shareAudio): Promise<void> {
-    const preset = getPreset(this.settings.maxQuality)
-    const video: MediaTrackConstraints = { frameRate: { ideal: preset.fps, max: preset.fps } }
-    if (preset.height > 0) video.height = { max: preset.height }
-    // System audio should reach viewers untouched: no voice processing.
-    const audio: MediaTrackConstraints = {
-      echoCancellation: false,
-      noiseSuppression: false,
-      autoGainControl: false,
-      channelCount: 2,
-      sampleRate: 48_000
-    }
-
-    let stream: MediaStream
-    let native: NativeAudioCapture | null = null
-    this.audioError = null
-    // Once Chromium's loopback has failed on this device, go straight to the helper.
-    const chromiumAudio = withAudio && !this.preferNativeAudio
-    await window.api.capture.select(sourceId, chromiumAudio)
-    try {
-      stream = await navigator.mediaDevices.getDisplayMedia({ video, audio: chromiumAudio ? audio : false })
-    } catch (err) {
-      if (!chromiumAudio) throw err
-      this.audioError = err instanceof DOMException ? err.name : String(err)
-      log(`capture with audio failed (${String(err)}); retrying video only`)
-      await window.api.capture.select(sourceId, false)
-      stream = await navigator.mediaDevices.getDisplayMedia({ video, audio: false })
-    }
-    // Windows: Chromium can't open surround (5.1/7.1) devices for loopback, but
-    // the native helper can (it downmixes to stereo).
-    const needNative = withAudio && (this.preferNativeAudio || this.audioError === 'NotReadableError')
-    if (needNative && stream.getAudioTracks().length === 0 && (await window.api.capture.nativeAudio.available())) {
-      this.nativeAudio?.stop() // the helper is a single process; free it first
-      this.nativeAudio = null
-      try {
-        native = await startNativeLoopback(log)
-        stream.addTrack(native.track)
-        this.audioError = null
-        this.preferNativeAudio = true
-      } catch (err) {
-        log(`native loopback failed: ${String(err)}`)
-        this.audioError ??= 'NotReadableError'
-      }
-    }
+  async startCapture(
+    sourceId: string,
+    withAudio = this.settings.shareAudio,
+    excludeDiscord = this.settings.excludeDiscordAudio
+  ): Promise<void> {
+    const { stream, native, discordExcluded } = await this.acquire(sourceId, withAudio, excludeDiscord)
     if (this.disposed) {
       native?.stop()
       stream.getTracks().forEach((t) => t.stop())
@@ -207,7 +187,7 @@ export class Publisher extends Emitter<Events> {
       `capturing ${s.width}x${s.height}@${s.frameRate} from ${sourceId}` +
         (audioTrack
           ? native
-            ? ' + audio (native loopback)'
+            ? ` + audio (native loopback${discordExcluded ? ', without Discord' : ''})`
             : ` + audio ${a?.sampleRate ?? '?'} Hz x${a?.channelCount ?? '?'}`
           : withAudio
             ? ' (no audio available)'
@@ -221,6 +201,8 @@ export class Publisher extends Emitter<Events> {
     this.stream = stream
     this.track = track
     this.audioTrack = audioTrack
+    this.discordExcluded = discordExcluded
+    this.excludeDiscord = excludeDiscord
     this.sourceId = sourceId
 
     if (oldVideo) {
@@ -241,6 +223,90 @@ export class Publisher extends Emitter<Events> {
     this.emit('stream', stream)
     this.publishSharing()
     this.snapshotShortly()
+  }
+
+  /** Capture the source's video and, if asked, system audio (see startCapture). */
+  private async acquire(
+    sourceId: string,
+    withAudio: boolean,
+    excludeDiscord: boolean
+  ): Promise<{ stream: MediaStream; native: NativeAudioCapture | null; discordExcluded: boolean }> {
+    const preset = getPreset(this.settings.maxQuality)
+    const video: MediaTrackConstraints = { frameRate: { ideal: preset.fps, max: preset.fps } }
+    if (preset.height > 0) video.height = { max: preset.height }
+    // System audio should reach viewers untouched: no voice processing.
+    const audio: MediaTrackConstraints = {
+      echoCancellation: false,
+      noiseSuppression: false,
+      autoGainControl: false,
+      channelCount: 2,
+      sampleRate: 48_000
+    }
+
+    let stream: MediaStream | null = null
+    let native: NativeAudioCapture | null = null
+    let discordExcluded = false
+    this.audioError = null
+    this.discordExclusionFailed = false
+    try {
+      // Video first: if it fails, a share that is switching sources keeps its
+      // current audio (starting the helper would stop the running one).
+      // Once Chromium's loopback has failed on this device, go straight to the helper.
+      const chromiumAudio = withAudio && !this.preferNativeAudio
+      await window.api.capture.select(sourceId, chromiumAudio)
+      try {
+        stream = await navigator.mediaDevices.getDisplayMedia({ video, audio: chromiumAudio ? audio : false })
+      } catch (err) {
+        if (!chromiumAudio) throw err
+        this.audioError = err instanceof DOMException ? err.name : String(err)
+        log(`capture with audio failed (${String(err)}); retrying video only`)
+        await window.api.capture.select(sourceId, false)
+        stream = await navigator.mediaDevices.getDisplayMedia({ video, audio: false })
+      }
+      // Windows: Chromium's loopback captures the whole output mix; the
+      // helper's per-process loopback can leave Discord out. If that isn't
+      // possible, Chromium's track (or the surround fallback below) is kept.
+      if (withAudio && excludeDiscord && /Windows/.test(navigator.userAgent)) {
+        if (this.processLoopback && (await window.api.capture.nativeAudio.available())) {
+          this.nativeAudio?.stop() // the helper is a single process; free it first
+          this.nativeAudio = null
+          try {
+            native = await startNativeLoopback(log, { excludeDiscord: true })
+            discordExcluded = true
+            this.audioError = null
+            for (const t of stream.getAudioTracks()) {
+              stream.removeTrack(t)
+              t.stop()
+            }
+          } catch (err) {
+            log(`capture without Discord failed: ${String(err)}`)
+            if (errorMessage(err).includes(NO_PROCESS_LOOPBACK)) this.processLoopback = false
+          }
+        }
+        this.discordExclusionFailed = !discordExcluded
+      }
+      // Windows: Chromium can't open surround (5.1/7.1) devices for loopback, but
+      // the native helper can (it downmixes to stereo).
+      const needNative = withAudio && !native && (this.preferNativeAudio || this.audioError === 'NotReadableError')
+      if (needNative && stream.getAudioTracks().length === 0 && (await window.api.capture.nativeAudio.available())) {
+        this.nativeAudio?.stop() // the helper is a single process; free it first
+        this.nativeAudio = null
+        try {
+          native = await startNativeLoopback(log)
+          this.audioError = null
+          this.preferNativeAudio = true
+        } catch (err) {
+          log(`native loopback failed: ${String(err)}`)
+          this.audioError ??= 'NotReadableError'
+        }
+      }
+      if (native) stream.addTrack(native.track)
+      return { stream, native, discordExcluded }
+    } catch (err) {
+      native?.stop()
+      stream?.getTracks().forEach((t) => t.stop())
+      throw err
+    }
   }
 
   setPaused(paused: boolean): void {
@@ -279,6 +345,7 @@ export class Publisher extends Emitter<Events> {
     this.nativeAudio = null
     this.track = null
     this.audioTrack = null
+    this.discordExcluded = false
     this.stream = null
     this.paused = false
     this.sourceId = null

@@ -37,10 +37,24 @@ export interface CreateRoomResult {
   pinLength: number
   sourceId: string
   audio: boolean
+  excludeDiscord: boolean
 }
 
-/** "Share system audio" switch; hidden on platforms that cannot capture it. */
-function AudioToggle({ value, onChange }: { value: boolean; onChange(v: boolean): void }) {
+/**
+ * "Share system audio" switch, plus "Leave out Discord" on Windows; hidden on
+ * platforms that cannot capture audio.
+ */
+function AudioToggle({
+  value,
+  onChange,
+  excludeDiscord,
+  onExcludeDiscordChange
+}: {
+  value: boolean
+  onChange(v: boolean): void
+  excludeDiscord: boolean
+  onExcludeDiscordChange(v: boolean): void
+}) {
   const [supported, setSupported] = useState<boolean | null>(null)
   const [platform, setPlatform] = useState('')
   useEffect(() => {
@@ -49,24 +63,44 @@ function AudioToggle({ value, onChange }: { value: boolean; onChange(v: boolean)
   }, [])
   if (supported === false) return null
   return (
-    <label className="toggle-row">
-      <div>
-        <span>
-          <Icon name="volume" size={14} /> Share system audio
-        </span>
-        <span className="muted small block">
-          Everything playing on this computer is shared, even when you pick a single window.
-          {platform === 'darwin' ? ' Requires macOS 13 or later.' : ''}
-        </span>
-      </div>
-      <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
-    </label>
+    <>
+      <label className="toggle-row">
+        <div>
+          <span>
+            <Icon name="volume" size={14} /> Share system audio
+          </span>
+          <span className="muted small block">
+            Everything playing on this computer is shared, even when you pick a single window.
+            {platform === 'darwin' ? ' Requires macOS 13 or later.' : ''}
+          </span>
+        </div>
+        <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
+      </label>
+      {platform === 'win32' && (
+        <label className={`toggle-row nested ${value ? '' : 'disabled'}`}>
+          <div>
+            <span>Leave out Discord</span>
+            <span className="muted small block">
+              People in your Discord call won't hear themselves through your stream. Needs Windows 10 version 2004 or
+              newer.
+            </span>
+          </div>
+          <input
+            type="checkbox"
+            checked={excludeDiscord}
+            disabled={!value}
+            onChange={(e) => onExcludeDiscordChange(e.target.checked)}
+          />
+        </label>
+      )}
+    </>
   )
 }
 
 export function CreateRoomDialog({
   defaultName,
   defaultAudio,
+  defaultExcludeDiscord,
   busy,
   error,
   onCancel,
@@ -74,6 +108,7 @@ export function CreateRoomDialog({
 }: {
   defaultName: string
   defaultAudio: boolean
+  defaultExcludeDiscord: boolean
   busy: boolean
   error: string | null
   onCancel(): void
@@ -84,11 +119,12 @@ export function CreateRoomDialog({
   const [pinLength, setPinLength] = useState(DEFAULT_PIN_LENGTH)
   const [sourceId, setSourceId] = useState<string | null>(null)
   const [audio, setAudio] = useState(defaultAudio)
+  const [excludeDiscord, setExcludeDiscord] = useState(defaultExcludeDiscord)
 
   const submit = (e: FormEvent): void => {
     e.preventDefault()
     if (!sourceId) return
-    onCreate({ name: name.trim() || defaultName, privacy, pinLength, sourceId, audio })
+    onCreate({ name: name.trim() || defaultName, privacy, pinLength, sourceId, audio, excludeDiscord })
   }
 
   return (
@@ -137,7 +173,12 @@ export function CreateRoomDialog({
           <label>What do you want to share?</label>
           <SourcePicker selected={sourceId} onSelect={setSourceId} />
         </div>
-        <AudioToggle value={audio} onChange={setAudio} />
+        <AudioToggle
+          value={audio}
+          onChange={setAudio}
+          excludeDiscord={excludeDiscord}
+          onExcludeDiscordChange={setExcludeDiscord}
+        />
         {error && <div className="notice error">{error}</div>}
         <footer className="modal-footer">
           <button type="button" className="btn ghost" onClick={onCancel}>
@@ -157,26 +198,38 @@ export function CreateRoomDialog({
 export function ChangeSourceDialog({
   current,
   currentAudio,
+  currentExcludeDiscord,
   onCancel,
   onPick
 }: {
   current: string | null
   currentAudio: boolean
+  currentExcludeDiscord: boolean
   onCancel(): void
-  onPick(id: string, audio: boolean): void
+  onPick(id: string, audio: boolean, excludeDiscord: boolean): void
 }) {
   const [sourceId, setSourceId] = useState<string | null>(current)
   const [audio, setAudio] = useState(currentAudio)
+  const [excludeDiscord, setExcludeDiscord] = useState(currentExcludeDiscord)
   return (
     <Modal title="Choose what to share" onClose={onCancel} wide>
       <div className="modal-body">
         <SourcePicker selected={sourceId} onSelect={setSourceId} />
-        <AudioToggle value={audio} onChange={setAudio} />
+        <AudioToggle
+          value={audio}
+          onChange={setAudio}
+          excludeDiscord={excludeDiscord}
+          onExcludeDiscordChange={setExcludeDiscord}
+        />
         <footer className="modal-footer">
           <button className="btn ghost" onClick={onCancel}>
             Cancel
           </button>
-          <button className="btn primary" disabled={!sourceId} onClick={() => sourceId && onPick(sourceId, audio)}>
+          <button
+            className="btn primary"
+            disabled={!sourceId}
+            onClick={() => sourceId && onPick(sourceId, audio, excludeDiscord)}
+          >
             Share
           </button>
         </footer>
@@ -384,6 +437,12 @@ export function SettingsPanel({
           {toggle('pauseOnMinimize', 'Pause sharing while minimized', 'Sharing resumes automatically when restored')}
           {toggle('showStatsOverlay', 'Show FPS and latency overlay')}
           {toggle('shareAudio', 'Share system audio by default', 'Pre-selects the audio switch when you start sharing')}
+          {info?.platform === 'win32' &&
+            toggle(
+              'excludeDiscordAudio',
+              'Leave out Discord by default',
+              "People in your Discord call don't hear themselves through your stream"
+            )}
         </section>
 
         <footer className="modal-footer spread">

@@ -3,7 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { APP_NAME, DEFAULT_PORT } from '../shared/constants'
 import { IPC } from '../shared/ipc'
-import type { AppInfo, CreateRoomRequest, Settings, SystemStats, UpdateRoomRequest } from '../shared/types'
+import type { AppInfo, CreateRoomRequest, NativeAudioOptions, Settings, SystemStats, UpdateRoomRequest } from '../shared/types'
 import { parseHostPort } from '../utils/network'
 import { createFileLogger } from './logger'
 import { NativeLoopback } from './nativeAudio'
@@ -142,7 +142,9 @@ function registerIpc(): void {
   ipcMain.handle(IPC.selectSource, (_e, id: string, audio: boolean) => capture.select(String(id), !!audio))
   ipcMain.handle(IPC.audioSupported, () => capture.audioSupported())
   ipcMain.handle(IPC.nativeAudioAvailable, () => nativeAudio.available())
-  ipcMain.handle(IPC.nativeAudioStart, (e) => nativeAudio.start(e.sender))
+  ipcMain.handle(IPC.nativeAudioStart, (e, options?: NativeAudioOptions) =>
+    nativeAudio.start(e.sender, { excludeDiscord: options?.excludeDiscord === true })
+  )
   ipcMain.handle(IPC.nativeAudioStop, (_e, id?: number) => nativeAudio.stop(typeof id === 'number' ? id : undefined))
   ipcMain.handle(IPC.screenPermission, () => capture.permission())
   ipcMain.handle(IPC.openPermissionSettings, () => capture.openPermissionSettings())

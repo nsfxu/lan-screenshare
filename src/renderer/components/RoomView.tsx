@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChatMessage, HostedRoom, HostStats, Participant, RoomState, Settings, ViewerStats } from '../../shared/types'
-import { audioUnavailableMessage, errorMessage, formatBitrate, formatDuration, latencyClass } from '../lib/format'
+import {
+  audioUnavailableMessage,
+  DISCORD_NOT_EXCLUDED_MESSAGE,
+  errorMessage,
+  formatBitrate,
+  formatDuration,
+  latencyClass
+} from '../lib/format'
 import type { SharingState, WatcherInfo } from '../lib/publisher'
 import type { ConnectionState } from '../lib/roomClient'
 import type { Session } from '../lib/session'
@@ -117,11 +124,12 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onToast }
   }, [])
 
   // --- actions ---------------------------------------------------------------
-  const shareSource = async (id: string, audio: boolean): Promise<void> => {
+  const shareSource = async (id: string, audio: boolean, excludeDiscord: boolean): Promise<void> => {
     setPickSource(false)
     try {
-      await publisher.startCapture(id, audio)
+      await publisher.startCapture(id, audio, excludeDiscord)
       if (audio && !publisher.hasAudio) onToast(audioUnavailableMessage(publisher.audioError), 'error')
+      else if (publisher.discordExclusionFailed) onToast(DISCORD_NOT_EXCLUDED_MESSAGE, 'error')
     } catch (err) {
       onToast(`Could not capture: ${errorMessage(err)}`, 'error')
     }
@@ -269,7 +277,13 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onToast }
                 <button
                   className={`btn ${sharing.hasAudio && sharing.audioMuted ? 'active' : ''}`}
                   disabled={!sharing.hasAudio}
-                  title={sharing.hasAudio ? 'Mute or unmute the system audio viewers hear' : 'Audio is not being captured (enable it via Change source)'}
+                  title={
+                    !sharing.hasAudio
+                      ? 'Audio is not being captured (enable it via Change source)'
+                      : sharing.discordExcluded
+                        ? 'Mute or unmute the system audio viewers hear (Discord is left out)'
+                        : 'Mute or unmute the system audio viewers hear'
+                  }
                   onClick={() => publisher.setAudioMuted(!sharing.audioMuted)}
                 >
                   <Icon name={sharing.hasAudio && !sharing.audioMuted ? 'volume' : 'volumeOff'} />
@@ -338,8 +352,9 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onToast }
         <ChangeSourceDialog
           current={publisher.sourceId}
           currentAudio={publisher.sharing ? publisher.hasAudio : settings.shareAudio}
+          currentExcludeDiscord={publisher.sharing ? publisher.excludeDiscord : settings.excludeDiscordAudio}
           onCancel={() => setPickSource(false)}
-          onPick={(id, audio) => void shareSource(id, audio)}
+          onPick={(id, audio, excludeDiscord) => void shareSource(id, audio, excludeDiscord)}
         />
       )}
     </div>

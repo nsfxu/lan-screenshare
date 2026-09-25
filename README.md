@@ -25,7 +25,7 @@ npx electron . --profile=bob
 ## Using it
 
 * **Create a room** to host it (public, or private with a PIN). The host's app runs the room's server.
-* **Share your screen** from the toolbar. Anyone can, at any time, and optionally with system audio.
+* **Share your screen** from the toolbar. Anyone can, at any time, and optionally with system audio. On Windows, **Leave out Discord** (on by default) keeps your Discord call out of the shared audio, so people in the same call don't hear themselves.
 * **Nothing plays automatically.** Live streams appear as preview cards (a thumbnail refreshed every 5 s). Click **Watch**, or **Watch all**, to open them. Watched streams play in a grid. Focus one to put it in the spotlight while the others keep playing in a strip. Every watched stream plays audio, and each has its own remembered volume.
 * The **host** can stop anyone's stream, kick people, mute the chat and delete messages.
 
@@ -53,7 +53,8 @@ npx electron . --profile=bob
 * **Capture.** Chromium's capture stack uses **DXGI Desktop Duplication** on Windows (Windows.Graphics.Capture for single windows) and **ScreenCaptureKit** on macOS. Frames stay on the GPU and go to the hardware encoder.
 * **Codec selection** (`src/shared/codecs.ts`). At startup the app asks `MediaCapabilities` which codecs are hardware-accelerated (`powerEfficient`), and every participant reports its decoders when it joins. Automatic mode prefers hardware H.264, then H.265 if both ends have hardware support, then software H.264, VP9 and VP8. The choice is made per watcher, and the Settings panel can force a codec.
 * **Transport.** WebRTC media over UDP comes first, and ICE also tries TCP candidates. If a watch hasn't connected within 8 s, or it fails, that subscription switches to the **TCP fallback**. The streamer encodes once with WebCodecs (hardware H.264 + Opus). The room's WebSocket carries the chunks, and the server tags each packet with the streamer's slot so each watcher's app sends it to the right tile. Per-watcher backpressure drops video up to the next keyframe so the stream stays live.
-* **System audio.** Sharing can include everything playing on the computer: WASAPI loopback on Windows, ScreenCaptureKit on macOS 13+. On Windows this is always the whole system mix, even when a single window is shared. Audio is a second WebRTC track in the same stream, which keeps it in lip-sync with the video. Opus is tuned for music rather than voice: stereo, 128 kbps, in-band FEC, no DTX, and no echo cancellation, noise suppression or auto-gain. The streamer can mute audio without stopping the video, and pausing silences it too.
+* **System audio.** Sharing can include everything playing on the computer: WASAPI loopback on Windows, ScreenCaptureKit on macOS 13+. On Windows this is always the whole system mix, even when a single window is shared, except for Discord when **Leave out Discord** is on (below). Audio is a second WebRTC track in the same stream, which keeps it in lip-sync with the video. Opus is tuned for music rather than voice: stereo, 128 kbps, in-band FEC, no DTX, and no echo cancellation, noise suppression or auto-gain. The streamer can mute audio without stopping the video, and pausing silences it too.
+* **Leaving out Discord on Windows** (`native/win-audio-capture`, `--exclude`). When you share in a Discord call, the others' voices play on your computer, so plain loopback would send them back through your stream. With **Leave out Discord** on, the app captures audio with the bundled helper instead of Chromium. The helper uses Windows' process loopback (Windows 10 2004+ / Windows 11, the same API as OBS's Application Audio Capture), which captures the whole system mix except one process tree. It finds Discord's main process (`Discord.exe`, PTB, Canary, Development) and leaves out that process and its children. It rescans every 2 s, so Discord can start, quit or restart mid-share. While Discord isn't running, it leaves out ScreenShare itself instead (streams you watch while sharing aren't echoed back), because process loopback can exclude only one app at a time. Windows converts to 48 kHz stereo, so surround devices work in this mode too. On older Windows the app falls back to normal capture and says so.
 * **Surround output devices on Windows** (`native/win-audio-capture`). Chromium opens WASAPI loopback as stereo, and Windows rejects that (`AUDCLNT_E_UNSUPPORTED_FORMAT`) when the default output device runs in 5.1/7.1 mode, which is common with gaming headsets. The app then starts a small bundled helper instead. It captures in the device's own mix format and downmixes to stereo (centre and surrounds at −3 dB, LFE dropped), and its output feeds the same audio pipeline as a normal track. It is compiled with the C# compiler that ships with Windows (`npm run build:native`, run automatically before `dev` and `build`).
 * **Adaptive quality** (`src/shared/quality.ts`). Every second each connection's controller reads packet loss, RTT and WebRTC's `qualityLimitationReason`, and moves along the ladder **Native60 → 1080p60 (15 Mbps) → 720p60 (10) → 720p30 (5) → 480p30 (2.5)**, with hysteresis and exponential back-off after failed upgrades. The view-size cap and the budget apply on top.
 * **Discovery** (`src/main/roomManager.ts`, `src/utils/mdns.ts`). Rooms advertise `_lanshare._tcp` over mDNS using a pure-JS responder, so Bonjour/Avahi is not required. Every 3 s, known rooms are polled at `GET /info` for live data (people, privacy, number of live streams). Use **Connect by IP** for VPNs and other subnets.
@@ -78,7 +79,7 @@ npx electron . --profile=bob
 | Chat with timestamps, avatars, emoji, history, moderation | `ChatPanel.tsx`, `server.ts` (in memory, 500 messages) |
 | People list: who shares, who watches whom, per-watcher stats, kick / stop stream | `ViewerList.tsx` |
 | Pause/resume, change source, stop sharing, live stats (bandwidth, RTT, FPS, encode time, encoder, CPU, memory) | `RoomView.tsx`, `HostControls.tsx`, `publisher.ts` |
-| System audio (share toggle, mute, per-stream volume) | `publisher.ts`, `nativeAudio.ts`, `tcpStream.ts`, `ScreenViewer.tsx` |
+| System audio (share toggle, mute, per-stream volume, leave out Discord) | `publisher.ts`, `nativeAudio.ts`, `tcpStream.ts`, `ScreenViewer.tsx`, `native/win-audio-capture` |
 | Per-watcher view-size cap and upload budget | `shared/quality.ts`, `publisher.ts`, `subscription.ts` |
 | Reconnection | `roomClient.ts`, `subscription.ts`, `watches.ts` |
 | Minimize/close | Streaming keeps running when minimized (optional pause-on-minimize setting). Closing while hosting asks for confirmation, then ends the room for everyone |
@@ -107,6 +108,7 @@ Automatic codec selection picked H.265 on this machine because the driver report
 * On the TCP fallback, a streamer encodes once for all TCP watchers, so the view-size cap doesn't apply there (the budget does).
 * The macOS build has not been compiled or run: it has to be built on a Mac, and distributing it needs code signing and notarisation. On first use the app asks for Screen Recording and Local Network permissions.
 * **macOS audio** depends on Chromium's ScreenCaptureKit loopback behind feature flags (`MacLoopbackAudioForScreenShare`) that the app turns on. It needs macOS 13+ and is untested. If it fails, sharing continues with video only.
+* **Leave out Discord** is Windows-only and leaves out all of Discord's sound (notifications and soundboard too), not just voices. It excludes one app at a time: while Discord is left out, audio from streams you watch while sharing is still captured. The process-loopback mode has not been measured the way the results above were.
 * The adaptive controller and budget split are unit-tested. Real packet loss wasn't simulated, since all testing ran over loopback.
 * Discovery depends on multicast. On VPNs, use Connect by IP (default port 47800, or the next free one).
 * All participants must run the same app version (protocol v3).
@@ -121,6 +123,6 @@ src/
   renderer/    App.tsx, components/*, lib/ (roomClient, publisher, subscription, watches, tcpStream, nativeAudio, codecs, session)
   shared/      types.ts (protocol v3), constants.ts, quality.ts, codecs.ts, ipc.ts
   utils/       mdns.ts, crypto.ts, network.ts
-native/        win-audio-capture (WASAPI loopback helper, C#)
+native/        win-audio-capture (WASAPI loopback helper, C#: device loopback, or all audio except Discord)
 tests/         server, streams (multi-stream routing), crypto, quality, network/TLS/codec tests (vitest)
 ```

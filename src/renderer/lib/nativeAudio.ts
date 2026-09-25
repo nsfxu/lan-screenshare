@@ -1,3 +1,5 @@
+import type { NativeAudioOptions } from '../../shared/types'
+
 /**
  * Renderer side of the Windows native loopback helper: turns the PCM stream
  * from the main process into a MediaStreamTrack, so it plugs into WebRTC and
@@ -8,7 +10,10 @@ export interface NativeAudioCapture {
   stop(): void
 }
 
-export async function startNativeLoopback(log: (msg: string) => void): Promise<NativeAudioCapture> {
+export async function startNativeLoopback(
+  log: (msg: string) => void,
+  options: NativeAudioOptions = { excludeDiscord: false }
+): Promise<NativeAudioCapture> {
   const api = window.api.capture.nativeAudio
   const generator = new MediaStreamTrackGenerator<AudioData>({ kind: 'audio' })
   const writer = generator.writable.getWriter()
@@ -61,11 +66,11 @@ export async function startNativeLoopback(log: (msg: string) => void): Promise<N
   }
 
   try {
-    const format = await api.start()
+    const format = await api.start(options)
     runId = format.id
     sampleRate = format.sampleRate
     channels = format.channels
-    log(`native loopback started: ${sampleRate} Hz x${channels}`)
+    log(`native loopback started: ${sampleRate} Hz x${channels}${options.excludeDiscord ? ', without Discord' : ''}`)
   } catch (err) {
     stop()
     throw err

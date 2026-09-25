@@ -56,5 +56,13 @@ export const SNAPSHOT_MAX_CHARS = 96_000
 /** The server ignores snapshots sent more often than this. */
 export const SNAPSHOT_MIN_INTERVAL_MS = 1_000
 
+/**
+ * Discord builds whose audio (the voice call) is left out of a shared system
+ * audio mix on Windows, so viewers in the same call don't hear themselves.
+ */
+export const DISCORD_PROCESSES = ['Discord.exe', 'DiscordPTB.exe', 'DiscordCanary.exe', 'DiscordDevelopment.exe']
+/** Error text when this Windows can't capture system audio minus one app (needs Windows 10 2004+). */
+export const NO_PROCESS_LOOPBACK = 'per-app audio capture is not supported on this version of Windows'
+
 /** Server-side send buffer limit per TCP-fallback viewer before frames are dropped. */
 export const TCP_MAX_BUFFERED_BYTES = 2 * 1024 * 1024

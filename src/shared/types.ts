@@ -256,6 +256,8 @@ export interface Settings {
   showStatsOverlay: boolean
   /** Capture system audio along with the screen when sharing. */
   shareAudio: boolean
+  /** Windows: leave Discord (the voice call) out of the shared system audio. */
+  excludeDiscordAudio: boolean
   /** Total upload for my stream, shared between my watchers (Mbps); 0 = unlimited. */
   uploadBudgetMbps: number
 }
@@ -305,6 +307,11 @@ export interface AppInfo {
 }
 
 export type ScreenPermission = 'granted' | 'denied' | 'not-determined' | 'restricted' | 'unknown'
+
+export interface NativeAudioOptions {
+  /** Capture everything except Discord (per-process loopback) instead of the device's loopback. */
+  excludeDiscord: boolean
+}
 
 /** PCM format produced by the native Windows loopback helper (float32 interleaved). */
 export interface NativeAudioFormat {
