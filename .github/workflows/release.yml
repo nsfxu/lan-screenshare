@@ -10,8 +10,8 @@ name: Release
 #
 # The version must match package.json. The release notes come from
 # docs/releases/<version>.md, or from the annotation of a pushed tag.
-# Running the workflow without a version only builds, as a dry run; the
-# installers are then kept as run artifacts.
+# Running the workflow without a version is a dry run: it builds, lists what
+# would be published, and keeps the installers as run artifacts.
 
 on:
   push:
@@ -100,16 +100,31 @@ jobs:
           if-no-files-found: error
 
   release:
-    name: Publish the release
+    name: Release
     needs: [windows, macos]
-    # Only for a version, and only if the Windows installer was built.
-    if: ${{ !cancelled() && needs.windows.result == 'success' && (github.event_name == 'push' && github.ref_name || inputs.version) != '' }}
+    # Runs whenever the Windows installer was built, so a dry run also checks
+    # what would be published. It only publishes when there is a version.
+    if: ${{ !cancelled() && needs.windows.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: installers
+          merge-multiple: true
+      - name: Collect the installers
+        # Artifacts keep their folders (for example 1.0.0/…), so look for the files.
+        run: |
+          find installers -type f \( -name '*.exe' -o -name '*.dmg' \) | sort > files.txt
+          if [ ! -s files.txt ]; then
+            echo "::error::No installers found"
+            exit 1
+          fi
+          while read -r f; do ls -l "$f"; done < files.txt
       - name: Find the release notes
+        if: env.VERSION != ''
         run: |
           if [ -f "docs/releases/${VERSION}.md" ]; then
             cp "docs/releases/${VERSION}.md" notes.md
@@ -122,17 +137,14 @@ jobs:
             exit 1
           fi
           cat notes.md
-      - uses: actions/download-artifact@v4
-        with:
-          path: installers
-          merge-multiple: true
       - name: Create the release
+        if: env.VERSION != ''
         env:
           GH_TOKEN: ${{ github.token }}
         # Creates the tag on this commit when it doesn't exist yet (runs started by hand).
         run: |
-          ls -l installers
-          gh release create "$VERSION" installers/* \
+          mapfile -t files < files.txt
+          gh release create "$VERSION" "${files[@]}" \
             --title "ScreenShare $VERSION" \
             --notes-file notes.md \
             --target "$GITHUB_SHA"
