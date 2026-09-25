@@ -31,8 +31,9 @@ const SELF = 'self'
 
 /**
  * The in-room interface. Anyone can share; nothing is watched until the user
- * picks a stream. Watched streams (and your own preview) are shown as tiles;
- * focusing one puts it in the spotlight while the others keep playing.
+ * picks a stream. Watched streams (and your own, once you choose to show it)
+ * are shown as tiles; focusing one puts it in the spotlight while the others
+ * keep playing.
  */
 export function RoomView({ session, settings, onLeave, onOpenSettings, onToast }: Props) {
   const { client, publisher, watches } = session
@@ -42,6 +43,10 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onToast }
   const [messages, setMessages] = useState<ChatMessage[]>(client.messages)
   const [connection, setConnection] = useState<ConnectionState>(client.state)
   const [ownStream, setOwnStream] = useState<MediaStream | null>(publisher.stream)
+  const [ownSnapshot, setOwnSnapshot] = useState<string | null>(publisher.snapshot)
+  // Your own stream isn't played back until you ask: rendering it costs GPU
+  // time on the machine that is also capturing and encoding it.
+  const [showSelf, setShowSelf] = useState(false)
   const [sharing, setSharing] = useState<SharingState>(publisher.state)
   const [ownStats, setOwnStats] = useState<HostStats | null>(null)
   const [myWatchers, setMyWatchers] = useState<ReadonlyMap<string, WatcherInfo>>(new Map())
@@ -81,6 +86,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onToast }
   useEffect(() => {
     const offs = [
       publisher.on('stream', setOwnStream),
+      publisher.on('snapshot', setOwnSnapshot),
       publisher.on('sharing', setSharing),
       publisher.on('stats', setOwnStats),
       publisher.on('watchers', (m) => setMyWatchers(new Map(m))),
@@ -91,10 +97,15 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onToast }
     return () => offs.forEach((o) => o())
   }, [session, publisher, watches, onToast])
 
+  // A new share starts hidden again.
+  useEffect(() => {
+    if (!ownStream) setShowSelf(false)
+  }, [ownStream])
+
   // Keep the focus on something that still exists.
   useEffect(() => {
-    if (focus === SELF ? !ownStream : focus !== null && !subs.has(focus)) setFocus(null)
-  }, [focus, ownStream, subs])
+    if (focus === SELF ? !(ownStream && showSelf) : focus !== null && !subs.has(focus)) setFocus(null)
+  }, [focus, ownStream, showSelf, subs])
 
   // Nobody may record streams they watch: hide the window from screen capture
   // while watching anything.
@@ -144,9 +155,19 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onToast }
   const liveOthers = participants.filter((p) => p.stream && p.id !== client.selfId)
   const unwatched = liveOthers.filter((p) => !subs.has(p.id))
   const watcherCount = (id: string): number => participants.filter((p) => p.watching.includes(id)).length
+  /** Sharing, but not showing our own stream: offer it next to the others. */
+  const selfHidden = !!ownStream && !showSelf
+  const me = byId(client.selfId)
+  const selfPreview: PreviewInfo = {
+    label: 'You',
+    name: me?.name ?? settings.displayName,
+    color: me?.color ?? 'var(--accent)',
+    audio: sharing.hasAudio && !sharing.audioMuted,
+    paused: sharing.paused
+  }
 
   // --- stage -----------------------------------------------------------------
-  const tiles: string[] = [...(ownStream ? [SELF] : []), ...subs.keys()]
+  const tiles: string[] = [...(ownStream && showSelf ? [SELF] : []), ...subs.keys()]
   const renderTile = (id: string, small: boolean) =>
     id === SELF ? (
       <SelfTile
@@ -158,6 +179,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onToast }
         focused={focus === SELF}
         small={small}
         onFocus={() => setFocus(focus === SELF ? null : SELF)}
+        onHide={() => setShowSelf(false)}
       />
     ) : (
       <RemoteTile
@@ -177,7 +199,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onToast }
   if (tiles.length === 0) {
     stage = (
       <div className="stage-empty">
-        {liveOthers.length === 0 ? (
+        {!selfHidden && liveOthers.length === 0 ? (
           <div className="placeholder-content">
             <Icon name="screen" size={40} />
             <h3>No one is sharing yet</h3>
@@ -189,10 +211,25 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onToast }
         ) : (
           <div className="live-now">
             <div className="live-now-header">
-              <div>
-                <h3>{liveOthers.length === 1 ? '1 person is sharing' : `${liveOthers.length} people are sharing`}</h3>
-                <p className="muted small">Nothing plays until you choose. Pick what you want to watch.</p>
-              </div>
+              {liveOthers.length === 0 ? (
+                <div>
+                  <h3>You're sharing your screen</h3>
+                  <p className="muted small">
+                    Your own stream isn't played here, to save resources. Show it to see what others see.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <h3>
+                    {selfHidden
+                      ? `You and ${liveOthers.length === 1 ? '1 other person are' : `${liveOthers.length} others are`} sharing`
+                      : liveOthers.length === 1
+                        ? '1 person is sharing'
+                        : `${liveOthers.length} people are sharing`}
+                  </h3>
+                  <p className="muted small">Nothing plays until you choose. Pick what you want to watch.</p>
+                </div>
+              )}
               {liveOthers.length > 1 && (
                 <button className="btn" onClick={() => liveOthers.forEach((p) => watches.watch(p.id))}>
                   <Icon name="play" /> Watch all
@@ -200,10 +237,21 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onToast }
               )}
             </div>
             <div className="stream-cards">
+              {selfHidden && (
+                <StreamCard
+                  key={SELF}
+                  info={selfPreview}
+                  snapshot={ownSnapshot}
+                  watchers={watcherCount(client.selfId)}
+                  action="Show"
+                  title="Show your own stream"
+                  onWatch={() => setShowSelf(true)}
+                />
+              )}
               {liveOthers.map((p) => (
                 <StreamCard
                   key={p.id}
-                  participant={p}
+                  info={previewOf(p)}
                   snapshot={snapshots.get(p.id) ?? null}
                   watchers={watcherCount(p.id)}
                   onWatch={() => watches.watch(p.id)}
@@ -254,11 +302,26 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onToast }
 
       <div className="room-body">
         <main className="stage">
-          {tiles.length > 0 && unwatched.length > 0 && (
+          {tiles.length > 0 && (unwatched.length > 0 || selfHidden) && (
             <div className="stream-bar">
               <span className="muted small">Also live</span>
+              {selfHidden && (
+                <StreamChip
+                  key={SELF}
+                  info={selfPreview}
+                  snapshot={ownSnapshot}
+                  action="Show"
+                  title="Show your own stream"
+                  onWatch={() => setShowSelf(true)}
+                />
+              )}
               {unwatched.map((p) => (
-                <StreamChip key={p.id} participant={p} snapshot={snapshots.get(p.id) ?? null} onWatch={() => watches.watch(p.id)} />
+                <StreamChip
+                  key={p.id}
+                  info={previewOf(p)}
+                  snapshot={snapshots.get(p.id) ?? null}
+                  onWatch={() => watches.watch(p.id)}
+                />
               ))}
             </div>
           )}
@@ -363,33 +426,52 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onToast }
 
 // ---------------------------------------------------------------------------
 
+/** What a stream card or chip shows about a live stream. */
+interface PreviewInfo {
+  /** Shown on the card ("You" for your own stream). */
+  label: string
+  /** Name the avatar initial comes from. */
+  name: string
+  color: string
+  audio: boolean
+  paused: boolean
+}
+
+function previewOf(p: Participant): PreviewInfo {
+  return { label: p.name, name: p.name, color: p.color, audio: !!p.stream?.audio, paused: !!p.stream?.paused }
+}
+
 /** Preview card for a live stream the user isn't watching yet. */
 function StreamCard({
-  participant: p,
+  info,
   snapshot,
   watchers,
+  action = 'Watch',
+  title = `Watch ${info.label}'s stream`,
   onWatch
 }: {
-  participant: Participant
+  info: PreviewInfo
   snapshot: string | null
   watchers: number
+  action?: string
+  title?: string
   onWatch(): void
 }) {
   return (
-    <button className="stream-card" onClick={onWatch} aria-label={`Watch ${p.name}'s stream`}>
+    <button className="stream-card" onClick={onWatch} aria-label={title}>
       <div className="stream-card-thumb">
         {snapshot ? <img src={snapshot} alt="" /> : <Icon name="screen" size={32} />}
-        {p.stream?.paused && <span className="stream-card-flag">Paused</span>}
+        {info.paused && <span className="stream-card-flag">Paused</span>}
         <span className="stream-card-play" aria-hidden="true">
-          <Icon name="play" size={18} /> Watch
+          <Icon name="play" size={18} /> {action}
         </span>
       </div>
       <div className="stream-card-info">
-        <span className="avatar tiny" style={{ background: p.color }} aria-hidden="true">
-          {p.name.slice(0, 1).toUpperCase()}
+        <span className="avatar tiny" style={{ background: info.color }} aria-hidden="true">
+          {info.name.slice(0, 1).toUpperCase()}
         </span>
-        <span className="stream-card-name">{p.name}</span>
-        {p.stream?.audio && <Icon name="volume" size={13} className="muted" />}
+        <span className="stream-card-name">{info.label}</span>
+        {info.audio && <Icon name="volume" size={13} className="muted" />}
         <span className="muted small">{watchers === 0 ? 'no viewers' : `${watchers} watching`}</span>
       </div>
     </button>
@@ -397,21 +479,33 @@ function StreamCard({
 }
 
 /** Compact "also live" entry above the stage. */
-function StreamChip({ participant: p, snapshot, onWatch }: { participant: Participant; snapshot: string | null; onWatch(): void }) {
+function StreamChip({
+  info,
+  snapshot,
+  action = 'Watch',
+  title = `Watch ${info.label}'s stream`,
+  onWatch
+}: {
+  info: PreviewInfo
+  snapshot: string | null
+  action?: string
+  title?: string
+  onWatch(): void
+}) {
   return (
-    <button className="stream-chip" onClick={onWatch} title={`Watch ${p.name}'s stream`}>
+    <button className="stream-chip" onClick={onWatch} title={title}>
       {snapshot ? (
         <img className="stream-chip-thumb" src={snapshot} alt="" />
       ) : (
-        <span className="avatar tiny" style={{ background: p.color }} aria-hidden="true">
-          {p.name.slice(0, 1).toUpperCase()}
+        <span className="avatar tiny" style={{ background: info.color }} aria-hidden="true">
+          {info.name.slice(0, 1).toUpperCase()}
         </span>
       )}
-      <span className="stream-chip-name">{p.name}</span>
-      {p.stream?.audio && <Icon name="volume" size={12} />}
-      {p.stream?.paused && <span className="muted small">paused</span>}
+      <span className="stream-chip-name">{info.label}</span>
+      {info.audio && <Icon name="volume" size={12} />}
+      {info.paused && <span className="muted small">paused</span>}
       <span className="stream-chip-action">
-        <Icon name="play" size={12} /> Watch
+        <Icon name="play" size={12} /> {action}
       </span>
     </button>
   )
@@ -431,8 +525,9 @@ function SelfTile({
   showOverlay,
   focused,
   small,
-  onFocus
-}: TileChrome & { stream: MediaStream | null; sharing: SharingState; stats: HostStats | null }) {
+  onFocus,
+  onHide
+}: TileChrome & { stream: MediaStream | null; sharing: SharingState; stats: HostStats | null; onHide(): void }) {
   const overlay =
     showOverlay && stats && !small ? (
       <div className="stat-badges">
@@ -454,6 +549,9 @@ function SelfTile({
           <Icon name="screen" size={13} /> Your screen
         </span>
         <TileButton focused={focused} onFocus={onFocus} />
+        <button className="icon-btn" title="Hide your stream (you keep sharing)" onClick={onHide}>
+          <Icon name="x" size={14} />
+        </button>
       </div>
       <ScreenViewer
         stream={stream}

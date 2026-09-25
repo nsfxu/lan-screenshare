@@ -27,6 +27,7 @@ npx electron . --profile=bob
 * **Create a room** to host it (public, or private with a PIN). The host's app runs the room's server.
 * **Share your screen** from the toolbar. Anyone can, at any time, and optionally with system audio. On Windows, **Leave out Discord** (on by default) keeps your Discord call out of the shared audio, so people in the same call don't hear themselves.
 * **Nothing plays automatically.** Live streams appear as preview cards (a thumbnail refreshed every 5 s). Click **Watch**, or **Watch all**, to open them. Watched streams play in a grid. Focus one to put it in the spotlight while the others keep playing in a strip. Every watched stream plays audio, and each has its own remembered volume.
+* **Your own stream isn't played back either**, which saves GPU time on the machine that is capturing and encoding it. It appears as a "You" card (or chip) with its preview; click **Show** to open it as a tile, and close the tile to hide it again. Sharing continues either way.
 * The **host** can stop anyone's stream, kick people, mute the chat and delete messages.
 
 ## How it works

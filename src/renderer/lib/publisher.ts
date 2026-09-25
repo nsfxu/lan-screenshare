@@ -62,6 +62,8 @@ export interface WatcherInfo {
 
 type Events = {
   stream: MediaStream | null
+  /** Latest preview of our own stream (what the room sees on our card); null when not sharing. */
+  snapshot: string | null
   sharing: SharingState
   stats: HostStats
   watchers: Map<string, WatcherInfo>
@@ -97,6 +99,8 @@ export class Publisher extends Emitter<Events> {
   discordExclusionFailed = false
   discordExcluded = false
   sourceId: string | null = null
+  /** Latest preview JPEG of our stream (data URL), as sent to the room. */
+  snapshot: string | null = null
   readonly watchers = new Map<string, WatcherInfo>()
   lastStats: HostStats | null = null
 
@@ -349,8 +353,10 @@ export class Publisher extends Emitter<Events> {
     this.stream = null
     this.paused = false
     this.sourceId = null
+    this.snapshot = null
     this.watchers.clear()
     this.emit('watchers', this.watchers)
+    this.emit('snapshot', null)
     this.emit('stream', null)
     this.publishSharing()
   }
@@ -387,7 +393,10 @@ export class Publisher extends Emitter<Events> {
       bitmap.close()
       const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.6 })
       const image = await blobToDataUrl(blob)
-      if (this.track === track && image.length <= SNAPSHOT_MAX_CHARS) this.client.send({ type: 'snapshot', image })
+      if (this.track !== track || image.length > SNAPSHOT_MAX_CHARS) return
+      this.client.send({ type: 'snapshot', image })
+      this.snapshot = image
+      this.emit('snapshot', image)
     } catch (err) {
       log(`snapshot failed: ${String(err)}`)
     }
