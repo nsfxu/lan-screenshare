@@ -14,7 +14,16 @@
  *   u8  codec string length    codec string (ascii)    ...chunk bytes
  */
 import { BINARY_FLAG_KEY, BINARY_KIND_AUDIO, BINARY_KIND_VIDEO } from '../../shared/constants'
-import { AdaptiveController, MIN_VIDEO_BITRATE, qualityLadder, scaledSize, type QualityPreset } from '../../shared/quality'
+import {
+  AdaptiveController,
+  limitPreset,
+  MIN_VIDEO_BITRATE,
+  NO_VIEW_LIMIT,
+  qualityLadder,
+  scaledSize,
+  type QualityPreset,
+  type ViewLimit
+} from '../../shared/quality'
 import type { QualityPresetId } from '../../shared/quality'
 
 const HEADER_FIXED = 1 + 1 + 8 + 2 + 2 + 1
@@ -94,8 +103,10 @@ export class TcpEncoder {
   private stopped = false
   /** Share of the streamer's upload budget (bits/s); null = unlimited. */
   private bitrateCap: number | null = null
+  /** What the TCP watchers need at most (the encode is shared between them). */
+  private view: ViewLimit = NO_VIEW_LIMIT
   private readonly captureTimes = new Map<number, number>()
-  private readonly controller: AdaptiveController
+  private controller: AdaptiveController
   private encodeStarts = new Map<number, number>()
   /** Rolling average encode time in ms (for the stats overlay). */
   encodeMs: number | null = null
@@ -111,13 +122,30 @@ export class TcpEncoder {
     adaptive: boolean,
     private readonly log: (msg: string) => void
   ) {
-    const ladder = qualityLadder(maxQuality)
-    this.controller = new AdaptiveController(adaptive ? ladder : ladder.slice(0, 1), Date.now())
+    this.controller = TcpEncoder.controllerFor(maxQuality, adaptive)
     void this.pump()
   }
 
+  private static controllerFor(maxQuality: QualityPresetId, adaptive: boolean): AdaptiveController {
+    const ladder = qualityLadder(maxQuality)
+    return new AdaptiveController(adaptive ? ladder : ladder.slice(0, 1), Date.now())
+  }
+
+  /** The adaptive preset, limited to what the TCP watchers display. */
   get preset(): QualityPreset {
-    return this.controller.preset
+    return limitPreset(this.controller.preset, this.track.getSettings().height ?? 1080, this.view)
+  }
+
+  /** New maximum quality (or adaptive on/off) mid-share. */
+  setQuality(maxQuality: QualityPresetId, adaptive: boolean): void {
+    this.controller = TcpEncoder.controllerFor(maxQuality, adaptive)
+    this.configuredFor = ''
+  }
+
+  setViewLimit(view: ViewLimit): void {
+    if (view.height === this.view.height && view.fps === this.view.fps) return
+    this.view = view
+    this.configuredFor = ''
   }
 
   get codecName(): string {
@@ -190,13 +218,13 @@ export class TcpEncoder {
 
   private async handleFrame(frame: VideoFrame): Promise<void> {
     if (this.paused) return
-    const preset = this.controller.preset
+    const preset = limitPreset(this.controller.preset, frame.displayHeight, this.view)
     const now = performance.now()
     if (now - this.lastFrameAt < 1000 / preset.fps - 2) return
     this.lastFrameAt = now
 
     const size = scaledSize(preset, frame.displayWidth, frame.displayHeight)
-    const configKey = `${size.width}x${size.height}@${preset.id}:${this.bitrateCap ?? 0}`
+    const configKey = `${size.width}x${size.height}@${preset.fps}:${preset.maxBitrate}:${this.bitrateCap ?? 0}`
     if (configKey !== this.configuredFor) {
       if (!(await this.configure(size.width, size.height, preset))) return
       this.configuredFor = configKey

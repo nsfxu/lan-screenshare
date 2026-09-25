@@ -206,34 +206,95 @@ export function viewHeightStep(pixels: number | null): number | null {
   return VIEW_HEIGHT_STEPS.find((s) => s >= pixels) ?? null
 }
 
+/** What a watcher asks a streamer for; null = no limit. */
+export interface ViewLimit {
+  /** Height in pixels: what the watcher displays, or its chosen maximum if lower. */
+  height: number | null
+  /** Frame rate the watcher chose to receive at most. */
+  fps: number | null
+}
+
+export const NO_VIEW_LIMIT: ViewLimit = { height: null, fps: null }
+
+/**
+ * A preset limited to a watcher's view: resolution capped to `view.height`
+ * and frame rate to `view.fps`, with the bitrate scaled by the pixel count and
+ * frame rate. Height 0 (source resolution) stays 0 when nothing caps it.
+ */
+export function limitPreset(preset: QualityPreset, sourceHeight: number, view: ViewLimit): QualityPreset {
+  const presetHeight = preset.height > 0 ? Math.min(preset.height, sourceHeight) : sourceHeight
+  const capped = view.height !== null && view.height < presetHeight
+  const height = capped ? view.height! : presetHeight
+  const fps = view.fps !== null && view.fps < preset.fps ? view.fps : preset.fps
+  if (!capped && fps === preset.fps) return preset
+  const maxBitrate = Math.max(MIN_VIDEO_BITRATE, Math.round(preset.maxBitrate * (height / presetHeight) ** 2 * (fps / preset.fps)))
+  return { ...preset, height: capped || preset.height > 0 ? height : 0, fps, maxBitrate }
+}
+
+/**
+ * The combined limit for watchers that share one encode (the TCP fallback):
+ * enough for the most demanding of them.
+ */
+export function largestViewLimit(views: readonly ViewLimit[]): ViewLimit {
+  const most = (values: (number | null)[]): number | null =>
+    values.length === 0 || values.includes(null) ? null : Math.max(...(values as number[]))
+  return { height: most(views.map((v) => v.height)), fps: most(views.map((v) => v.fps)) }
+}
+
 export interface WatcherLimits {
   /** Height (pixels) the watcher displays the stream at; null = full quality. */
   viewHeight: number | null
+  /** Highest frame rate the watcher wants; null = the preset's. */
+  maxFps?: number | null
   /** This watcher's share of the streamer's upload budget (bits/s); null = unlimited. */
   bitrateBudget: number | null
 }
 
 /**
  * Encoding for one watcher: the adaptive preset, capped to the resolution
- * the watcher actually displays (bitrate scaled with the pixel count) and to
- * its share of the upload budget.
+ * the watcher actually displays and the frame rate it chose (bitrate scaled
+ * with pixel count and frame rate) and to its share of the upload budget.
  */
 export function encodingForWatcher(preset: QualityPreset, sourceHeight: number, limits: WatcherLimits): EncodingParams {
-  const base = encodingFor(preset, sourceHeight)
-  const presetHeight = preset.height > 0 ? Math.min(preset.height, sourceHeight) : sourceHeight
-  let targetHeight = presetHeight
-  let maxBitrate = base.maxBitrate
-  if (limits.viewHeight !== null && limits.viewHeight < presetHeight) {
-    targetHeight = limits.viewHeight
-    maxBitrate = Math.max(MIN_VIDEO_BITRATE, Math.round(base.maxBitrate * (targetHeight / presetHeight) ** 2))
-  }
-  if (limits.bitrateBudget !== null) maxBitrate = Math.max(MIN_VIDEO_BITRATE, Math.min(maxBitrate, limits.bitrateBudget))
-  const scale = sourceHeight > targetHeight ? sourceHeight / targetHeight : 1
-  return {
-    scaleResolutionDownBy: Math.round(scale * 1000) / 1000,
-    maxFramerate: base.maxFramerate,
-    maxBitrate
-  }
+  const limited = limitPreset(preset, sourceHeight, { height: limits.viewHeight, fps: limits.maxFps ?? null })
+  const enc = encodingFor(limited, sourceHeight)
+  if (limits.bitrateBudget !== null) enc.maxBitrate = Math.max(MIN_VIDEO_BITRATE, Math.min(enc.maxBitrate, limits.bitrateBudget))
+  return enc
+}
+
+// ---------------------------------------------------------------------------
+// A watcher's own quality choice for one stream.
+// ---------------------------------------------------------------------------
+
+export type WatchQualityId = 'auto' | '1080p' | '720p' | '720p30' | '480p30' | '360p30'
+
+export interface WatchQuality {
+  id: WatchQualityId
+  label: string
+  /** Highest resolution to receive; null = whatever the tile shows. */
+  maxHeight: number | null
+  /** Highest frame rate to receive; null = the streamer's. */
+  maxFps: number | null
+}
+
+export const WATCH_QUALITIES: readonly WatchQuality[] = [
+  { id: 'auto', label: 'Auto', maxHeight: null, maxFps: null },
+  { id: '1080p', label: '1080p', maxHeight: 1080, maxFps: null },
+  { id: '720p', label: '720p', maxHeight: 720, maxFps: null },
+  { id: '720p30', label: '720p · 30 fps', maxHeight: 720, maxFps: 30 },
+  { id: '480p30', label: '480p · 30 fps', maxHeight: 480, maxFps: 30 },
+  { id: '360p30', label: '360p · 30 fps', maxHeight: 360, maxFps: 30 }
+]
+
+export function getWatchQuality(id: unknown): WatchQuality {
+  return WATCH_QUALITIES.find((q) => q.id === id) ?? WATCH_QUALITIES[0]
+}
+
+/** What to ask the streamer for: the smaller of the displayed step and the chosen maximum. */
+export function watchLimit(viewStep: number | null, quality: WatchQuality): ViewLimit {
+  const height =
+    viewStep === null ? quality.maxHeight : quality.maxHeight === null ? viewStep : Math.min(viewStep, quality.maxHeight)
+  return { height, fps: quality.maxFps }
 }
 
 /**

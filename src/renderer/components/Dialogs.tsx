@@ -312,14 +312,12 @@ export function SettingsPanel({
   settings,
   encoders,
   decoders,
-  hosting,
   onChange,
   onClose
 }: {
   settings: Settings
   encoders: CodecSupport[]
   decoders: CodecSupport[]
-  hosting: boolean
   onChange(patch: Partial<Settings>): void
   onClose(): void
 }) {
@@ -355,9 +353,12 @@ export function SettingsPanel({
         </section>
 
         <section>
-          <h3>Streaming quality {hosting && <span className="muted small">(applies to the next share)</span>}</h3>
+          <h3>Streaming quality</h3>
           <div className="form-row inline">
-            <label htmlFor="max-quality">Maximum quality</label>
+            <label htmlFor="max-quality">
+              Maximum quality
+              <span className="muted small block">Applies immediately, also while sharing</span>
+            </label>
             <select
               id="max-quality"
               value={settings.maxQuality}

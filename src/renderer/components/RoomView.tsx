@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { QUALITY_PRESETS, WATCH_QUALITIES, getWatchQuality, type WatchQualityId } from '../../shared/quality'
 import type { ChatMessage, HostedRoom, HostStats, Participant, RoomState, Settings, ViewerStats } from '../../shared/types'
 import {
   audioUnavailableMessage,
@@ -24,6 +25,7 @@ interface Props {
   settings: Settings
   onLeave(reason?: string): void
   onOpenSettings(): void
+  onChangeSettings(patch: Partial<Settings>): void
   onToast(message: string, tone?: 'error' | 'info'): void
 }
 
@@ -35,7 +37,7 @@ const SELF = 'self'
  * are shown as tiles; focusing one puts it in the spotlight while the others
  * keep playing.
  */
-export function RoomView({ session, settings, onLeave, onOpenSettings, onToast }: Props) {
+export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeSettings, onToast }: Props) {
   const { client, publisher, watches } = session
   const isHost = session.role === 'host'
   const [room, setRoom] = useState<RoomState | null>(client.room)
@@ -355,6 +357,19 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onToast }
                 <button className="btn" onClick={() => setPickSource(true)}>
                   <Icon name="swap" /> Change source
                 </button>
+                <select
+                  className="toolbar-select"
+                  aria-label="Maximum quality you send"
+                  title="Maximum quality you send (each viewer may get less: smaller tile, own choice, network)"
+                  value={settings.maxQuality}
+                  onChange={(e) => onChangeSettings({ maxQuality: e.target.value as Settings['maxQuality'] })}
+                >
+                  {QUALITY_PRESETS.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
                 <button className="btn" onClick={() => publisher.stopSharing()}>
                   <Icon name="stop" /> Stop sharing
                 </button>
@@ -583,12 +598,15 @@ function RemoteTile({
   const [stream, setStream] = useState<MediaStream | null>(sub.stream)
   const [state, setState] = useState<SubscriptionState>(sub.state)
   const [stats, setStats] = useState<ViewerStats | null>(null)
+  // Our quality choice for this streamer, remembered on this machine like the volume.
+  const [quality, setQuality] = useState<WatchQualityId>(() => loadWatchQuality(participant?.name))
   useEffect(() => {
     setStream(sub.stream)
     setState(sub.state)
     const offs = [sub.on('stream', setStream), sub.on('state', setState), sub.on('stats', setStats)]
     return () => offs.forEach((o) => o())
   }, [sub])
+  useEffect(() => sub.setQuality(quality), [sub, quality])
 
   const name = participant?.name ?? 'Someone'
   const paused = !!participant?.stream?.paused
@@ -638,6 +656,29 @@ function RemoteTile({
           </span>
           {name}
         </span>
+        {!small && (
+          <select
+            className="tile-quality"
+            aria-label={`Quality you receive from ${name}`}
+            title={
+              sub.transport === 'tcp'
+                ? 'Quality you receive (on the TCP fallback the stream is shared with other TCP viewers, so you may get more)'
+                : 'Quality you receive. Auto follows the size you watch at.'
+            }
+            value={quality}
+            onChange={(e) => {
+              const id = e.target.value as WatchQualityId
+              setQuality(id)
+              saveWatchQuality(participant?.name, id)
+            }}
+          >
+            {WATCH_QUALITIES.map((q) => (
+              <option key={q.id} value={q.id}>
+                {q.label}
+              </option>
+            ))}
+          </select>
+        )}
         {!small && sub.transport === 'tcp' && (
           <button className="icon-btn" title="Try the low-latency WebRTC transport again" onClick={() => sub.retry('webrtc')}>
             <Icon name="refresh" size={14} />
@@ -658,6 +699,24 @@ function RemoteTile({
       />
     </div>
   )
+}
+
+const WATCH_QUALITY_KEY = 'screenshare.watchQuality'
+
+function loadWatchQuality(name: string | undefined): WatchQualityId {
+  try {
+    return getWatchQuality(localStorage.getItem(`${WATCH_QUALITY_KEY}:${name ?? ''}`)).id
+  } catch {
+    return 'auto' // storage unavailable
+  }
+}
+
+function saveWatchQuality(name: string | undefined, id: WatchQualityId): void {
+  try {
+    localStorage.setItem(`${WATCH_QUALITY_KEY}:${name ?? ''}`, id)
+  } catch {
+    // storage unavailable
+  }
 }
 
 function TileButton({ focused, onFocus }: { focused: boolean; onFocus(): void }) {

@@ -449,9 +449,11 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       case 'view-size': {
         const streamer = this.seats.get(msg.streamer)
         if (!streamer?.watchers.has(me.id)) return
-        const height = msg.height === null ? null : Number(msg.height)
+        const height = msg.height == null ? null : Number(msg.height)
         if (height !== null && !(Number.isInteger(height) && height >= 90 && height <= 8640)) return
-        this.send(streamer.ws, { type: 'watcher-view', from: me.id, height })
+        const fps = msg.fps == null ? null : Number(msg.fps)
+        if (fps !== null && !(Number.isInteger(fps) && fps >= 1 && fps <= 240)) return
+        this.send(streamer.ws, { type: 'watcher-view', from: me.id, height, fps })
         return
       }
       case 'keyframe-request': {

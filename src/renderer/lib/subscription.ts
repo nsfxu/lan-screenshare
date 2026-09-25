@@ -1,5 +1,5 @@
 import { STATS_INTERVAL_MS, WEBRTC_CONNECT_TIMEOUT_MS } from '../../shared/constants'
-import { viewHeightStep } from '../../shared/quality'
+import { getWatchQuality, viewHeightStep, watchLimit, type WatchQuality, type WatchQualityId } from '../../shared/quality'
 import type { MediaState, ServerMessage, SignalData, Transport, ViewerStats } from '../../shared/types'
 import { shortCodecName } from './codecs'
 import { Emitter } from './emitter'
@@ -59,6 +59,8 @@ export class Subscription extends Emitter<Events> {
     decoded: number
   } | null = null
   private publisherEncodeMs: number | null = null
+  /** Our own quality choice for this stream ('auto' follows the tile size). */
+  quality: WatchQuality = getWatchQuality('auto')
   /** Stepped pixel height we display the stream at (null = full quality). */
   private viewHeight: number | null = null
   private tick = 0
@@ -106,8 +108,19 @@ export class Subscription extends Emitter<Events> {
     this.sendViewHeight()
   }
 
+  /** Receive at most this quality, whatever the tile size. */
+  setQuality(id: WatchQualityId): void {
+    const quality = getWatchQuality(id)
+    if (quality.id === this.quality.id) return
+    this.quality = quality
+    this.log(`quality ${quality.id}`)
+    this.sendViewHeight()
+  }
+
   private sendViewHeight(): void {
-    if (this.state !== 'ended') this.client.send({ type: 'view-size', streamer: this.streamerId, height: this.viewHeight })
+    if (this.state === 'ended') return
+    const { height, fps } = watchLimit(this.viewHeight, this.quality)
+    this.client.send({ type: 'view-size', streamer: this.streamerId, height, fps })
   }
 
   /** Relayed TCP-fallback packet for this streamer (slot byte already removed). */

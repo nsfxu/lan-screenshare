@@ -4,11 +4,15 @@ import {
   encodingFor,
   encodingForWatcher,
   getPreset,
+  getWatchQuality,
+  largestViewLimit,
+  limitPreset,
   MIN_VIDEO_BITRATE,
   qualityLadder,
   scaledSize,
   splitBudget,
   viewHeightStep,
+  watchLimit,
   type NetworkSample
 } from '../src/shared/quality'
 
@@ -152,5 +156,44 @@ describe('per-watcher limits', () => {
     const shares = splitBudget(60_000_000, [15_000_000, 1_666_667, 15_000_000, 15_000_000, 15_000_000])
     expect(shares.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(60_000_000)
     expect(shares[1]).toBe(1_666_667)
+  })
+})
+
+describe('watcher quality choice', () => {
+  const p1080 = getPreset('1080p60')
+  const native = getPreset('native60')
+
+  it('asks for the smaller of the displayed size and the chosen maximum', () => {
+    expect(watchLimit(null, getWatchQuality('auto'))).toEqual({ height: null, fps: null })
+    expect(watchLimit(360, getWatchQuality('auto'))).toEqual({ height: 360, fps: null })
+    expect(watchLimit(null, getWatchQuality('720p'))).toEqual({ height: 720, fps: null })
+    expect(watchLimit(1080, getWatchQuality('480p30'))).toEqual({ height: 480, fps: 30 })
+    expect(watchLimit(360, getWatchQuality('720p30'))).toEqual({ height: 360, fps: 30 })
+    expect(getWatchQuality('nonsense').id).toBe('auto')
+  })
+
+  it('limits a preset by height and frame rate, scaling the bitrate', () => {
+    expect(limitPreset(p1080, 1080, { height: null, fps: null })).toBe(p1080)
+    const half = limitPreset(p1080, 1080, { height: null, fps: 30 })
+    expect(half).toMatchObject({ height: 1080, fps: 30, maxBitrate: 7_500_000 })
+    const small = limitPreset(p1080, 1080, { height: 540, fps: 30 })
+    expect(small).toMatchObject({ height: 540, fps: 30, maxBitrate: Math.round(15_000_000 / 4 / 2) })
+    // Never raised above the preset or the source.
+    expect(limitPreset(p1080, 1080, { height: 1440, fps: 120 })).toBe(p1080)
+    // Source resolution stays "0" unless something caps it.
+    expect(limitPreset(native, 1440, { height: null, fps: 30 }).height).toBe(0)
+    expect(limitPreset(native, 1440, { height: 720, fps: null }).height).toBe(720)
+  })
+
+  it('applies a frame-rate choice to a watcher\'s encoding', () => {
+    const enc = encodingForWatcher(p1080, 1080, { viewHeight: 720, maxFps: 30, bitrateBudget: null })
+    expect(enc).toMatchObject({ scaleResolutionDownBy: 1.5, maxFramerate: 30 })
+    expect(enc.maxBitrate).toBe(Math.round(15_000_000 * (720 / 1080) ** 2 * 0.5))
+  })
+
+  it('sizes a shared (TCP) encode for its most demanding watcher', () => {
+    expect(largestViewLimit([])).toEqual({ height: null, fps: null })
+    expect(largestViewLimit([{ height: 360, fps: 30 }, { height: 720, fps: 30 }])).toEqual({ height: 720, fps: 30 })
+    expect(largestViewLimit([{ height: 360, fps: 30 }, { height: null, fps: null }])).toEqual({ height: null, fps: null })
   })
 })

@@ -1431,6 +1431,17 @@ input[type='checkbox']:checked::after {
   width: 26px;
   height: 26px;
 }
+.tile-quality {
+  font-size: 11px;
+  padding: 2px 4px;
+  margin-right: 2px;
+  background: var(--bg);
+  color: var(--text-muted);
+}
+.toolbar-select {
+  padding: 7px 8px;
+  font-size: 13px;
+}
 .tile-name {
   flex: 1;
   display: inline-flex;

@@ -171,6 +171,7 @@ export function App() {
           settings={settings}
           onLeave={leave}
           onOpenSettings={() => setSettingsOpen(true)}
+          onChangeSettings={(p) => void updateSettings(p)}
           onToast={toast}
         />
       ) : (
@@ -216,7 +217,6 @@ export function App() {
           settings={settings}
           encoders={codecs.encoders}
           decoders={codecs.decoders}
-          hosting={session?.role === 'host'}
           onChange={(p) => void updateSettings(p)}
           onClose={() => setSettingsOpen(false)}
         />

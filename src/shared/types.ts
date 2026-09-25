@@ -190,8 +190,11 @@ export type ClientMessage =
   | { type: 'unwatch'; streamer: string }
   | { type: 'stats'; streamer: string; stats: ViewerStats; mediaState: MediaState }
   | { type: 'keyframe-request'; streamer: string }
-  /** Pixel height I display this stream at (null = full quality), so the streamer can send less. */
-  | { type: 'view-size'; streamer: string; height: number | null }
+  /**
+   * Pixel height I display this stream at, or the lower maximum I chose, and
+   * the frame rate I chose (null = no limit), so the streamer can send less.
+   */
+  | { type: 'view-size'; streamer: string; height: number | null; fps: number | null }
   // host only
   | { type: 'kick'; userId: string }
   | { type: 'stop-stream'; userId: string }
@@ -223,7 +226,7 @@ export type ServerMessage =
   | { type: 'watcher-stats'; from: string; stats: ViewerStats; mediaState: MediaState }
   | { type: 'keyframe-request'; from: string }
   | { type: 'tcp-feedback'; sent: number; dropped: number }
-  | { type: 'watcher-view'; from: string; height: number | null }
+  | { type: 'watcher-view'; from: string; height: number | null; fps: number | null }
   /** The host stopped this participant's stream. */
   | { type: 'stream-stopped'; reason: string }
   // delivered to a watcher, about a streamer it watches

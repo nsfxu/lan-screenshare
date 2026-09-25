@@ -1,5 +1,16 @@
 import { NO_PROCESS_LOOPBACK, SNAPSHOT_INTERVAL_MS, SNAPSHOT_MAX_CHARS, SNAPSHOT_WIDTH, STATS_INTERVAL_MS } from '../../shared/constants'
-import { AdaptiveController, encodingFor, encodingForWatcher, getPreset, qualityLadder, splitBudget } from '../../shared/quality'
+import {
+  AdaptiveController,
+  encodingFor,
+  encodingForWatcher,
+  getPreset,
+  largestViewLimit,
+  NO_VIEW_LIMIT,
+  qualityLadder,
+  splitBudget,
+  type QualityPreset,
+  type ViewLimit
+} from '../../shared/quality'
 import type {
   CodecSupport,
   HostStats,
@@ -112,8 +123,8 @@ export class Publisher extends Emitter<Events> {
   /** False once this Windows turned out not to support capturing all audio except one app. */
   private processLoopback = true
   private readonly peers = new Map<string, Peer>()
-  /** Pixel height each watcher displays us at (null = full); may arrive before its peer exists. */
-  private readonly viewHeights = new Map<string, number | null>()
+  /** What each watcher displays us at / chose to receive; may arrive before its peer exists. */
+  private readonly views = new Map<string, ViewLimit>()
   private readonly tcpViewers = new Set<string>()
   private tcp: TcpEncoder | null = null
   private tcpAudio: TcpAudioEncoder | null = null
@@ -155,9 +166,44 @@ export class Publisher extends Emitter<Events> {
   }
 
   updateSettings(settings: Settings): void {
+    const previous = this.settings
     this.settings = settings
     if (this.track) this.track.contentHint = settings.contentHint
-    void this.rebalance()
+    if (previous.maxQuality !== settings.maxQuality || previous.adaptiveQuality !== settings.adaptiveQuality) {
+      void this.applyQuality()
+    } else {
+      void this.rebalance()
+    }
+  }
+
+  /**
+   * A new maximum quality (or adaptive on/off) while sharing: re-constrain
+   * the capture and restart every watcher's adaptive controller on the new
+   * ladder, without renegotiating.
+   */
+  private async applyQuality(): Promise<void> {
+    const track = this.track
+    if (!track) return
+    const preset = getPreset(this.settings.maxQuality)
+    try {
+      await track.applyConstraints(videoConstraints(preset))
+    } catch (err) {
+      log(`applyConstraints failed: ${String(err)}`)
+    }
+    if (this.track !== track) return
+    for (const peer of this.peers.values()) {
+      peer.controller = this.newController()
+      peer.applied = ''
+    }
+    this.tcp?.setQuality(this.settings.maxQuality, this.settings.adaptiveQuality)
+    const s = track.getSettings()
+    log(`max quality ${preset.id} (adaptive ${this.settings.adaptiveQuality}): capturing ${s.width}x${s.height}@${s.frameRate}`)
+    await this.rebalance()
+  }
+
+  private newController(): AdaptiveController {
+    const ladder = qualityLadder(this.settings.maxQuality)
+    return new AdaptiveController(this.settings.adaptiveQuality ? ladder : ladder.slice(0, 1), Date.now())
   }
 
   /**
@@ -235,9 +281,7 @@ export class Publisher extends Emitter<Events> {
     withAudio: boolean,
     excludeDiscord: boolean
   ): Promise<{ stream: MediaStream; native: NativeAudioCapture | null; discordExcluded: boolean }> {
-    const preset = getPreset(this.settings.maxQuality)
-    const video: MediaTrackConstraints = { frameRate: { ideal: preset.fps, max: preset.fps } }
-    if (preset.height > 0) video.height = { max: preset.height }
+    const video = videoConstraints(getPreset(this.settings.maxQuality))
     // System audio should reach viewers untouched: no voice processing.
     const audio: MediaTrackConstraints = {
       echoCancellation: false,
@@ -460,13 +504,13 @@ export class Publisher extends Emitter<Events> {
         return
       }
       case 'watcher-view':
-        this.viewHeights.set(msg.from, msg.height)
+        this.views.set(msg.from, { height: msg.height, fps: msg.fps ?? null })
         void this.rebalance()
         return
       case 'watcher-left':
         this.closePeer(msg.id)
         this.removeTcpViewer(msg.id)
-        this.viewHeights.delete(msg.id)
+        this.views.delete(msg.id)
         this.watchers.delete(msg.id)
         this.emit('watchers', this.watchers)
         return
@@ -500,8 +544,7 @@ export class Publisher extends Emitter<Events> {
     this.removeTcpViewer(viewerId)
     if (!this.track || !this.stream) return
 
-    const ladder = qualityLadder(this.settings.maxQuality)
-    const controller = new AdaptiveController(this.settings.adaptiveQuality ? ladder : ladder.slice(0, 1), Date.now())
+    const controller = this.newController()
     const pc = new RTCPeerConnection({ iceServers: [], bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require' })
     const enc = encodingFor(controller.preset, this.track.getSettings().height ?? 1080)
     const transceiver = pc.addTransceiver(this.track, {
@@ -555,27 +598,36 @@ export class Publisher extends Emitter<Events> {
 
   /**
    * Recompute every watcher's encoding: the adaptive preset, capped to what
-   * that watcher displays, with the upload budget split fairly between all
-   * watchers (small tiles need little, so bigger views get the rest). TCP
-   * watchers share one encode and count as a single demand.
+   * that watcher displays (and the quality it chose), with the upload budget
+   * split fairly between all watchers (small tiles need little, so bigger
+   * views get the rest). TCP watchers share one encode, sized for the most
+   * demanding of them, and count as a single demand.
    */
   private async rebalance(): Promise<void> {
     if (!this.track) return
     const source = this.track.getSettings().height ?? 1080
     const budget = this.settings.uploadBudgetMbps > 0 ? this.settings.uploadBudgetMbps * 1_000_000 : null
     const entries = [...this.peers.entries()]
+    const view = (id: string): ViewLimit => this.views.get(id) ?? NO_VIEW_LIMIT
     const demands = entries.map(
       ([id, p]) =>
-        encodingForWatcher(p.controller.preset, source, { viewHeight: this.viewHeights.get(id) ?? null, bitrateBudget: null })
-          .maxBitrate
+        encodingForWatcher(p.controller.preset, source, {
+          viewHeight: view(id).height,
+          maxFps: view(id).fps,
+          bitrateBudget: null
+        }).maxBitrate
     )
-    if (this.tcp) demands.push(this.tcp.preset.maxBitrate)
+    if (this.tcp) {
+      this.tcp.setViewLimit(largestViewLimit([...this.tcpViewers].map(view)))
+      demands.push(this.tcp.preset.maxBitrate)
+    }
     const shares = splitBudget(budget, demands)
     this.tcp?.setBitrateCap(budget === null ? null : shares[shares.length - 1])
     await Promise.all(
       entries.map(([id, peer], i) =>
         this.applyEncoding(peer, source, {
-          viewHeight: this.viewHeights.get(id) ?? null,
+          viewHeight: view(id).height,
+          maxFps: view(id).fps,
           bitrateBudget: budget === null ? null : shares[i]
         })
       )
@@ -746,6 +798,13 @@ export class Publisher extends Emitter<Events> {
       height: Number(out.frameHeight ?? 0)
     }
   }
+}
+
+/** Capture constraints for a preset: its frame rate, and its height unless it is the source's. */
+function videoConstraints(preset: QualityPreset): MediaTrackConstraints {
+  const video: MediaTrackConstraints = { frameRate: { ideal: preset.fps, max: preset.fps } }
+  if (preset.height > 0) video.height = { max: preset.height }
+  return video
 }
 
 function blobToDataUrl(blob: Blob): Promise<string> {
