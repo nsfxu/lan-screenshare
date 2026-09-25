@@ -85,4 +85,4 @@ Agentes de IA: comecem por [`AGENTS.md`](AGENTS.md).
 
 ## Licença
 
-MIT, conforme declarado no `package.json`.
+[MIT](LICENSE): você pode usar, modificar e compartilhar o ScreenShare livremente, desde que mantenha o aviso de copyright.

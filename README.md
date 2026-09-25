@@ -85,4 +85,4 @@ AI coding agents: start with [`AGENTS.md`](AGENTS.md).
 
 ## License
 
-MIT, as declared in `package.json`.
+[MIT](LICENSE): you can use, change and share ScreenShare freely, as long as you keep the copyright notice.
