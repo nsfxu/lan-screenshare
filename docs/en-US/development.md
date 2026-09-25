@@ -57,7 +57,7 @@ npm test
 | `npm run typecheck` | TypeScript checks for the Node side (`tsconfig.node.json`, includes `tests/`) and the web side (`tsconfig.web.json`). |
 | `npm run build:native` | Builds `native/bin/win-audio-capture.exe` (no-op on other systems or when up to date). |
 | `npm run dist:win` | Build + Windows installer (NSIS, x64 and arm64) into `release/<version>/`. |
-| `npm run dist:mac` | Build + macOS disk image (universal) into `release/<version>/`. Must run on a Mac. |
+| `npm run dist:mac` | Build + macOS disk images (Intel and Apple Silicon) into `release/<version>/`. Must run on a Mac. |
 | `npm run dist` | Build + installer for the current platform. |
 
 ## Running several people on one computer
@@ -143,7 +143,7 @@ This produces `release/<version>/ScreenShare-Setup-<version>-<arch>.exe`: an NSI
 npm run dist:mac
 ```
 
-This produces a universal `.dmg`. Distributing it to other Macs needs an Apple Developer ID certificate for signing and notarisation; see electron-builder's documentation. The macOS build hasn't been tested yet.
+This produces two disk images: `ScreenShare-<version>-arm64.dmg` for Apple Silicon and `ScreenShare-<version>-x64.dmg` for Intel Macs. Distributing it to other Macs needs an Apple Developer ID certificate for signing and notarisation; see electron-builder's documentation. The macOS build hasn't been tested yet.
 
 ## Releasing
 
@@ -165,9 +165,11 @@ flowchart LR
 3. The workflow checks that the version matches `package.json`, runs the checks, builds the installers, and publishes the release with them attached. The macOS job may fail without blocking a Windows-only release.
 4. Say in the notes when the protocol version changed: people on older versions can't join rooms with the new one.
 
-Running the workflow without a version only builds, as a dry run; the installers are then kept as run artifacts.
+Running the workflow without a version is a dry run: it builds, lists what would be published, and keeps the installers as run artifacts.
 
-The Windows build produces three installers: `-x64.exe` (most PCs), `-arm64.exe` (Windows on ARM) and one without a suffix that contains both.
+Each system gets one installer per processor type: `-x64` (most Windows PCs, Intel Macs) and `-arm64` (Windows on ARM, Apple Silicon Macs).
+
+To keep the installers small, they only include Chromium's English and Portuguese language files (`electronLanguages` in `electron-builder.json`). On a computer set to another language, Chromium's own text and the chat's time format fall back to US English. Add the language there if the app gets translated.
 
 The installers are not code-signed yet: Windows shows a SmartScreen warning (*More info → Run anyway*) and macOS blocks the first launch (right-click the app → *Open*).
 

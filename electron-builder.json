@@ -12,6 +12,11 @@
     "package.json"
   ],
   "asar": true,
+  "compression": "maximum",
+  "electronLanguages": [
+    "en-US",
+    "pt-BR"
+  ],
   "win": {
     "target": [
       {
@@ -35,16 +40,23 @@
     "perMachine": false,
     "allowToChangeInstallationDirectory": true,
     "createDesktopShortcut": true,
-    "shortcutName": "ScreenShare"
+    "shortcutName": "ScreenShare",
+    "differentialPackage": false,
+    "buildUniversalInstaller": false
   },
   "mac": {
     "target": [
       {
         "target": "dmg",
         "arch": [
-          "universal"
+          "x64",
+          "arm64"
         ]
       }
+    ],
+    "electronLanguages": [
+      "en",
+      "pt_BR"
     ],
     "category": "public.app-category.productivity",
     "hardenedRuntime": true,

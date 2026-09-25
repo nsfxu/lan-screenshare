@@ -57,7 +57,7 @@ npm test
 | `npm run typecheck` | Verificação do TypeScript do lado Node (`tsconfig.node.json`, inclui `tests/`) e do lado web (`tsconfig.web.json`). |
 | `npm run build:native` | Compila `native/bin/win-audio-capture.exe` (não faz nada em outros sistemas ou se já estiver atualizado). |
 | `npm run dist:win` | Build + instalador do Windows (NSIS, x64 e arm64) em `release/<versão>/`. |
-| `npm run dist:mac` | Build + imagem de disco do macOS (universal) em `release/<versão>/`. Precisa rodar num Mac. |
+| `npm run dist:mac` | Build + imagens de disco do macOS (Intel e Apple Silicon) em `release/<versão>/`. Precisa rodar num Mac. |
 | `npm run dist` | Build + instalador para a plataforma atual. |
 
 ## Várias pessoas no mesmo computador
@@ -143,7 +143,7 @@ Gera `release/<versão>/ScreenShare-Setup-<versão>-<arch>.exe`: um instalador N
 npm run dist:mac
 ```
 
-Gera um `.dmg` universal. Para distribuir para outros Macs é preciso um certificado Apple Developer ID para assinar e notarizar; veja a documentação do electron-builder. O build de macOS ainda não foi testado.
+Gera duas imagens de disco: `ScreenShare-<versão>-arm64.dmg` para Apple Silicon e `ScreenShare-<versão>-x64.dmg` para Macs Intel. Para distribuir para outros Macs é preciso um certificado Apple Developer ID para assinar e notarizar; veja a documentação do electron-builder. O build de macOS ainda não foi testado.
 
 ## Publicando uma versão
 
@@ -165,9 +165,11 @@ flowchart LR
 3. O workflow confere se a versão bate com o `package.json`, roda as verificações, gera os instaladores e publica a versão com eles anexados. O job do macOS pode falhar sem impedir uma versão só para Windows.
 4. Avise nas notas quando a versão do protocolo mudar: quem estiver numa versão antiga não consegue entrar nas salas da nova.
 
-Rodar o workflow sem versão só gera os instaladores, como um teste; eles ficam guardados como artefatos da execução.
+Rodar o workflow sem versão é um teste: ele gera os instaladores, lista o que seria publicado e guarda os instaladores como artefatos da execução.
 
-O build do Windows gera três instaladores: `-x64.exe` (a maioria dos PCs), `-arm64.exe` (Windows em ARM) e um sem sufixo que contém os dois.
+Cada sistema tem um instalador por tipo de processador: `-x64` (a maioria dos PCs com Windows, Macs Intel) e `-arm64` (Windows em ARM, Macs Apple Silicon).
+
+Para os instaladores ficarem menores, eles só levam os arquivos de idioma do Chromium em inglês e português (`electronLanguages` no `electron-builder.json`). Num computador configurado em outro idioma, os textos do próprio Chromium e o formato da hora no chat voltam para o inglês dos EUA. Adicione o idioma ali se o app for traduzido.
 
 Os instaladores ainda não são assinados: o Windows mostra um aviso do SmartScreen (*Mais informações → Executar assim mesmo*) e o macOS bloqueia a primeira abertura (clique com o botão direito no app → *Abrir*).
 
