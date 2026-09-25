@@ -14,10 +14,8 @@ export interface RoomInfo {
   privacy: Privacy
   viewerCount: number
   maxUsers: number
-  sharing: boolean
-  paused: boolean
-  /** The host is sending system audio (captured and not muted). */
-  audio: boolean
+  /** Number of participants currently sharing their screen. */
+  streams: number
   protocol: number
   startedAt: number
 }
@@ -52,6 +50,14 @@ export interface RoomEndpoint {
 
 export type MediaState = 'idle' | 'negotiating' | 'streaming' | 'failed'
 
+/** What a participant is sharing. Anyone in a room may share their screen. */
+export interface StreamInfo {
+  paused: boolean
+  /** System audio is being sent (captured and not muted). */
+  audio: boolean
+  startedAt: number
+}
+
 export interface Participant {
   id: string
   name: string
@@ -59,8 +65,15 @@ export interface Participant {
   color: string
   joinedAt: number
   status: 'connected' | 'reconnecting'
-  mediaState: MediaState
-  transport: Transport | null
+  /**
+   * Small room-unique number identifying this participant in binary
+   * (TCP-fallback) packets, which the server prefixes with the sender's slot.
+   */
+  slot: number
+  /** Non-null while this participant shares their screen. */
+  stream: StreamInfo | null
+  /** Ids of the participants whose streams this participant is watching. */
+  watching: string[]
 }
 
 export interface ChatMessage {
@@ -124,9 +137,14 @@ export type ErrorCode =
   | 'host_only'
   | 'chat_muted'
   | 'rate_limited'
+  | 'not_sharing'
 
 // ---------------------------------------------------------------------------
-// Wire protocol (JSON over WebSocket). Binary frames carry TCP-fallback video.
+// Wire protocol (JSON over WebSocket). Binary frames carry TCP-fallback media.
+//
+// Streaming model: any participant may share ("streamer"); others explicitly
+// watch it ("watcher"). The server only relays signaling between a streamer
+// and its current watchers, so media flows directly streamer -> watcher.
 // ---------------------------------------------------------------------------
 
 /** Structurally identical to DOM's RTCIceCandidateInit (usable without DOM types). */
@@ -154,18 +172,23 @@ export type ClientMessage =
       decoders?: CodecSupport[]
     }
   | { type: 'chat'; text: string }
+  /** Only between a streamer and one of its watchers (either direction). */
   | { type: 'signal'; to: string; data: SignalData }
   | { type: 'ping'; t: number }
-  | { type: 'stats'; stats: ViewerStats; mediaState: MediaState }
-  | { type: 'request-stream'; transport: Transport }
-  | { type: 'keyframe-request' }
   | { type: 'bye' }
+  // as a streamer
+  | { type: 'stream-state'; sharing: boolean; paused: boolean; audio: boolean }
+  | { type: 'publisher-stats'; encodeMs: number | null }
+  // as a watcher
+  | { type: 'watch'; streamer: string; transport: Transport }
+  | { type: 'unwatch'; streamer: string }
+  | { type: 'stats'; streamer: string; stats: ViewerStats; mediaState: MediaState }
+  | { type: 'keyframe-request'; streamer: string }
   // host only
   | { type: 'kick'; userId: string }
+  | { type: 'stop-stream'; userId: string }
   | { type: 'delete-message'; id: string }
   | { type: 'mute-chat'; muted: boolean }
-  | { type: 'sharing'; sharing: boolean; paused: boolean; audio: boolean }
-  | { type: 'host-stats'; encodeMs: number | null }
   | { type: 'end-room' }
 
 export type ServerMessage =
@@ -186,14 +209,18 @@ export type ServerMessage =
   | { type: 'pong'; t: number; serverTime: number }
   | { type: 'kicked' }
   | { type: 'room-ended'; reason: string }
-  // delivered to the host only
-  | { type: 'request-stream'; from: string; transport: Transport; decoders: CodecSupport[] }
-  | { type: 'viewer-stats'; from: string; stats: ViewerStats }
+  // delivered to a streamer, about its watchers
+  | { type: 'watch-request'; from: string; transport: Transport; decoders: CodecSupport[] }
+  | { type: 'watcher-left'; id: string }
+  | { type: 'watcher-stats'; from: string; stats: ViewerStats; mediaState: MediaState }
   | { type: 'keyframe-request'; from: string }
   | { type: 'tcp-feedback'; sent: number; dropped: number }
-  | { type: 'viewer-left'; id: string }
-  // delivered to viewers
-  | { type: 'host-stats'; encodeMs: number | null }
+  /** The host stopped this participant's stream. */
+  | { type: 'stream-stopped'; reason: string }
+  // delivered to a watcher, about a streamer it watches
+  | { type: 'publisher-stats'; from: string; encodeMs: number | null }
+  /** The streamer stopped sharing or left; the subscription is gone. */
+  | { type: 'stream-ended'; streamer: string }
 
 // ---------------------------------------------------------------------------
 // Local (IPC) types

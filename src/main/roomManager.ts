@@ -434,9 +434,7 @@ function placeholder(
     privacy: 'public',
     viewerCount: 0,
     maxUsers: 0,
-    sharing: false,
-    paused: false,
-    audio: false,
+    streams: 0,
     protocol: 0,
     startedAt: 0
   }

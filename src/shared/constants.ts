@@ -4,7 +4,7 @@ export const APP_NAME = 'ScreenShare'
 export const MDNS_SERVICE_TYPE = 'lanshare'
 
 /** Bumped whenever the wire protocol changes incompatibly. */
-export const PROTOCOL_VERSION = 2
+export const PROTOCOL_VERSION = 3
 
 /** First port tried when hosting; the next free port is used if it is taken. */
 export const DEFAULT_PORT = 47800

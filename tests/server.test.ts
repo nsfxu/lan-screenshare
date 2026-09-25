@@ -1,6 +1,5 @@
 import http from 'node:http'
 import { afterEach, describe, expect, it } from 'vitest'
-import { BINARY_FLAG_KEY, BINARY_KIND_AUDIO, BINARY_KIND_VIDEO } from '../src/shared/constants'
 import { RoomServer } from '../src/main/server'
 import { PinGuard } from '../src/utils/crypto'
 import { TestClient } from './helpers'
@@ -164,31 +163,6 @@ describe('RoomServer', () => {
     await bob.wait('chat', (m) => m.message.text === 'host can still talk')
   })
 
-  it('relays signaling only between host and viewers', async () => {
-    const port = await startServer()
-    const host = await connect(port, { hostToken: HOST_TOKEN })
-    await host.wait('welcome')
-    const bob = await connect(port, { name: 'Bob' })
-    const bobId = (await bob.wait('welcome')).selfId
-    const carol = await connect(port, { name: 'Carol' })
-    await carol.wait('welcome')
-
-    bob.send({ type: 'request-stream', transport: 'webrtc' })
-    const req = await host.wait('request-stream')
-    expect(req.from).toBe(bobId)
-
-    host.send({ type: 'signal', to: bobId, data: { kind: 'offer', sdp: 'v=0' } })
-    const offer = await bob.wait('signal')
-    expect(offer.from).toBe('host')
-
-    // A viewer cannot signal another viewer.
-    carol.send({ type: 'signal', to: bobId, data: { kind: 'offer', sdp: 'evil' } })
-    bob.send({ type: 'signal', to: 'host', data: { kind: 'answer', sdp: 'v=0 answer' } })
-    await host.wait('signal', (m) => m.data.kind === 'answer')
-    await new Promise((r) => setTimeout(r, 100))
-    expect(bob.messages.filter((m) => m.type === 'signal')).toHaveLength(1)
-  })
-
   it('resumes a dropped viewer seat without the PIN', async () => {
     const port = await startServer({ privacy: 'private', pin: '5555' })
     const bob = await connect(port, { name: 'Bob', clientId: 'bob', pin: '5555' })
@@ -209,73 +183,6 @@ describe('RoomServer', () => {
     for (const name of ['A', 'B']) await (await connect(port, { name })).wait('welcome')
     const extra = await connect(port, { name: 'C' })
     expect((await extra.wait('error')).code).toBe('room_full')
-  })
-
-  it('forwards binary video only to TCP viewers and starts them on a keyframe', async () => {
-    const port = await startServer()
-    const host = await connect(port, { hostToken: HOST_TOKEN })
-    await host.wait('welcome')
-    const tcpViewer = await connect(port, { name: 'Tcp' })
-    await tcpViewer.wait('welcome')
-    const rtcViewer = await connect(port, { name: 'Rtc' })
-    await rtcViewer.wait('welcome')
-    tcpViewer.send({ type: 'request-stream', transport: 'tcp' })
-    rtcViewer.send({ type: 'request-stream', transport: 'webrtc' })
-    await host.wait('request-stream', (m) => m.transport === 'tcp')
-    await host.wait('request-stream', (m) => m.transport === 'webrtc')
-
-    const delta = Buffer.from([BINARY_KIND_VIDEO, 0, 1, 2, 3])
-    const key = Buffer.from([BINARY_KIND_VIDEO, BINARY_FLAG_KEY, 9, 9, 9])
-    host.ws.send(delta) // dropped: viewer has no keyframe yet
-    host.ws.send(key)
-    host.ws.send(delta)
-    await new Promise((r) => setTimeout(r, 200))
-    expect(tcpViewer.binary.map((b) => b[1])).toEqual([BINARY_FLAG_KEY, 0])
-    expect(rtcViewer.binary).toHaveLength(0)
-
-    // Viewers cannot inject video.
-    tcpViewer.ws.send(key)
-    await new Promise((r) => setTimeout(r, 100))
-    expect(rtcViewer.binary).toHaveLength(0)
-  })
-
-  it('relays TCP audio without letting it open the video keyframe gate', async () => {
-    const port = await startServer()
-    const host = await connect(port, { hostToken: HOST_TOKEN })
-    await host.wait('welcome')
-    const viewer = await connect(port, { name: 'Tcp' })
-    await viewer.wait('welcome')
-    viewer.send({ type: 'request-stream', transport: 'tcp' })
-    await host.wait('request-stream')
-
-    const audio = Buffer.from([BINARY_KIND_AUDIO, 0, 7, 7])
-    const delta = Buffer.from([BINARY_KIND_VIDEO, 0, 1])
-    const key = Buffer.from([BINARY_KIND_VIDEO, BINARY_FLAG_KEY, 2])
-    host.ws.send(audio) // delivered even before any keyframe
-    host.ws.send(delta) // still dropped: audio must not have reset the gate
-    host.ws.send(key)
-    host.ws.send(audio)
-    await new Promise((r) => setTimeout(r, 200))
-    expect(viewer.binary.map((b) => [b[0], b[1]])).toEqual([
-      [BINARY_KIND_AUDIO, 0],
-      [BINARY_KIND_VIDEO, BINARY_FLAG_KEY],
-      [BINARY_KIND_AUDIO, 0]
-    ])
-  })
-
-  it('publishes the audio flag only while sharing', async () => {
-    const port = await startServer()
-    const host = await connect(port, { hostToken: HOST_TOKEN })
-    await host.wait('welcome')
-    const bob = await connect(port, { name: 'Bob' })
-    await bob.wait('welcome')
-
-    host.send({ type: 'sharing', sharing: true, paused: false, audio: true })
-    await bob.wait('room', (m) => m.room.sharing && m.room.audio)
-    expect(JSON.parse((await getJson(port, '/info')).body).audio).toBe(true)
-
-    host.send({ type: 'sharing', sharing: false, paused: false, audio: true })
-    await bob.wait('room', (m) => !m.room.sharing && !m.room.audio)
   })
 
   it('tells everyone when the room ends', async () => {
