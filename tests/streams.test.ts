@@ -476,3 +476,48 @@ describe('multi-stream: previews', () => {
     expect(carol.c.messages.some((m) => m.type === 'snapshot')).toBe(false)
   })
 })
+
+describe('profile pictures', () => {
+  const JPEG = 'data:image/jpeg;base64,' + 'A'.repeat(200)
+  const PNG = 'data:image/png;base64,' + 'B'.repeat(200) + '=='
+
+  it('shares a picture with everyone (sender included) and with late joiners', async () => {
+    const port = await startServer()
+    const host = await join(port, 'Host', true)
+    const alice = await join(port, 'Alice')
+
+    alice.c.send({ type: 'set-avatar', image: JPEG })
+    expect(await host.c.wait('avatar')).toEqual({ type: 'avatar', from: alice.id, image: JPEG })
+    await alice.c.wait('avatar', (m) => m.from === alice.id && m.image === JPEG)
+
+    const bob = await join(port, 'Bob')
+    await bob.c.wait('avatar', (m) => m.from === alice.id && m.image === JPEG)
+  })
+
+  it('ignores invalid pictures, repeats and floods; null removes it', async () => {
+    const port = await startServer()
+    const host = await join(port, 'Host', true)
+    const alice = await join(port, 'Alice')
+
+    alice.c.send({ type: 'set-avatar', image: 'data:image/svg+xml;base64,PHN2Zz4=' })
+    alice.c.send({ type: 'set-avatar', image: 'https://example.com/me.png' })
+    alice.c.send({ type: 'set-avatar', image: 'data:image/jpeg;base64,' + 'A'.repeat(50_000) })
+    alice.c.send({ type: 'set-avatar', image: 42 as unknown as string })
+    await sleep(150)
+    expect(host.c.messages.filter((m) => m.type === 'avatar')).toHaveLength(0)
+
+    alice.c.send({ type: 'set-avatar', image: PNG })
+    await host.c.wait('avatar', (m) => m.image === PNG)
+    alice.c.send({ type: 'set-avatar', image: PNG }) // unchanged
+    alice.c.send({ type: 'set-avatar', image: JPEG }) // within the rate limit
+    await sleep(150)
+    expect(host.c.messages.filter((m) => m.type === 'avatar')).toHaveLength(1)
+
+    await sleep(1000)
+    alice.c.send({ type: 'set-avatar', image: null })
+    await host.c.wait('avatar', (m) => m.from === alice.id && m.image === null)
+    const late = await join(port, 'Late')
+    await sleep(150)
+    expect(late.c.messages.filter((m) => m.type === 'avatar')).toHaveLength(0)
+  })
+})

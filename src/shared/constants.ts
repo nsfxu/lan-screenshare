@@ -4,7 +4,7 @@ export const APP_NAME = 'ScreenShare'
 export const MDNS_SERVICE_TYPE = 'lanshare'
 
 /** Bumped whenever the wire protocol changes incompatibly. */
-export const PROTOCOL_VERSION = 3
+export const PROTOCOL_VERSION = 4
 
 /** First port tried when hosting; the next free port is used if it is taken. */
 export const DEFAULT_PORT = 47800
@@ -63,6 +63,13 @@ export const SNAPSHOT_MIN_INTERVAL_MS = 1_000
 export const DISCORD_PROCESSES = ['Discord.exe', 'DiscordPTB.exe', 'DiscordCanary.exe', 'DiscordDevelopment.exe']
 /** Error text when this Windows can't capture system audio minus one app (needs Windows 10 2004+). */
 export const NO_PROCESS_LOOPBACK = 'per-app audio capture is not supported on this version of Windows'
+
+/** Profile pictures: square JPEGs made on the sender's machine. */
+export const AVATAR_SIZE = 128
+/** Max length of a profile picture data URL (~30 KB of image; a 128 px JPEG is ~5-10 KB). */
+export const AVATAR_MAX_CHARS = 40_000
+/** The server ignores profile picture changes sent more often than this. */
+export const AVATAR_MIN_INTERVAL_MS = 1_000
 
 /** Server-side send buffer limit per TCP-fallback viewer before frames are dropped. */
 export const TCP_MAX_BUFFERED_BYTES = 2 * 1024 * 1024

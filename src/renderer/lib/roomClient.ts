@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION } from '../../shared/constants'
+import { AVATAR_MIN_INTERVAL_MS, PROTOCOL_VERSION } from '../../shared/constants'
 import type {
   ChatMessage,
   ClientMessage,
@@ -19,6 +19,8 @@ export interface RoomClientOptions {
   pin?: string
   hostToken?: string
   decoders?: CodecSupport[]
+  /** Our profile picture (data URL), sent after every welcome. */
+  avatar?: string | null
 }
 
 export interface ClientError {
@@ -41,6 +43,7 @@ type Events = {
   binary: ArrayBuffer
   latency: number
   snapshots: ReadonlyMap<string, string>
+  avatars: ReadonlyMap<string, string>
 }
 
 const PING_INTERVAL_MS = 2000
@@ -59,6 +62,8 @@ export class RoomClient extends Emitter<Events> {
   participants: Participant[] = []
   /** Latest stream previews by participant id. */
   readonly snapshots = new Map<string, string>()
+  /** Profile pictures by participant id (ours included). */
+  readonly avatars = new Map<string, string>()
   messages: ChatMessage[] = []
   state: ConnectionState = 'connecting'
   /** Round trip to the room server in ms. */
@@ -73,6 +78,8 @@ export class RoomClient extends Emitter<Events> {
   private backoff = 500
   private disconnectedAt = 0
   private finished = false
+  private avatarSentAt = 0
+  private avatarTimer: number | null = null
 
   constructor(private readonly opts: RoomClientOptions) {
     super()
@@ -101,6 +108,30 @@ export class RoomClient extends Emitter<Events> {
 
   get bufferedAmount(): number {
     return this.ws?.bufferedAmount ?? 0
+  }
+
+  /** Change (or remove) our profile picture, now and after reconnects. */
+  setAvatar(image: string | null): void {
+    if (image === (this.opts.avatar ?? null)) return
+    this.opts.avatar = image
+    this.sendAvatar()
+  }
+
+  /**
+   * Send our current picture (or none). The server ignores changes that come
+   * faster than AVATAR_MIN_INTERVAL_MS, so a quick second change waits and
+   * then sends whatever is current.
+   */
+  private sendAvatar(): void {
+    const wait = this.avatarSentAt + AVATAR_MIN_INTERVAL_MS + 100 - Date.now()
+    if (wait > 0) {
+      this.avatarTimer ??= window.setTimeout(() => {
+        this.avatarTimer = null
+        this.sendAvatar()
+      }, wait)
+      return
+    }
+    if (this.send({ type: 'set-avatar', image: this.opts.avatar ?? null })) this.avatarSentAt = Date.now()
   }
 
   /** Leave on purpose: frees the seat immediately. */
@@ -173,8 +204,9 @@ export class RoomClient extends Emitter<Events> {
   private handle(msg: ServerMessage): void {
     switch (msg.type) {
       case 'welcome':
-        // The server re-sends current previews after welcoming us.
+        // The server re-sends current previews and pictures after welcoming us.
         this.snapshots.clear()
+        this.avatars.clear()
         this.selfId = msg.selfId
         this.resumeToken = msg.resumeToken
         this.room = msg.room
@@ -188,6 +220,9 @@ export class RoomClient extends Emitter<Events> {
         this.emit('room', msg.room)
         this.emit('participants', msg.participants)
         this.emit('chat', this.messages)
+        this.emit('avatars', this.avatars)
+        // Always, so a change made while disconnected (removal too) reaches the room.
+        this.sendAvatar()
         break
       case 'room':
         this.room = msg.room
@@ -199,6 +234,10 @@ export class RoomClient extends Emitter<Events> {
         for (const id of [...this.snapshots.keys()]) {
           if (!msg.participants.some((p) => p.id === id && p.stream)) this.snapshots.delete(id)
         }
+        // And pictures of people who left.
+        for (const id of [...this.avatars.keys()]) {
+          if (!msg.participants.some((p) => p.id === id)) this.avatars.delete(id)
+        }
         this.emit('participants', msg.participants)
         break
       case 'chat':
@@ -209,6 +248,11 @@ export class RoomClient extends Emitter<Events> {
         if (msg.image) this.snapshots.set(msg.from, msg.image)
         else this.snapshots.delete(msg.from)
         this.emit('snapshots', this.snapshots)
+        break
+      case 'avatar':
+        if (msg.image) this.avatars.set(msg.from, msg.image)
+        else this.avatars.delete(msg.from)
+        this.emit('avatars', this.avatars)
         break
       case 'chat-deleted':
         this.messages = this.messages.filter((m) => m.id !== msg.id)
@@ -247,6 +291,7 @@ export class RoomClient extends Emitter<Events> {
     this.finished = true
     this.stopPing()
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer)
+    if (this.avatarTimer) clearTimeout(this.avatarTimer)
     const ws = this.ws
     this.ws = null
     ws?.close()

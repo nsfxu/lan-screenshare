@@ -29,6 +29,7 @@ npx electron . --profile=bob
 * **Nothing plays automatically.** Live streams appear as preview cards (a thumbnail refreshed every 5 s). Click **Watch**, or **Watch all**, to open them. Watched streams play in a grid. Focus one to put it in the spotlight while the others keep playing in a strip. Every watched stream plays audio, and each has its own remembered volume.
 * **Your own stream isn't played back either**, which saves GPU time on the machine that is capturing and encoding it. It appears as a "You" card (or chip) with its preview; click **Show** to open it as a tile, and close the tile to hide it again. Sharing continues either way.
 * **Quality can change mid-session, both ways.** A streamer picks the maximum it sends from the toolbar (or Settings), and it applies immediately: the capture is re-constrained and every viewer's adaptive quality restarts from the new maximum, without reconnecting. A viewer picks what it receives per stream from the tile's menu: **Auto** (follows the size you watch at), 1080p, 720p, or 720p/480p/360p at 30 fps. The choice is remembered per streamer, like the volume.
+* **Profile picture.** Choose one in Settings → Profile. It is cropped to a square and shrunk to a 128 px JPEG (~5–10 KB) on your machine, then shown to everyone in the room (people list, chat, stream cards, tiles) instead of your initials. Changing or removing it applies immediately.
 * The **host** can stop anyone's stream, kick people, mute the chat and delete messages.
 
 ## How it works
@@ -51,7 +52,7 @@ npx electron . --profile=bob
 * **Streaming model.** Each participant has a `Publisher` (their own share) and a `WatchManager` (the streams they chose to watch, one `Subscription` each). Watching is explicit. The room server keeps track of who watches whom, relays WebRTC signaling **only between a streamer and its current watchers**, and never carries WebRTC media: video goes directly from each streamer to each watcher, with one `RTCPeerConnection` per watcher. Every watcher therefore gets its own congestion control and adaptive quality, and a slow watcher never degrades anyone else. Signaling messages name the streamer they belong to, so two people watching each other keep their two connections apart.
 * **Only send what's shown.** Each watcher reports the pixel height it actually displays a stream at: tile size × zoom × screen DPI, rounded up to 360/480/720/1080/1440/2160. The streamer caps that connection's resolution and scales its bitrate with the pixel count. A small grid tile costs ~1.7 Mbps instead of 15. Spotlight, fullscreen or zooming in raises it back to full quality within a second. A viewer's own quality choice caps it further (height and frame rate, bitrate scaled with both), using the same message.
 * **Upload budget.** A streamer's total upload is limited by a setting (default 100 Mbps, "Unlimited" for wired gigabit, lower for Wi-Fi/VPN) and split fairly between watchers (max-min fair share). Watchers that need little, such as small tiles, get what they need, and the rest is shared by bigger views. It applies immediately, including mid-session from the in-room Settings.
-* **Previews.** Each streamer sends a 320 px JPEG (~10–15 KB) every 5 s. The server accepts previews only from people who are sharing, checks their type and size, rate-limits them, sends the current ones to late joiners, and clears them when a stream ends.
+* **Previews.** Each streamer sends a 320 px JPEG (~10–15 KB) every 5 s. The server accepts previews only from people who are sharing, checks their type and size, rate-limits them, sends the current ones to late joiners, and clears them when a stream ends. Profile pictures travel the same way: sent after joining (and after every reconnect), checked (JPEG/WebP/PNG data URL, at most 40 000 characters), rate-limited, echoed to everyone and replayed to late joiners.
 * **Capture.** Chromium's capture stack uses **DXGI Desktop Duplication** on Windows (Windows.Graphics.Capture for single windows) and **ScreenCaptureKit** on macOS. Frames stay on the GPU and go to the hardware encoder.
 * **Codec selection** (`src/shared/codecs.ts`). At startup the app asks `MediaCapabilities` which codecs are hardware-accelerated (`powerEfficient`), and every participant reports its decoders when it joins. Automatic mode prefers hardware H.264, then H.265 if both ends have hardware support, then software H.264, VP9 and VP8. The choice is made per watcher, and the Settings panel can force a codec.
 * **Transport.** WebRTC media over UDP comes first, and ICE also tries TCP candidates. If a watch hasn't connected within 8 s, or it fails, that subscription switches to the **TCP fallback**. The streamer encodes once with WebCodecs (hardware H.264 + Opus). The room's WebSocket carries the chunks, and the server tags each packet with the streamer's slot so each watcher's app sends it to the right tile. Per-watcher backpressure drops video up to the next keyframe so the stream stays live.
@@ -79,6 +80,7 @@ npx electron . --profile=bob
 | Live-now preview cards, Watch all, "also live" bar, grid + spotlight, per-stream volume | `RoomView.tsx`, `ScreenViewer.tsx` |
 | Zoom (wheel), pan (drag), fullscreen, FPS/latency overlay per tile | `ScreenViewer.tsx`, `RoomView.tsx` |
 | Chat with timestamps, avatars, emoji, history, moderation | `ChatPanel.tsx`, `server.ts` (in memory, 500 messages) |
+| Profile pictures | `Dialogs.tsx` (Settings), `lib/images.ts`, `Avatar.tsx`, `roomClient.ts`, `server.ts`, `shared/images.ts` |
 | People list: who shares, who watches whom, per-watcher stats, kick / stop stream | `ViewerList.tsx` |
 | Pause/resume, change source, stop sharing, live stats (bandwidth, RTT, FPS, encode time, encoder, CPU, memory) | `RoomView.tsx`, `HostControls.tsx`, `publisher.ts` |
 | System audio (share toggle, mute, per-stream volume, leave out Discord) | `publisher.ts`, `nativeAudio.ts`, `tcpStream.ts`, `ScreenViewer.tsx`, `native/win-audio-capture` |
@@ -114,7 +116,7 @@ Automatic codec selection picked H.265 on this machine because the driver report
 * **Leave out Discord** is Windows-only and leaves out all of Discord's sound (notifications and soundboard too), not just voices. It excludes one app at a time: while Discord is left out, audio from streams you watch while sharing is still captured. The process-loopback mode has not been measured the way the results above were.
 * The adaptive controller and budget split are unit-tested. Real packet loss wasn't simulated, since all testing ran over loopback.
 * Discovery depends on multicast. On VPNs, use Connect by IP (default port 47800, or the next free one).
-* All participants must run the same app version (protocol v3).
+* All participants must run the same app version (protocol v4).
 * Out of scope: remote control, microphone audio, multi-monitor capture in one stream, recording, Linux.
 
 ## Project layout
@@ -124,7 +126,7 @@ src/
   main/        index.ts (app, IPC, security), roomManager.ts, server.ts, screenCapture.ts, nativeAudio.ts, settings.ts, logger.ts
   preload/     index.ts (contextBridge API)
   renderer/    App.tsx, components/*, lib/ (roomClient, publisher, subscription, watches, tcpStream, nativeAudio, codecs, session)
-  shared/      types.ts (protocol v3), constants.ts, quality.ts, codecs.ts, ipc.ts
+  shared/      types.ts (protocol v4), constants.ts, quality.ts, codecs.ts, images.ts, ipc.ts
   utils/       mdns.ts, crypto.ts, network.ts
 native/        win-audio-capture (WASAPI loopback helper, C#: device loopback, or all audio except Discord)
 tests/         server, streams (multi-stream routing), crypto, quality, network/TLS/codec tests (vitest)

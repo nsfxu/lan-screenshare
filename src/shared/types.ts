@@ -172,6 +172,8 @@ export type ClientMessage =
       decoders?: CodecSupport[]
     }
   | { type: 'chat'; text: string }
+  /** My profile picture (small JPEG/WebP/PNG data URL) or null to remove it; sent after every welcome. */
+  | { type: 'set-avatar'; image: string | null }
   /**
    * Only between a streamer and one of its watchers (either direction).
    * `stream` names the streamer whose connection this belongs to, since two
@@ -236,6 +238,8 @@ export type ServerMessage =
   // delivered to everyone
   /** Latest preview of someone's stream; null when their stream ended. */
   | { type: 'snapshot'; from: string; image: string | null }
+  /** Someone's profile picture (also our own, echoed); null when removed. */
+  | { type: 'avatar'; from: string; image: string | null }
 
 // ---------------------------------------------------------------------------
 // Local (IPC) types
@@ -263,6 +267,8 @@ export interface Settings {
   excludeDiscordAudio: boolean
   /** Total upload for my stream, shared between my watchers (Mbps); 0 = unlimited. */
   uploadBudgetMbps: number
+  /** Profile picture shown to others (square JPEG data URL), or null for initials. */
+  avatar: string | null
 }
 
 export interface CreateRoomRequest {

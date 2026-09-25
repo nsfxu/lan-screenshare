@@ -1,10 +1,13 @@
 import type { Participant } from '../../shared/types'
-import { initials, latencyClass } from '../lib/format'
+import { latencyClass } from '../lib/format'
 import type { WatcherInfo } from '../lib/publisher'
+import { Avatar } from './Avatar'
 import { Icon } from './Icon'
 
 interface Props {
   participants: Participant[]
+  /** Profile pictures by participant id. */
+  avatars: ReadonlyMap<string, string>
   selfId: string
   isHost: boolean
   /** People watching *my* stream, with what they report about it. */
@@ -31,7 +34,7 @@ function describe(p: Participant, all: Participant[]): { label: string; tone: 'g
   return { label: 'Connected', tone: 'idle' }
 }
 
-export function ViewerList({ participants, selfId, isHost, myWatchers, watching, onWatch, onUnwatch, onKick, onStopStream }: Props) {
+export function ViewerList({ participants, avatars, selfId, isHost, myWatchers, watching, onWatch, onUnwatch, onKick, onStopStream }: Props) {
   const sorted = [...participants].sort(
     (a, b) =>
       Number(!!b.stream) - Number(!!a.stream) ||
@@ -56,10 +59,9 @@ export function ViewerList({ participants, selfId, isHost, myWatchers, watching,
           const isSelf = p.id === selfId
           return (
             <li key={p.id}>
-              <span className="avatar" style={{ background: p.color }} aria-hidden="true">
-                {initials(p.name)}
+              <Avatar name={p.name} color={p.color} image={avatars.get(p.id)}>
                 <span className={`presence ${p.stream ? 'good' : status.tone}`} />
-              </span>
+              </Avatar>
               <div className="viewer-info">
                 <span className="viewer-name">
                   {p.name}

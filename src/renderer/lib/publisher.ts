@@ -24,6 +24,7 @@ import type {
 import { applyCodecOrder, chooseCodecOrder, mungeBitrates, mungeOpus, shortCodecName } from './codecs'
 import { Emitter } from './emitter'
 import { errorMessage } from './format'
+import { blobToDataUrl } from './images'
 import { startNativeLoopback, type NativeAudioCapture } from './nativeAudio'
 import type { RoomClient } from './roomClient'
 import { TcpAudioEncoder, TcpEncoder } from './tcpStream'
@@ -807,11 +808,3 @@ function videoConstraints(preset: QualityPreset): MediaTrackConstraints {
   return video
 }
 
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result))
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(blob)
-  })
-}

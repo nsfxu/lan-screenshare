@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import type { DiscoveredRoom, Settings } from '../../shared/types'
 import { errorMessage, formatDuration } from '../lib/format'
+import { Avatar } from './Avatar'
 import { Icon } from './Icon'
 
 interface Props {
@@ -44,7 +45,7 @@ export function HomeScreen({ settings, rooms, busyKey, onJoin, onCreate, onSetti
           </div>
         </div>
         <div className="header-actions">
-          <NameEditor name={settings.displayName} onSave={onRename} />
+          <NameEditor name={settings.displayName} avatar={settings.avatar} onSave={onRename} />
           <button className="icon-btn" title="Settings" onClick={onSettings}>
             <Icon name="settings" size={18} />
           </button>
@@ -199,13 +200,13 @@ function ManualConnect({ onClose }: { onClose(): void }) {
   )
 }
 
-function NameEditor({ name, onSave }: { name: string; onSave(name: string): void }) {
+function NameEditor({ name, avatar, onSave }: { name: string; avatar: string | null; onSave(name: string): void }) {
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(name)
   if (!editing) {
     return (
       <button className="name-chip" title="Change your display name" onClick={() => (setValue(name), setEditing(true))}>
-        <span className="avatar tiny">{name.slice(0, 1).toUpperCase()}</span>
+        <Avatar name={name} image={avatar} size="tiny" />
         {name}
       </button>
     )

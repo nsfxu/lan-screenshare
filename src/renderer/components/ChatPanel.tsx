@@ -1,13 +1,16 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import { CHAT_MAX_LENGTH } from '../../shared/constants'
 import type { ChatMessage } from '../../shared/types'
-import { formatTime, initials } from '../lib/format'
+import { formatTime } from '../lib/format'
+import { Avatar } from './Avatar'
 import { Icon } from './Icon'
 
 const EMOJI = ['😀', '😂', '😊', '😍', '🤔', '😮', '😢', '😡', '👍', '👎', '👏', '🙌', '🙏', '💪', '🔥', '🎉', '✅', '❌', '⚠️', '💡', '👀', '🚀', '❤️', '☕']
 
 interface Props {
   messages: ChatMessage[]
+  /** Profile pictures by participant id. */
+  avatars: ReadonlyMap<string, string>
   selfId: string
   isHost: boolean
   muted: boolean
@@ -16,7 +19,7 @@ interface Props {
   onToggleMute(muted: boolean): void
 }
 
-export function ChatPanel({ messages, selfId, isHost, muted, onSend, onDelete, onToggleMute }: Props) {
+export function ChatPanel({ messages, avatars, selfId, isHost, muted, onSend, onDelete, onToggleMute }: Props) {
   const [text, setText] = useState('')
   const [emojiOpen, setEmojiOpen] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
@@ -86,9 +89,7 @@ export function ChatPanel({ messages, selfId, isHost, muted, onSend, onDelete, o
           return (
             <div key={m.id} className={`chat-message ${grouped ? 'grouped' : ''} ${m.userId === selfId ? 'own' : ''}`}>
               {!grouped ? (
-                <span className="avatar" style={{ background: m.color }} aria-hidden="true">
-                  {initials(m.name)}
-                </span>
+                <Avatar name={m.name} color={m.color} image={avatars.get(m.userId)} />
               ) : (
                 <span className="avatar-spacer" />
               )}

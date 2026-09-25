@@ -3,6 +3,9 @@ import { DEFAULT_PIN_LENGTH, PIN_MAX_LENGTH, PIN_MIN_LENGTH } from '../../shared
 import { QUALITY_PRESETS } from '../../shared/quality'
 import type { AppInfo, CodecSupport, DiscoveredRoom, Privacy, Settings } from '../../shared/types'
 import { shortCodecName } from '../lib/codecs'
+import { errorMessage } from '../lib/format'
+import { makeAvatar } from '../lib/images'
+import { Avatar } from './Avatar'
 import { Icon } from './Icon'
 import { SourcePicker } from './SourcePicker'
 
@@ -322,9 +325,20 @@ export function SettingsPanel({
   onClose(): void
 }) {
   const [info, setInfo] = useState<AppInfo | null>(null)
+  const [avatarError, setAvatarError] = useState<string | null>(null)
   useEffect(() => {
     void window.api.system.info().then(setInfo)
   }, [])
+
+  const chooseAvatar = async (file: File | undefined): Promise<void> => {
+    if (!file) return
+    setAvatarError(null)
+    try {
+      onChange({ avatar: await makeAvatar(file) })
+    } catch (err) {
+      setAvatarError(errorMessage(err))
+    }
+  }
 
   const toggle = (key: keyof Settings, label: string, hint?: string) => (
     <label className="toggle-row">
@@ -341,6 +355,33 @@ export function SettingsPanel({
       <div className="modal-body settings">
         <section>
           <h3>Profile</h3>
+          <div className="form-row inline">
+            <label>
+              Profile picture
+              <span className="muted small block">Shown to everyone in the room instead of your initials</span>
+            </label>
+            <div className="avatar-picker">
+              <Avatar name={settings.displayName} color="var(--accent)" image={settings.avatar} size="large" />
+              <label className="btn small">
+                {settings.avatar ? 'Change…' : 'Choose…'}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif,image/bmp"
+                  hidden
+                  onChange={(e) => {
+                    void chooseAvatar(e.target.files?.[0])
+                    e.target.value = '' // choosing the same file again still fires
+                  }}
+                />
+              </label>
+              {settings.avatar && (
+                <button className="btn ghost small" onClick={() => onChange({ avatar: null })}>
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+          {avatarError && <div className="notice error">{avatarError}</div>}
           <div className="form-row inline">
             <label htmlFor="display-name">Display name</label>
             <input

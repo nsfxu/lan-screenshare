@@ -338,6 +338,24 @@ input[type='checkbox']:checked::after {
   height: 22px;
   font-size: 11px;
 }
+.avatar.large {
+  width: 56px;
+  height: 56px;
+  font-size: 18px;
+}
+.avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.avatar-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .avatar-spacer {
   width: 32px;
   flex-shrink: 0;

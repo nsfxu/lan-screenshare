@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { DEFAULT_PORT, NAME_MAX_LENGTH } from '../shared/constants'
+import { isAvatar } from '../shared/images'
 import { QUALITY_PRESETS } from '../shared/quality'
 import type { RoomEndpoint, Settings } from '../shared/types'
 import { randomId } from '../utils/crypto'
@@ -31,7 +32,8 @@ function defaults(): Settings {
     showStatsOverlay: true,
     shareAudio: true,
     excludeDiscordAudio: true,
-    uploadBudgetMbps: 100
+    uploadBudgetMbps: 100,
+    avatar: null
   }
 }
 
@@ -87,6 +89,7 @@ function sanitize(s: Settings, fallback: Settings): Settings {
   out.lastRoom = isEndpoint(s.lastRoom) ? s.lastRoom : null
   const budget = Number(s.uploadBudgetMbps)
   out.uploadBudgetMbps = Number.isInteger(budget) && budget >= 0 && budget <= 10_000 ? budget : fallback.uploadBudgetMbps
+  out.avatar = s.avatar === null || isAvatar(s.avatar) ? s.avatar : fallback.avatar
   for (const key of ['adaptiveQuality', 'forceTcp', 'useTls', 'autoRejoin', 'notifications', 'pauseOnMinimize', 'showStatsOverlay', 'shareAudio', 'excludeDiscordAudio'] as const) {
     out[key] = typeof s[key] === 'boolean' ? s[key] : fallback[key]
   }

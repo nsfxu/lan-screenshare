@@ -72,7 +72,8 @@ export async function joinRoom(endpoint: RoomEndpoint, settings: Settings, codec
     clientId: settings.clientId,
     name: settings.displayName,
     pin,
-    decoders: codecs.decoders
+    decoders: codecs.decoders,
+    avatar: settings.avatar
   })
   await waitForWelcome(client)
   return createSession('viewer', client, endpoint, settings, codecs, null)
@@ -85,7 +86,8 @@ export async function hostRoom(hosted: HostedRoom, settings: Settings, codecs: C
     clientId: settings.clientId,
     name: settings.displayName,
     hostToken: hosted.hostToken,
-    decoders: codecs.decoders
+    decoders: codecs.decoders,
+    avatar: settings.avatar
   })
   await waitForWelcome(client)
   return createSession('host', client, endpoint, settings, codecs, hosted)
@@ -100,4 +102,5 @@ export function disposeSession(session: Session): void {
 export function updateSessionSettings(session: Session, settings: Settings): void {
   session.publisher.updateSettings(settings)
   session.watches.updateSettings(settings)
+  session.client.setAvatar(settings.avatar)
 }

@@ -17,8 +17,8 @@ import {
   PROTOCOL_VERSION,
   RESUME_GRACE_MS,
   ROOM_NAME_MAX_LENGTH,
-  SNAPSHOT_MAX_CHARS,
   SNAPSHOT_MIN_INTERVAL_MS,
+  AVATAR_MIN_INTERVAL_MS,
   TCP_MAX_BUFFERED_BYTES
 } from '../shared/constants'
 import type {
@@ -34,6 +34,7 @@ import type {
   ServerMessage,
   Transport
 } from '../shared/types'
+import { isAvatar, isSnapshot } from '../shared/images'
 import { PinGuard, pinsEqual, randomId, randomToken } from '../utils/crypto'
 
 export interface Logger {
@@ -92,6 +93,9 @@ interface Seat {
   /** Latest preview image of this seat's stream. */
   snapshot: string | null
   lastSnapshotAt: number
+  /** Profile picture (data URL), kept across reconnects. */
+  avatar: string | null
+  lastAvatarAt: number
 }
 
 const HOST_ID = 'host'
@@ -374,6 +378,16 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       case 'ping':
         this.send(seat.ws, { type: 'pong', t: msg.t, serverTime: Date.now() })
         return
+      case 'set-avatar': {
+        if (msg.image !== null && !isAvatar(msg.image)) return
+        if (msg.image === seat.avatar) return
+        const now = Date.now()
+        if (now - seat.lastAvatarAt < AVATAR_MIN_INTERVAL_MS) return
+        seat.lastAvatarAt = now
+        seat.avatar = msg.image
+        this.broadcast({ type: 'avatar', from: me.id, image: msg.image })
+        return
+      }
       case 'chat':
         return this.handleChat(seat, msg.text)
       case 'bye':
@@ -703,7 +717,9 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       watchers: new Map(),
       tcpStats: { sent: 0, dropped: 0 },
       snapshot: null,
-      lastSnapshotAt: 0
+      lastSnapshotAt: 0,
+      avatar: null,
+      lastAvatarAt: 0
     }
     this.seats.set(id, seat)
     return seat
@@ -733,11 +749,13 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       participants: this.participantList(),
       history: this.history
     })
-    // Late joiners get the current previews of everyone sharing.
+    // Late joiners get the current previews of everyone sharing, and
+    // everyone's profile picture (their own too, after a reconnect).
     for (const other of this.seats.values()) {
       if (other !== seat && other.snapshot) {
         this.send(seat.ws, { type: 'snapshot', from: other.participant.id, image: other.snapshot })
       }
+      if (other.avatar) this.send(seat.ws, { type: 'avatar', from: other.participant.id, image: other.avatar })
     }
   }
 
@@ -834,12 +852,6 @@ function colorFor(seed: string): string {
   let h = 0
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0
   return COLORS[Math.abs(h) % COLORS.length]
-}
-
-const SNAPSHOT_PATTERN = /^data:image\/(jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/
-
-function isSnapshot(image: unknown): image is string {
-  return typeof image === 'string' && image.length <= SNAPSHOT_MAX_CHARS && SNAPSHOT_PATTERN.test(image)
 }
 
 function toBuffer(data: RawData): Buffer {

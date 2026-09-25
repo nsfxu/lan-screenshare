@@ -15,6 +15,7 @@ import type { Session } from '../lib/session'
 import type { Subscription, SubscriptionState } from '../lib/subscription'
 import { ChatPanel } from './ChatPanel'
 import { ChangeSourceDialog } from './Dialogs'
+import { Avatar } from './Avatar'
 import { AccessPanel, HostStatsPanel } from './HostControls'
 import { Icon } from './Icon'
 import { ScreenViewer } from './ScreenViewer'
@@ -55,6 +56,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
   const [subs, setSubs] = useState<ReadonlyMap<string, Subscription>>(new Map(watches.all))
   const [focus, setFocus] = useState<string | null>(null)
   const [snapshots, setSnapshots] = useState<ReadonlyMap<string, string>>(new Map(client.snapshots))
+  const [avatars, setAvatars] = useState<ReadonlyMap<string, string>>(new Map(client.avatars))
   const [hosted, setHosted] = useState<HostedRoom | null>(session.hosted)
   const [showStats, setShowStats] = useState(false)
   const [pickSource, setPickSource] = useState(false)
@@ -68,6 +70,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
       client.on('room', setRoom),
       client.on('participants', setParticipants),
       client.on('snapshots', (m) => setSnapshots(new Map(m))),
+      client.on('avatars', (m) => setAvatars(new Map(m))),
       client.on('state', setConnection),
       client.on('chat', (list) => {
         setMessages(list)
@@ -82,6 +85,10 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
       client.on('error', (e) => onToast(e.message, 'error')),
       client.on('closed', ({ reason }) => onLeave(reason))
     ]
+    // Pictures and previews that arrived between the first render and now
+    // (pictures are only sent once).
+    setSnapshots(new Map(client.snapshots))
+    setAvatars(new Map(client.avatars))
     return () => offs.forEach((o) => o())
   }, [client, settings.notifications, onLeave, onToast])
 
@@ -164,6 +171,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
     label: 'You',
     name: me?.name ?? settings.displayName,
     color: me?.color ?? 'var(--accent)',
+    image: avatars.get(client.selfId) ?? settings.avatar,
     audio: sharing.hasAudio && !sharing.audioMuted,
     paused: sharing.paused
   }
@@ -188,6 +196,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
         key={id}
         sub={subs.get(id)!}
         participant={byId(id)}
+        avatar={avatars.get(id) ?? null}
         snapshot={snapshots.get(id) ?? null}
         showOverlay={settings.showStatsOverlay}
         focused={focus === id}
@@ -253,7 +262,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
               {liveOthers.map((p) => (
                 <StreamCard
                   key={p.id}
-                  info={previewOf(p)}
+                  info={previewOf(p, avatars)}
                   snapshot={snapshots.get(p.id) ?? null}
                   watchers={watcherCount(p.id)}
                   onWatch={() => watches.watch(p.id)}
@@ -320,7 +329,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
               {unwatched.map((p) => (
                 <StreamChip
                   key={p.id}
-                  info={previewOf(p)}
+                  info={previewOf(p, avatars)}
                   snapshot={snapshots.get(p.id) ?? null}
                   onWatch={() => watches.watch(p.id)}
                 />
@@ -399,6 +408,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
           {isHost && hosted && <AccessPanel hosted={hosted} onToast={onToast} />}
           <ViewerList
             participants={participants}
+            avatars={avatars}
             selfId={client.selfId}
             isHost={isHost}
             myWatchers={myWatchers}
@@ -416,6 +426,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
           />
           <ChatPanel
             messages={messages}
+            avatars={avatars}
             selfId={client.selfId}
             isHost={isHost}
             muted={!!room?.chatMuted}
@@ -448,12 +459,20 @@ interface PreviewInfo {
   /** Name the avatar initial comes from. */
   name: string
   color: string
+  image: string | null
   audio: boolean
   paused: boolean
 }
 
-function previewOf(p: Participant): PreviewInfo {
-  return { label: p.name, name: p.name, color: p.color, audio: !!p.stream?.audio, paused: !!p.stream?.paused }
+function previewOf(p: Participant, avatars: ReadonlyMap<string, string>): PreviewInfo {
+  return {
+    label: p.name,
+    name: p.name,
+    color: p.color,
+    image: avatars.get(p.id) ?? null,
+    audio: !!p.stream?.audio,
+    paused: !!p.stream?.paused
+  }
 }
 
 /** Preview card for a live stream the user isn't watching yet. */
@@ -482,9 +501,7 @@ function StreamCard({
         </span>
       </div>
       <div className="stream-card-info">
-        <span className="avatar tiny" style={{ background: info.color }} aria-hidden="true">
-          {info.name.slice(0, 1).toUpperCase()}
-        </span>
+        <Avatar name={info.name} color={info.color} image={info.image} size="tiny" />
         <span className="stream-card-name">{info.label}</span>
         {info.audio && <Icon name="volume" size={13} className="muted" />}
         <span className="muted small">{watchers === 0 ? 'no viewers' : `${watchers} watching`}</span>
@@ -512,9 +529,7 @@ function StreamChip({
       {snapshot ? (
         <img className="stream-chip-thumb" src={snapshot} alt="" />
       ) : (
-        <span className="avatar tiny" style={{ background: info.color }} aria-hidden="true">
-          {info.name.slice(0, 1).toUpperCase()}
-        </span>
+        <Avatar name={info.name} color={info.color} image={info.image} size="tiny" />
       )}
       <span className="stream-chip-name">{info.label}</span>
       {info.audio && <Icon name="volume" size={12} />}
@@ -592,9 +607,16 @@ function RemoteTile({
   focused,
   small,
   onFocus,
+  avatar,
   snapshot,
   onStop
-}: TileChrome & { sub: Subscription; participant: Participant | undefined; snapshot: string | null; onStop(): void }) {
+}: TileChrome & {
+  sub: Subscription
+  participant: Participant | undefined
+  avatar: string | null
+  snapshot: string | null
+  onStop(): void
+}) {
   const [stream, setStream] = useState<MediaStream | null>(sub.stream)
   const [state, setState] = useState<SubscriptionState>(sub.state)
   const [stats, setStats] = useState<ViewerStats | null>(null)
@@ -651,9 +673,7 @@ function RemoteTile({
     <div className={`tile ${focused ? 'focused' : ''} ${small ? 'small' : ''}`}>
       <div className="tile-bar">
         <span className="tile-name">
-          <span className="avatar tiny" style={{ background: participant?.color }} aria-hidden="true">
-            {name.slice(0, 1).toUpperCase()}
-          </span>
+          <Avatar name={name} color={participant?.color} image={avatar} size="tiny" />
           {name}
         </span>
         {!small && (
