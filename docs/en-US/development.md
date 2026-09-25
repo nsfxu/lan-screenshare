@@ -151,26 +151,23 @@ Releases are built by GitHub Actions (`.github/workflows/release.yml`) on GitHub
 
 ```mermaid
 flowchart LR
-  T["Push a tag v1.2.0<br/>(annotated, with notes)"] --> C["Typecheck + tests"]
-  C --> W["Windows installer<br/>windows-latest"]
+  S["Actions → Release → Run workflow<br/>version v1.2.0<br/>(or push the tag)"] --> C["Typecheck + tests<br/>version = package.json?"]
+  C --> W["Windows installers<br/>windows-latest"]
   C --> M["macOS .dmg<br/>macos-latest (may fail)"]
-  W --> R["GitHub Release v1.2.0<br/>notes = tag message"]
+  W --> R["GitHub Release v1.2.0<br/>notes = docs/releases/v1.2.0.md"]
   M --> R
 ```
 
-1. Set `version` in `package.json` (installer names use it) and merge everything into `main`.
-2. Write the release notes in a file, then create an **annotated** tag with them and push it:
-
-   ```bash
-   git tag -a v1.2.0 --cleanup=verbatim -F notes.md
-   git push origin v1.2.0
-   ```
-
-   `--cleanup=verbatim` keeps Markdown headings (`## …`), which git would otherwise strip as comments.
-3. The workflow runs the checks, builds the installers, and publishes the release with them attached. The macOS job is allowed to fail without blocking a Windows-only release.
+1. Set `version` in `package.json` (installer names use it) and write the release notes in `docs/releases/v1.2.0.md`. Merge both into `main` through a pull request.
+2. Start the release in one of two ways:
+   - On GitHub: **Actions → Release → Run workflow**, branch `main`, version `v1.2.0`. The workflow creates the tag itself.
+   - Or push a tag from your computer: `git tag v1.2.0 && git push origin v1.2.0`. An annotated tag's message is used as the notes when there is no notes file.
+3. The workflow checks that the version matches `package.json`, runs the checks, builds the installers, and publishes the release with them attached. The macOS job may fail without blocking a Windows-only release.
 4. Say in the notes when the protocol version changed: people on older versions can't join rooms with the new one.
 
-To try the build without releasing, run the workflow by hand (**Actions → Release → Run workflow**). The installers are then kept as run artifacts.
+Running the workflow without a version only builds, as a dry run; the installers are then kept as run artifacts.
+
+The Windows build produces three installers: `-x64.exe` (most PCs), `-arm64.exe` (Windows on ARM) and one without a suffix that contains both.
 
 The installers are not code-signed yet: Windows shows a SmartScreen warning (*More info → Run anyway*) and macOS blocks the first launch (right-click the app → *Open*).
 

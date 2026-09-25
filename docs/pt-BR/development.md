@@ -151,26 +151,23 @@ As versões são geradas pelo GitHub Actions (`.github/workflows/release.yml`) n
 
 ```mermaid
 flowchart LR
-  T["Enviar uma tag v1.2.0<br/>(anotada, com as notas)"] --> C["Typecheck + testes"]
-  C --> W["Instalador do Windows<br/>windows-latest"]
+  S["Actions → Release → Run workflow<br/>versão v1.2.0<br/>(ou enviar a tag)"] --> C["Typecheck + testes<br/>versão = package.json?"]
+  C --> W["Instaladores do Windows<br/>windows-latest"]
   C --> M["macOS .dmg<br/>macos-latest (pode falhar)"]
-  W --> R["GitHub Release v1.2.0<br/>notas = mensagem da tag"]
+  W --> R["GitHub Release v1.2.0<br/>notas = docs/releases/v1.2.0.md"]
   M --> R
 ```
 
-1. Ajuste o `version` no `package.json` (os nomes dos instaladores usam esse valor) e junte tudo na `main`.
-2. Escreva as notas da versão num arquivo, crie uma tag **anotada** com elas e envie:
-
-   ```bash
-   git tag -a v1.2.0 --cleanup=verbatim -F notas.md
-   git push origin v1.2.0
-   ```
-
-   O `--cleanup=verbatim` mantém os títulos em Markdown (`## …`), que o git removeria achando que são comentários.
-3. O workflow roda as verificações, gera os instaladores e publica a versão com eles anexados. O job do macOS pode falhar sem impedir uma versão só para Windows.
+1. Ajuste o `version` no `package.json` (os nomes dos instaladores usam esse valor) e escreva as notas da versão em `docs/releases/v1.2.0.md`. Junte os dois na `main` por um pull request.
+2. Inicie a publicação de um destes jeitos:
+   - No GitHub: **Actions → Release → Run workflow**, branch `main`, versão `v1.2.0`. O próprio workflow cria a tag.
+   - Ou envie uma tag do seu computador: `git tag v1.2.0 && git push origin v1.2.0`. Se não houver arquivo de notas, a mensagem de uma tag anotada vira as notas.
+3. O workflow confere se a versão bate com o `package.json`, roda as verificações, gera os instaladores e publica a versão com eles anexados. O job do macOS pode falhar sem impedir uma versão só para Windows.
 4. Avise nas notas quando a versão do protocolo mudar: quem estiver numa versão antiga não consegue entrar nas salas da nova.
 
-Para testar o build sem publicar, rode o workflow manualmente (**Actions → Release → Run workflow**). Os instaladores ficam guardados como artefatos da execução.
+Rodar o workflow sem versão só gera os instaladores, como um teste; eles ficam guardados como artefatos da execução.
+
+O build do Windows gera três instaladores: `-x64.exe` (a maioria dos PCs), `-arm64.exe` (Windows em ARM) e um sem sufixo que contém os dois.
 
 Os instaladores ainda não são assinados: o Windows mostra um aviso do SmartScreen (*Mais informações → Executar assim mesmo*) e o macOS bloqueia a primeira abertura (clique com o botão direito no app → *Abrir*).
 

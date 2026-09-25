@@ -1,20 +1,33 @@
 name: Release
 
-# Builds the installers on GitHub's Windows and macOS machines.
+# Builds the installers on GitHub's Windows and macOS machines and, for a
+# version, publishes a GitHub Release with them.
 #
-# - Pushing a version tag (for example v1.2.0) builds them and publishes a
-#   GitHub Release. The release notes are the tag's annotation message, so
-#   create the tag with: git tag -a v1.2.0 --cleanup=verbatim -F notes.md
-# - Running the workflow by hand (Actions → Release → Run workflow) only
-#   builds them, as a dry run; the installers are kept as run artifacts.
+# Start a release in either way:
+# - Actions → Release → Run workflow on main, with the version (for example
+#   v1.2.0). The workflow creates the tag itself.
+# - Push a version tag (git push origin v1.2.0).
+#
+# The version must match package.json. The release notes come from
+# docs/releases/<version>.md, or from the annotation of a pushed tag.
+# Running the workflow without a version only builds, as a dry run; the
+# installers are then kept as run artifacts.
 
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release, for example v1.2.0 (empty = build only)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
+
+env:
+  VERSION: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
 
 jobs:
   check:
@@ -22,6 +35,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Check the version
+        if: env.VERSION != ''
+        run: |
+          expected="v$(node -p "require('./package.json').version")"
+          if [ "$VERSION" != "$expected" ]; then
+            echo "::error::Version $VERSION doesn't match package.json ($expected)"
+            exit 1
+          fi
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ "$GITHUB_REF" != refs/heads/main ]; then
+            echo "::error::Run releases from main"
+            exit 1
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -77,18 +102,25 @@ jobs:
   release:
     name: Publish the release
     needs: [windows, macos]
-    # Only for version tags, and only if the Windows installer was built.
-    if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/v') && needs.windows.result == 'success' }}
+    # Only for a version, and only if the Windows installer was built.
+    if: ${{ !cancelled() && needs.windows.result == 'success' && (github.event_name == 'push' && github.ref_name || inputs.version) != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Read the release notes from the tag annotation
-        # checkout may leave a lightweight copy of the tag; fetch the annotated one.
+      - name: Find the release notes
         run: |
-          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
-          git tag -l --format='%(contents)' "$GITHUB_REF_NAME" > notes.md
+          if [ -f "docs/releases/${VERSION}.md" ]; then
+            cp "docs/releases/${VERSION}.md" notes.md
+          elif [ "$GITHUB_EVENT_NAME" = push ]; then
+            # checkout may leave a lightweight copy of the tag; fetch the annotated one.
+            git fetch --force origin "refs/tags/${VERSION}:refs/tags/${VERSION}"
+            git tag -l --format='%(contents)' "$VERSION" > notes.md
+          else
+            echo "::error::No release notes: add docs/releases/${VERSION}.md"
+            exit 1
+          fi
           cat notes.md
       - uses: actions/download-artifact@v4
         with:
@@ -97,9 +129,10 @@ jobs:
       - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}
+        # Creates the tag on this commit when it doesn't exist yet (runs started by hand).
         run: |
           ls -l installers
-          gh release create "$GITHUB_REF_NAME" installers/* \
-            --title "ScreenShare $GITHUB_REF_NAME" \
+          gh release create "$VERSION" installers/* \
+            --title "ScreenShare $VERSION" \
             --notes-file notes.md \
-            --verify-tag
+            --target "$GITHUB_SHA"
