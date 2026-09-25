@@ -13,6 +13,7 @@ Como preparar o projeto, rodar, depurar e gerar instaladores.
 - [Como o build funciona](#como-o-build-funciona)
 - [Depuração](#depuração)
 - [Gerando instaladores](#gerando-instaladores)
+- [Publicando uma versão](#publicando-uma-versão)
 - [Tecnologias](#tecnologias)
 
 ## Requisitos
@@ -143,6 +144,35 @@ npm run dist:mac
 ```
 
 Gera um `.dmg` universal. Para distribuir para outros Macs é preciso um certificado Apple Developer ID para assinar e notarizar; veja a documentação do electron-builder. O build de macOS ainda não foi testado.
+
+## Publicando uma versão
+
+As versões são geradas pelo GitHub Actions (`.github/workflows/release.yml`) nas máquinas Windows e macOS do próprio GitHub, então você não precisa ter os dois sistemas.
+
+```mermaid
+flowchart LR
+  T["Enviar uma tag v1.2.0<br/>(anotada, com as notas)"] --> C["Typecheck + testes"]
+  C --> W["Instalador do Windows<br/>windows-latest"]
+  C --> M["macOS .dmg<br/>macos-latest (pode falhar)"]
+  W --> R["GitHub Release v1.2.0<br/>notas = mensagem da tag"]
+  M --> R
+```
+
+1. Ajuste o `version` no `package.json` (os nomes dos instaladores usam esse valor) e junte tudo na `main`.
+2. Escreva as notas da versão num arquivo, crie uma tag **anotada** com elas e envie:
+
+   ```bash
+   git tag -a v1.2.0 --cleanup=verbatim -F notas.md
+   git push origin v1.2.0
+   ```
+
+   O `--cleanup=verbatim` mantém os títulos em Markdown (`## …`), que o git removeria achando que são comentários.
+3. O workflow roda as verificações, gera os instaladores e publica a versão com eles anexados. O job do macOS pode falhar sem impedir uma versão só para Windows.
+4. Avise nas notas quando a versão do protocolo mudar: quem estiver numa versão antiga não consegue entrar nas salas da nova.
+
+Para testar o build sem publicar, rode o workflow manualmente (**Actions → Release → Run workflow**). Os instaladores ficam guardados como artefatos da execução.
+
+Os instaladores ainda não são assinados: o Windows mostra um aviso do SmartScreen (*Mais informações → Executar assim mesmo*) e o macOS bloqueia a primeira abertura (clique com o botão direito no app → *Abrir*).
 
 ## Tecnologias
 

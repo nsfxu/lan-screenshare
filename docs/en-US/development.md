@@ -13,6 +13,7 @@ How to set up the project, run it, debug it and build installers.
 - [How the build works](#how-the-build-works)
 - [Debugging](#debugging)
 - [Building installers](#building-installers)
+- [Releasing](#releasing)
 - [Tech stack](#tech-stack)
 
 ## Requirements
@@ -143,6 +144,35 @@ npm run dist:mac
 ```
 
 This produces a universal `.dmg`. Distributing it to other Macs needs an Apple Developer ID certificate for signing and notarisation; see electron-builder's documentation. The macOS build hasn't been tested yet.
+
+## Releasing
+
+Releases are built by GitHub Actions (`.github/workflows/release.yml`) on GitHub's own Windows and macOS machines, so you don't need both systems.
+
+```mermaid
+flowchart LR
+  T["Push a tag v1.2.0<br/>(annotated, with notes)"] --> C["Typecheck + tests"]
+  C --> W["Windows installer<br/>windows-latest"]
+  C --> M["macOS .dmg<br/>macos-latest (may fail)"]
+  W --> R["GitHub Release v1.2.0<br/>notes = tag message"]
+  M --> R
+```
+
+1. Set `version` in `package.json` (installer names use it) and merge everything into `main`.
+2. Write the release notes in a file, then create an **annotated** tag with them and push it:
+
+   ```bash
+   git tag -a v1.2.0 --cleanup=verbatim -F notes.md
+   git push origin v1.2.0
+   ```
+
+   `--cleanup=verbatim` keeps Markdown headings (`## …`), which git would otherwise strip as comments.
+3. The workflow runs the checks, builds the installers, and publishes the release with them attached. The macOS job is allowed to fail without blocking a Windows-only release.
+4. Say in the notes when the protocol version changed: people on older versions can't join rooms with the new one.
+
+To try the build without releasing, run the workflow by hand (**Actions → Release → Run workflow**). The installers are then kept as run artifacts.
+
+The installers are not code-signed yet: Windows shows a SmartScreen warning (*More info → Run anyway*) and macOS blocks the first launch (right-click the app → *Open*).
 
 ## Tech stack
 
