@@ -19,6 +19,8 @@ type Events = {
  */
 export class WatchManager extends Emitter<Events> {
   private readonly subs = new Map<string, Subscription>()
+  /** The window is minimized: nothing we watch can be seen. */
+  private windowHidden = false
   private readonly recentlyEnded = new Map<string, number>()
   private readonly unsubscribers: (() => void)[]
 
@@ -29,7 +31,11 @@ export class WatchManager extends Emitter<Events> {
     super()
     this.unsubscribers = [
       client.on('binary', (buf) => this.routeBinary(buf)),
-      client.on('participants', (list) => this.onParticipants(list))
+      client.on('participants', (list) => this.onParticipants(list)),
+      window.api.system.onWindowState((state) => {
+        if (state === 'minimized') this.setWindowHidden(true)
+        else if (state === 'restored') this.setWindowHidden(false)
+      })
     ]
   }
 
@@ -51,6 +57,7 @@ export class WatchManager extends Emitter<Events> {
     if (existing) return existing
     this.recentlyEnded.delete(streamerId)
     const sub = new Subscription(this.client, streamerId, this.settings.forceTcp)
+    sub.setWindowHidden(this.windowHidden)
     sub.on('state', (state) => {
       if (state !== 'ended' || this.subs.get(streamerId) !== sub) return
       // Keep it resumable for a while, then forget it.
@@ -71,6 +78,11 @@ export class WatchManager extends Emitter<Events> {
     this.subs.delete(streamerId)
     sub.dispose()
     this.emit('changed', this.subs)
+  }
+
+  private setWindowHidden(hidden: boolean): void {
+    this.windowHidden = hidden
+    for (const sub of this.subs.values()) sub.setWindowHidden(hidden)
   }
 
   dispose(): void {

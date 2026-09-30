@@ -4,6 +4,7 @@ import {
   encodingFor,
   encodingForWatcher,
   getPreset,
+  isHiddenView,
   largestViewLimit,
   NO_VIEW_LIMIT,
   qualityLadder,
@@ -70,6 +71,8 @@ export interface SharingState {
 export interface WatcherInfo {
   stats: ViewerStats | null
   mediaState: MediaState
+  /** The watcher can't see the stream (minimized, another tile full screen), so no video is sent to them. */
+  hidden: boolean
 }
 
 type Events = {
@@ -539,7 +542,7 @@ export class Publisher extends Emitter<Events> {
         return
       case 'watch-request':
         if (!this.track) return
-        this.watchers.set(msg.from, { stats: null, mediaState: 'negotiating' })
+        this.watchers.set(msg.from, { stats: null, mediaState: 'negotiating', hidden: this.isHidden(msg.from) })
         this.emit('watchers', this.watchers)
         return this.connect(msg.from, msg.transport, msg.decoders)
       case 'signal': {
@@ -566,10 +569,16 @@ export class Publisher extends Emitter<Events> {
         }
         return
       }
-      case 'watcher-view':
+      case 'watcher-view': {
         this.views.set(msg.from, { height: msg.height, fps: msg.fps ?? null })
         void this.rebalance()
+        const info = this.watchers.get(msg.from)
+        if (info && info.hidden !== this.isHidden(msg.from)) {
+          this.watchers.set(msg.from, { ...info, hidden: this.isHidden(msg.from) })
+          this.emit('watchers', this.watchers)
+        }
         return
+      }
       case 'watcher-left':
         this.closePeer(msg.id)
         this.removeTcpViewer(msg.id)
@@ -578,7 +587,7 @@ export class Publisher extends Emitter<Events> {
         this.emit('watchers', this.watchers)
         return
       case 'watcher-stats':
-        this.watchers.set(msg.from, { stats: msg.stats, mediaState: msg.mediaState })
+        this.watchers.set(msg.from, { stats: msg.stats, mediaState: msg.mediaState, hidden: this.isHidden(msg.from) })
         this.emit('watchers', this.watchers)
         return
       case 'keyframe-request':
@@ -672,13 +681,15 @@ export class Publisher extends Emitter<Events> {
     const budget = this.settings.uploadBudgetMbps > 0 ? this.settings.uploadBudgetMbps * 1_000_000 : null
     const entries = [...this.peers.entries()]
     const view = (id: string): ViewLimit => this.views.get(id) ?? NO_VIEW_LIMIT
-    const demands = entries.map(
-      ([id, p]) =>
-        encodingForWatcher(p.controller.preset, source, {
-          viewHeight: view(id).height,
-          maxFps: view(id).fps,
-          bitrateBudget: null
-        }).maxBitrate
+    // Watchers who can't see the stream get no video (see HIDDEN_VIEW), so they need no share of the budget.
+    const demands = entries.map(([id, p]) =>
+      isHiddenView(view(id))
+        ? 0
+        : encodingForWatcher(p.controller.preset, source, {
+            viewHeight: view(id).height,
+            maxFps: view(id).fps,
+            bitrateBudget: null
+          }).maxBitrate
     )
     if (this.tcp) {
       this.tcp.setViewLimit(largestViewLimit([...this.tcpViewers].map(view)))
@@ -688,17 +699,24 @@ export class Publisher extends Emitter<Events> {
     this.tcp?.setBitrateCap(budget === null ? null : shares[shares.length - 1])
     await Promise.all(
       entries.map(([id, peer], i) =>
-        this.applyEncoding(peer, source, {
-          viewHeight: view(id).height,
-          maxFps: view(id).fps,
-          bitrateBudget: budget === null ? null : shares[i]
-        })
+        this.applyEncoding(
+          peer,
+          source,
+          { viewHeight: view(id).height, maxFps: view(id).fps, bitrateBudget: budget === null ? null : shares[i] },
+          !isHiddenView(view(id))
+        )
       )
     )
   }
 
-  private async applyEncoding(peer: Peer, source: number, limits: Parameters<typeof encodingForWatcher>[2]): Promise<void> {
-    const enc = encodingForWatcher(peer.controller.preset, source, limits)
+  private async applyEncoding(
+    peer: Peer,
+    source: number,
+    limits: Parameters<typeof encodingForWatcher>[2],
+    active: boolean
+  ): Promise<void> {
+    // An inactive encoding stops encoding and sending video to this watcher; audio is a separate sender.
+    const enc = { ...encodingForWatcher(peer.controller.preset, source, limits), active }
     // 'motion' content keeps the frame rate and trades resolution; 'detail' keeps text sharp.
     const degradation = this.settings.contentHint === 'motion' ? 'maintain-framerate' : 'maintain-resolution'
     const key = JSON.stringify([enc, degradation])
@@ -713,6 +731,10 @@ export class Publisher extends Emitter<Events> {
     } catch (err) {
       log(`setParameters failed: ${String(err)}`)
     }
+  }
+
+  private isHidden(watcher: string): boolean {
+    return isHiddenView(this.views.get(watcher) ?? NO_VIEW_LIMIT)
   }
 
   private signal(to: string, data: SignalData): void {

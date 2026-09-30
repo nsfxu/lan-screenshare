@@ -749,6 +749,7 @@ function RemoteTile({
         audioAvailable={!!participant?.stream?.audio && state === 'streaming'}
         volumeKey={participant?.name}
         onViewHeight={(px) => sub.setViewHeight(px)}
+        onHiddenChange={(hidden) => sub.setTileHidden(hidden)}
       />
     </div>
   )

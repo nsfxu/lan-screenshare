@@ -12,6 +12,7 @@ import {
   CHAT_RATE_LIMIT,
   HEARTBEAT_INTERVAL_MS,
   MAX_USERS,
+  MIN_VIEW_HEIGHT,
   NAME_MAX_LENGTH,
   PORT_SEARCH_RANGE,
   PROTOCOL_VERSION,
@@ -464,7 +465,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
         const streamer = this.seats.get(msg.streamer)
         if (!streamer?.watchers.has(me.id)) return
         const height = msg.height == null ? null : Number(msg.height)
-        if (height !== null && !(Number.isInteger(height) && height >= 90 && height <= 8640)) return
+        if (height !== null && !(Number.isInteger(height) && height >= MIN_VIEW_HEIGHT && height <= 8640)) return
         const fps = msg.fps == null ? null : Number(msg.fps)
         if (fps !== null && !(Number.isInteger(fps) && fps >= 1 && fps <= 240)) return
         this.send(streamer.ws, { type: 'watcher-view', from: me.id, height, fps })

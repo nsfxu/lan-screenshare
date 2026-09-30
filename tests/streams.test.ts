@@ -1,5 +1,6 @@
 import http from 'node:http'
 import { afterEach, describe, expect, it } from 'vitest'
+import { HIDDEN_VIEW } from '../src/shared/quality'
 import { BINARY_FLAG_KEY, BINARY_KIND_AUDIO, BINARY_KIND_VIDEO } from '../src/shared/constants'
 import { RoomServer } from '../src/main/server'
 import type { Participant, ViewerStats } from '../src/shared/types'
@@ -240,6 +241,9 @@ describe('multi-stream: view size hints', () => {
     expect(await alice.c.wait('watcher-view')).toMatchObject({ from: bob.id, height: 360, fps: null })
     bob.c.send({ type: 'view-size', streamer: alice.id, height: null, fps: 30 })
     await alice.c.wait('watcher-view', (m) => m.height === null && m.fps === 30)
+    // A watcher that can't see the stream: the smallest accepted view.
+    bob.c.send({ type: 'view-size', streamer: alice.id, ...HIDDEN_VIEW })
+    await alice.c.wait('watcher-view', (m) => m.height === HIDDEN_VIEW.height && m.fps === HIDDEN_VIEW.fps)
 
     // Junk values and non-watchers are ignored.
     bob.c.send({ type: 'view-size', streamer: alice.id, height: -5, fps: null })
@@ -248,7 +252,7 @@ describe('multi-stream: view size hints', () => {
     bob.c.send({ type: 'view-size', streamer: alice.id, height: 720, fps: 29.97 })
     carol.c.send({ type: 'view-size', streamer: alice.id, height: 720, fps: null })
     await sleep(150)
-    expect(alice.c.messages.filter((m) => m.type === 'watcher-view')).toHaveLength(2)
+    expect(alice.c.messages.filter((m) => m.type === 'watcher-view')).toHaveLength(3)
   })
 })
 

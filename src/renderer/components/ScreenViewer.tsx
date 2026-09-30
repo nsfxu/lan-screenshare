@@ -14,6 +14,8 @@ interface Props {
   volumeKey?: string
   /** Reports the device-pixel height the video is displayed at (including zoom). */
   onViewHeight?(pixels: number): void
+  /** Called with true while this viewer can't be seen because another element is full screen. */
+  onHiddenChange?(hidden: boolean): void
 }
 
 const MIN_ZOOM = 1
@@ -41,13 +43,24 @@ function loadVolume(key: string): { volume: number; muted: boolean } {
  * a full-screen toggle. Viewers also get volume/mute for the host's system
  * audio (remembered on this machine); the host's own preview is always muted.
  */
-export function ScreenViewer({ stream, placeholder, overlay, local, audioAvailable, volumeKey, onViewHeight }: Props) {
+export function ScreenViewer({
+  stream,
+  placeholder,
+  overlay,
+  local,
+  audioAvailable,
+  volumeKey,
+  onViewHeight,
+  onHiddenChange
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [dragging, setDragging] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
+  const hiddenRef = useRef(onHiddenChange)
+  hiddenRef.current = onHiddenChange
   const [idle, setIdle] = useState(false)
   const idleTimer = useRef<number | null>(null)
   const dragStart = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null)
@@ -79,7 +92,10 @@ export function ScreenViewer({ stream, placeholder, overlay, local, audioAvailab
   }, [stream])
 
   useEffect(() => {
-    const onChange = (): void => setFullscreen(document.fullscreenElement === containerRef.current)
+    const onChange = (): void => {
+      setFullscreen(document.fullscreenElement === containerRef.current)
+      hiddenRef.current?.(!!document.fullscreenElement && document.fullscreenElement !== containerRef.current)
+    }
     document.addEventListener('fullscreenchange', onChange)
     return () => document.removeEventListener('fullscreenchange', onChange)
   }, [])

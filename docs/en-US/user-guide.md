@@ -109,6 +109,8 @@ Each tile has:
 
 If a stream can't connect in 8 seconds (some VPNs and firewalls block it), the app switches to a TCP connection by itself. It adds a little latency but keeps working.
 
+While you **minimize** the app, or put one tile in full screen, the streams you can't see stop sending you video (you still hear them), which saves the streamer's upload and your network. The picture comes back within a second when you look again. The streamer sees you as "not looking" in the People list.
+
 ## Chat and people
 
 - **Chat** is on the right: messages with time and picture, and an emoji picker. Messages are kept only while the room exists.

@@ -111,6 +111,8 @@ Cada quadro tem:
 
 Se uma transmissão não conectar em 8 segundos (algumas VPNs e firewalls bloqueiam), o app passa sozinho para uma conexão TCP. Ela acrescenta um pouco de atraso, mas continua funcionando.
 
+Enquanto você **minimiza** o app, ou deixa um quadro em tela cheia, as transmissões que você não consegue ver param de te mandar vídeo (o som continua), o que poupa o upload de quem transmite e a sua rede. A imagem volta em menos de um segundo quando você olha de novo. Quem transmite vê você como "not looking" na lista de pessoas.
+
 ## Chat e pessoas
 
 - O **chat** fica à direita: mensagens com horário e foto, e um seletor de emojis. As mensagens só existem enquanto a sala existir.

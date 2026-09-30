@@ -132,7 +132,7 @@ sequenceDiagram
 | `unwatch` | `streamer` | Watcher | Removes the subscription, sends `watcher-left` to the streamer. |
 | `stats` | `streamer, stats, mediaState` | Watcher | Forwards to the streamer as `watcher-stats`. |
 | `keyframe-request` | `streamer` | TCP watcher | Forwards to the streamer (at most 1 per second per watcher). |
-| `view-size` | `streamer, height, fps` | Watcher | Validates (`height` 90–8640 or null, `fps` 1–240 or null) and forwards as `watcher-view`. |
+| `view-size` | `streamer, height, fps` | Watcher | Validates (`height` 90–8640 or null, `fps` 1–240 or null) and forwards as `watcher-view`. Height 90 at 1 fps means the watcher can't see the stream ([media pipeline](media-pipeline.md#2-view-limit-only-send-what-is-shown)). |
 | `kick` | `userId` | Host | Bans the client id for this room session, closes its socket, announces it. |
 | `stop-stream` | `userId` | Host | Ends that stream, tells the streamer (`stream-stopped`) and its watchers. |
 | `delete-message` | `id` | Host | Removes the message from history, broadcasts `chat-deleted`. |

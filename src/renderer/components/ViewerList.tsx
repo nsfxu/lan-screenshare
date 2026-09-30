@@ -71,7 +71,8 @@ export function ViewerList({ participants, avatars, selfId, isHost, myWatchers, 
                 </span>
                 <span className="muted small">
                   {status.label}
-                  {mine?.stats && mine.mediaState === 'streaming' && (
+                  {mine?.hidden && ' · not looking (video paused)'}
+                  {mine?.stats && mine.mediaState === 'streaming' && !mine.hidden && (
                     <>
                       {' · watching you: '}
                       {mine.stats.fps} fps ·{' '}

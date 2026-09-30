@@ -71,5 +71,8 @@ export const AVATAR_MAX_CHARS = 40_000
 /** The server ignores profile picture changes sent more often than this. */
 export const AVATAR_MIN_INTERVAL_MS = 1_000
 
+/** Smallest view height (px) a watcher may report in `view-size`. */
+export const MIN_VIEW_HEIGHT = 90
+
 /** Server-side send buffer limit per TCP-fallback viewer before frames are dropped. */
 export const TCP_MAX_BUFFERED_BYTES = 2 * 1024 * 1024

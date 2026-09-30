@@ -1,3 +1,5 @@
+import { MIN_VIEW_HEIGHT } from './constants'
+
 /**
  * Quality ladder and the adaptive controller that walks it.
  *
@@ -204,6 +206,19 @@ export const MIN_VIDEO_BITRATE = 300_000
 export function viewHeightStep(pixels: number | null): number | null {
   if (pixels === null || !Number.isFinite(pixels) || pixels <= 0) return null
   return VIEW_HEIGHT_STEPS.find((s) => s >= pixels) ?? null
+}
+
+/**
+ * What a watcher that can't see a stream asks for (its window is minimized,
+ * or another tile is full screen): the smallest view the server accepts, at
+ * 1 fps. No real tile reports it (the smallest step is 360 px), so a streamer
+ * can tell, and pauses that watcher's video altogether; an older streamer
+ * that doesn't know sends a tiny picture instead. Audio keeps playing.
+ */
+export const HIDDEN_VIEW: ViewLimit = { height: MIN_VIEW_HEIGHT, fps: 1 }
+
+export function isHiddenView(view: ViewLimit): boolean {
+  return view.height !== null && view.height <= MIN_VIEW_HEIGHT
 }
 
 /** What a watcher asks a streamer for; null = no limit. */
