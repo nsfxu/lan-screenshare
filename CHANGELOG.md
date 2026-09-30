@@ -10,6 +10,8 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-30
+
 ### Added
 
 - Games that hide the mouse cursor no longer show one to viewers while you share your screen on Windows 10 (or 11 before 24H2): while a fullscreen game hides the cursor, the app shares the game's window instead, and goes back to your screen when you alt-tab. A notice in the room says when this happens, with a button to keep sharing the screen. For games in a window, the room suggests sharing their window.
@@ -34,5 +36,6 @@ The first release.
 - Reconnects after short network drops, and switches to TCP when a network blocks WebRTC.
 - Encrypted connections, the PIN kept only in memory, and the window hidden from screenshots while you watch.
 
-[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/nsfxu/lan-screenshare/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nsfxu/lan-screenshare/releases/tag/v1.0.0
