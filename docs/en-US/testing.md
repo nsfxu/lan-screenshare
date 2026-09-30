@@ -89,6 +89,7 @@ Keep decision logic out of React and out of WebRTC callbacks, in `src/shared/*.t
 |---|---|
 | Public room | Alice creates a room and shares; Bob joins with **Connect by IP**; nothing plays until he chooses her stream; frames arrive and have the colour of her screen; chat both ways; when she stops sharing, his tile and her card go away. |
 | Private room | A wrong PIN is refused (error, still outside); the right PIN lets Bob in. |
+| Hidden viewers (`hidden.spec.ts`) | Alice and Carol share, Bob watches both. Bob minimized: no frames from either, and Alice sees "not looking (video paused)"; restored: both play again. Alice's tile full screen (simulated): Carol's stream pauses, Alice's keeps playing. |
 
 ```bash
 npm run test:e2e                 # builds, then runs e2e/ (about 40 s)

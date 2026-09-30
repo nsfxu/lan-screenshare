@@ -1,5 +1,12 @@
 import { STATS_INTERVAL_MS, WEBRTC_CONNECT_TIMEOUT_MS } from '../../shared/constants'
-import { getWatchQuality, viewHeightStep, watchLimit, type WatchQuality, type WatchQualityId } from '../../shared/quality'
+import {
+  getWatchQuality,
+  HIDDEN_VIEW,
+  viewHeightStep,
+  watchLimit,
+  type WatchQuality,
+  type WatchQualityId
+} from '../../shared/quality'
 import type { MediaState, ServerMessage, SignalData, Transport, ViewerStats } from '../../shared/types'
 import { shortCodecName } from './codecs'
 import { Emitter } from './emitter'
@@ -63,6 +70,10 @@ export class Subscription extends Emitter<Events> {
   quality: WatchQuality = getWatchQuality('auto')
   /** Stepped pixel height we display the stream at (null = full quality). */
   private viewHeight: number | null = null
+  /** The tile can't be seen (another tile is full screen). */
+  private tileHidden = false
+  /** The whole window can't be seen (minimized). */
+  private windowHidden = false
   private tick = 0
   private readonly log: (msg: string) => void
 
@@ -108,6 +119,26 @@ export class Subscription extends Emitter<Events> {
     this.sendViewHeight()
   }
 
+  /**
+   * Whether this stream can be seen at all. While it can't, the streamer
+   * pauses our video (see HIDDEN_VIEW) and sends only audio.
+   */
+  setTileHidden(hidden: boolean): void {
+    if (hidden === this.tileHidden) return
+    this.tileHidden = hidden
+    this.sendViewHeight()
+  }
+
+  setWindowHidden(hidden: boolean): void {
+    if (hidden === this.windowHidden) return
+    this.windowHidden = hidden
+    this.sendViewHeight()
+  }
+
+  get hidden(): boolean {
+    return this.tileHidden || this.windowHidden
+  }
+
   /** Receive at most this quality, whatever the tile size. */
   setQuality(id: WatchQualityId): void {
     const quality = getWatchQuality(id)
@@ -119,7 +150,7 @@ export class Subscription extends Emitter<Events> {
 
   private sendViewHeight(): void {
     if (this.state === 'ended') return
-    const { height, fps } = watchLimit(this.viewHeight, this.quality)
+    const { height, fps } = this.hidden ? HIDDEN_VIEW : watchLimit(this.viewHeight, this.quality)
     this.client.send({ type: 'view-size', streamer: this.streamerId, height, fps })
   }
 

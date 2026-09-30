@@ -132,7 +132,7 @@ sequenceDiagram
 | `unwatch` | `streamer` | Espectador | Remove a assinatura e envia `watcher-left` a quem transmite. |
 | `stats` | `streamer, stats, mediaState` | Espectador | Repassa a quem transmite como `watcher-stats`. |
 | `keyframe-request` | `streamer` | Espectador TCP | Repassa a quem transmite (no máximo 1 por segundo por espectador). |
-| `view-size` | `streamer, height, fps` | Espectador | Valida (`height` 90–8640 ou null, `fps` 1–240 ou null) e repassa como `watcher-view`. |
+| `view-size` | `streamer, height, fps` | Espectador | Valida (`height` 90–8640 ou null, `fps` 1–240 ou null) e repassa como `watcher-view`. Altura 90 a 1 fps quer dizer que o espectador não consegue ver a transmissão ([pipeline de mídia](media-pipeline.md#2-limite-de-exibição-só-enviar-o-que-aparece)). |
 | `kick` | `userId` | Anfitrião | Bane aquele client id nesta sessão da sala, fecha o socket e avisa no chat. |
 | `stop-stream` | `userId` | Anfitrião | Encerra aquela transmissão e avisa quem transmitia (`stream-stopped`) e seus espectadores. |
 | `delete-message` | `id` | Anfitrião | Tira a mensagem do histórico e envia `chat-deleted` a todos. |

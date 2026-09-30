@@ -5,14 +5,18 @@ import {
   encodingForWatcher,
   getPreset,
   getWatchQuality,
+  HIDDEN_VIEW,
+  isHiddenView,
   largestViewLimit,
   limitPreset,
   MIN_VIDEO_BITRATE,
   qualityLadder,
   scaledSize,
   splitBudget,
+  VIEW_HEIGHT_STEPS,
   viewHeightStep,
   watchLimit,
+  WATCH_QUALITIES,
   type NetworkSample
 } from '../src/shared/quality'
 
@@ -195,5 +199,18 @@ describe('watcher quality choice', () => {
     expect(largestViewLimit([])).toEqual({ height: null, fps: null })
     expect(largestViewLimit([{ height: 360, fps: 30 }, { height: 720, fps: 30 }])).toEqual({ height: 720, fps: 30 })
     expect(largestViewLimit([{ height: 360, fps: 30 }, { height: null, fps: null }])).toEqual({ height: null, fps: null })
+  })
+})
+
+describe("hidden view (watcher can't see the stream)", () => {
+  it('is recognised, and no real view or quality choice looks like it', () => {
+    expect(isHiddenView(HIDDEN_VIEW)).toBe(true)
+    expect(isHiddenView({ height: null, fps: null })).toBe(false)
+    for (const step of VIEW_HEIGHT_STEPS) expect(isHiddenView({ height: step, fps: null })).toBe(false)
+    // Whatever a tile measures, it reports a step, never the hidden height.
+    for (const px of [1, 50, 90, 200, 359]) expect(isHiddenView({ height: viewHeightStep(px), fps: null })).toBe(false)
+    for (const q of WATCH_QUALITIES) {
+      for (const step of [null, ...VIEW_HEIGHT_STEPS]) expect(isHiddenView(watchLimit(step, q))).toBe(false)
+    }
   })
 })

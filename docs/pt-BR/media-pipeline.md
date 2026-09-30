@@ -155,6 +155,10 @@ O espectador também pode escolher uma **qualidade** no menu do quadro (`WATCH_Q
 
 Do lado de quem transmite, `limitPreset()` reduz o preset para essa altura e fps e ajusta o bitrate pela quantidade de pixels e pela taxa de quadros. Exemplo: um preset 1080p60 exibido num quadro de 360p custa cerca de 15 Mbps / 9 ≈ 1,7 Mbps.
 
+**Transmissões que ninguém consegue ver não recebem vídeo.** Quando um espectador não consegue ver uma transmissão (a janela dele está minimizada, ou outro quadro está em tela cheia), a `Subscription` envia `HIDDEN_VIEW` no lugar: 90 px a 1 fps, a menor exibição que o servidor aceita. Nenhum quadro de verdade informa isso (o menor degrau é 360), então quem transmite reconhece o valor (`isHiddenView`) e deixa a codificação de vídeo daquele espectador com `active: false`: nada é codificado nem enviado, e o espectador não precisa de uma parte da banda de upload. O áudio é um envio separado e continua tocando. Quando o espectador volta a ver a transmissão, ele informa a exibição real e o vídeo volta em menos de um segundo. A lista de pessoas de quem transmite mostra "not looking (video paused)". Quem transmite com uma versão antiga, que não conhece essa convenção, envia uma imagem minúscula de 160×90 a 1 fps, então não foi preciso mudar o protocolo.
+
+A minimização é informada pelo processo principal (`window:state`); a própria página não consegue saber, porque o app desliga a limitação em segundo plano para a captura e a codificação continuarem rodando. Uma janela que só está *coberta* (por exemplo por um jogo em tela cheia na mesma tela) ainda não é detectada.
+
 ### 3. Banda de upload
 
 **Settings → Upload limit when sharing** (padrão 100 Mbps, ou ilimitado) é o upload **total** de quem transmite. `splitBudget()` divide essa banda de forma justa (max-min, "enchendo os copos"): quem precisa de pouco (quadros pequenos) recebe o que precisa, e o resto é dividido entre as visualizações maiores. Os espectadores TCP contam como uma única demanda. Vale na hora, inclusive durante a transmissão.

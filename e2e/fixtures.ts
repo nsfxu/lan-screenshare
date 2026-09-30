@@ -126,8 +126,10 @@ export const test = base.extend<{ people: (count: number) => Promise<Person[]> }
     })
     if (testInfo.status !== testInfo.expectedStatus) {
       for (const p of started) {
-        const shot = await p.win.screenshot().catch(() => null)
-        if (shot) await testInfo.attach(`${p.name}.png`, { body: shot, contentType: 'image/png' })
+        const file = testInfo.outputPath(`${p.name}.png`)
+        if (await p.win.screenshot({ path: file }).catch(() => null)) {
+          await testInfo.attach(p.name, { path: file, contentType: 'image/png' })
+        }
       }
     }
     for (const app of apps) await quit(app)
@@ -205,4 +207,27 @@ export async function sendChat(person: Person, text: string): Promise<void> {
   const input = person.win.getByPlaceholder('Type a message…')
   await input.fill(text)
   await input.press('Enter')
+}
+
+/** Frames decoded so far by the tile of `streamer` (by name). */
+export function framesOf(win: Page, streamer: string): Promise<number> {
+  return win.evaluate((name) => {
+    const tile = [...document.querySelectorAll('.tile')].find((t) => t.querySelector('.tile-name')?.textContent?.includes(name))
+    return tile?.querySelector<HTMLVideoElement>('video')?.getVideoPlaybackQuality().totalVideoFrames ?? 0
+  }, streamer)
+}
+
+/** How many frames `streamer`'s tile decodes during `ms`. */
+export async function framesDuring(win: Page, streamer: string, ms: number): Promise<number> {
+  const start = await framesOf(win, streamer)
+  await win.waitForTimeout(ms)
+  return (await framesOf(win, streamer)) - start
+}
+
+/** Tell the app its window was minimized or restored, as the main process does (works without a window manager). */
+export async function setWindowState(person: Person, state: 'minimized' | 'restored'): Promise<void> {
+  await person.app.evaluate(
+    ({ BrowserWindow }, [channel, value]) => BrowserWindow.getAllWindows()[0].webContents.send(channel, value),
+    [IPC.windowState, state] as const
+  )
 }

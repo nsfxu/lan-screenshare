@@ -89,6 +89,7 @@ A pasta `e2e/` roda o app de verdade: duas instâncias (Alice e Bob, o build de 
 |---|---|
 | Sala pública | A Alice cria uma sala e compartilha; o Bob entra com **Connect by IP**; nada toca até ele escolher a transmissão dela; os quadros chegam com a cor da tela dela; chat nos dois sentidos; quando ela para de compartilhar, o quadro dele e o cartão dela somem. |
 | Sala privada | Um PIN errado é recusado (erro, continua do lado de fora); o PIN certo deixa o Bob entrar. |
+| Espectadores que não veem (`hidden.spec.ts`) | Alice e Carol compartilham, Bob assiste as duas. Bob minimizado: nenhum quadro das duas, e a Alice vê "not looking (video paused)"; restaurado: as duas voltam a tocar. Quadro da Alice em tela cheia (simulado): a transmissão da Carol pausa, a da Alice continua. |
 
 ```bash
 npm run test:e2e                 # compila e roda a pasta e2e/ (uns 40 s)

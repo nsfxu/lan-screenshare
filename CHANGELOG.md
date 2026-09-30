@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Changed
+
+- Streams you can't see stop sending you video while the app is minimized or another tile is full screen (you still hear them), saving the streamer's upload and your network. The picture comes back within a second, and streamers see you as "not looking (video paused)".
+
 ## [1.1.0] - 2026-09-30
 
 ### Added
