@@ -75,7 +75,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # Also compiles the audio helper with the csc.exe that ships with Windows.
+      # Also compiles the Windows helpers with the csc.exe that ships with Windows.
       - run: npm run build
       - run: npx electron-builder --win --config electron-builder.json --publish never
       - uses: actions/upload-artifact@v4

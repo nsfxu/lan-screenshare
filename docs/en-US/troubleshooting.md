@@ -10,6 +10,7 @@ Common problems and how to fix them. If yours isn't here, open **Settings → Op
 - [I can't join](#i-cant-join)
 - [The video doesn't start or stays black](#the-video-doesnt-start-or-stays-black)
 - [The quality is low](#the-quality-is-low)
+- [Viewers see my mouse cursor in a game](#viewers-see-my-mouse-cursor-in-a-game)
 - [Audio problems](#audio-problems)
 - [High CPU or a hot laptop](#high-cpu-or-a-hot-laptop)
 - [macOS permissions](#macos-permissions)
@@ -61,6 +62,16 @@ flowchart TD
 4. Ask the streamer to check their **quality picker** in the toolbar, and **Settings → Upload limit when sharing** (the default 100 Mbps is shared between everyone watching them; on Wi-Fi 30–60 Mbps is more realistic).
 5. The streamer's **Stats → Limited by** tells you why: *bandwidth* (network), *cpu* (computer too busy) or *none*.
 6. On the **TCP** connection, latency is a bit higher and one encode is shared by all TCP viewers.
+
+## Viewers see my mouse cursor in a game
+
+On Windows 10 (and 11 before 24H2), sharing a whole screen shows the cursor even when a game hides it. The app handles this itself for **fullscreen** games: while the game hides the cursor, it shares the game's window instead, and the room says so. When you alt-tab it goes back to your screen.
+
+- **The cursor still shows for a second** when you go back into the game: that's the time it takes to switch.
+- **The game runs in a window**: the app suggests sharing its window instead (a banner in the room). You can also pick it in **Change source → Windows**.
+- **The game's window is black when shared**: games in exclusive fullscreen can't always be captured as a window. Use borderless or windowed fullscreen in the game's settings.
+- **A yellow border around the game**: Windows 10 draws it while a window is captured. Viewers don't see it.
+- **You'd rather keep sharing the screen**: click **Share the screen instead** in the room. The app won't switch again for that game until you share again.
 
 ## Audio problems
 

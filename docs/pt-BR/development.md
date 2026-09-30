@@ -56,7 +56,7 @@ npm test
 | `npm test` | Roda todos os testes unitários e de integração uma vez (vitest). |
 | `npm run test:watch` | Testes em modo observação. |
 | `npm run typecheck` | Verificação do TypeScript do lado Node (`tsconfig.node.json`, inclui `tests/`) e do lado web (`tsconfig.web.json`). |
-| `npm run build:native` | Compila `native/bin/win-audio-capture.exe` (não faz nada em outros sistemas ou se já estiver atualizado). |
+| `npm run build:native` | Compila os auxiliares do Windows em `native/bin/` (`win-audio-capture.exe`, `win-cursor-watch.exe`); não faz nada em outros sistemas ou se já estiverem atualizados. |
 | `npm run dist:win` | Build + instalador do Windows (NSIS, x64 e arm64) em `release/<versão>/`. |
 | `npm run dist:mac` | Build + imagens de disco do macOS (Intel e Apple Silicon) em `release/<versão>/`. Precisa rodar num Mac. |
 | `npm run dist` | Build + instalador para a plataforma atual. |
@@ -85,12 +85,12 @@ flowchart LR
     P["src/preload/index.ts"]
     R["src/renderer (React + TS)"]
     S["src/shared, src/utils"]
-    C["native/win-audio-capture/Program.cs"]
+    C["native/*/Program.cs"]
   end
   EV["electron-vite<br/>(Vite + esbuild/rollup)"]
-  CSC["scripts/build-win-audio.cjs<br/>csc.exe do .NET Framework 4"]
+  CSC["scripts/build-native.cjs<br/>csc.exe do .NET Framework 4"]
   OUT["out/main, out/preload, out/renderer"]
-  EXE["native/bin/win-audio-capture.exe"]
+  EXE["native/bin/*.exe"]
   EB["electron-builder"]
   REL["release/versão/<br/>instalador .exe ou .dmg"]
   M --> EV
@@ -105,8 +105,8 @@ flowchart LR
 ```
 
 - O `electron.vite.config.ts` define três builds: main, preload e renderer (com o plugin do React).
-- O auxiliar de áudio só é recompilado quando o `Program.cs` é mais novo que o `.exe`. A pasta `native/bin/` é ignorada pelo git.
-- O `electron-builder.json` empacota `out/**` num `asar`, adiciona o auxiliar como recurso extra no Windows e define os entitlements e as descrições de uso do macOS (Gravação de Tela, Rede Local, serviço Bonjour `_lanshare._tcp`).
+- Cada auxiliar só é recompilado quando o seu `Program.cs` é mais novo que o seu `.exe`. Se outra instância do app estiver rodando um auxiliar, o `.exe` travado é renomeado para o lado (o Windows permite) e apagado num build seguinte. A pasta `native/bin/` é ignorada pelo git.
+- O `electron-builder.json` empacota `out/**` num `asar`, adiciona os auxiliares como recursos extras no Windows e define os entitlements e as descrições de uso do macOS (Gravação de Tela, Rede Local, serviço Bonjour `_lanshare._tcp`).
 
 ### Trabalhando no auxiliar de áudio sem Windows
 
@@ -114,6 +114,7 @@ O auxiliar usa APIs do Windows, então só roda no Windows. Mesmo assim, dá par
 
 ```bash
 mcs -langversion:5 -warn:4 -target:exe -out:/tmp/win-audio-capture.exe native/win-audio-capture/Program.cs
+mcs -langversion:5 -warn:4 -target:exe -out:/tmp/win-cursor-watch.exe native/win-cursor-watch/Program.cs
 ```
 
 Mantenha o C# 5: nada de interpolação de strings (`$"..."`), `?.`, `nameof`, membros com corpo de expressão ou `out var`.
