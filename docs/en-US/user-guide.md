@@ -61,7 +61,7 @@ Each room card shows whether it is **Public** or **Private** (lock icon), how ma
 1. Click **Create room**.
 2. Give it a name and choose **Public** (anyone on the network can join) or **Private** (people need a PIN, which is generated for you; pick 4, 5 or 6 digits).
 3. Choose what to share: a whole **screen** or a single **window**.
-4. **Share system audio** sends everything playing on your computer. On Windows, **Leave out Discord** (on by default) keeps your Discord call out of it, so people in the same call don't hear themselves through your stream.
+4. **Share system audio** sends everything playing on your computer. On Windows, **Leave out Discord** (on by default) keeps your Discord call out of it, so people in the same call don't hear themselves through your stream. When you share a single **window** on Windows, **Only this app's sound** (on by default) sends just that app's sound, for example only your game, without Discord, music or notifications.
 5. Click **Start sharing**.
 
 For a private room, the PIN is copied to your clipboard so you can paste it to your friends.
@@ -152,6 +152,7 @@ Open Settings with the gear icon (home screen or room header).
 | Behaviour | Show FPS and latency overlay | on | The badges on each stream. |
 | Behaviour | Share system audio by default | on | Pre-selects the audio switch. |
 | Behaviour | Leave out Discord by default | on | Windows only. Pre-selects the Discord switch. |
+| Behaviour | Only the shared app's sound by default | on | Windows only. Pre-selects **Only this app's sound** when you share a window. |
 
 The footer shows the app version and has **Open logs**.
 

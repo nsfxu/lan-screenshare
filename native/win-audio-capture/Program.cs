@@ -14,6 +14,12 @@
 // while none of them is running. The helper rescans every 2 s and switches
 // when the app starts or quits. Windows converts to 48 kHz stereo itself.
 //
+// --include-window <hwnd>: only the sound of the app that owns that window
+// (process loopback in include mode: the process and its child processes,
+// which covers browsers and games that play audio from a helper process).
+// Used when a single window is shared. Exits with code 4 before the header if
+// the window no longer exists.
+//
 // Output on stdout:
 //
 //   header: "SSA1" | u32 sample rate | u16 channels (always 2)   (little endian)
@@ -21,7 +27,8 @@
 //
 // Diagnostics go to stderr. The process exits when stdin closes (the app went
 // away), when the device is invalidated (exit code 2), or, before writing the
-// header, when process loopback is not available on this Windows (exit code 3).
+// header, when process loopback is not available on this Windows (exit code 3)
+// or the window to include is gone (exit code 4).
 //
 // Built with the C# 5 compiler that ships with .NET Framework 4 (see
 // scripts/build-native.cjs); no NuGet packages or SDK required.
@@ -183,12 +190,14 @@ namespace ScreenShare.AudioCapture
         const ushort WAVE_FORMAT_EXTENSIBLE = 0xFFFE;
         const ushort VT_BLOB = 65;
         const int AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK = 1;
+        const int PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE = 0;
         const int PROCESS_LOOPBACK_MODE_EXCLUDE_TARGET_PROCESS_TREE = 1;
         const string VIRTUAL_AUDIO_DEVICE_PROCESS_LOOPBACK = "VAD\\Process_Loopback";
         const uint TH32CS_SNAPPROCESS = 0x2;
         const int PROCESS_LOOPBACK_RATE = 48000;
         const int RESCAN_MS = 2000;
         const int EXIT_NO_PROCESS_LOOPBACK = 3;
+        const int EXIT_NO_TARGET = 4;
         static readonly Guid SubtypeFloat = new Guid("00000003-0000-0010-8000-00aa00389b71");
 
         static volatile bool running = true;
@@ -205,6 +214,9 @@ namespace ScreenShare.AudioCapture
 
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern IntPtr CreateToolhelp32Snapshot(uint flags, uint processId);
+
+        [DllImport("user32.dll")]
+        static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         static extern bool Process32FirstW(IntPtr snapshot, ref ProcessEntry entry);
@@ -232,12 +244,14 @@ namespace ScreenShare.AudioCapture
             {
                 string[] exclude = null;
                 uint fallbackPid = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
+                long includeWindow = 0;
                 for (int i = 0; i + 1 < args.Length; i += 2)
                 {
                     if (args[i] == "--exclude") exclude = args[i + 1].Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                     else if (args[i] == "--fallback-pid") fallbackPid = uint.Parse(args[i + 1]);
+                    else if (args[i] == "--include-window") includeWindow = long.Parse(args[i + 1]);
                 }
-                return Run(exclude, fallbackPid);
+                return Run(exclude, fallbackPid, includeWindow);
             }
             catch (Exception e) { Console.Error.WriteLine("fatal: " + e.Message); return 1; }
         }
@@ -247,11 +261,31 @@ namespace ScreenShare.AudioCapture
             if (hr < 0) throw new Exception(string.Format("{0} failed: 0x{1:X8}", what, hr));
         }
 
-        static int Run(string[] exclude, uint fallbackPid)
+        static int Run(string[] exclude, uint fallbackPid, long includeWindow)
         {
             Capture capture;
             uint target = 0;
-            if (exclude == null)
+            if (includeWindow != 0)
+            {
+                uint pid;
+                GetWindowThreadProcessId(new IntPtr(includeWindow), out pid);
+                if (pid == 0)
+                {
+                    Console.Error.WriteLine("the shared window no longer exists");
+                    return EXIT_NO_TARGET;
+                }
+                try
+                {
+                    capture = OpenProcessLoopback(pid, true);
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine("process loopback unavailable: " + e.Message);
+                    return EXIT_NO_PROCESS_LOOPBACK;
+                }
+                Console.Error.WriteLine(string.Format("capturing only {0} (pid {1}) and its child processes", ProcessName(pid), pid));
+            }
+            else if (exclude == null)
             {
                 capture = OpenEndpointLoopback();
             }
@@ -261,7 +295,7 @@ namespace ScreenShare.AudioCapture
                 try
                 {
                     target = FindTarget(exclude, fallbackPid, out name);
-                    capture = OpenProcessLoopback(target);
+                    capture = OpenProcessLoopback(target, false);
                 }
                 catch (Exception e)
                 {
@@ -308,7 +342,7 @@ namespace ScreenShare.AudioCapture
                         {
                             try
                             {
-                                var fresh = OpenProcessLoopback(next);
+                                var fresh = OpenProcessLoopback(next, false);
                                 try { Check(fresh.Client.Start(), "Start"); }
                                 catch { fresh.Dispose(); throw; }
                                 capture.Dispose();
@@ -418,8 +452,9 @@ namespace ScreenShare.AudioCapture
             return capture;
         }
 
-        // Loopback of the whole system mix except the process tree rooted at `pid`.
-        static Capture OpenProcessLoopback(uint pid)
+        // Loopback of the process tree rooted at `pid` (include), or of the whole
+        // system mix except that tree (exclude).
+        static Capture OpenProcessLoopback(uint pid, bool include)
         {
             // Process loopback has no mix format of its own: ask for 48 kHz stereo
             // (float, else 16-bit PCM) and let Windows convert.
@@ -429,7 +464,7 @@ namespace ScreenShare.AudioCapture
                 var capture = new Capture();
                 try
                 {
-                    capture.Client = ActivateProcessLoopback(pid);
+                    capture.Client = ActivateProcessLoopback(pid, include);
                     capture.Format = BuildStereoFormat(isFloat);
                     ReadFormat(capture);
                     int flags = AUDCLNT_STREAMFLAGS_LOOPBACK | AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM;
@@ -448,7 +483,7 @@ namespace ScreenShare.AudioCapture
             throw last;
         }
 
-        static IAudioClient ActivateProcessLoopback(uint pid)
+        static IAudioClient ActivateProcessLoopback(uint pid, bool include)
         {
             // AUDIOCLIENT_ACTIVATION_PARAMS { ActivationType; { TargetProcessId; ProcessLoopbackMode } }
             IntPtr parameters = Marshal.AllocHGlobal(12);
@@ -456,7 +491,8 @@ namespace ScreenShare.AudioCapture
             {
                 Marshal.WriteInt32(parameters, 0, AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK);
                 Marshal.WriteInt32(parameters, 4, unchecked((int)pid));
-                Marshal.WriteInt32(parameters, 8, PROCESS_LOOPBACK_MODE_EXCLUDE_TARGET_PROCESS_TREE);
+                Marshal.WriteInt32(parameters, 8,
+                    include ? PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE : PROCESS_LOOPBACK_MODE_EXCLUDE_TARGET_PROCESS_TREE);
                 var blob = new PropVariantBlob();
                 blob.vt = VT_BLOB;
                 blob.cbSize = 12;
@@ -594,6 +630,12 @@ namespace ScreenShare.AudioCapture
                 if (pair.Value > bestCount) { best = pair.Key; bestCount = pair.Value; }
             }
             return best;
+        }
+
+        static string ProcessName(uint pid)
+        {
+            try { return System.Diagnostics.Process.GetProcessById((int)pid).ProcessName + ".exe"; }
+            catch { return "app"; }
         }
 
         static string DescribeTarget(uint pid, string name)

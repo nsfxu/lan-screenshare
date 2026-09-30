@@ -208,6 +208,7 @@ No Windows, o `npm run dev` recompila e usa o auxiliar. Para testá-lo manualmen
 ```bat
 native\bin\win-audio-capture.exe > out.raw
 native\bin\win-audio-capture.exe --exclude Discord.exe --fallback-pid 0 > out.raw
+native\bin\win-audio-capture.exe --include-window <HWND> > out.raw
 ```
 
 Os primeiros 10 bytes são o cabeçalho `SSA1`. As mensagens sobre o dispositivo e o processo excluído vão para o stderr. Feche o stdin (Ctrl+Z, Enter) para parar.

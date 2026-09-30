@@ -208,6 +208,7 @@ On Windows, `npm run dev` rebuilds and uses it. To test it by hand:
 ```bat
 native\bin\win-audio-capture.exe > out.raw
 native\bin\win-audio-capture.exe --exclude Discord.exe --fallback-pid 0 > out.raw
+native\bin\win-audio-capture.exe --include-window <HWND> > out.raw
 ```
 
 The first 10 bytes are the `SSA1` header. Messages about the device and the excluded process go to stderr. Close stdin (Ctrl+Z, Enter) to stop it.

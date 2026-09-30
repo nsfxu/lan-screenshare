@@ -200,7 +200,11 @@ Sharing can include everything the computer plays. Audio travels as a second tra
 
 ```mermaid
 flowchart TD
-  S["Share with audio"] --> Q{"Windows and<br/>Leave out Discord on?"}
+  S["Share with audio"] --> A{"Windows, a window shared,<br/>Only this app's sound on?"}
+  A -->|yes| H0["Native helper, include mode:<br/>only that app and its child processes"]
+  H0 -->|works| OK
+  H0 -->|"not supported (exit 3), window gone (exit 4)<br/>or helper missing: tell the user"| Q
+  A -->|no| Q{"Windows and<br/>Leave out Discord on?"}
   Q -->|yes| H1["Native helper, process-loopback mode:<br/>everything except Discord<br/>(or except ScreenShare when Discord isn't running)"]
   H1 -->|works| OK["Audio track"]
   H1 -->|"not supported (exit 3)<br/>or helper missing"| C
@@ -219,11 +223,12 @@ A small C# program, compiled with the C# compiler that ships with .NET Framework
 | Mode | Arguments | How |
 |---|---|---|
 | Device loopback | (none) | WASAPI loopback of the default output device in its own mix format (works with 5.1/7.1 headsets), downmixed to stereo: centre and surrounds at −3 dB, LFE dropped. |
+| Only one app | `--include-window <HWND>` | Process loopback in *include target process tree* mode, for the app that owns the shared window (`GetWindowThreadProcessId`): that process and its child processes, which covers browsers and games that play sound from a helper process. Used when a single window is shared with **Only this app's sound** (on by default). |
 | Everything except one app | `--exclude Discord.exe,DiscordPTB.exe,DiscordCanary.exe,DiscordDevelopment.exe --fallback-pid <ScreenShare pid>` | Windows **process loopback** (Windows 10 2004+ / 11) in *exclude target process tree* mode. It finds Discord's root process (the biggest tree) and rescans every 2 s, so Discord can start, quit or restart mid-share. While Discord isn't running it leaves out ScreenShare itself. Windows converts to 48 kHz stereo. |
 
-Output on stdout: a 10-byte header `"SSA1"` + u32 sample rate + u16 channels (always 2), then interleaved float32 stereo frames. It sends real silence when nothing plays, so the timing stays steady. Exit codes: `1` fatal error, `2` device invalidated, `3` process loopback not available (before the header). It exits when its stdin closes.
+Output on stdout: a 10-byte header `"SSA1"` + u32 sample rate + u16 channels (always 2), then interleaved float32 stereo frames. It sends real silence when nothing plays, so the timing stays steady. Exit codes: `1` fatal error, `2` device invalidated, `3` process loopback not available, `4` the window to include is gone (both before the header). It exits when its stdin closes.
 
-Limitations: process loopback can leave out **one** app at a time, and it leaves out *all* of Discord's sound (notifications and soundboard too).
+Limitations: process loopback can leave out **one** app at a time, and it leaves out *all* of Discord's sound (notifications and soundboard too). *Only one app* follows the process tree of the window's owner: an app whose sound comes from a process outside that tree (some games started by a launcher, apps hosted by `ApplicationFrameHost.exe`) is captured silent, so the option can be turned off in the share dialog.
 
 ## Previews
 

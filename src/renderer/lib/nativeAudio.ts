@@ -70,7 +70,8 @@ export async function startNativeLoopback(
     runId = format.id
     sampleRate = format.sampleRate
     channels = format.channels
-    log(`native loopback started: ${sampleRate} Hz x${channels}${options.excludeDiscord ? ', without Discord' : ''}`)
+    const scope = options.appWindow ? ', only the shared app' : options.excludeDiscord ? ', without Discord' : ''
+    log(`native loopback started: ${sampleRate} Hz x${channels}${scope}`)
   } catch (err) {
     stop()
     throw err
