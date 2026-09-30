@@ -10,6 +10,14 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Added
+
+- Games that hide the mouse cursor no longer show one to viewers while you share your screen on Windows 10 (or 11 before 24H2): while a fullscreen game hides the cursor, the app shares the game's window instead, and goes back to your screen when you alt-tab. A notice in the room says when this happens, with a button to keep sharing the screen. For games in a window, the room suggests sharing their window.
+
+### Fixed
+
+- Choosing a window that can no longer be captured (closed, or minimized like a fullscreen game after alt-tab) now shows an error instead of sharing your first screen.
+
 ## [1.0.0] - 2026-09-25
 
 The first release.
