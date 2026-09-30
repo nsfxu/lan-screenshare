@@ -13,6 +13,7 @@ Como preparar o projeto, rodar, depurar e gerar instaladores.
 - [Como o build funciona](#como-o-build-funciona)
 - [Depuração](#depuração)
 - [Gerando instaladores](#gerando-instaladores)
+- [Versões e o changelog](#versões-e-o-changelog)
 - [Publicando uma versão](#publicando-uma-versão)
 - [Tecnologias](#tecnologias)
 
@@ -59,6 +60,7 @@ npm test
 | `npm run dist:win` | Build + instalador do Windows (NSIS, x64 e arm64) em `release/<versão>/`. |
 | `npm run dist:mac` | Build + imagens de disco do macOS (Intel e Apple Silicon) em `release/<versão>/`. Precisa rodar num Mac. |
 | `npm run dist` | Build + instalador para a plataforma atual. |
+| `npm run release -- <major\|minor\|patch>` | Prepara uma versão: número, seção do changelog e rascunho das notas (veja [publicando uma versão](#publicando-uma-versão)). Use `--dry-run` para só ver o resultado. |
 
 ## Várias pessoas no mesmo computador
 
@@ -145,6 +147,20 @@ npm run dist:mac
 
 Gera duas imagens de disco: `ScreenShare-<versão>-arm64.dmg` para Apple Silicon e `ScreenShare-<versão>-x64.dmg` para Macs Intel. Para distribuir para outros Macs é preciso um certificado Apple Developer ID para assinar e notarizar; veja a documentação do electron-builder. O build de macOS ainda não foi testado.
 
+## Versões e o changelog
+
+O ScreenShare segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/), onde "incompatível" quer dizer *não consegue dividir uma sala*:
+
+| Aumento | Quando | Exemplo |
+|---|---|---|
+| **Maior** (major) | O `PROTOCOL_VERSION` mudou: apps antigos não conseguem entrar nas salas novas, então todos precisam atualizar | 1.4.2 → 2.0.0 |
+| **Menor** (minor) | Novidades que ainda funcionam com outros apps da mesma versão maior | 1.0.0 → 1.1.0 |
+| **Correção** (patch) | Só correções | 1.1.0 → 1.1.1 |
+
+O [`CHANGELOG.md`](../../CHANGELOG.md) (em inglês, no formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/)) lista toda mudança que o usuário percebe. **Cada pull request adiciona a sua linha em `## [Unreleased]`**, no grupo certo (`### Added`, `### Changed`, `### Fixed`, `### Removed`), escrita para quem usa o app: *"Viewers no longer see your cursor over fullscreen games that hide it"*, e não *"Add GameCursorGuard"*. Mudanças internas (refatorações, testes, documentação) não precisam de linha.
+
+Não mude o `version` do `package.json` à mão; o `npm run release` faz isso.
+
 ## Publicando uma versão
 
 As versões são geradas pelo GitHub Actions (`.github/workflows/release.yml`) nas máquinas Windows e macOS do próprio GitHub, então você não precisa ter os dois sistemas.
@@ -158,12 +174,18 @@ flowchart LR
   M --> R
 ```
 
-1. Ajuste o `version` no `package.json` (os nomes dos instaladores usam esse valor) e escreva as notas da versão em `docs/releases/v1.2.0.md`. Junte os dois na `main` por um pull request.
+1. Prepare com `npm run release -- minor` (ou `major`, `patch`, ou uma versão exata como `1.2.0`) num branch atualizado a partir da `main`, sem mudanças pendentes. Ele:
+   - recusa se o `[Unreleased]` do `CHANGELOG.md` estiver vazio, ou se o `PROTOCOL_VERSION` mudou desde a última versão e o aumento não for maior;
+   - move as entradas de Unreleased para uma seção datada `## [1.2.0]` e atualiza os links de comparação;
+   - ajusta a versão no `package.json` e no `package-lock.json` (os nomes dos instaladores usam esse valor);
+   - faz um rascunho de `docs/releases/v1.2.0.md`: tabela de downloads, se todos precisam atualizar, e as entradas do changelog. Troque os `TODO`s (uma introdução curta e o resumo em português) e deixe o texto bom para os usuários.
+
+   Faça o commit (`Release v1.2.0`) e junte na `main` por um pull request.
 2. Inicie a publicação de um destes jeitos:
    - No GitHub: **Actions → Release → Run workflow**, branch `main`, versão `v1.2.0`. O próprio workflow cria a tag.
    - Ou envie uma tag do seu computador: `git tag v1.2.0 && git push origin v1.2.0`. Se não houver arquivo de notas, a mensagem de uma tag anotada vira as notas.
-3. O workflow confere se a versão bate com o `package.json`, roda as verificações, gera os instaladores e publica a versão com eles anexados. O job do macOS pode falhar sem impedir uma versão só para Windows.
-4. Avise nas notas quando a versão do protocolo mudar: quem estiver numa versão antiga não consegue entrar nas salas da nova.
+3. O workflow confere se a versão bate com o `package.json`, se o `CHANGELOG.md` tem a seção dela e se as notas não têm mais `TODO`, roda as verificações, gera os instaladores e publica a versão com eles anexados. O job do macOS pode falhar sem impedir uma versão só para Windows.
+4. Quando o protocolo mudar, as notas avisam que todos na sala precisam da versão nova (o rascunho já faz isso).
 
 Rodar o workflow sem versão é um teste: ele gera os instaladores, lista o que seria publicado e guarda os instaladores como artefatos da execução.
 

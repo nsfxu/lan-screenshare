@@ -80,6 +80,7 @@ A documentação completa, em inglês e português, está em [`docs/`](docs/READ
 - [Guia de desenvolvimento](docs/pt-BR/development.md): scripts, depuração e instaladores.
 - [Arquitetura](docs/pt-BR/architecture.md), [protocolo](docs/pt-BR/protocol.md), [pipeline de mídia](docs/pt-BR/media-pipeline.md) e [segurança](docs/pt-BR/security.md): como funciona por dentro.
 - [Como contribuir](docs/pt-BR/contributing.md) e [testes](docs/pt-BR/testing.md): como ajudar.
+- [Changelog](CHANGELOG.md) (em inglês): o que mudou em cada versão.
 
 Agentes de IA: comecem por [`AGENTS.md`](AGENTS.md).
 

@@ -80,6 +80,7 @@ The full documentation, in English and Portuguese, is in [`docs/`](docs/README.m
 - [Development guide](docs/en-US/development.md): scripts, debugging and installers.
 - [Architecture](docs/en-US/architecture.md), [protocol](docs/en-US/protocol.md), [media pipeline](docs/en-US/media-pipeline.md) and [security](docs/en-US/security.md): how it works inside.
 - [Contributing](docs/en-US/contributing.md) and [testing](docs/en-US/testing.md): how to help.
+- [Changelog](CHANGELOG.md): what changed in each version.
 
 AI coding agents: start with [`AGENTS.md`](AGENTS.md).
 
