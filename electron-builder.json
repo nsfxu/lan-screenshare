@@ -32,6 +32,10 @@
       {
         "from": "native/bin/win-audio-capture.exe",
         "to": "win-audio-capture.exe"
+      },
+      {
+        "from": "native/bin/win-cursor-watch.exe",
+        "to": "win-cursor-watch.exe"
       }
     ]
   },

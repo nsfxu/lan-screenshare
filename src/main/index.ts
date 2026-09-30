@@ -6,6 +6,7 @@ import { IPC } from '../shared/ipc'
 import type { AppInfo, CreateRoomRequest, NativeAudioOptions, Settings, SystemStats, UpdateRoomRequest } from '../shared/types'
 import { parseHostPort } from '../utils/network'
 import { createFileLogger } from './logger'
+import { CursorWatch } from './cursorWatch'
 import { NativeLoopback } from './nativeAudio'
 import { RoomManager } from './roomManager'
 import { ScreenCapture } from './screenCapture'
@@ -44,6 +45,7 @@ const settings = new SettingsStore(app.getPath('userData'))
 const rooms = new RoomManager(settings, app.getPath('userData'), log)
 const capture = new ScreenCapture(log)
 const nativeAudio = new NativeLoopback(log)
+const cursorWatch = new CursorWatch(log)
 
 let mainWindow: BrowserWindow | null = null
 let quitting = false
@@ -146,6 +148,9 @@ function registerIpc(): void {
     nativeAudio.start(e.sender, { excludeDiscord: options?.excludeDiscord === true })
   )
   ipcMain.handle(IPC.nativeAudioStop, (_e, id?: number) => nativeAudio.stop(typeof id === 'number' ? id : undefined))
+  ipcMain.handle(IPC.hiddenCursorAffected, () => cursorWatch.affected())
+  ipcMain.handle(IPC.hiddenCursorWatch, (e) => cursorWatch.start(e.sender))
+  ipcMain.handle(IPC.hiddenCursorUnwatch, () => cursorWatch.stop())
   ipcMain.handle(IPC.screenPermission, () => capture.permission())
   ipcMain.handle(IPC.openPermissionSettings, () => capture.openPermissionSettings())
 
@@ -211,7 +216,10 @@ app.on('before-quit', () => {
 })
 
 app.on('window-all-closed', () => app.quit())
-app.on('before-quit', () => nativeAudio.stop())
+app.on('before-quit', () => {
+  nativeAudio.stop()
+  cursorWatch.stop()
+})
 
 // Tell viewers the room is over and withdraw the mDNS advert before exiting.
 let cleanedUp = false

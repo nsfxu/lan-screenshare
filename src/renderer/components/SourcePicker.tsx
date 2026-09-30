@@ -14,6 +14,7 @@ export function SourcePicker({ selected, onSelect }: Props) {
   const [permission, setPermission] = useState<ScreenPermission>('granted')
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<'screen' | 'window'>('screen')
+  const [cursorCaveat, setCursorCaveat] = useState(false)
 
   const load = async (): Promise<void> => {
     setError(null)
@@ -32,6 +33,7 @@ export function SourcePicker({ selected, onSelect }: Props) {
   }
 
   useEffect(() => {
+    void window.api.capture.hiddenCursor.affected().then(setCursorCaveat)
     void load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -64,6 +66,12 @@ export function SourcePicker({ selected, onSelect }: Props) {
         </div>
       ) : null}
       {error && <div className="notice error">{error}</div>}
+      {cursorCaveat && tab === 'screen' && (
+        <p className="muted small source-hint">
+          Streaming a game? Share its window instead. On this version of Windows, screen sharing shows your mouse
+          cursor even when the game hides it.
+        </p>
+      )}
 
       {sources === null ? (
         <div className="source-grid loading">Loading sources…</div>
