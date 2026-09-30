@@ -324,11 +324,15 @@ export interface NativeAudioOptions {
 
 /** PCM format produced by the native Windows loopback helper (float32 interleaved). */
 /** Reported while a screen is shared on Windows before 11 24H2 (see main/cursorWatch.ts). */
-export interface HiddenCursorState {
+export interface CursorWatchState {
   /** An app hides the mouse cursor, but screen capture still shows an arrow. */
   hidden: boolean
-  /** Capture source id of the foreground window (the game) while hidden. */
+  /** Capture source id of the foreground window. */
   windowId: string | null
+  /** The foreground window covers its whole display (a fullscreen game). */
+  fullscreen: boolean
+  /** Display the foreground window is on (CaptureSource.displayId). */
+  displayId: string | null
 }
 
 export interface NativeAudioFormat {

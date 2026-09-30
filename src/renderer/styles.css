@@ -456,6 +456,10 @@ input[type='checkbox']:checked::after {
   background: rgba(255, 93, 93, 0.1);
   color: #ff9a9a;
 }
+.notice.info {
+  background: var(--accent-soft);
+  color: var(--text);
+}
 .notice.warn {
   background: rgba(245, 185, 66, 0.1);
   color: var(--ok);

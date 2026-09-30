@@ -68,8 +68,8 @@ export function SourcePicker({ selected, onSelect }: Props) {
       {error && <div className="notice error">{error}</div>}
       {cursorCaveat && tab === 'screen' && (
         <p className="muted small source-hint">
-          Streaming a game? Share its window instead. On this version of Windows, screen sharing shows your mouse
-          cursor even when the game hides it.
+          On this version of Windows, screen sharing shows your mouse cursor even when a game hides it. While a
+          fullscreen game on the shared screen hides it, the app shares the game&apos;s window instead.
         </p>
       )}
 
