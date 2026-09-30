@@ -55,6 +55,7 @@ npm test
 | `npm start` | Roda o build de produção (`electron-vite preview`). |
 | `npm test` | Roda todos os testes unitários e de integração uma vez (vitest). |
 | `npm run test:watch` | Testes em modo observação. |
+| `npm run test:e2e` | Compila e roda os testes de ponta a ponta: duas instâncias reais do app numa sala (veja [testes](testing.md#testes-de-ponta-a-ponta)). |
 | `npm run typecheck` | Verificação do TypeScript do lado Node (`tsconfig.node.json`, inclui `tests/`) e do lado web (`tsconfig.web.json`). |
 | `npm run build:native` | Compila os auxiliares do Windows em `native/bin/` (`win-audio-capture.exe`, `win-cursor-watch.exe`); não faz nada em outros sistemas ou se já estiverem atualizados. |
 | `npm run dist:win` | Build + instalador do Windows (NSIS, x64 e arm64) em `release/<versão>/`. |
@@ -73,6 +74,13 @@ npx electron . --profile=bob
 ```
 
 O `--profile=alice` guarda tudo numa pasta de dados separada (`ScreenShare-alice`). Uma instância cria a sala; a outra a encontra na lista (mDNS no mesmo computador), ou você pode usar **Connect by IP** com `127.0.0.1:47800`.
+
+Para deixá-las fora da tela que você está usando, adicione `--display=<n>` (a tela, numerada como no seletor de fontes: "Tela 3") e `--tile=<i>/<total>` (espaços lado a lado nela). Uma janela posicionada assim abre sem pegar o foco:
+
+```bash
+npx electron . --profile=alice --display=3 --tile=1/2
+npx electron . --profile=bob --display=3 --tile=2/2
+```
 
 No Linux, é preciso `--no-sandbox` quando se roda como root, por exemplo dentro de um contêiner.
 

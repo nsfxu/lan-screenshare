@@ -10,6 +10,7 @@ How the project is tested today, how to add tests, and how to check a change in 
 - [What the automated tests cover](#what-the-automated-tests-cover)
 - [Writing a server test](#writing-a-server-test)
 - [Testing pure logic](#testing-pure-logic)
+- [End-to-end tests](#end-to-end-tests)
 - [Driving the real app](#driving-the-real-app)
 - [Checking the Windows audio helper](#checking-the-windows-audio-helper)
 - [Manual checklist before a release](#manual-checklist-before-a-release)
@@ -19,6 +20,7 @@ How the project is tested today, how to add tests, and how to check a change in 
 ```bash
 npm run typecheck   # both TypeScript projects (Node side incl. tests, web side)
 npm test            # all tests once
+npm run test:e2e    # the real app, two instances (see end-to-end tests)
 npm run test:watch  # re-run on change
 npx vitest run tests/quality.test.ts   # one file
 ```
@@ -37,7 +39,7 @@ Tests run in Node (`vitest.config.ts`, environment `node`, 15 s timeout). They s
 | `tests/crop.test.ts` | Profile picture crop: centring, clamping, zoom around a point, zoom limits. |
 | `tests/renderer/gameCursor.test.ts` | Games that hide the cursor: switching to a fullscreen game's window and back after alt-tab, ignoring brief flashes and other displays, suggesting windowed games, keeping the screen when asked, no retry loop on failure. |
 
-What is **not** covered by automated tests: anything that needs a real browser engine (WebRTC, WebCodecs, capture, the React UI) and the Windows audio helper. Use the techniques below for those.
+The unit and integration tests don't cover what needs a real browser engine (WebRTC, WebCodecs, capture, the React UI): the [end-to-end tests](#end-to-end-tests) cover the main flows in the real app, and [driving the real app](#driving-the-real-app) by hand covers the rest. The Windows helpers need a Windows machine.
 
 ## Writing a server test
 
@@ -78,6 +80,32 @@ describe('my feature', () => {
 ## Testing pure logic
 
 Keep decision logic out of React and out of WebRTC callbacks, in `src/shared/*.ts` with no DOM or Node imports. It is then trivial to test. Examples: `AdaptiveController`, `splitBudget`, `limitPreset`, `chooseCodecOrder`, `zoomAt` (crop). The Node-side TypeScript config (`tsconfig.node.json`) has no DOM types, so a test can't import a module that uses DOM APIs. When the logic has to live in the renderer (it talks to `window.api` or the `Publisher`), test it from `tests/renderer/`, which is type-checked with the web config: stub `window` with `vi.stubGlobal` and pass fakes for the rest, as `tests/renderer/gameCursor.test.ts` does.
+
+## End-to-end tests
+
+`e2e/` runs the real app: two instances (Alice and Bob, the production build in `out/`) in the same room, driven through Playwright's Electron support.
+
+| Test | Covers |
+|---|---|
+| Public room | Alice creates a room and shares; Bob joins with **Connect by IP**; nothing plays until he chooses her stream; frames arrive and have the colour of her screen; chat both ways; when she stops sharing, his tile and her card go away. |
+| Private room | A wrong PIN is refused (error, still outside); the right PIN lets Bob in. |
+
+```bash
+npm run test:e2e                 # builds, then runs e2e/ (about 40 s)
+npx playwright test              # without rebuilding (after npm run build)
+xvfb-run -a -s "-screen 0 1920x1080x24" npx playwright test   # Linux without a display, as in CI
+```
+
+How `e2e/fixtures.ts` keeps them safe and repeatable:
+
+- **Screen capture is an animated canvas**, never your real screen. System audio, the native audio helper and the game-cursor helper are switched off.
+- **Each person gets a fresh profile** (`--profile=e2e-alice-<pid>`), deleted afterwards. Apps are quit like a user quitting, so a host isn't stuck on the "End room?" confirmation.
+- **Your screen stays yours.** Set the screen to open the windows on with `E2E_DISPLAY=3`, or once in a git-ignored `e2e.local.json`: `{ "display": 3 }`. The windows then sit side by side on that screen (`--display`/`--tile`, see [development](development.md#running-several-people-on-one-computer)) and never take focus.
+- One test at a time (`workers: 1`): instances share ports and mDNS.
+
+When a test fails, Playwright prints the step and a page snapshot, and the fixture attaches a screenshot of every window (`test-results/`). In CI, [`ci.yml`](../../.github/workflows/ci.yml) runs them on every push and keeps the report as the `e2e-report` artifact, and the release workflow runs them before building installers.
+
+To add a test, use the `people(n)` fixture and the flows in `e2e/fixtures.ts` (`createRoom`, `joinByIp`, `sendChat`, `decodedFrames`, `cornerColour`). Wait for what the user would see (`expect(locator).toBeVisible()`, `expect.poll`), never for fixed times.
 
 ## Driving the real app
 

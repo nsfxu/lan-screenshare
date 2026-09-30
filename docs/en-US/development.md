@@ -55,6 +55,7 @@ npm test
 | `npm start` | Runs the production build (`electron-vite preview`). |
 | `npm test` | Runs all unit and integration tests once (vitest). |
 | `npm run test:watch` | Tests in watch mode. |
+| `npm run test:e2e` | Builds, then runs the end-to-end tests: two real app instances in a room (see [testing](testing.md#end-to-end-tests)). |
 | `npm run typecheck` | TypeScript checks for the Node side (`tsconfig.node.json`, includes `tests/`) and the web side (`tsconfig.web.json`). |
 | `npm run build:native` | Builds the Windows helpers into `native/bin/` (`win-audio-capture.exe`, `win-cursor-watch.exe`); no-op on other systems or when up to date. |
 | `npm run dist:win` | Build + Windows installer (NSIS, x64 and arm64) into `release/<version>/`. |
@@ -73,6 +74,13 @@ npx electron . --profile=bob
 ```
 
 `--profile=alice` stores everything in a separate user data folder (`ScreenShare-alice`). One instance creates a room; the other finds it in the list (mDNS on the same machine), or you can use **Connect by IP** with `127.0.0.1:47800`.
+
+To keep them off the screen you're using, add `--display=<n>` (the screen, numbered like the source picker: "Screen 3") and `--tile=<i>/<count>` (side-by-side slots on it). A window placed this way opens without taking focus:
+
+```bash
+npx electron . --profile=alice --display=3 --tile=1/2
+npx electron . --profile=bob --display=3 --tile=2/2
+```
 
 On Linux, `--no-sandbox` is needed when running as root, for example inside a container.
 

@@ -10,6 +10,7 @@ Como o projeto é testado hoje, como adicionar testes e como conferir uma mudan�
 - [O que os testes automáticos cobrem](#o-que-os-testes-automáticos-cobrem)
 - [Escrevendo um teste de servidor](#escrevendo-um-teste-de-servidor)
 - [Testando lógica pura](#testando-lógica-pura)
+- [Testes de ponta a ponta](#testes-de-ponta-a-ponta)
 - [Controlando o app de verdade](#controlando-o-app-de-verdade)
 - [Conferindo o auxiliar de áudio do Windows](#conferindo-o-auxiliar-de-áudio-do-windows)
 - [Checklist manual antes de uma versão](#checklist-manual-antes-de-uma-versão)
@@ -19,6 +20,7 @@ Como o projeto é testado hoje, como adicionar testes e como conferir uma mudan�
 ```bash
 npm run typecheck   # os dois projetos TypeScript (lado Node com os testes, lado web)
 npm test            # todos os testes uma vez
+npm run test:e2e    # o app de verdade, duas instâncias (veja testes de ponta a ponta)
 npm run test:watch  # roda de novo a cada mudança
 npx vitest run tests/quality.test.ts   # um arquivo só
 ```
@@ -37,7 +39,7 @@ Os testes rodam no Node (`vitest.config.ts`, ambiente `node`, tempo limite de 15
 | `tests/crop.test.ts` | Recorte da foto de perfil: centralização, limites, zoom em torno de um ponto, limites de zoom. |
 | `tests/renderer/gameCursor.test.ts` | Jogos que escondem o cursor: troca para a janela de um jogo em tela cheia e volta depois do alt-tab, ignora piscadas rápidas e outros monitores, sugere jogos em janela, mantém a tela quando pedido, não fica tentando de novo quando falha. |
 
-O que **não** é coberto por testes automáticos: tudo que precisa de um navegador de verdade (WebRTC, WebCodecs, captura, a interface React) e o auxiliar de áudio do Windows. Para isso, use as técnicas abaixo.
+Os testes unitários e de integração não cobrem o que precisa de um navegador de verdade (WebRTC, WebCodecs, captura, a interface React): os [testes de ponta a ponta](#testes-de-ponta-a-ponta) cobrem os fluxos principais no app de verdade, e [controlar o app de verdade](#controlando-o-app-de-verdade) à mão cobre o resto. Os auxiliares do Windows precisam de uma máquina Windows.
 
 ## Escrevendo um teste de servidor
 
@@ -78,6 +80,32 @@ O `tests/streams.test.ts` já tem os auxiliares `startServer()`, `join()` e `sha
 ## Testando lógica pura
 
 Mantenha a lógica de decisão fora do React e fora dos callbacks do WebRTC, em `src/shared/*.ts`, sem importar DOM nem Node. Assim testar fica trivial. Exemplos: `AdaptiveController`, `splitBudget`, `limitPreset`, `chooseCodecOrder`, `zoomAt` (recorte). A configuração TypeScript do lado Node (`tsconfig.node.json`) não tem os tipos do DOM, então um teste não pode importar um módulo que use APIs do DOM. Quando a lógica precisa ficar no renderer (ela fala com o `window.api` ou com o `Publisher`), teste-a em `tests/renderer/`, que é verificado com a configuração web: substitua o `window` com `vi.stubGlobal` e passe versões falsas do resto, como faz o `tests/renderer/gameCursor.test.ts`.
+
+## Testes de ponta a ponta
+
+A pasta `e2e/` roda o app de verdade: duas instâncias (Alice e Bob, o build de produção em `out/`) na mesma sala, controladas pelo suporte a Electron do Playwright.
+
+| Teste | Cobre |
+|---|---|
+| Sala pública | A Alice cria uma sala e compartilha; o Bob entra com **Connect by IP**; nada toca até ele escolher a transmissão dela; os quadros chegam com a cor da tela dela; chat nos dois sentidos; quando ela para de compartilhar, o quadro dele e o cartão dela somem. |
+| Sala privada | Um PIN errado é recusado (erro, continua do lado de fora); o PIN certo deixa o Bob entrar. |
+
+```bash
+npm run test:e2e                 # compila e roda a pasta e2e/ (uns 40 s)
+npx playwright test              # sem recompilar (depois de npm run build)
+xvfb-run -a -s "-screen 0 1920x1080x24" npx playwright test   # Linux sem tela, como no CI
+```
+
+Como o `e2e/fixtures.ts` deixa os testes seguros e repetíveis:
+
+- **A captura de tela é um canvas animado**, nunca a sua tela de verdade. O áudio do sistema, o auxiliar de áudio nativo e o auxiliar de cursor em jogos ficam desligados.
+- **Cada pessoa ganha um perfil novo** (`--profile=e2e-alice-<pid>`), apagado no final. Os apps são fechados como um usuário fecharia, então o anfitrião não fica preso na confirmação "End room?".
+- **A sua tela continua sua.** Escolha a tela onde as janelas abrem com `E2E_DISPLAY=3`, ou uma vez num `e2e.local.json` ignorado pelo git: `{ "display": 3 }`. As janelas ficam lado a lado nessa tela (`--display`/`--tile`, veja [desenvolvimento](development.md#várias-pessoas-no-mesmo-computador)) e nunca pegam o foco.
+- Um teste de cada vez (`workers: 1`): as instâncias dividem portas e mDNS.
+
+Quando um teste falha, o Playwright mostra o passo e um retrato da página, e o fixture anexa uma captura de cada janela (`test-results/`). No CI, o [`ci.yml`](../../.github/workflows/ci.yml) roda os testes a cada push e guarda o relatório como o artefato `e2e-report`, e o workflow de versão os roda antes de gerar os instaladores.
+
+Para adicionar um teste, use o fixture `people(n)` e os fluxos do `e2e/fixtures.ts` (`createRoom`, `joinByIp`, `sendChat`, `decodedFrames`, `cornerColour`). Espere pelo que o usuário veria (`expect(locator).toBeVisible()`, `expect.poll`), nunca por tempos fixos.
 
 ## Controlando o app de verdade
 
