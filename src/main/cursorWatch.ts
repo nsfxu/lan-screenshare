@@ -2,9 +2,9 @@ import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { app, type WebContents } from 'electron'
+import { app, screen, type WebContents } from 'electron'
 import { IPC } from '../shared/ipc'
-import type { HiddenCursorState } from '../shared/types'
+import type { CursorWatchState } from '../shared/types'
 import type { Logger } from './server'
 
 /** Windows 11 24H2: Chromium captures screens with Windows.Graphics.Capture from here on. */
@@ -16,10 +16,12 @@ const WGC_SCREEN_CAPTURE_BUILD = 26100
  * hides the cursor it draws a default arrow instead of nothing. Viewers then
  * see a cursor moving over a game that hides it. Window capture
  * (Windows.Graphics.Capture) lets Windows draw the real cursor state, so the
- * app suggests sharing the game's window instead.
+ * app shares a fullscreen game's window in place of the screen while it hides
+ * the cursor (see renderer/lib/gameCursor.ts).
  *
  * While a screen is shared, the bundled helper (native/win-cursor-watch)
- * reports when the cursor is hidden and which window is in the foreground.
+ * reports whether the cursor is hidden and which window is in the foreground,
+ * whether it fills its display, and which display that is.
  */
 export class CursorWatch {
   private child: ChildProcessWithoutNullStreams | null = null
@@ -74,10 +76,18 @@ export class CursorWatch {
   }
 }
 
-function parseLine(line: string): HiddenCursorState | null {
-  if (line === 'visible') return { hidden: false, windowId: null }
-  const m = /^hidden (\d+)$/.exec(line)
+/** "<hidden|visible> <hwnd> <fullscreen 0|1> <monitor centre x> <y>" (physical pixels). */
+function parseLine(line: string): CursorWatchState | null {
+  const m = /^(hidden|visible) (\d+) ([01]) (-?\d+) (-?\d+)$/.exec(line)
   if (!m) return null
-  // desktopCapturer's id for a top-level window is "window:<HWND>:0".
-  return { hidden: true, windowId: m[1] === '0' ? null : `window:${m[1]}:0` }
+  const hidden = m[1] === 'hidden'
+  if (m[2] === '0') return { hidden, windowId: null, fullscreen: false, displayId: null }
+  const display = screen.getDisplayNearestPoint(screen.screenToDipPoint({ x: Number(m[4]), y: Number(m[5]) }))
+  return {
+    hidden,
+    // desktopCapturer's id for a top-level window is "window:<HWND>:0".
+    windowId: `window:${m[2]}:0`,
+    fullscreen: m[3] === '1',
+    displayId: String(display.id)
+  }
 }

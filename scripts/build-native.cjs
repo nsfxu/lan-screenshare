@@ -28,8 +28,30 @@ for (const name of helpers) {
     continue
   }
   fs.mkdirSync(outDir, { recursive: true })
+  moveAsideIfRunning(output)
   execFileSync(csc, ['/nologo', '/target:exe', '/optimize+', '/platform:anycpu', `/out:${output}`, source], {
     stdio: 'inherit'
   })
   console.log(`[native] built ${path.relative(root, output)}`)
+}
+
+/**
+ * A running helper (another instance of the app) locks its .exe, but Windows
+ * lets it be renamed: move it aside so the new build can be written. Old
+ * copies are deleted once they are no longer running.
+ */
+function moveAsideIfRunning(file) {
+  for (const old of fs.readdirSync(path.dirname(file)).filter((n) => n.endsWith('.old'))) {
+    try {
+      fs.unlinkSync(path.join(path.dirname(file), old))
+    } catch {
+      // still running
+    }
+  }
+  if (!fs.existsSync(file)) return
+  try {
+    fs.unlinkSync(file)
+  } catch {
+    fs.renameSync(file, `${file}.${Date.now()}.old`)
+  }
 }

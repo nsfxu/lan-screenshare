@@ -3,7 +3,7 @@ import type {
   CaptureSource,
   CreateRoomRequest,
   DiscoveredRoom,
-  HiddenCursorState,
+  CursorWatchState,
   HostedRoom,
   NativeAudioFormat,
   NativeAudioOptions,
@@ -102,7 +102,7 @@ export interface ScreenShareApi {
       /** Report while sharing a screen; false when not affected or unavailable. */
       watch(): Promise<boolean>
       unwatch(): Promise<void>
-      onChanged(cb: (state: HiddenCursorState) => void): () => void
+      onChanged(cb: (state: CursorWatchState) => void): () => void
     }
     permission(): Promise<ScreenPermission>
     openPermissionSettings(): Promise<void>

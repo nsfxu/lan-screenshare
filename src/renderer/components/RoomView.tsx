@@ -9,7 +9,7 @@ import {
   formatDuration,
   latencyClass
 } from '../lib/format'
-import { useHiddenCursorHint } from '../lib/hiddenCursor'
+import { useGameCursor } from '../lib/gameCursor'
 import type { SharingState, WatcherInfo } from '../lib/publisher'
 import type { ConnectionState } from '../lib/roomClient'
 import type { Session } from '../lib/session'
@@ -62,7 +62,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
   const [showStats, setShowStats] = useState(false)
   const [pickSource, setPickSource] = useState(false)
   const [, setNow] = useState(Date.now())
-  const [cursorHint, dismissCursorHint] = useHiddenCursorHint(sharing.sharing ? publisher.sourceId : null)
+  const gameCursor = useGameCursor(publisher, sharing.sharing ? publisher.chosenSourceId : null)
   const autoPaused = useRef(false)
 
   // --- subscriptions --------------------------------------------------------
@@ -344,19 +344,33 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
               <HostStatsPanel stats={ownStats} />
             </div>
           )}
-          {cursorHint && (
+          {gameCursor?.active && (
+            <div className="notice info cursor-hint" role="status">
+              <span className="cursor-hint-text">
+                Sharing <strong>{gameCursor.active.name}</strong>&apos;s window while it hides your mouse cursor, so
+                viewers don&apos;t see the cursor. Your screen comes back when you switch to another window.
+              </span>
+              <button className="btn small" onClick={() => gameCursor.keepScreen()}>
+                Share the screen instead
+              </button>
+            </div>
+          )}
+          {gameCursor?.hint && (
             <div className="notice warn cursor-hint" role="status">
               <span className="cursor-hint-text">
-                Viewers see a mouse cursor over <strong>{cursorHint.name}</strong> even though the game hides it. Share
-                its window instead: screen sharing on this version of Windows always draws the cursor.
+                Viewers see a mouse cursor over <strong>{gameCursor.hint.name}</strong> even though the game hides it.
+                Share its window instead: screen sharing on this version of Windows always draws the cursor.
               </span>
               <button
                 className="btn small primary"
-                onClick={() => void shareSource(cursorHint.windowId, publisher.hasAudio, publisher.excludeDiscord)}
+                onClick={() =>
+                  gameCursor.hint &&
+                  void shareSource(gameCursor.hint.windowId, publisher.hasAudio, publisher.excludeDiscord)
+                }
               >
                 <Icon name="swap" size={14} /> Share its window
               </button>
-              <button className="icon-btn" title="Dismiss" aria-label="Dismiss" onClick={dismissCursorHint}>
+              <button className="icon-btn" title="Dismiss" aria-label="Dismiss" onClick={() => gameCursor.dismissHint()}>
                 <Icon name="x" size={14} />
               </button>
             </div>
@@ -458,7 +472,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
 
       {pickSource && (
         <ChangeSourceDialog
-          current={publisher.sourceId}
+          current={publisher.chosenSourceId}
           currentAudio={publisher.sharing ? publisher.hasAudio : settings.shareAudio}
           currentExcludeDiscord={publisher.sharing ? publisher.excludeDiscord : settings.excludeDiscordAudio}
           onCancel={() => setPickSource(false)}

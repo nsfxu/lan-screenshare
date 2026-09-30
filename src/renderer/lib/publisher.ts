@@ -110,7 +110,10 @@ export class Publisher extends Emitter<Events> {
   /** Leaving Discord out was asked for with the current source but isn't possible here. */
   discordExclusionFailed = false
   discordExcluded = false
+  /** What is captured right now. */
   sourceId: string | null = null
+  /** What the user chose; differs from sourceId while a game's window is shared in its place (switchVideo). */
+  chosenSourceId: string | null = null
   /** Latest preview JPEG of our stream (data URL), as sent to the room. */
   snapshot: string | null = null
   readonly watchers = new Map<string, WatcherInfo>()
@@ -136,6 +139,7 @@ export class Publisher extends Emitter<Events> {
   private readonly snapshotTimer: number
   private snapshotSoon: number | null = null
   private disposed = false
+  private videoSwitch: Promise<void> = Promise.resolve()
 
   constructor(
     private readonly client: RoomClient,
@@ -227,10 +231,7 @@ export class Publisher extends Emitter<Events> {
     }
     const track = stream.getVideoTracks()[0]
     const audioTrack = stream.getAudioTracks()[0] ?? null
-    track.contentHint = this.settings.contentHint
-    track.addEventListener('ended', () => {
-      if (this.track === track) this.stopSharing()
-    })
+    this.prepareVideo(track)
     if (audioTrack) audioTrack.contentHint = 'music'
     const s = track.getSettings()
     const a = audioTrack?.getSettings()
@@ -255,17 +256,14 @@ export class Publisher extends Emitter<Events> {
     this.discordExcluded = discordExcluded
     this.excludeDiscord = excludeDiscord
     this.sourceId = sourceId
+    this.chosenSourceId = sourceId
 
     if (oldVideo) {
       // Source switch: swap tracks on every live connection.
       for (const peer of this.peers.values()) {
-        await peer.sender.replaceTrack(this.paused ? null : track).catch(() => {})
         await peer.audioSender.replaceTrack(this.audioSendTrack()).catch(() => {})
-        peer.controller.reset(Date.now())
-        peer.applied = ''
       }
-      await this.rebalance()
-      this.tcp?.replaceTrack(track)
+      await this.replaceVideo(track)
       this.syncTcpAudio()
       oldVideo.stop()
       oldAudio?.stop()
@@ -274,6 +272,69 @@ export class Publisher extends Emitter<Events> {
     this.emit('stream', stream)
     this.publishSharing()
     this.snapshotShortly()
+  }
+
+  /**
+   * Share another source's video in place of the chosen one, keeping the
+   * audio as it is. Used to share a fullscreen game's window while the game
+   * hides the cursor (see gameCursor.ts); switching to `chosenSourceId`
+   * returns to normal.
+   */
+  switchVideo(sourceId: string): Promise<void> {
+    // One at a time: a game's window closing ends its track and makes the
+    // game leave the foreground, and both ask to go back to the screen.
+    const run = this.videoSwitch.then(() => this.doSwitchVideo(sourceId))
+    this.videoSwitch = run.catch(() => {})
+    return run
+  }
+
+  private async doSwitchVideo(sourceId: string): Promise<void> {
+    if (!this.track || sourceId === this.sourceId) return
+    await window.api.capture.select(sourceId, false)
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video: videoConstraints(getPreset(this.settings.maxQuality)),
+      audio: false
+    })
+    const track = stream.getVideoTracks()[0]
+    const old = this.track
+    if (this.disposed || !old) {
+      track.stop()
+      return
+    }
+    this.prepareVideo(track)
+    this.track = track
+    this.sourceId = sourceId
+    this.stream = new MediaStream(this.audioTrack ? [track, this.audioTrack] : [track])
+    await this.replaceVideo(track)
+    old.stop()
+    const s = track.getSettings()
+    log(`video switched to ${sourceId} (${s.width}x${s.height}@${s.frameRate})`)
+    this.emit('stream', this.stream)
+    this.snapshotShortly()
+  }
+
+  private prepareVideo(track: MediaStreamTrack): void {
+    track.contentHint = this.settings.contentHint
+    track.addEventListener('ended', () => {
+      if (this.track !== track) return
+      // A game's window shared in place of the chosen screen closed: back to the screen.
+      if (this.chosenSourceId && this.sourceId !== this.chosenSourceId) {
+        void this.switchVideo(this.chosenSourceId).catch(() => this.stopSharing())
+      } else {
+        this.stopSharing()
+      }
+    })
+  }
+
+  /** Put a new video track on every live connection, without renegotiating. */
+  private async replaceVideo(track: MediaStreamTrack): Promise<void> {
+    for (const peer of this.peers.values()) {
+      await peer.sender.replaceTrack(this.paused ? null : track).catch(() => {})
+      peer.controller.reset(Date.now())
+      peer.applied = ''
+    }
+    await this.rebalance()
+    this.tcp?.replaceTrack(track)
   }
 
   /** Capture the source's video and, if asked, system audio (see startCapture). */
@@ -398,6 +459,7 @@ export class Publisher extends Emitter<Events> {
     this.stream = null
     this.paused = false
     this.sourceId = null
+    this.chosenSourceId = null
     this.snapshot = null
     this.watchers.clear()
     this.emit('watchers', this.watchers)

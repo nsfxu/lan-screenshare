@@ -33,10 +33,14 @@ export class ScreenCapture {
         desktopCapturer
           .getSources({ types: ['screen', 'window'], thumbnailSize: { width: 0, height: 0 } })
           .then((sources) => {
-            const source =
-              sources.find((s) => s.id === this.selectedId) ?? sources.find((s) => s.id.startsWith('screen:'))
+            // Never capture something other than what was chosen: a window can
+            // be missing from the list (closed, or minimized like a fullscreen
+            // game after alt-tab), and getDisplayMedia() should fail then.
+            const source = this.selectedId
+              ? sources.find((s) => s.id === this.selectedId)
+              : sources.find((s) => s.id.startsWith('screen:'))
             if (!source) {
-              this.log.warn('no capture source available')
+              this.log.warn(`capture source not available: ${this.selectedId ?? 'no screen'}`)
               callback({})
               return
             }
