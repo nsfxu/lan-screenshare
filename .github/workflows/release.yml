@@ -63,6 +63,20 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      # Two real app instances in a room (see e2e/): don't publish a release
+      # that can't share or watch.
+      - run: npm run build
+      - name: End-to-end tests (Xvfb)
+        run: xvfb-run -a -s "-screen 0 1920x1080x24" npx playwright test
+      - name: Keep the end-to-end report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
 
   windows:
     name: Windows installer

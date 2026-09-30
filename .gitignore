@@ -6,3 +6,8 @@ dist/
 .DS_Store
 *.tsbuildinfo
 native/bin/
+
+# End-to-end tests
+test-results/
+playwright-report/
+e2e.local.json
