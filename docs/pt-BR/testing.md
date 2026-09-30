@@ -89,6 +89,7 @@ A pasta `e2e/` roda o app de verdade: duas instâncias (Alice e Bob, o build de 
 |---|---|
 | Sala pública | A Alice cria uma sala e compartilha; o Bob entra com **Connect by IP**; nada toca até ele escolher a transmissão dela; os quadros chegam com a cor da tela dela; chat nos dois sentidos; quando ela para de compartilhar, o quadro dele e o cartão dela somem. |
 | Sala privada | Um PIN errado é recusado (erro, continua do lado de fora); o PIN certo deixa o Bob entrar. |
+| Qualidade automática (`quality.spec.ts`) | A Alice compartilha; o teste informa o que está na frente como o auxiliar do Windows faria. O painel Stats mostra movimento suave antes de saber qualquer coisa, texto nítido para uma janela normal, movimento suave para um app em tela cheia na tela compartilhada, texto nítido para um em outra tela; Automatic é o padrão e uma escolha fixa em Settings tem prioridade. |
 | Espectadores que não veem (`hidden.spec.ts`) | Alice e Carol compartilham, Bob assiste as duas. Bob minimizado: nenhum quadro das duas, e a Alice vê "not looking (video paused)"; restaurado: as duas voltam a tocar. Quadro da Alice em tela cheia (simulado): a transmissão da Carol pausa, a da Alice continua. |
 
 ```bash
@@ -99,7 +100,7 @@ xvfb-run -a -s "-screen 0 1920x1080x24" npx playwright test   # Linux sem tela, 
 
 Como o `e2e/fixtures.ts` deixa os testes seguros e repetíveis:
 
-- **A captura de tela é um canvas animado**, nunca a sua tela de verdade. O áudio do sistema, o auxiliar de áudio nativo e o auxiliar de cursor em jogos ficam desligados.
+- **A captura de tela é um canvas animado**, nunca a sua tela de verdade. O áudio do sistema e o auxiliar de áudio nativo ficam desligados, e o auxiliar de primeiro plano do Windows nunca é iniciado: os testes informam o que está na frente eles mesmos (`setForeground`).
 - **Cada pessoa ganha um perfil novo** (`--profile=e2e-alice-<pid>`), apagado no final. Os apps são fechados como um usuário fecharia, então o anfitrião não fica preso na confirmação "End room?".
 - **A sua tela continua sua.** Escolha a tela onde as janelas abrem com `E2E_DISPLAY=3`, ou uma vez num `e2e.local.json` ignorado pelo git: `{ "display": 3 }`. As janelas ficam lado a lado nessa tela (`--display`/`--tile`, veja [desenvolvimento](development.md#várias-pessoas-no-mesmo-computador)) e nunca pegam o foco.
 - Um teste de cada vez (`workers: 1`): as instâncias dividem portas e mDNS.

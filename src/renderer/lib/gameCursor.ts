@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useState } from 'react'
 import type { CursorWatchState } from '../../shared/types'
+import { watchForeground } from './foregroundWatch'
 import { errorMessage } from './format'
 import type { Publisher } from './publisher'
 
@@ -167,15 +168,13 @@ export function useGameCursor(publisher: Publisher, chosenSourceId: string | nul
       if (!alive) return
       current = new GameCursorGuard(publisher, chosenSourceId, screen?.displayId ?? null, rerender)
       setGuard(current)
-      off = api.onChanged((state) => current?.update(state))
-      await api.watch()
+      off = watchForeground((state) => current?.update(state))
     })()
     return () => {
       alive = false
       off()
       current?.dispose()
       setGuard(null)
-      void api.unwatch()
     }
   }, [publisher, chosenSourceId])
 

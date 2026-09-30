@@ -143,7 +143,7 @@ Abra as configurações pelo ícone de engrenagem (na tela inicial ou no topo da
 | Streaming quality | Maximum quality | 1080p @ 60 fps | O máximo que você envia ao compartilhar. Vale na hora. |
 | Streaming quality | Adaptive quality | ligado | Reduz resolução/taxa de quadros por espectador quando a rede dele sofre. |
 | Streaming quality | Video codec | Automatic | O automático prefere H.264 em hardware. Dá para forçar H.264, H.265, VP9 ou AV1 se os dois lados suportarem. A tabela abaixo mostra o que o seu computador suporta. |
-| Streaming quality | Optimize for | Smooth motion | *Smooth motion* mantém 60 fps. *Sharp text* mantém a resolução. |
+| Streaming quality | Optimize for | Automatic | *Smooth motion* mantém 60 fps. *Sharp text* mantém a resolução. *Automatic* (Windows) usa movimento suave enquanto um jogo ou vídeo em tela cheia está na frente do que você compartilha, e texto nítido na área de trabalho; no macOS quer dizer movimento suave. O painel Stats mostra qual está em uso. |
 | Streaming quality | Upload limit when sharing | 100 Mbps | O seu upload total, dividido de forma justa entre quem te assiste. Diminua no Wi-Fi ou na VPN. |
 | Network | Encrypt connections (TLS) | ligado | Cifra o chat e a sinalização. O vídeo é sempre cifrado. |
 | Network | Always use TCP transport | desligado | Para redes que bloqueiam UDP. Acrescenta um pouco de atraso. |

@@ -120,7 +120,8 @@ export function HostStatsPanel({ stats }: { stats: HostStats | null }) {
     ['Encoder', stats.encoder || '–'],
     ['CPU (app)', `${stats.cpuPercent.toFixed(1)} %`, stats.cpuPercent < 20 ? 'good' : stats.cpuPercent < 35 ? 'ok' : 'bad'],
     ['Memory', `${stats.memoryMB} MB`],
-    ['Limited by', stats.qualityLimitation === 'none' ? 'nothing' : stats.qualityLimitation, stats.qualityLimitation === 'none' ? 'good' : 'ok']
+    ['Limited by', stats.qualityLimitation === 'none' ? 'nothing' : stats.qualityLimitation, stats.qualityLimitation === 'none' ? 'good' : 'ok'],
+    ['Optimized for', `${stats.contentHint === 'motion' ? 'Smooth motion' : 'Sharp text'}${stats.contentHintAuto ? ' (automatic)' : ''}`]
   ]
   return (
     <div className="stats-panel">

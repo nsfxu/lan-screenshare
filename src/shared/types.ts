@@ -5,6 +5,8 @@ export type Role = 'host' | 'viewer'
 export type Transport = 'webrtc' | 'tcp'
 export type CodecPreference = 'auto' | 'h264' | 'h265' | 'vp9' | 'av1'
 export type ContentHint = 'motion' | 'detail'
+/** "Optimize for": a fixed hint, or automatic (see autoContentHint). */
+export type ContentHintSetting = 'auto' | ContentHint
 
 /** Live, public information about a room (served at GET /info, no secrets). */
 export interface RoomInfo {
@@ -118,6 +120,9 @@ export interface HostStats {
   qualityLimitation: string
   /** Sent audio bitrate summed over viewers; null when not sharing audio. */
   audioKbps: number | null
+  /** The content hint in use, and whether it was chosen automatically. */
+  contentHint: ContentHint
+  contentHintAuto: boolean
 }
 
 export interface CodecSupport {
@@ -251,7 +256,7 @@ export interface Settings {
   maxQuality: QualityPresetId
   adaptiveQuality: boolean
   codec: CodecPreference
-  contentHint: ContentHint
+  contentHint: ContentHintSetting
   forceTcp: boolean
   useTls: boolean
   preferredPort: number
@@ -267,6 +272,8 @@ export interface Settings {
   excludeDiscordAudio: boolean
   /** Windows: when a single window is shared, share only that app's sound. */
   appAudioOnly: boolean
+  /** Format version of the settings file (see migrate() in main/settings.ts). */
+  settingsVersion: number
   /** Total upload for my stream, shared between my watchers (Mbps); 0 = unlimited. */
   uploadBudgetMbps: number
   /** Profile picture shown to others (square JPEG data URL), or null for initials. */

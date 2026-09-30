@@ -7,6 +7,19 @@ import { QUALITY_PRESETS } from '../shared/quality'
 import type { RoomEndpoint, Settings } from '../shared/types'
 import { randomId } from '../utils/crypto'
 
+/** Format version of settings.json written by this app; see migrate(). */
+export const SETTINGS_VERSION = 2
+
+/** Upgrades settings written by an older version of the app. */
+export function migrate(raw: Partial<Settings>): Partial<Settings> {
+  const version = typeof raw.settingsVersion === 'number' ? raw.settingsVersion : 1
+  const out = { ...raw }
+  // 2 (1.2.0): "Optimize for" got Automatic as its default. "motion" was the
+  // old default, saved whether or not anyone chose it.
+  if (version < 2 && out.contentHint === 'motion') out.contentHint = 'auto'
+  return out
+}
+
 function defaults(): Settings {
   let user = 'User'
   try {
@@ -20,7 +33,7 @@ function defaults(): Settings {
     maxQuality: '1080p60',
     adaptiveQuality: true,
     codec: 'auto',
-    contentHint: 'motion',
+    contentHint: 'auto',
     forceTcp: false,
     useTls: true,
     preferredPort: DEFAULT_PORT,
@@ -33,6 +46,7 @@ function defaults(): Settings {
     shareAudio: true,
     excludeDiscordAudio: true,
     appAudioOnly: true,
+    settingsVersion: SETTINGS_VERSION,
     uploadBudgetMbps: 100,
     avatar: null
   }
@@ -48,7 +62,8 @@ export class SettingsStore {
     const base = defaults()
     try {
       const raw = JSON.parse(fs.readFileSync(this.file, 'utf8')) as Partial<Settings>
-      this.data = sanitize({ ...base, ...raw }, base)
+      this.data = sanitize({ ...base, ...migrate(raw) }, base)
+      if (raw.settingsVersion !== SETTINGS_VERSION) this.save()
     } catch {
       this.data = base
       this.save()
@@ -83,7 +98,8 @@ function sanitize(s: Settings, fallback: Settings): Settings {
   out.displayName = String(s.displayName ?? '').trim().slice(0, NAME_MAX_LENGTH) || fallback.displayName
   if (!QUALITY_PRESETS.some((p) => p.id === s.maxQuality)) out.maxQuality = fallback.maxQuality
   if (!['auto', 'h264', 'h265', 'vp9', 'av1'].includes(s.codec)) out.codec = fallback.codec
-  if (!['motion', 'detail'].includes(s.contentHint)) out.contentHint = fallback.contentHint
+  if (!['auto', 'motion', 'detail'].includes(s.contentHint)) out.contentHint = fallback.contentHint
+  out.settingsVersion = SETTINGS_VERSION
   const port = Number(s.preferredPort)
   out.preferredPort = Number.isInteger(port) && port >= 0 && port <= 65535 ? port : fallback.preferredPort
   out.manualServers = Array.isArray(s.manualServers) ? s.manualServers.filter(isEndpoint).slice(0, 50) : []

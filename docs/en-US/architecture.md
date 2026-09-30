@@ -109,7 +109,8 @@ src/
     App.tsx          top-level screens, joining/hosting, toasts, settings
     components/      React components (see "Renderer: the UI")
     lib/             session logic: roomClient, publisher, subscription, watches, tcpStream,
-                     nativeAudio, gameCursor, codecs, images, session, format, emitter
+                     nativeAudio, gameCursor, foregroundWatch, autoContentHint, codecs, images,
+                     session, format, emitter
     styles.css       all styles (dark theme)
   shared/            code used by both sides; no DOM/Node APIs in the pure modules
     types.ts         wire protocol + settings + IPC types
@@ -194,7 +195,7 @@ The full message list is in the [protocol reference](protocol.md).
 
 - `ScreenCapture` lists screens and windows with thumbnails for the app's own picker, then answers Chromium's `getDisplayMedia()` request with the chosen source (`setDisplayMediaRequestHandler`), with or without loopback audio.
 - `NativeLoopback` runs `win-audio-capture.exe` when Chromium can't capture the audio we need (surround devices, everything except Discord, or only the shared window's app) and forwards its PCM to the renderer over IPC. See [media pipeline → audio](media-pipeline.md#system-audio).
-- `CursorWatch` runs `win-cursor-watch.exe` while a screen is shared on Windows before 11 24H2, and reports whether a game hides the cursor. The renderer then shares a fullscreen game's window in place of the screen. See [media pipeline → games that hide the cursor](media-pipeline.md#games-that-hide-the-cursor-windows).
+- `CursorWatch` runs `win-cursor-watch.exe` while sharing on Windows and reports whether the cursor is hidden and which window is in front (fullscreen or not, on which display). The renderer shares it between its users (`foregroundWatch.ts`): on Windows before 11 24H2, a fullscreen game's window is shared in place of the screen while it hides the cursor (see [media pipeline → games that hide the cursor](media-pipeline.md#games-that-hide-the-cursor-windows)); and **Optimize for: Automatic** picks smooth motion or sharp text (see [capture](media-pipeline.md#capture)).
 
 ## Renderer: the session objects
 

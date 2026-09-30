@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   AdaptiveController,
+  autoContentHint,
   encodingFor,
   encodingForWatcher,
   getPreset,
@@ -212,5 +213,28 @@ describe("hidden view (watcher can't see the stream)", () => {
     for (const q of WATCH_QUALITIES) {
       for (const step of [null, ...VIEW_HEIGHT_STEPS]) expect(isHiddenView(watchLimit(step, q))).toBe(false)
     }
+  })
+})
+
+describe('automatic content hint', () => {
+  const screen = 'screen:0:0'
+  const game = { hidden: true, windowId: 'window:42:0', fullscreen: true, displayId: 'd1' }
+
+  it('is smooth motion while a fullscreen window is in front on the shared screen', () => {
+    expect(autoContentHint(game, screen, 'd1')).toBe('motion')
+    expect(autoContentHint({ ...game, hidden: false }, screen, 'd1')).toBe('motion') // e.g. a fullscreen video
+  })
+
+  it('is sharp text on the desktop, and for fullscreen windows on other screens', () => {
+    expect(autoContentHint({ ...game, fullscreen: false }, screen, 'd1')).toBe('detail')
+    expect(autoContentHint({ ...game, displayId: 'd2' }, screen, 'd1')).toBe('detail')
+    expect(autoContentHint({ hidden: false, windowId: null, fullscreen: false, displayId: null }, screen, 'd1')).toBe('detail')
+    expect(autoContentHint(game, screen, null)).toBe('detail')
+  })
+
+  it('follows the shared window itself when a window is shared', () => {
+    expect(autoContentHint(game, 'window:42:0', null)).toBe('motion')
+    expect(autoContentHint({ ...game, fullscreen: false }, 'window:42:0', null)).toBe('detail')
+    expect(autoContentHint(game, 'window:7:0', null)).toBe('detail')
   })
 })

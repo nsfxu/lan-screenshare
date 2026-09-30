@@ -141,7 +141,7 @@ Open Settings with the gear icon (home screen or room header).
 | Streaming quality | Maximum quality | 1080p @ 60 fps | The most you send when sharing. Applies immediately. |
 | Streaming quality | Adaptive quality | on | Lowers resolution/frame rate per viewer when their network struggles. |
 | Streaming quality | Video codec | Automatic | Automatic prefers hardware H.264. You can force H.264, H.265, VP9 or AV1 if both sides support it. The table below shows what your computer supports. |
-| Streaming quality | Optimize for | Smooth motion | *Smooth motion* keeps 60 fps. *Sharp text* keeps the resolution. |
+| Streaming quality | Optimize for | Automatic | *Smooth motion* keeps 60 fps. *Sharp text* keeps the resolution. *Automatic* (Windows) uses smooth motion while a fullscreen game or video is in front of what you share, and sharp text on the desktop; on macOS it means smooth motion. The Stats panel shows which one is in use. |
 | Streaming quality | Upload limit when sharing | 100 Mbps | Your total upload, shared fairly between everyone watching you. Lower it on Wi-Fi or VPN. |
 | Network | Encrypt connections (TLS) | on | Encrypts chat and signaling. Video is always encrypted. |
 | Network | Always use TCP transport | off | For networks that block UDP. Adds some latency. |
