@@ -200,7 +200,11 @@ O compartilhamento pode incluir tudo que o computador toca. O áudio vai como um
 
 ```mermaid
 flowchart TD
-  S["Compartilhar com áudio"] --> Q{"Windows e<br/>Leave out Discord ligado?"}
+  S["Compartilhar com áudio"] --> A{"Windows, uma janela compartilhada,<br/>Only this app's sound ligado?"}
+  A -->|sim| H0["Auxiliar nativo, modo incluir:<br/>só aquele app e os processos filhos"]
+  H0 -->|funcionou| OK
+  H0 -->|"sem suporte (saída 3), janela fechada (saída 4)<br/>ou auxiliar ausente: avisa o usuário"| Q
+  A -->|não| Q{"Windows e<br/>Leave out Discord ligado?"}
   Q -->|sim| H1["Auxiliar nativo, modo process loopback:<br/>tudo menos o Discord<br/>(ou menos o ScreenShare quando o Discord não está aberto)"]
   H1 -->|funcionou| OK["Trilha de áudio"]
   H1 -->|"sem suporte (saída 3)<br/>ou auxiliar ausente"| C
@@ -219,11 +223,12 @@ Um pequeno programa em C#, compilado com o compilador C# que vem com o .NET Fram
 | Modo | Argumentos | Como |
 |---|---|---|
 | Loopback do dispositivo | (nenhum) | Loopback WASAPI do dispositivo de saída padrão no formato do próprio mix (funciona com headsets 5.1/7.1), convertido para estéreo: centro e surrounds a −3 dB, LFE descartado. |
+| Só um app | `--include-window <HWND>` | Process loopback no modo *incluir a árvore de processos alvo*, para o app dono da janela compartilhada (`GetWindowThreadProcessId`): esse processo e os processos filhos, o que cobre navegadores e jogos que tocam o som a partir de um processo auxiliar. Usado quando uma única janela é compartilhada com **Only this app's sound** (ligado por padrão). |
 | Tudo menos um app | `--exclude Discord.exe,DiscordPTB.exe,DiscordCanary.exe,DiscordDevelopment.exe --fallback-pid <pid do ScreenShare>` | **Process loopback** do Windows (Windows 10 2004+ / 11) no modo *excluir a árvore de processos alvo*. Encontra o processo raiz do Discord (a maior árvore) e procura de novo a cada 2 s, então o Discord pode abrir, fechar ou reiniciar durante a transmissão. Enquanto o Discord não está aberto, deixa de fora o próprio ScreenShare. O Windows converte para 48 kHz estéreo. |
 
-Saída no stdout: um cabeçalho de 10 bytes `"SSA1"` + taxa de amostragem u32 + canais u16 (sempre 2), e depois quadros estéreo float32 intercalados. Envia silêncio de verdade quando nada está tocando, para manter o ritmo estável. Códigos de saída: `1` erro fatal, `2` dispositivo invalidado, `3` process loopback indisponível (antes do cabeçalho). Ele termina quando o stdin é fechado.
+Saída no stdout: um cabeçalho de 10 bytes `"SSA1"` + taxa de amostragem u32 + canais u16 (sempre 2), e depois quadros estéreo float32 intercalados. Envia silêncio de verdade quando nada está tocando, para manter o ritmo estável. Códigos de saída: `1` erro fatal, `2` dispositivo invalidado, `3` process loopback indisponível, `4` a janela a incluir foi fechada (os dois antes do cabeçalho). Ele termina quando o stdin é fechado.
 
-Limitações: o process loopback só consegue deixar de fora **um** app por vez, e deixa de fora *todo* o som do Discord (notificações e soundboard também).
+Limitações: o process loopback só consegue deixar de fora **um** app por vez, e deixa de fora *todo* o som do Discord (notificações e soundboard também). *Só um app* segue a árvore de processos do dono da janela: um app cujo som vem de um processo fora dessa árvore (alguns jogos abertos por um launcher, apps hospedados pelo `ApplicationFrameHost.exe`) é capturado em silêncio, por isso a opção pode ser desligada no diálogo de compartilhar.
 
 ## Prévias
 

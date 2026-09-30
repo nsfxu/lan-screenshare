@@ -173,7 +173,10 @@ function registerIpc(): void {
   ipcMain.handle(IPC.audioSupported, () => capture.audioSupported())
   ipcMain.handle(IPC.nativeAudioAvailable, () => nativeAudio.available())
   ipcMain.handle(IPC.nativeAudioStart, (e, options?: NativeAudioOptions) =>
-    nativeAudio.start(e.sender, { excludeDiscord: options?.excludeDiscord === true })
+    nativeAudio.start(e.sender, {
+      excludeDiscord: options?.excludeDiscord === true,
+      appWindow: typeof options?.appWindow === 'string' && /^window:\d+:\d+$/.test(options.appWindow) ? options.appWindow : null
+    })
   )
   ipcMain.handle(IPC.nativeAudioStop, (_e, id?: number) => nativeAudio.stop(typeof id === 'number' ? id : undefined))
   ipcMain.handle(IPC.hiddenCursorAffected, () => cursorWatch.affected())

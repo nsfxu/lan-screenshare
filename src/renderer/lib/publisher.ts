@@ -13,6 +13,7 @@ import {
   type ViewLimit
 } from '../../shared/quality'
 import type {
+  AudioChoice,
   CodecSupport,
   HostStats,
   MediaState,
@@ -65,6 +66,20 @@ export interface SharingState {
   audioMuted: boolean
   /** The captured audio leaves out Discord (Windows). */
   discordExcluded: boolean
+  /** Only the shared app's sound is captured (Windows). */
+  appAudioOnly: boolean
+}
+
+/** The sound options a new share starts with (from Settings). */
+export function audioDefaults(settings: Settings): AudioChoice {
+  return { enabled: settings.shareAudio, excludeDiscord: settings.excludeDiscordAudio, appOnly: settings.appAudioOnly }
+}
+
+interface Acquired {
+  stream: MediaStream
+  native: NativeAudioCapture | null
+  discordExcluded: boolean
+  appOnly: boolean
 }
 
 /** What a watcher reports about receiving this publisher's stream. */
@@ -108,11 +123,15 @@ export class Publisher extends Emitter<Events> {
   audioMuted = false
   /** Why system audio could not be captured with the current source (DOMException name). */
   audioError: string | null = null
-  /** "Leave out Discord" as chosen for the current source. */
-  excludeDiscord = false
+  /** The sound chosen with the current source. */
+  audioChoice: AudioChoice = { enabled: false, excludeDiscord: false, appOnly: false }
   /** Leaving Discord out was asked for with the current source but isn't possible here. */
   discordExclusionFailed = false
   discordExcluded = false
+  /** Only the shared app's sound is captured (Windows). */
+  appAudioOnly = false
+  /** Only the app's sound was asked for with the current source but isn't possible here: all sound is shared. */
+  appAudioFailed = false
   /** What is captured right now. */
   sourceId: string | null = null
   /** What the user chose; differs from sourceId while a game's window is shared in its place (switchVideo). */
@@ -169,7 +188,8 @@ export class Publisher extends Emitter<Events> {
       paused: this.paused,
       hasAudio: !!this.audioTrack,
       audioMuted: this.audioMuted,
-      discordExcluded: !!this.audioTrack && this.discordExcluded
+      discordExcluded: !!this.audioTrack && this.discordExcluded,
+      appAudioOnly: !!this.audioTrack && this.appAudioOnly
     }
   }
 
@@ -216,17 +236,15 @@ export class Publisher extends Emitter<Events> {
 
   /**
    * Start capturing (or switch to another source without renegotiating).
-   * With `withAudio`, system audio is captured too; if the platform refuses
-   * audio, sharing continues video-only. With `excludeDiscord` (Windows), the
-   * audio leaves out Discord, so viewers in the same voice call don't hear
-   * themselves.
+   * With `audio.enabled`, sound is captured too; if the platform refuses
+   * audio, sharing continues video-only. On Windows, `audio.appOnly` keeps
+   * only the shared window's app, and `audio.excludeDiscord` leaves Discord
+   * out of the system sound (viewers in the same voice call don't hear
+   * themselves). What couldn't be honoured is in appAudioFailed /
+   * discordExclusionFailed (see captureAudioWarning).
    */
-  async startCapture(
-    sourceId: string,
-    withAudio = this.settings.shareAudio,
-    excludeDiscord = this.settings.excludeDiscordAudio
-  ): Promise<void> {
-    const { stream, native, discordExcluded } = await this.acquire(sourceId, withAudio, excludeDiscord)
+  async startCapture(sourceId: string, audio: AudioChoice = audioDefaults(this.settings)): Promise<void> {
+    const { stream, native, discordExcluded, appOnly } = await this.acquire(sourceId, audio)
     if (this.disposed) {
       native?.stop()
       stream.getTracks().forEach((t) => t.stop())
@@ -242,9 +260,9 @@ export class Publisher extends Emitter<Events> {
       `capturing ${s.width}x${s.height}@${s.frameRate} from ${sourceId}` +
         (audioTrack
           ? native
-            ? ` + audio (native loopback${discordExcluded ? ', without Discord' : ''})`
+            ? ` + audio (native loopback${appOnly ? ', only the shared app' : discordExcluded ? ', without Discord' : ''})`
             : ` + audio ${a?.sampleRate ?? '?'} Hz x${a?.channelCount ?? '?'}`
-          : withAudio
+          : audio.enabled
             ? ' (no audio available)'
             : '')
     )
@@ -257,7 +275,8 @@ export class Publisher extends Emitter<Events> {
     this.track = track
     this.audioTrack = audioTrack
     this.discordExcluded = discordExcluded
-    this.excludeDiscord = excludeDiscord
+    this.appAudioOnly = appOnly
+    this.audioChoice = audio
     this.sourceId = sourceId
     this.chosenSourceId = sourceId
 
@@ -340,12 +359,48 @@ export class Publisher extends Emitter<Events> {
     this.tcp?.replaceTrack(track)
   }
 
-  /** Capture the source's video and, if asked, system audio (see startCapture). */
-  private async acquire(
+  /** Capture the source's video and, if asked, its sound (see startCapture). */
+  private async acquire(sourceId: string, audio: AudioChoice): Promise<Acquired> {
+    this.appAudioFailed = false
+    // Windows, a single window shared: only that app's sound, when this Windows can.
+    if (audio.enabled && audio.appOnly && sourceId.startsWith('window:') && /Windows/.test(navigator.userAgent)) {
+      const appOnly = await this.acquireAppOnly(sourceId)
+      if (appOnly) return appOnly
+      this.appAudioFailed = true
+    }
+    return this.acquireSystem(sourceId, audio.enabled, audio.excludeDiscord)
+  }
+
+  /** Video plus only the shared window's app sound (process loopback, include mode); null if not possible. */
+  private async acquireAppOnly(sourceId: string): Promise<Acquired | null> {
+    if (!this.processLoopback || !(await window.api.capture.nativeAudio.available())) return null
+    await window.api.capture.select(sourceId, false)
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video: videoConstraints(getPreset(this.settings.maxQuality)),
+      audio: false
+    })
+    this.audioError = null
+    this.discordExclusionFailed = false
+    this.nativeAudio?.stop() // the helper is a single process; free it first
+    this.nativeAudio = null
+    try {
+      const native = await startNativeLoopback(log, { excludeDiscord: false, appWindow: sourceId })
+      stream.addTrack(native.track)
+      return { stream, native, discordExcluded: false, appOnly: true }
+    } catch (err) {
+      log(`capturing only the app's sound failed: ${String(err)}`)
+      if (errorMessage(err).includes(NO_PROCESS_LOOPBACK)) this.processLoopback = false
+      stream.getTracks().forEach((t) => t.stop())
+      return null
+    }
+  }
+
+  /** Video plus the whole system sound (optionally without Discord). */
+  private async acquireSystem(
     sourceId: string,
     withAudio: boolean,
     excludeDiscord: boolean
-  ): Promise<{ stream: MediaStream; native: NativeAudioCapture | null; discordExcluded: boolean }> {
+  ): Promise<Acquired> {
     const video = videoConstraints(getPreset(this.settings.maxQuality))
     // System audio should reach viewers untouched: no voice processing.
     const audio: MediaTrackConstraints = {
@@ -414,7 +469,7 @@ export class Publisher extends Emitter<Events> {
         }
       }
       if (native) stream.addTrack(native.track)
-      return { stream, native, discordExcluded }
+      return { stream, native, discordExcluded, appOnly: false }
     } catch (err) {
       native?.stop()
       stream?.getTracks().forEach((t) => t.stop())
@@ -459,6 +514,7 @@ export class Publisher extends Emitter<Events> {
     this.track = null
     this.audioTrack = null
     this.discordExcluded = false
+    this.appAudioOnly = false
     this.stream = null
     this.paused = false
     this.sourceId = null

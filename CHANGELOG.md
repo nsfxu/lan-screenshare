@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Added
+
+- **Only this app's sound** (Windows): when you share a single window, viewers hear only that app, for example your game without Discord, music or notifications. On by default when you share a window; turn it off in the share dialog, or change the default in Settings.
+
 ### Changed
 
 - Streams you can't see stop sending you video while the app is minimized or another tile is full screen (you still hear them), saving the streamer's upload and your network. The picture comes back within a second, and streamers see you as "not looking (video paused)".

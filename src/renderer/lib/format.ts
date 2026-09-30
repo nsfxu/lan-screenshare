@@ -1,3 +1,5 @@
+import type { AudioChoice } from '../../shared/types'
+
 /** Strip Electron's "Error invoking remote method 'x': Error: " prefix. */
 export function errorMessage(err: unknown): string {
   const text = err instanceof Error ? err.message : String(err)
@@ -53,6 +55,22 @@ export function audioUnavailableMessage(error: string | null): string {
 export const DISCORD_NOT_EXCLUDED_MESSAGE =
   "Couldn't leave Discord out of the shared audio (this needs Windows 10 version 2004 or newer), so viewers " +
   'will also hear your Discord call. Use Mute audio if that is a problem.'
+
+export const APP_AUDIO_FAILED_MESSAGE =
+  "Couldn't share only that app's sound (this needs Windows 10 version 2004 or newer), so viewers hear everything " +
+  'playing on your computer. Use Mute audio if that is a problem.'
+
+/** After starting a share: what to tell the user when the sound isn't what they chose, or null. */
+export function captureAudioWarning(
+  result: { hasAudio: boolean; audioError: string | null; appAudioFailed: boolean; discordExclusionFailed: boolean },
+  asked: AudioChoice
+): string | null {
+  if (!asked.enabled) return null
+  if (!result.hasAudio) return audioUnavailableMessage(result.audioError)
+  if (result.appAudioFailed) return APP_AUDIO_FAILED_MESSAGE
+  if (result.discordExclusionFailed) return DISCORD_NOT_EXCLUDED_MESSAGE
+  return null
+}
 
 export function latencyClass(ms: number | null): 'good' | 'ok' | 'bad' | 'unknown' {
   if (ms === null) return 'unknown'

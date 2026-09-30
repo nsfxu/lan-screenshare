@@ -3,14 +3,16 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { app, type WebContents } from 'electron'
 import { IPC } from '../shared/ipc'
-import { DISCORD_PROCESSES, NO_PROCESS_LOOPBACK } from '../shared/constants'
+import { DISCORD_PROCESSES, NO_APP_WINDOW, NO_PROCESS_LOOPBACK } from '../shared/constants'
 import type { NativeAudioFormat, NativeAudioOptions } from '../shared/types'
 import type { Logger } from './server'
 
 const HEADER_BYTES = 10
 const FRAME_BYTES = 8 // float32 stereo
-/** Helper exit code: process loopback (capture all but one app) is not available on this Windows. */
+/** Helper exit code: process loopback (capture all but one app, or only one) is not available on this Windows. */
 const EXIT_NO_PROCESS_LOOPBACK = 3
+/** Helper exit code: the window whose app sound was asked for is gone. */
+const EXIT_NO_TARGET = 4
 
 /**
  * Windows system audio through the bundled WASAPI helper
@@ -43,10 +45,14 @@ export class NativeLoopback {
     this.stop()
     if (!this.available()) return Promise.reject(new Error('Native audio capture is not available'))
     const id = ++this.runs
-    const args = options.excludeDiscord
-      ? ['--exclude', DISCORD_PROCESSES.join(','), '--fallback-pid', String(process.pid)]
-      : []
-    this.log.info(`[win-audio] run ${id}: ${options.excludeDiscord ? 'all audio except Discord' : 'device loopback'}`)
+    const hwnd = options.appWindow?.split(':')[1]
+    const args = hwnd
+      ? ['--include-window', hwnd]
+      : options.excludeDiscord
+        ? ['--exclude', DISCORD_PROCESSES.join(','), '--fallback-pid', String(process.pid)]
+        : []
+    const mode = hwnd ? `only the app of window ${hwnd}` : options.excludeDiscord ? 'all audio except Discord' : 'device loopback'
+    this.log.info(`[win-audio] run ${id}: ${mode}`)
     const child = spawn(this.exePath, args, { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
     this.child = child
     let pending: Buffer = Buffer.alloc(0)
@@ -63,7 +69,15 @@ export class NativeLoopback {
         const unexpected = this.child === child
         if (unexpected) this.child = null
         this.log.info(`[win-audio] run ${id} exited with code ${code}`)
-        fail(new Error(code === EXIT_NO_PROCESS_LOOPBACK ? NO_PROCESS_LOOPBACK : `audio helper exited (${code})`))
+        fail(
+          new Error(
+            code === EXIT_NO_PROCESS_LOOPBACK
+              ? NO_PROCESS_LOOPBACK
+              : code === EXIT_NO_TARGET
+                ? NO_APP_WINDOW
+                : `audio helper exited (${code})`
+          )
+        )
         if (unexpected && format && !target.isDestroyed()) target.send(IPC.nativeAudioEnded, id, `exit ${code}`)
       })
       child.stdout.on('data', (chunk: Buffer) => {

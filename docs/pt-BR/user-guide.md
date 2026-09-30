@@ -63,7 +63,7 @@ Cada cartão de sala mostra se ela é **Public** ou **Private** (ícone de cadea
 1. Clique em **Create room**.
 2. Dê um nome e escolha **Public** (qualquer pessoa da rede pode entrar) ou **Private** (as pessoas precisam de um PIN, que é gerado para você; escolha 4, 5 ou 6 dígitos).
 3. Escolha o que compartilhar: uma **tela** inteira ou uma única **janela**.
-4. **Share system audio** envia tudo que está tocando no seu computador. No Windows, **Leave out Discord** (ligado por padrão) deixa a sua chamada do Discord de fora, para quem está na mesma chamada não ouvir a própria voz pela sua transmissão.
+4. **Share system audio** envia tudo que está tocando no seu computador. No Windows, **Leave out Discord** (ligado por padrão) deixa a sua chamada do Discord de fora, para quem está na mesma chamada não ouvir a própria voz pela sua transmissão. Quando você compartilha uma única **janela** no Windows, **Only this app's sound** (ligado por padrão) envia só o som daquele app, por exemplo só o seu jogo, sem Discord, música ou notificações.
 5. Clique em **Start sharing**.
 
 Numa sala privada, o PIN é copiado para a área de transferência para você colar para os seus amigos.
@@ -154,6 +154,7 @@ Abra as configurações pelo ícone de engrenagem (na tela inicial ou no topo da
 | Behaviour | Show FPS and latency overlay | ligado | Os selos em cada transmissão. |
 | Behaviour | Share system audio by default | ligado | Deixa o interruptor de áudio pré-marcado. |
 | Behaviour | Leave out Discord by default | ligado | Só no Windows. Deixa o interruptor do Discord pré-marcado. |
+| Behaviour | Only the shared app's sound by default | ligado | Só no Windows. Deixa **Only this app's sound** pré-marcado quando você compartilha uma janela. |
 
 O rodapé mostra a versão do app e tem o botão **Open logs**.
 

@@ -265,6 +265,8 @@ export interface Settings {
   shareAudio: boolean
   /** Windows: leave Discord (the voice call) out of the shared system audio. */
   excludeDiscordAudio: boolean
+  /** Windows: when a single window is shared, share only that app's sound. */
+  appAudioOnly: boolean
   /** Total upload for my stream, shared between my watchers (Mbps); 0 = unlimited. */
   uploadBudgetMbps: number
   /** Profile picture shown to others (square JPEG data URL), or null for initials. */
@@ -320,6 +322,18 @@ export type ScreenPermission = 'granted' | 'denied' | 'not-determined' | 'restri
 export interface NativeAudioOptions {
   /** Capture everything except Discord (per-process loopback) instead of the device's loopback. */
   excludeDiscord: boolean
+  /** Capture only the app that owns this window (capture source id "window:<HWND>:0"); wins over excludeDiscord. */
+  appWindow?: string | null
+}
+
+/** The sound that goes with a share, as chosen in the share dialogs. */
+export interface AudioChoice {
+  /** Share sound at all. */
+  enabled: boolean
+  /** Windows: leave Discord out of the system sound. */
+  excludeDiscord: boolean
+  /** Windows, when a single window is shared: only that app's sound. */
+  appOnly: boolean
 }
 
 /** PCM format produced by the native Windows loopback helper (float32 interleaved). */

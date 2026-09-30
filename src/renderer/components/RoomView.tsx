@@ -1,16 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
 import { QUALITY_PRESETS, WATCH_QUALITIES, getWatchQuality, type WatchQualityId } from '../../shared/quality'
-import type { ChatMessage, HostedRoom, HostStats, Participant, RoomState, Settings, ViewerStats } from '../../shared/types'
+import type {
+  AudioChoice,
+  ChatMessage,
+  HostedRoom,
+  HostStats,
+  Participant,
+  RoomState,
+  Settings,
+  ViewerStats
+} from '../../shared/types'
 import {
-  audioUnavailableMessage,
-  DISCORD_NOT_EXCLUDED_MESSAGE,
+  captureAudioWarning,
   errorMessage,
   formatBitrate,
   formatDuration,
   latencyClass
 } from '../lib/format'
 import { useGameCursor } from '../lib/gameCursor'
-import type { SharingState, WatcherInfo } from '../lib/publisher'
+import { audioDefaults, type SharingState, type WatcherInfo } from '../lib/publisher'
 import type { ConnectionState } from '../lib/roomClient'
 import type { Session } from '../lib/session'
 import type { Subscription, SubscriptionState } from '../lib/subscription'
@@ -146,12 +154,12 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
   }, [])
 
   // --- actions ---------------------------------------------------------------
-  const shareSource = async (id: string, audio: boolean, excludeDiscord: boolean): Promise<void> => {
+  const shareSource = async (id: string, audio: AudioChoice): Promise<void> => {
     setPickSource(false)
     try {
-      await publisher.startCapture(id, audio, excludeDiscord)
-      if (audio && !publisher.hasAudio) onToast(audioUnavailableMessage(publisher.audioError), 'error')
-      else if (publisher.discordExclusionFailed) onToast(DISCORD_NOT_EXCLUDED_MESSAGE, 'error')
+      await publisher.startCapture(id, audio)
+      const warning = captureAudioWarning(publisher, audio)
+      if (warning) onToast(warning, 'error')
     } catch (err) {
       onToast(`Could not capture: ${errorMessage(err)}`, 'error')
     }
@@ -365,7 +373,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
                 className="btn small primary"
                 onClick={() =>
                   gameCursor.hint &&
-                  void shareSource(gameCursor.hint.windowId, publisher.hasAudio, publisher.excludeDiscord)
+                  void shareSource(gameCursor.hint.windowId, publisher.audioChoice)
                 }
               >
                 <Icon name="swap" size={14} /> Share its window
@@ -387,9 +395,11 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
                   title={
                     !sharing.hasAudio
                       ? 'Audio is not being captured (enable it via Change source)'
-                      : sharing.discordExcluded
-                        ? 'Mute or unmute the system audio viewers hear (Discord is left out)'
-                        : 'Mute or unmute the system audio viewers hear'
+                      : sharing.appAudioOnly
+                        ? "Mute or unmute the shared app's sound viewers hear"
+                        : sharing.discordExcluded
+                          ? 'Mute or unmute the system audio viewers hear (Discord is left out)'
+                          : 'Mute or unmute the system audio viewers hear'
                   }
                   onClick={() => publisher.setAudioMuted(!sharing.audioMuted)}
                 >
@@ -473,10 +483,9 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
       {pickSource && (
         <ChangeSourceDialog
           current={publisher.chosenSourceId}
-          currentAudio={publisher.sharing ? publisher.hasAudio : settings.shareAudio}
-          currentExcludeDiscord={publisher.sharing ? publisher.excludeDiscord : settings.excludeDiscordAudio}
+          currentAudio={publisher.sharing ? publisher.audioChoice : audioDefaults(settings)}
           onCancel={() => setPickSource(false)}
-          onPick={(id, audio, excludeDiscord) => void shareSource(id, audio, excludeDiscord)}
+          onPick={(id, audio) => void shareSource(id, audio)}
         />
       )}
     </div>

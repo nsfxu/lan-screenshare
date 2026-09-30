@@ -78,8 +78,9 @@ On Windows 10 (and 11 before 24H2), sharing a whole screen shows the cursor even
 | Problem | Fix |
 |---|---|
 | No audio at all | The streamer must enable **Share system audio** (via **Change source** while sharing). The mute button says **No audio** when nothing is captured. |
+| No sound when sharing a window (Windows) | **Only this app's sound** follows the app that owns the window. Some apps play their sound from another process (some games started by a launcher, Store apps), so nothing is captured. Turn the option off in **Change source**: viewers then hear all your system sound. |
 | No audio with a 5.1/7.1 headset on Windows | The app switches to its own audio helper automatically. If it still fails, set the device to stereo: *Sound settings → device → Properties → Advanced → 2 channel*, then **Change source**. |
-| People in my Discord call hear themselves | Turn on **Leave out Discord** when you share (Windows, on by default). If a message says it couldn't be done, your Windows is older than 10 version 2004: use **Mute audio**, or mute Discord's output. |
+| People in my Discord call hear themselves | Share the game's **window** with **Only this app's sound**, or turn on **Leave out Discord** when you share (Windows, both on by default). If a message says it couldn't be done, your Windows is older than 10 version 2004: use **Mute audio**, or mute Discord's output. |
 | Other streams echo in my stream | Your computer plays the streams you watch, and sharing system audio captures that too. With **Leave out Discord** on and Discord closed, the app leaves itself out and this doesn't happen; otherwise (only one app can be left out) lower the volume of the streams you watch, or mute your shared audio. |
 | No audio on macOS | Needs macOS 13+ and Screen Recording permission. It is still untested on macOS. |
 | Viewer hears nothing but the streamer has audio | Check the tile's volume slider (each stream has its own volume and mute). |

@@ -4,7 +4,8 @@ import { CreateRoomDialog, PinDialog, SettingsPanel, type CreateRoomResult } fro
 import { HomeScreen } from './components/HomeScreen'
 import { RoomView } from './components/RoomView'
 import { detectDecoders, detectEncoders } from './lib/codecs'
-import { audioUnavailableMessage, DISCORD_NOT_EXCLUDED_MESSAGE, errorMessage } from './lib/format'
+import { captureAudioWarning, errorMessage } from './lib/format'
+import { audioDefaults } from './lib/publisher'
 import { disposeSession, hostRoom, joinRoom, JoinError, updateSessionSettings, type Session } from './lib/session'
 
 interface Toast {
@@ -127,9 +128,9 @@ export function App() {
       hostedCreated = true
       const s = await hostRoom(hosted, settings, codecs)
       try {
-        await s.publisher.startCapture(req.sourceId, req.audio, req.excludeDiscord)
-        if (req.audio && !s.publisher.hasAudio) toast(audioUnavailableMessage(s.publisher.audioError), 'error')
-        else if (s.publisher.discordExclusionFailed) toast(DISCORD_NOT_EXCLUDED_MESSAGE, 'error')
+        await s.publisher.startCapture(req.sourceId, req.audio)
+        const warning = captureAudioWarning(s.publisher, req.audio)
+        if (warning) toast(warning, 'error')
       } catch (err) {
         toast(`Room created, but capture failed: ${errorMessage(err)}`, 'error')
       }
@@ -192,8 +193,7 @@ export function App() {
       {creating && !session && (
         <CreateRoomDialog
           defaultName={`${settings.displayName}'s room`}
-          defaultAudio={settings.shareAudio}
-          defaultExcludeDiscord={settings.excludeDiscordAudio}
+          defaultAudio={audioDefaults(settings)}
           busy={createBusy}
           error={createError}
           onCancel={() => setCreating(false)}

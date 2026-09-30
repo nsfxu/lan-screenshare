@@ -78,8 +78,9 @@ No Windows 10 (e no 11 anterior ao 24H2), compartilhar uma tela inteira mostra o
 | Problema | Solução |
 |---|---|
 | Nenhum áudio | Quem transmite precisa ligar **Share system audio** (pelo **Change source** durante a transmissão). O botão de mudo mostra **No audio** quando nada está sendo capturado. |
+| Sem som ao compartilhar uma janela (Windows) | **Only this app's sound** segue o app dono da janela. Alguns apps tocam o som por outro processo (alguns jogos abertos por um launcher, apps da Store), então nada é capturado. Desligue a opção em **Change source**: os espectadores passam a ouvir todo o som do sistema. |
 | Sem áudio com headset 5.1/7.1 no Windows | O app passa automaticamente para o próprio auxiliar de áudio. Se ainda falhar, deixe o dispositivo em estéreo: *Configurações de som → dispositivo → Propriedades → Avançado → 2 canais*, e depois **Change source**. |
-| Quem está na minha chamada do Discord ouve a própria voz | Ligue **Leave out Discord** ao compartilhar (Windows, ligado por padrão). Se aparecer um aviso dizendo que não foi possível, seu Windows é anterior ao 10 versão 2004: use **Mute audio** ou silencie a saída do Discord. |
+| Quem está na minha chamada do Discord ouve a própria voz | Compartilhe a **janela** do jogo com **Only this app's sound**, ou ligue **Leave out Discord** ao compartilhar (Windows, os dois ligados por padrão). Se aparecer um aviso dizendo que não foi possível, seu Windows é anterior ao 10 versão 2004: use **Mute audio** ou silencie a saída do Discord. |
 | Outras transmissões fazem eco na minha | Seu computador toca as transmissões que você assiste, e compartilhar o áudio do sistema captura isso também. Com **Leave out Discord** ligado e o Discord fechado, o app deixa a si mesmo de fora e isso não acontece; senão (só um app pode ficar de fora), abaixe o volume das transmissões que você assiste ou silencie o seu áudio compartilhado. |
 | Sem áudio no macOS | Precisa do macOS 13+ e da permissão de Gravação de Tela. Ainda não foi testado no macOS. |
 | O espectador não ouve nada, mas quem transmite tem áudio | Confira o volume do quadro (cada transmissão tem seu próprio volume e mudo). |

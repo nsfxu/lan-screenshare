@@ -193,7 +193,7 @@ A lista completa de mensagens está na [referência do protocolo](protocol.md).
 ### ScreenCapture e NativeLoopback
 
 - `ScreenCapture` lista telas e janelas com miniaturas para o seletor do próprio app e depois responde ao pedido `getDisplayMedia()` do Chromium com a fonte escolhida (`setDisplayMediaRequestHandler`), com ou sem áudio de loopback.
-- `NativeLoopback` roda o `win-audio-capture.exe` quando o Chromium não consegue capturar o áudio que precisamos (dispositivos surround, ou tudo menos o Discord) e repassa o PCM para o renderer via IPC. Veja [pipeline de mídia → áudio](media-pipeline.md#áudio-do-sistema).
+- `NativeLoopback` roda o `win-audio-capture.exe` quando o Chromium não consegue capturar o áudio que precisamos (dispositivos surround, tudo menos o Discord, ou só o app da janela compartilhada) e repassa o PCM para o renderer via IPC. Veja [pipeline de mídia → áudio](media-pipeline.md#áudio-do-sistema).
 - `CursorWatch` roda o `win-cursor-watch.exe` enquanto uma tela é compartilhada no Windows anterior ao 11 24H2 e avisa se um jogo esconde o cursor. O renderer então compartilha a janela de um jogo em tela cheia no lugar da tela. Veja [pipeline de mídia → jogos que escondem o cursor](media-pipeline.md#jogos-que-escondem-o-cursor-windows).
 
 ## Renderer: os objetos da sessão
