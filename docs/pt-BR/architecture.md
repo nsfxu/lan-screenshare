@@ -100,6 +100,7 @@ src/
     server.ts        RoomServer: autenticação, chat, presença, moderação, repasse de sinalização e de mídia TCP
     screenCapture.ts lista de fontes, handler de display-media, permissão no macOS
     nativeAudio.ts   roda o auxiliar de áudio do Windows e repassa o PCM para o renderer
+    cursorWatch.ts   roda o auxiliar de cursor do Windows (jogos que escondem o cursor)
     settings.ts      carrega/valida/salva o settings.json
     logger.ts        logger em arquivo com rotação
   preload/
@@ -108,7 +109,7 @@ src/
     App.tsx          telas principais, entrar/hospedar, avisos, configurações
     components/      componentes React (veja "Renderer: a interface")
     lib/             lógica da sessão: roomClient, publisher, subscription, watches, tcpStream,
-                     nativeAudio, codecs, images, session, format, emitter
+                     nativeAudio, gameCursor, codecs, images, session, format, emitter
     styles.css       todos os estilos (tema escuro)
   shared/            código usado pelos dois lados; os módulos puros não usam APIs de DOM/Node
     types.ts         tipos do protocolo, das configurações e do IPC
@@ -124,8 +125,10 @@ src/
     crypto.ts        geração/comparação de PIN, bloqueio, ids aleatórios
 native/
   win-audio-capture/Program.cs   auxiliar de áudio do Windows (C#, compilado com o compilador que vem no Windows)
-scripts/build-win-audio.cjs      compila o auxiliar antes do `dev`/`build` (não faz nada fora do Windows)
-tests/                           vitest: servidor, transmissões, qualidade, recorte, codecs/TLS, cripto
+  win-cursor-watch/Program.cs    auxiliar do Windows que avisa quando um jogo esconde o cursor (C#)
+scripts/build-native.cjs         compila os auxiliares antes do `dev`/`build` (não faz nada fora do Windows)
+tests/                           vitest: servidor, transmissões, qualidade, recorte, codecs/TLS, cripto;
+                                 renderer/ para a lógica do renderer (cursor em jogos)
 build/                           recursos de empacotamento (entitlements do macOS)
 ```
 
@@ -191,6 +194,7 @@ A lista completa de mensagens está na [referência do protocolo](protocol.md).
 
 - `ScreenCapture` lista telas e janelas com miniaturas para o seletor do próprio app e depois responde ao pedido `getDisplayMedia()` do Chromium com a fonte escolhida (`setDisplayMediaRequestHandler`), com ou sem áudio de loopback.
 - `NativeLoopback` roda o `win-audio-capture.exe` quando o Chromium não consegue capturar o áudio que precisamos (dispositivos surround, ou tudo menos o Discord) e repassa o PCM para o renderer via IPC. Veja [pipeline de mídia → áudio](media-pipeline.md#áudio-do-sistema).
+- `CursorWatch` roda o `win-cursor-watch.exe` enquanto uma tela é compartilhada no Windows anterior ao 11 24H2 e avisa se um jogo esconde o cursor. O renderer então compartilha a janela de um jogo em tela cheia no lugar da tela. Veja [pipeline de mídia → jogos que escondem o cursor](media-pipeline.md#jogos-que-escondem-o-cursor-windows).
 
 ## Renderer: os objetos da sessão
 

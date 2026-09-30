@@ -35,6 +35,7 @@ Os testes rodam no Node (`vitest.config.ts`, ambiente `node`, tempo limite de 15
 | `tests/network.test.ts` | Leitura e ordenação de endereços, URLs com IPv6, consulta TLS com impressão digital, ordem de codecs, ajustes de Opus e bitrate no SDP. |
 | `tests/crypto.test.ts` | Geração e validação de PIN, comparação em tempo constante, bloqueio e reinício do `PinGuard`. |
 | `tests/crop.test.ts` | Recorte da foto de perfil: centralização, limites, zoom em torno de um ponto, limites de zoom. |
+| `tests/renderer/gameCursor.test.ts` | Jogos que escondem o cursor: troca para a janela de um jogo em tela cheia e volta depois do alt-tab, ignora piscadas rápidas e outros monitores, sugere jogos em janela, mantém a tela quando pedido, não fica tentando de novo quando falha. |
 
 O que **não** é coberto por testes automáticos: tudo que precisa de um navegador de verdade (WebRTC, WebCodecs, captura, a interface React) e o auxiliar de áudio do Windows. Para isso, use as técnicas abaixo.
 
@@ -76,7 +77,7 @@ O `tests/streams.test.ts` já tem os auxiliares `startServer()`, `join()` e `sha
 
 ## Testando lógica pura
 
-Mantenha a lógica de decisão fora do React e fora dos callbacks do WebRTC, em `src/shared/*.ts`, sem importar DOM nem Node. Assim testar fica trivial. Exemplos: `AdaptiveController`, `splitBudget`, `limitPreset`, `chooseCodecOrder`, `zoomAt` (recorte). A configuração TypeScript do lado Node (`tsconfig.node.json`) não tem os tipos do DOM, então um teste não pode importar um módulo que use APIs do DOM.
+Mantenha a lógica de decisão fora do React e fora dos callbacks do WebRTC, em `src/shared/*.ts`, sem importar DOM nem Node. Assim testar fica trivial. Exemplos: `AdaptiveController`, `splitBudget`, `limitPreset`, `chooseCodecOrder`, `zoomAt` (recorte). A configuração TypeScript do lado Node (`tsconfig.node.json`) não tem os tipos do DOM, então um teste não pode importar um módulo que use APIs do DOM. Quando a lógica precisa ficar no renderer (ela fala com o `window.api` ou com o `Publisher`), teste-a em `tests/renderer/`, que é verificado com a configuração web: substitua o `window` com `vi.stubGlobal` e passe versões falsas do resto, como faz o `tests/renderer/gameCursor.test.ts`.
 
 ## Controlando o app de verdade
 
@@ -182,7 +183,13 @@ native\bin\win-audio-capture.exe --exclude Discord.exe --fallback-pid 0 > out.ra
 
 Os primeiros 10 bytes são o cabeçalho `SSA1`. As mensagens sobre o dispositivo e o processo excluído vão para o stderr. Feche o stdin (Ctrl+Z, Enter) para parar.
 
-Em outros sistemas, confira se ele ainda compila como C# 5 com o Mono (`mcs -langversion:5`); veja [desenvolvimento](development.md#trabalhando-no-auxiliar-de-áudio-sem-windows).
+O auxiliar de cursor imprime uma linha sempre que a visibilidade do cursor ou a janela em primeiro plano muda, por exemplo `hidden 1181390 1 960 540` (identificador da janela, tela cheia, centro do monitor dela):
+
+```bat
+native\bin\win-cursor-watch.exe
+```
+
+Em outros sistemas, confira se os auxiliares ainda compilam como C# 5 com o Mono (`mcs -langversion:5`); veja [desenvolvimento](development.md#trabalhando-no-auxiliar-de-áudio-sem-windows).
 
 ## Checklist manual antes de uma versão
 

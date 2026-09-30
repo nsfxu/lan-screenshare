@@ -32,7 +32,7 @@ npm run build        # production build into out/
 | TCP fallback | `src/renderer/lib/tcpStream.ts` |
 | Quality maths (pure, tested) | `src/shared/quality.ts` |
 | UI | `src/renderer/components/`, `src/renderer/styles.css` |
-| Windows audio helper (C#) | `native/win-audio-capture/Program.cs` |
+| Windows helpers (C#) | `native/win-audio-capture/Program.cs` (system audio), `native/win-cursor-watch/Program.cs` (games hiding the cursor) |
 | Tests | `tests/` (`TestClient` in `tests/helpers.ts`) |
 
 ## Rules
@@ -40,9 +40,9 @@ npm run build        # production build into out/
 1. **Stay LAN-only.** No accounts, cloud, telemetry, STUN/TURN or internet dependencies.
 2. **The server enforces the rules.** Validate every new message field on the server (type, range, size, and whether this sender may send it). Relay signaling only inside an existing streamer↔watcher pair. Never loosen validation to make a client work.
 3. **Protocol changes**: update `ClientMessage`/`ServerMessage`, handle them on both sides, add a server test, and bump `PROTOCOL_VERSION` if old and new apps can't interoperate. See [changing the protocol](docs/en-US/protocol.md#changing-the-protocol).
-4. **Pure logic goes in `src/shared/`** (no DOM, no Node APIs) with unit tests. `tsconfig.node.json` type-checks `tests/` without DOM types, so tests must not import DOM-using modules.
+4. **Pure logic goes in `src/shared/`** (no DOM, no Node APIs) with unit tests. `tsconfig.node.json` type-checks `tests/` without DOM types, so tests there must not import DOM-using modules. Tests of renderer logic go in `tests/renderer/`, which is type-checked with the web config; stub `window.api` with `vi.stubGlobal`.
 5. **The renderer is sandboxed.** It never imports Node modules; add IPC through `src/shared/ipc.ts` + preload + a handler that coerces its arguments.
-6. **The audio helper must remain C# 5** (it is compiled with the `csc.exe` that ships with Windows). No `$"..."`, `?.`, `nameof`, expression-bodied members or `out var`. Check with `mcs -langversion:5` on non-Windows machines.
+6. **The Windows helpers must remain C# 5** (they are compiled with the `csc.exe` that ships with Windows). No `$"..."`, `?.`, `nameof`, expression-bodied members or `out var`. Check with `mcs -langversion:5` on non-Windows machines.
 7. **Match the code style**: TypeScript strict, 2 spaces, single quotes, no semicolons, ~120 columns, comments that explain *why*.
 8. **Docs are bilingual.** When behaviour changes, update the matching page in both `docs/en-US/` and `docs/pt-BR/` (same file names). Keep the root READMEs short.
 9. **Keep changes scoped** to the task: don't bump the protocol, change defaults, or reformat unrelated files unless asked.

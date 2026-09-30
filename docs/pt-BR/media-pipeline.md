@@ -54,6 +54,18 @@ Quem transmite captura **uma vez** e distribui para todos os espectadores. No ca
 - As restrições de captura vêm da **qualidade máxima** de quem transmite (taxa de quadros, e um limite de altura se não for "Native"). Mudar durante a transmissão chama `applyConstraints()` na trilha ao vivo, sem reconectar.
 - O `contentHint` é `motion` (manter a taxa de quadros) ou `detail` (manter o texto nítido), conforme **Settings → Optimize for**.
 
+### Jogos que escondem o cursor (Windows)
+
+No Windows anterior ao 11 24H2, o Chromium captura uma **tela** com o DXGI e desenha o cursor do mouse nos quadros ele mesmo (o compositor de cursor do WebRTC). Quando um app esconde o cursor depois que a captura começou, ele continua desenhando a última seta, então os espectadores veem um cursor em cima de um jogo que o esconde, parado no meio nos jogos que o recentralizam. A captura de **janela** (Windows.Graphics.Capture) deixa o próprio Windows desenhar o estado real do cursor e não tem esse problema. O Chromium só a usa para telas inteiras a partir do 11 24H2, uma verificação de versão que o app não consegue mudar.
+
+Por isso, enquanto uma tela é compartilhada num sistema afetado:
+
+1. O `src/main/cursorWatch.ts` roda o `native/win-cursor-watch`, que consulta o `GetCursorInfo` e a janela em primeiro plano a cada 250 ms e imprime uma linha quando algo muda: se está escondido, a janela, se ela cobre o monitor inteiro e qual é o monitor.
+2. O `GameCursorGuard` (`src/renderer/lib/gameCursor.ts`) age a partir disso. Quando uma janela em **tela cheia** na tela compartilhada mantém o cursor escondido por 1 s, ele chama `Publisher.switchVideo()` para compartilhar essa janela no lugar da tela: só o vídeo, o áudio continua igual, e a imagem é a mesma, sem o cursor. Quando outra janela fica na frente por 0,4 s (alt-tab), ele volta. Se o jogo fecha, a trilha da janela termina e o publisher volta para a tela escolhida (`chosenSourceId`) em vez de parar.
+3. Para um jogo em **janela**, ele só sugere compartilhar a janela, já que isso mudaria o que os espectadores veem.
+
+A sala mostra um aviso enquanto a janela de um jogo é compartilhada, com um botão para manter a tela para aquele jogo. No Windows 10, a captura de janela desenha uma borda amarela em volta do jogo na tela de quem transmite (não na transmissão).
+
 ## Escolha do codec
 
 Ao iniciar, o renderer pergunta ao `MediaCapabilities` quais codecs podem ser **codificados** e **decodificados**, e se cada um é `powerEfficient` (um bom sinal de suporte em hardware). Cada participante envia sua lista de decodificadores no `hello`, e quem transmite a recebe no `watch-request`.
@@ -198,7 +210,7 @@ flowchart TD
 
 ### O auxiliar do Windows (`native/win-audio-capture`)
 
-Um pequeno programa em C#, compilado com o compilador C# que vem com o .NET Framework 4 em todo Windows 10/11 (`scripts/build-win-audio.cjs`, executado automaticamente antes do `dev` e do `build`). O processo principal o executa (`src/main/nativeAudio.ts`) e repassa a saída para o renderer, que a transforma num `MediaStreamTrack` (`src/renderer/lib/nativeAudio.ts`).
+Um pequeno programa em C#, compilado com o compilador C# que vem com o .NET Framework 4 em todo Windows 10/11 (`scripts/build-native.cjs`, executado automaticamente antes do `dev` e do `build`). O processo principal o executa (`src/main/nativeAudio.ts`) e repassa a saída para o renderer, que a transforma num `MediaStreamTrack` (`src/renderer/lib/nativeAudio.ts`).
 
 | Modo | Argumentos | Como |
 |---|---|---|

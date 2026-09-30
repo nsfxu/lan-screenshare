@@ -54,6 +54,18 @@ Each streamer captures **once** and fans out to every watcher. On the WebRTC pat
 - Capture constraints come from the streamer's **maximum quality** (frame rate, and a height cap unless it is "Native"). Changing it mid-share calls `applyConstraints()` on the live track, with no reconnection.
 - `contentHint` is `motion` (keep the frame rate) or `detail` (keep text sharp), from Settings → *Optimize for*.
 
+### Games that hide the cursor (Windows)
+
+On Windows before 11 24H2, Chromium captures a **screen** with DXGI and draws the mouse cursor into the frames itself (WebRTC's cursor composer). When an app hides the cursor after capture started, it keeps drawing the last arrow, so viewers see a cursor over a game that hides it, stuck in the middle for games that re-centre it. **Window** capture (Windows.Graphics.Capture) lets Windows draw the real cursor state and doesn't have the problem. Chromium uses it for whole screens only from 11 24H2, a build check the app can't change.
+
+So while a screen is shared on an affected system:
+
+1. `src/main/cursorWatch.ts` runs `native/win-cursor-watch`, which polls `GetCursorInfo` and the foreground window every 250 ms and prints a line when something changes: hidden or not, the window, whether it covers its whole monitor, and which monitor.
+2. `GameCursorGuard` (`src/renderer/lib/gameCursor.ts`) acts on it. When a **fullscreen** window on the shared screen keeps the cursor hidden for 1 s, it calls `Publisher.switchVideo()` to share that window in place of the screen: video only, audio untouched, and the picture is the same minus the cursor. When another window is in front for 0.4 s (alt-tab), it switches back. If the game closes, the window's track ends and the publisher goes back to the chosen screen (`chosenSourceId`) instead of stopping.
+3. For a **windowed** game it only suggests sharing its window, since that would change what viewers see.
+
+The room shows a notice while a game's window is shared, with a button to keep the screen for that game. On Windows 10, window capture draws a yellow border around the game on the streamer's screen (not in the stream).
+
 ## Codec selection
 
 At start-up the renderer asks `MediaCapabilities` which codecs can be **encoded** and **decoded**, and whether each is `powerEfficient` (a good sign of hardware support). Every participant sends its decoder list in `hello`, and streamers see it in `watch-request`.
@@ -198,7 +210,7 @@ flowchart TD
 
 ### The Windows helper (`native/win-audio-capture`)
 
-A small C# program, compiled with the C# compiler that ships with .NET Framework 4 on every Windows 10/11 (`scripts/build-win-audio.cjs`, run automatically before `dev` and `build`). The main process starts it (`src/main/nativeAudio.ts`) and forwards its output to the renderer, which turns it into a `MediaStreamTrack` (`src/renderer/lib/nativeAudio.ts`).
+A small C# program, compiled with the C# compiler that ships with .NET Framework 4 on every Windows 10/11 (`scripts/build-native.cjs`, run automatically before `dev` and `build`). The main process starts it (`src/main/nativeAudio.ts`) and forwards its output to the renderer, which turns it into a `MediaStreamTrack` (`src/renderer/lib/nativeAudio.ts`).
 
 | Mode | Arguments | How |
 |---|---|---|

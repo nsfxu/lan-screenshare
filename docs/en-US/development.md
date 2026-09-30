@@ -56,7 +56,7 @@ npm test
 | `npm test` | Runs all unit and integration tests once (vitest). |
 | `npm run test:watch` | Tests in watch mode. |
 | `npm run typecheck` | TypeScript checks for the Node side (`tsconfig.node.json`, includes `tests/`) and the web side (`tsconfig.web.json`). |
-| `npm run build:native` | Builds `native/bin/win-audio-capture.exe` (no-op on other systems or when up to date). |
+| `npm run build:native` | Builds the Windows helpers into `native/bin/` (`win-audio-capture.exe`, `win-cursor-watch.exe`); no-op on other systems or when up to date. |
 | `npm run dist:win` | Build + Windows installer (NSIS, x64 and arm64) into `release/<version>/`. |
 | `npm run dist:mac` | Build + macOS disk images (Intel and Apple Silicon) into `release/<version>/`. Must run on a Mac. |
 | `npm run dist` | Build + installer for the current platform. |
@@ -85,12 +85,12 @@ flowchart LR
     P["src/preload/index.ts"]
     R["src/renderer (React + TS)"]
     S["src/shared, src/utils"]
-    C["native/win-audio-capture/Program.cs"]
+    C["native/*/Program.cs"]
   end
   EV["electron-vite<br/>(Vite + esbuild/rollup)"]
-  CSC["scripts/build-win-audio.cjs<br/>csc.exe from .NET Framework 4"]
+  CSC["scripts/build-native.cjs<br/>csc.exe from .NET Framework 4"]
   OUT["out/main, out/preload, out/renderer"]
-  EXE["native/bin/win-audio-capture.exe"]
+  EXE["native/bin/*.exe"]
   EB["electron-builder"]
   REL["release/version/<br/>.exe installer or .dmg"]
   M --> EV
@@ -105,8 +105,8 @@ flowchart LR
 ```
 
 - `electron.vite.config.ts` defines three builds: main, preload and renderer (React plugin).
-- The audio helper is rebuilt only when `Program.cs` is newer than the `.exe`. `native/bin/` is git-ignored.
-- `electron-builder.json` packages `out/**` into an `asar`, adds the helper as an extra resource on Windows, and sets the macOS entitlements and usage descriptions (Screen Recording, Local Network, Bonjour service `_lanshare._tcp`).
+- Each helper is rebuilt only when its `Program.cs` is newer than its `.exe`. If another instance of the app is running a helper, its locked `.exe` is renamed aside (Windows allows that) and deleted by a later build. `native/bin/` is git-ignored.
+- `electron-builder.json` packages `out/**` into an `asar`, adds the helpers as extra resources on Windows, and sets the macOS entitlements and usage descriptions (Screen Recording, Local Network, Bonjour service `_lanshare._tcp`).
 
 ### Working on the audio helper without Windows
 
@@ -114,6 +114,7 @@ The helper uses Windows APIs, so it only runs on Windows. You can still check th
 
 ```bash
 mcs -langversion:5 -warn:4 -target:exe -out:/tmp/win-audio-capture.exe native/win-audio-capture/Program.cs
+mcs -langversion:5 -warn:4 -target:exe -out:/tmp/win-cursor-watch.exe native/win-cursor-watch/Program.cs
 ```
 
 Keep to C# 5: no string interpolation (`$"..."`), no `?.`, no `nameof`, no expression-bodied members, no `out var`.

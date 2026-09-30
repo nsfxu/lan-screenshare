@@ -87,6 +87,8 @@ Enquanto você compartilha, a barra oferece:
 
 **A sua própria transmissão não é exibida para você**, o que poupa a GPU do seu computador. Você vê um cartão **You** com uma prévia que se atualiza a cada poucos segundos. Clique em **Show** para abrir a sua transmissão num quadro, e feche o quadro (×) para escondê-la de novo. Você continua compartilhando nos dois casos.
 
+**Jogando enquanto compartilha a tela no Windows 10?** O Windows mostraria o cursor do mouse aos espectadores mesmo quando o jogo o esconde. Por isso, enquanto um jogo em tela cheia esconde o cursor, o app compartilha a janela do jogo no lugar, que fica igual sem o cursor, e volta para a sua tela quando você dá alt-tab. A sala mostra um aviso enquanto isso acontece. Veja [solução de problemas](troubleshooting.md#os-espectadores-veem-o-cursor-do-mouse-num-jogo) para jogos em janela.
+
 ## Assistir outras pessoas
 
 Nada toca até você escolher. Quem está compartilhando aparece em **cartões** com uma prévia que se atualiza a cada 5 segundos.

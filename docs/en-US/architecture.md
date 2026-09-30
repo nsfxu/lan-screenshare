@@ -100,6 +100,7 @@ src/
     server.ts        RoomServer: auth, chat, presence, moderation, signaling relay, TCP media relay
     screenCapture.ts source list, display-media request handler, macOS permission
     nativeAudio.ts   runs the Windows audio helper and forwards PCM to the renderer
+    cursorWatch.ts   runs the Windows cursor helper (games that hide the cursor)
     settings.ts      settings.json load/validate/save
     logger.ts        rotating file logger
   preload/
@@ -108,7 +109,7 @@ src/
     App.tsx          top-level screens, joining/hosting, toasts, settings
     components/      React components (see "Renderer: the UI")
     lib/             session logic: roomClient, publisher, subscription, watches, tcpStream,
-                     nativeAudio, codecs, images, session, format, emitter
+                     nativeAudio, gameCursor, codecs, images, session, format, emitter
     styles.css       all styles (dark theme)
   shared/            code used by both sides; no DOM/Node APIs in the pure modules
     types.ts         wire protocol + settings + IPC types
@@ -124,8 +125,10 @@ src/
     crypto.ts        PIN generation/comparison, lockout, random ids
 native/
   win-audio-capture/Program.cs   Windows audio helper (C#, built with the compiler that ships with Windows)
-scripts/build-win-audio.cjs      builds the helper before `dev`/`build` (no-op off Windows)
-tests/                           vitest: server, streams, quality, crop, codecs/TLS, crypto
+  win-cursor-watch/Program.cs    Windows helper that reports when a game hides the cursor (C#)
+scripts/build-native.cjs         builds the helpers before `dev`/`build` (no-op off Windows)
+tests/                           vitest: server, streams, quality, crop, codecs/TLS, crypto;
+                                 renderer/ for renderer logic (game cursor)
 build/                           packaging resources (macOS entitlements)
 ```
 
@@ -191,6 +194,7 @@ The full message list is in the [protocol reference](protocol.md).
 
 - `ScreenCapture` lists screens and windows with thumbnails for the app's own picker, then answers Chromium's `getDisplayMedia()` request with the chosen source (`setDisplayMediaRequestHandler`), with or without loopback audio.
 - `NativeLoopback` runs `win-audio-capture.exe` when Chromium can't capture the audio we need (surround devices, or everything except Discord) and forwards its PCM to the renderer over IPC. See [media pipeline → audio](media-pipeline.md#system-audio).
+- `CursorWatch` runs `win-cursor-watch.exe` while a screen is shared on Windows before 11 24H2, and reports whether a game hides the cursor. The renderer then shares a fullscreen game's window in place of the screen. See [media pipeline → games that hide the cursor](media-pipeline.md#games-that-hide-the-cursor-windows).
 
 ## Renderer: the session objects
 

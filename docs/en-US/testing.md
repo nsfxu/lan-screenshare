@@ -35,6 +35,7 @@ Tests run in Node (`vitest.config.ts`, environment `node`, 15 s timeout). They s
 | `tests/network.test.ts` | Address parsing and ranking, URLs with IPv6, TLS probe with fingerprint, codec ordering, Opus and bitrate SDP tweaks. |
 | `tests/crypto.test.ts` | PIN generation and validation, constant-time comparison, `PinGuard` lockout and reset. |
 | `tests/crop.test.ts` | Profile picture crop: centring, clamping, zoom around a point, zoom limits. |
+| `tests/renderer/gameCursor.test.ts` | Games that hide the cursor: switching to a fullscreen game's window and back after alt-tab, ignoring brief flashes and other displays, suggesting windowed games, keeping the screen when asked, no retry loop on failure. |
 
 What is **not** covered by automated tests: anything that needs a real browser engine (WebRTC, WebCodecs, capture, the React UI) and the Windows audio helper. Use the techniques below for those.
 
@@ -76,7 +77,7 @@ describe('my feature', () => {
 
 ## Testing pure logic
 
-Keep decision logic out of React and out of WebRTC callbacks, in `src/shared/*.ts` with no DOM or Node imports. It is then trivial to test. Examples: `AdaptiveController`, `splitBudget`, `limitPreset`, `chooseCodecOrder`, `zoomAt` (crop). The Node-side TypeScript config (`tsconfig.node.json`) has no DOM types, so a test can't import a module that uses DOM APIs.
+Keep decision logic out of React and out of WebRTC callbacks, in `src/shared/*.ts` with no DOM or Node imports. It is then trivial to test. Examples: `AdaptiveController`, `splitBudget`, `limitPreset`, `chooseCodecOrder`, `zoomAt` (crop). The Node-side TypeScript config (`tsconfig.node.json`) has no DOM types, so a test can't import a module that uses DOM APIs. When the logic has to live in the renderer (it talks to `window.api` or the `Publisher`), test it from `tests/renderer/`, which is type-checked with the web config: stub `window` with `vi.stubGlobal` and pass fakes for the rest, as `tests/renderer/gameCursor.test.ts` does.
 
 ## Driving the real app
 
@@ -182,7 +183,13 @@ native\bin\win-audio-capture.exe --exclude Discord.exe --fallback-pid 0 > out.ra
 
 The first 10 bytes are the `SSA1` header. Messages about the device and the excluded process go to stderr. Close stdin (Ctrl+Z, Enter) to stop it.
 
-On other systems, check that it still compiles as C# 5 with Mono (`mcs -langversion:5`), see [development](development.md#working-on-the-audio-helper-without-windows).
+The cursor helper prints a line whenever the cursor visibility or the foreground window changes, for example `hidden 1181390 1 960 540` (window handle, fullscreen, centre of its monitor):
+
+```bat
+native\bin\win-cursor-watch.exe
+```
+
+On other systems, check that the helpers still compile as C# 5 with Mono (`mcs -langversion:5`), see [development](development.md#working-on-the-audio-helper-without-windows).
 
 ## Manual checklist before a release
 

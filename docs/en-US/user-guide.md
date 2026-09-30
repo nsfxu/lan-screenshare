@@ -85,6 +85,8 @@ While you share, the toolbar gives you:
 
 **Your own stream isn't played back to you**, which saves your computer's GPU. You'll see a **You** card with a preview that refreshes every few seconds. Click **Show** to open your stream as a tile, and close the tile (×) to hide it again. You keep sharing either way.
 
+**Playing a game while sharing your screen on Windows 10?** Windows would show your mouse cursor to viewers even when the game hides it. So while a fullscreen game hides the cursor, the app shares the game's window instead, which looks the same without the cursor, and goes back to your screen when you alt-tab. The room shows a notice while this happens. See [troubleshooting](troubleshooting.md#viewers-see-my-mouse-cursor-in-a-game) for windowed games.
+
 ## Watching other people
 
 Nothing plays until you choose. People who are sharing appear as **cards** with a preview that refreshes every 5 seconds.

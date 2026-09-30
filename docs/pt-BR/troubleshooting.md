@@ -10,6 +10,7 @@ Problemas comuns e como resolvê-los. Se o seu não estiver aqui, abra **Setting
 - [Não consigo entrar](#não-consigo-entrar)
 - [O vídeo não começa ou fica preto](#o-vídeo-não-começa-ou-fica-preto)
 - [A qualidade está baixa](#a-qualidade-está-baixa)
+- [Os espectadores veem o cursor do mouse num jogo](#os-espectadores-veem-o-cursor-do-mouse-num-jogo)
 - [Problemas de áudio](#problemas-de-áudio)
 - [CPU alta ou notebook esquentando](#cpu-alta-ou-notebook-esquentando)
 - [Permissões do macOS](#permissões-do-macos)
@@ -61,6 +62,16 @@ flowchart TD
 4. Peça para quem transmite conferir o **seletor de qualidade** na barra e **Settings → Upload limit when sharing** (os 100 Mbps padrão são divididos entre todos que assistem; no Wi-Fi, 30–60 Mbps é mais realista).
 5. O **Stats → Limited by** de quem transmite diz o motivo: *bandwidth* (rede), *cpu* (computador ocupado demais) ou *none*.
 6. Na conexão **TCP** o atraso é um pouco maior e uma única codificação é dividida entre todos os espectadores TCP.
+
+## Os espectadores veem o cursor do mouse num jogo
+
+No Windows 10 (e no 11 anterior ao 24H2), compartilhar uma tela inteira mostra o cursor mesmo quando um jogo o esconde. O app resolve isso sozinho para jogos em **tela cheia**: enquanto o jogo esconde o cursor, ele compartilha a janela do jogo no lugar, e a sala avisa. Quando você dá alt-tab, ele volta para a sua tela.
+
+- **O cursor ainda aparece por um segundo** quando você volta para o jogo: é o tempo da troca.
+- **O jogo roda numa janela**: o app sugere compartilhar a janela dele (um aviso na sala). Você também pode escolhê-la em **Change source → Windows**.
+- **A janela do jogo fica preta ao ser compartilhada**: jogos em tela cheia exclusiva nem sempre podem ser capturados como janela. Use tela cheia sem bordas ou em janela nas configurações do jogo.
+- **Uma borda amarela em volta do jogo**: o Windows 10 a desenha enquanto uma janela é capturada. Os espectadores não a veem.
+- **Você prefere continuar compartilhando a tela**: clique em **Share the screen instead** na sala. O app não troca de novo para aquele jogo até você compartilhar de novo.
 
 ## Problemas de áudio
 

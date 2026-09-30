@@ -24,7 +24,7 @@
 // header, when process loopback is not available on this Windows (exit code 3).
 //
 // Built with the C# 5 compiler that ships with .NET Framework 4 (see
-// scripts/build-win-audio.cjs); no NuGet packages or SDK required.
+// scripts/build-native.cjs); no NuGet packages or SDK required.
 
 using System;
 using System.Collections.Generic;
