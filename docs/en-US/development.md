@@ -13,6 +13,7 @@ How to set up the project, run it, debug it and build installers.
 - [How the build works](#how-the-build-works)
 - [Debugging](#debugging)
 - [Building installers](#building-installers)
+- [Versions and the changelog](#versions-and-the-changelog)
 - [Releasing](#releasing)
 - [Tech stack](#tech-stack)
 
@@ -59,6 +60,7 @@ npm test
 | `npm run dist:win` | Build + Windows installer (NSIS, x64 and arm64) into `release/<version>/`. |
 | `npm run dist:mac` | Build + macOS disk images (Intel and Apple Silicon) into `release/<version>/`. Must run on a Mac. |
 | `npm run dist` | Build + installer for the current platform. |
+| `npm run release -- <major\|minor\|patch>` | Prepares a release: version, changelog section and notes draft (see [releasing](#releasing)). Add `--dry-run` to preview. |
 
 ## Running several people on one computer
 
@@ -145,6 +147,20 @@ npm run dist:mac
 
 This produces two disk images: `ScreenShare-<version>-arm64.dmg` for Apple Silicon and `ScreenShare-<version>-x64.dmg` for Intel Macs. Distributing it to other Macs needs an Apple Developer ID certificate for signing and notarisation; see electron-builder's documentation. The macOS build hasn't been tested yet.
 
+## Versions and the changelog
+
+ScreenShare follows [Semantic Versioning](https://semver.org/), where "breaking" means *can't share a room*:
+
+| Bump | When | Example |
+|---|---|---|
+| **Major** | `PROTOCOL_VERSION` changed: older apps can't join the new rooms, so everyone must update | 1.4.2 → 2.0.0 |
+| **Minor** | New features that still work with other apps of the same major version | 1.0.0 → 1.1.0 |
+| **Patch** | Fixes only | 1.1.0 → 1.1.1 |
+
+[`CHANGELOG.md`](../../CHANGELOG.md) (English, [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format) lists every user-visible change. **Each pull request adds its line under `## [Unreleased]`**, in the right group (`### Added`, `### Changed`, `### Fixed`, `### Removed`), written for the people using the app: *"Viewers no longer see your cursor over fullscreen games that hide it"*, not *"Add GameCursorGuard"*. Internal changes (refactors, tests, docs) don't need a line.
+
+Don't edit `version` in `package.json` by hand; `npm run release` does it.
+
 ## Releasing
 
 Releases are built by GitHub Actions (`.github/workflows/release.yml`) on GitHub's own Windows and macOS machines, so you don't need both systems.
@@ -158,12 +174,18 @@ flowchart LR
   M --> R
 ```
 
-1. Set `version` in `package.json` (installer names use it) and write the release notes in `docs/releases/v1.2.0.md`. Merge both into `main` through a pull request.
+1. Prepare it with `npm run release -- minor` (or `major`, `patch`, or an exact version like `1.2.0`) on an up-to-date branch from `main`, with no uncommitted changes. It:
+   - refuses if `[Unreleased]` in `CHANGELOG.md` is empty, or if `PROTOCOL_VERSION` changed since the last release and the bump isn't major;
+   - moves the Unreleased entries into a dated `## [1.2.0]` section and updates the comparison links;
+   - sets the version in `package.json` and `package-lock.json` (installer names use it);
+   - drafts `docs/releases/v1.2.0.md`: download table, whether everyone must update, and the changelog entries. Replace its `TODO`s (a short intro and the Portuguese summary) and polish it for users.
+
+   Commit (`Release v1.2.0`) and merge into `main` through a pull request.
 2. Start the release in one of two ways:
    - On GitHub: **Actions → Release → Run workflow**, branch `main`, version `v1.2.0`. The workflow creates the tag itself.
    - Or push a tag from your computer: `git tag v1.2.0 && git push origin v1.2.0`. An annotated tag's message is used as the notes when there is no notes file.
-3. The workflow checks that the version matches `package.json`, runs the checks, builds the installers, and publishes the release with them attached. The macOS job may fail without blocking a Windows-only release.
-4. Say in the notes when the protocol version changed: people on older versions can't join rooms with the new one.
+3. The workflow checks that the version matches `package.json`, that `CHANGELOG.md` has its section and that the notes have no `TODO` left, runs the checks, builds the installers, and publishes the release with them attached. The macOS job may fail without blocking a Windows-only release.
+4. When the protocol changed, the notes say that everyone in a room needs the new version (the drafted notes already do).
 
 Running the workflow without a version is a dry run: it builds, lists what would be published, and keeps the installers as run artifacts.
 

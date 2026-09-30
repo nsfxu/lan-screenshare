@@ -47,6 +47,15 @@ jobs:
             echo "::error::Run releases from main"
             exit 1
           fi
+          # npm run release prepares both; the notes' TODOs are for a person to write.
+          if ! grep -q "^## \[${VERSION#v}\] - " CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no section for ${VERSION#v} (npm run release)"
+            exit 1
+          fi
+          if [ -f "docs/releases/${VERSION}.md" ] && grep -n TODO "docs/releases/${VERSION}.md"; then
+            echo "::error::docs/releases/${VERSION}.md still has TODOs"
+            exit 1
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: 22

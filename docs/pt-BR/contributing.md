@@ -127,5 +127,6 @@ Se você é um agente de IA, comece pelo [`AGENTS.md`](../../AGENTS.md) na raiz 
 - [ ] A mudança foi testada no app, ou o pull request explica por que não (por exemplo, precisa de Windows).
 - [ ] `PROTOCOL_VERSION` aumentado se apps antigos e novos não conseguem mais conversar.
 - [ ] Documentação atualizada em **en-US e pt-BR**.
+- [ ] Mudanças que o usuário percebe têm uma linha em **Unreleased** no `CHANGELOG.md` (veja [versões](development.md#versões-e-o-changelog)).
 - [ ] Nenhum segredo, token ou PIN gravado em disco ou em logs.
 - [ ] As mensagens de commit explicam o porquê.
