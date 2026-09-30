@@ -41,10 +41,14 @@ export class CursorWatch {
     return Number.isFinite(build) && build < WGC_SCREEN_CAPTURE_BUILD
   }
 
-  /** Start reporting to `target`; false when this system doesn't need it or can't. */
+  /**
+   * Start reporting to `target`; false when this system can't (not Windows,
+   * helper missing). Runs on every Windows: the game-cursor switch only acts
+   * when affected(), but automatic quality uses the foreground window too.
+   */
   start(target: WebContents): boolean {
     if (this.child) return true
-    if (!this.affected() || !fs.existsSync(this.exePath)) return false
+    if (process.platform !== 'win32' || !fs.existsSync(this.exePath)) return false
     const child = spawn(this.exePath, [], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
     this.child = child
     let pending = ''

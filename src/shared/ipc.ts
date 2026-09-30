@@ -99,7 +99,7 @@ export interface ScreenShareApi {
     hiddenCursor: {
       /** Whether this system is affected. */
       affected(): Promise<boolean>
-      /** Report while sharing a screen; false when not affected or unavailable. */
+      /** Report cursor visibility and the foreground window (Windows); false when unavailable. */
       watch(): Promise<boolean>
       unwatch(): Promise<void>
       onChanged(cb: (state: CursorWatchState) => void): () => void

@@ -89,6 +89,7 @@ Keep decision logic out of React and out of WebRTC callbacks, in `src/shared/*.t
 |---|---|
 | Public room | Alice creates a room and shares; Bob joins with **Connect by IP**; nothing plays until he chooses her stream; frames arrive and have the colour of her screen; chat both ways; when she stops sharing, his tile and her card go away. |
 | Private room | A wrong PIN is refused (error, still outside); the right PIN lets Bob in. |
+| Automatic quality (`quality.spec.ts`) | Alice shares; the test reports what's in front as the Windows helper would. The Stats panel shows smooth motion before anything is known, sharp text for a normal window, smooth motion for a fullscreen app on the shared screen, sharp text for one on another screen; Automatic is the default and a fixed choice in Settings wins. |
 | Hidden viewers (`hidden.spec.ts`) | Alice and Carol share, Bob watches both. Bob minimized: no frames from either, and Alice sees "not looking (video paused)"; restored: both play again. Alice's tile full screen (simulated): Carol's stream pauses, Alice's keeps playing. |
 
 ```bash
@@ -99,7 +100,7 @@ xvfb-run -a -s "-screen 0 1920x1080x24" npx playwright test   # Linux without a 
 
 How `e2e/fixtures.ts` keeps them safe and repeatable:
 
-- **Screen capture is an animated canvas**, never your real screen. System audio, the native audio helper and the game-cursor helper are switched off.
+- **Screen capture is an animated canvas**, never your real screen. System audio and the native audio helper are switched off, and the Windows foreground helper never starts: tests report what's in front themselves (`setForeground`).
 - **Each person gets a fresh profile** (`--profile=e2e-alice-<pid>`), deleted afterwards. Apps are quit like a user quitting, so a host isn't stuck on the "End room?" confirmation.
 - **Your screen stays yours.** Set the screen to open the windows on with `E2E_DISPLAY=3`, or once in a git-ignored `e2e.local.json`: `{ "display": 3 }`. The windows then sit side by side on that screen (`--display`/`--tile`, see [development](development.md#running-several-people-on-one-computer)) and never take focus.
 - One test at a time (`workers: 1`): instances share ports and mDNS.

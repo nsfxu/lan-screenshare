@@ -16,6 +16,7 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ### Changed
 
+- **Optimize for** has a new **Automatic** setting, now the default (Windows): smooth 60 fps while a fullscreen game or video is in front of what you share, sharp text on the desktop. Settings from 1.1 that still had the old default (Smooth motion) move to Automatic; choose Smooth motion again in Settings to keep it. The Stats panel shows which one is in use.
 - Streams you can't see stop sending you video while the app is minimized or another tile is full screen (you still hear them), saving the streamer's upload and your network. The picture comes back within a second, and streamers see you as "not looking (video paused)".
 
 ## [1.1.0] - 2026-09-30

@@ -52,7 +52,7 @@ Each streamer captures **once** and fans out to every watcher. On the WebRTC pat
   - **macOS**: ScreenCaptureKit (the app asks for Screen Recording permission).
 - Frames stay on the GPU and go straight to the hardware encoder.
 - Capture constraints come from the streamer's **maximum quality** (frame rate, and a height cap unless it is "Native"). Changing it mid-share calls `applyConstraints()` on the live track, with no reconnection.
-- `contentHint` is `motion` (keep the frame rate) or `detail` (keep text sharp), from Settings → *Optimize for*.
+- `contentHint` is `motion` (keep the frame rate) or `detail` (keep text sharp), from Settings → *Optimize for*. It also sets the encoder's `degradationPreference` (`maintain-framerate` / `maintain-resolution`) for when bandwidth or the encoder runs short. **Automatic** (the default) picks it from what's in front, using the Windows foreground helper (`useAutoContentHint`, `autoContentHint` in `src/shared/quality.ts`): `motion` while a fullscreen window (a game, a video) is in front on the shared screen, or while the shared window is itself fullscreen in front; `detail` otherwise. It waits 1 s for things to settle (alt-tab) and changes the live track and encodings without reconnecting. Without the helper (macOS, Linux) Automatic means `motion`, the old default. The Stats panel shows which one is in use.
 
 ### Games that hide the cursor (Windows)
 

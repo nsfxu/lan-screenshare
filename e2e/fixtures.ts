@@ -2,6 +2,7 @@ import { _electron as electron, expect, test as base, type ElectronApplication, 
 import fs from 'node:fs'
 import path from 'node:path'
 import { IPC } from '../src/shared/ipc'
+import type { CursorWatchState } from '../src/shared/types'
 
 const repo = path.join(__dirname, '..')
 
@@ -36,7 +37,8 @@ export interface Person {
  * it safe and predictable to drive:
  *  - screen capture is an animated canvas, never the real screen;
  *  - system audio is off, and the native audio helper can't start;
- *  - the game-cursor helper stays off.
+ *  - the Windows foreground helper never starts; tests report what's in front
+ *    themselves (setForeground).
  */
 async function launchPerson(
   name: string,
@@ -65,13 +67,17 @@ async function launchPerson(
       replace(ch.nativeAudioAvailable, () => false)
       replace(ch.nativeAudioStart, () => Promise.reject(new Error('disabled in end-to-end tests')))
       replace(ch.hiddenCursorAffected, () => false)
+      replace(ch.hiddenCursorWatch, () => true)
+      replace(ch.hiddenCursorUnwatch, () => undefined)
       return electronApp.getPath('userData')
     },
     {
       listSources: IPC.listSources,
       nativeAudioAvailable: IPC.nativeAudioAvailable,
       nativeAudioStart: IPC.nativeAudioStart,
-      hiddenCursorAffected: IPC.hiddenCursorAffected
+      hiddenCursorAffected: IPC.hiddenCursorAffected,
+      hiddenCursorWatch: IPC.hiddenCursorWatch,
+      hiddenCursorUnwatch: IPC.hiddenCursorUnwatch
     }
   )
 
@@ -229,5 +235,13 @@ export async function setWindowState(person: Person, state: 'minimized' | 'resto
   await person.app.evaluate(
     ({ BrowserWindow }, [channel, value]) => BrowserWindow.getAllWindows()[0].webContents.send(channel, value),
     [IPC.windowState, state] as const
+  )
+}
+
+/** Report what's in front, as the Windows foreground helper would (main/cursorWatch.ts). */
+export async function setForeground(person: Person, state: CursorWatchState): Promise<void> {
+  await person.app.evaluate(
+    ({ BrowserWindow }, [channel, value]) => BrowserWindow.getAllWindows()[0].webContents.send(channel, value),
+    [IPC.hiddenCursorChanged, state] as const
   )
 }

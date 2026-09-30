@@ -472,6 +472,7 @@ export function SettingsPanel({
                 value={settings.contentHint}
                 onChange={(e) => onChange({ contentHint: e.target.value as Settings['contentHint'] })}
               >
+                <option value="auto">Automatic (smooth for fullscreen games and videos)</option>
                 <option value="motion">Smooth motion (keep 60 fps)</option>
                 <option value="detail">Sharp text (keep resolution)</option>
               </select>

@@ -17,6 +17,7 @@ import {
   formatDuration,
   latencyClass
 } from '../lib/format'
+import { useAutoContentHint } from '../lib/autoContentHint'
 import { useGameCursor } from '../lib/gameCursor'
 import { audioDefaults, type SharingState, type WatcherInfo } from '../lib/publisher'
 import type { ConnectionState } from '../lib/roomClient'
@@ -71,6 +72,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
   const [pickSource, setPickSource] = useState(false)
   const [, setNow] = useState(Date.now())
   const gameCursor = useGameCursor(publisher, sharing.sharing ? publisher.chosenSourceId : null)
+  useAutoContentHint(publisher, sharing.sharing ? publisher.chosenSourceId : null, settings.contentHint)
   const autoPaused = useRef(false)
 
   // --- subscriptions --------------------------------------------------------

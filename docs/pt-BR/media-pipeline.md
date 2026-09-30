@@ -52,7 +52,7 @@ Quem transmite captura **uma vez** e distribui para todos os espectadores. No ca
   - **macOS**: ScreenCaptureKit (o app pede a permissão de Gravação de Tela).
 - Os quadros ficam na GPU e vão direto para o codificador de hardware.
 - As restrições de captura vêm da **qualidade máxima** de quem transmite (taxa de quadros, e um limite de altura se não for "Native"). Mudar durante a transmissão chama `applyConstraints()` na trilha ao vivo, sem reconectar.
-- O `contentHint` é `motion` (manter a taxa de quadros) ou `detail` (manter o texto nítido), conforme **Settings → Optimize for**.
+- O `contentHint` é `motion` (manter a taxa de quadros) ou `detail` (manter o texto nítido), conforme **Settings → Optimize for**. Ele também define o `degradationPreference` do codificador (`maintain-framerate` / `maintain-resolution`) para quando faltar banda ou codificador. **Automatic** (o padrão) escolhe pelo que está na frente, usando o auxiliar de primeiro plano do Windows (`useAutoContentHint`, `autoContentHint` em `src/shared/quality.ts`): `motion` enquanto uma janela em tela cheia (um jogo, um vídeo) está na frente na tela compartilhada, ou enquanto a janela compartilhada está ela mesma em tela cheia na frente; `detail` no resto. Ele espera 1 s para as coisas se acalmarem (alt-tab) e muda a trilha e as codificações ao vivo, sem reconectar. Sem o auxiliar (macOS, Linux), Automatic quer dizer `motion`, o padrão antigo. O painel Stats mostra qual está em uso.
 
 ### Jogos que escondem o cursor (Windows)
 

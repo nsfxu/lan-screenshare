@@ -109,7 +109,8 @@ src/
     App.tsx          telas principais, entrar/hospedar, avisos, configurações
     components/      componentes React (veja "Renderer: a interface")
     lib/             lógica da sessão: roomClient, publisher, subscription, watches, tcpStream,
-                     nativeAudio, gameCursor, codecs, images, session, format, emitter
+                     nativeAudio, gameCursor, foregroundWatch, autoContentHint, codecs, images,
+                     session, format, emitter
     styles.css       todos os estilos (tema escuro)
   shared/            código usado pelos dois lados; os módulos puros não usam APIs de DOM/Node
     types.ts         tipos do protocolo, das configurações e do IPC
@@ -194,7 +195,7 @@ A lista completa de mensagens está na [referência do protocolo](protocol.md).
 
 - `ScreenCapture` lista telas e janelas com miniaturas para o seletor do próprio app e depois responde ao pedido `getDisplayMedia()` do Chromium com a fonte escolhida (`setDisplayMediaRequestHandler`), com ou sem áudio de loopback.
 - `NativeLoopback` roda o `win-audio-capture.exe` quando o Chromium não consegue capturar o áudio que precisamos (dispositivos surround, tudo menos o Discord, ou só o app da janela compartilhada) e repassa o PCM para o renderer via IPC. Veja [pipeline de mídia → áudio](media-pipeline.md#áudio-do-sistema).
-- `CursorWatch` roda o `win-cursor-watch.exe` enquanto uma tela é compartilhada no Windows anterior ao 11 24H2 e avisa se um jogo esconde o cursor. O renderer então compartilha a janela de um jogo em tela cheia no lugar da tela. Veja [pipeline de mídia → jogos que escondem o cursor](media-pipeline.md#jogos-que-escondem-o-cursor-windows).
+- `CursorWatch` roda o `win-cursor-watch.exe` durante o compartilhamento no Windows e avisa se o cursor está escondido e qual janela está na frente (em tela cheia ou não, em qual monitor). O renderer divide isso entre quem usa (`foregroundWatch.ts`): no Windows anterior ao 11 24H2, a janela de um jogo em tela cheia é compartilhada no lugar da tela enquanto ele esconde o cursor (veja [pipeline de mídia → jogos que escondem o cursor](media-pipeline.md#jogos-que-escondem-o-cursor-windows)); e o **Optimize for: Automatic** escolhe entre movimento suave e texto nítido (veja [captura](media-pipeline.md#captura)).
 
 ## Renderer: os objetos da sessão
 

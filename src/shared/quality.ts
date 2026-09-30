@@ -1,4 +1,5 @@
 import { MIN_VIEW_HEIGHT } from './constants'
+import type { ContentHint, CursorWatchState } from './types'
 
 /**
  * Quality ladder and the adaptive controller that walks it.
@@ -337,4 +338,16 @@ export function splitBudget(budget: number | null, demands: readonly number[]): 
     open = open.filter((x) => x.d > share)
   }
   return result.map((r) => Math.floor(r))
+}
+
+/**
+ * "Optimize for: Automatic": smooth motion while a fullscreen window (a game,
+ * a video) is in front of what's shared, sharp text otherwise. Sharing a
+ * screen: a fullscreen window in front on that screen. Sharing a window: that
+ * window itself, in front and fullscreen.
+ */
+export function autoContentHint(foreground: CursorWatchState, sourceId: string, displayId: string | null): ContentHint {
+  if (!foreground.windowId || !foreground.fullscreen) return 'detail'
+  if (sourceId.startsWith('window:')) return foreground.windowId === sourceId ? 'motion' : 'detail'
+  return displayId !== null && foreground.displayId === displayId ? 'motion' : 'detail'
 }

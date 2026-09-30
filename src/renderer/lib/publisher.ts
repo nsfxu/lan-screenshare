@@ -15,6 +15,7 @@ import {
 import type {
   AudioChoice,
   CodecSupport,
+  ContentHint,
   HostStats,
   MediaState,
   ServerMessage,
@@ -162,6 +163,8 @@ export class Publisher extends Emitter<Events> {
   private snapshotSoon: number | null = null
   private disposed = false
   private videoSwitch: Promise<void> = Promise.resolve()
+  /** With "Optimize for: Automatic", what's in front of the shared source calls for (useAutoContentHint); null = unknown. */
+  private autoHint: ContentHint | null = null
 
   constructor(
     private readonly client: RoomClient,
@@ -196,7 +199,7 @@ export class Publisher extends Emitter<Events> {
   updateSettings(settings: Settings): void {
     const previous = this.settings
     this.settings = settings
-    if (this.track) this.track.contentHint = settings.contentHint
+    if (this.track) this.track.contentHint = this.contentHint
     if (previous.maxQuality !== settings.maxQuality || previous.adaptiveQuality !== settings.adaptiveQuality) {
       void this.applyQuality()
     } else {
@@ -335,8 +338,24 @@ export class Publisher extends Emitter<Events> {
     this.snapshotShortly()
   }
 
+  /** The content hint in use: the setting, or with "Automatic" what's in front (smooth motion until that's known). */
+  get contentHint(): ContentHint {
+    return this.settings.contentHint === 'auto' ? (this.autoHint ?? 'motion') : this.settings.contentHint
+  }
+
+  /** "Automatic" content hint from what's in front of the shared screen or window (null = unknown). */
+  setAutoContentHint(hint: ContentHint | null): void {
+    if (hint === this.autoHint) return
+    const before = this.contentHint
+    this.autoHint = hint
+    if (this.contentHint === before) return
+    log(`content hint ${this.contentHint} (automatic)`)
+    if (this.track) this.track.contentHint = this.contentHint
+    void this.rebalance()
+  }
+
   private prepareVideo(track: MediaStreamTrack): void {
-    track.contentHint = this.settings.contentHint
+    track.contentHint = this.contentHint
     track.addEventListener('ended', () => {
       if (this.track !== track) return
       // A game's window shared in place of the chosen screen closed: back to the screen.
@@ -774,7 +793,7 @@ export class Publisher extends Emitter<Events> {
     // An inactive encoding stops encoding and sending video to this watcher; audio is a separate sender.
     const enc = { ...encodingForWatcher(peer.controller.preset, source, limits), active }
     // 'motion' content keeps the frame rate and trades resolution; 'detail' keeps text sharp.
-    const degradation = this.settings.contentHint === 'motion' ? 'maintain-framerate' : 'maintain-resolution'
+    const degradation = this.contentHint === 'motion' ? 'maintain-framerate' : 'maintain-resolution'
     const key = JSON.stringify([enc, degradation])
     if (key === peer.applied) return
     const params = peer.sender.getParameters()
@@ -888,7 +907,9 @@ export class Publisher extends Emitter<Events> {
       cpuPercent: system.cpuPercent,
       memoryMB: system.memoryMB,
       viewers: this.peers.size + this.tcpViewers.size,
-      qualityLimitation: worst?.limitation ?? 'none'
+      qualityLimitation: worst?.limitation ?? 'none',
+      contentHint: this.contentHint,
+      contentHintAuto: this.settings.contentHint === 'auto'
     }
     this.lastStats = stats
     this.emit('stats', stats)
