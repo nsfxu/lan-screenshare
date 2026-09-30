@@ -8,9 +8,9 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "build:native": "node scripts/build-win-audio.cjs",
-    "predev": "node scripts/build-win-audio.cjs",
-    "prebuild": "node scripts/build-win-audio.cjs",
+    "build:native": "node scripts/build-native.cjs",
+    "predev": "node scripts/build-native.cjs",
+    "prebuild": "node scripts/build-native.cjs",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "start": "electron-vite preview",

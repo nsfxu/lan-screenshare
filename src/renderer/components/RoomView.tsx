@@ -9,6 +9,7 @@ import {
   formatDuration,
   latencyClass
 } from '../lib/format'
+import { useHiddenCursorHint } from '../lib/hiddenCursor'
 import type { SharingState, WatcherInfo } from '../lib/publisher'
 import type { ConnectionState } from '../lib/roomClient'
 import type { Session } from '../lib/session'
@@ -61,6 +62,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
   const [showStats, setShowStats] = useState(false)
   const [pickSource, setPickSource] = useState(false)
   const [, setNow] = useState(Date.now())
+  const [cursorHint, dismissCursorHint] = useHiddenCursorHint(sharing.sharing ? publisher.sourceId : null)
   const autoPaused = useRef(false)
 
   // --- subscriptions --------------------------------------------------------
@@ -340,6 +342,23 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
           {showStats && sharing.sharing && (
             <div className="stats-popover">
               <HostStatsPanel stats={ownStats} />
+            </div>
+          )}
+          {cursorHint && (
+            <div className="notice warn cursor-hint" role="status">
+              <span className="cursor-hint-text">
+                Viewers see a mouse cursor over <strong>{cursorHint.name}</strong> even though the game hides it. Share
+                its window instead: screen sharing on this version of Windows always draws the cursor.
+              </span>
+              <button
+                className="btn small primary"
+                onClick={() => void shareSource(cursorHint.windowId, publisher.hasAudio, publisher.excludeDiscord)}
+              >
+                <Icon name="swap" size={14} /> Share its window
+              </button>
+              <button className="icon-btn" title="Dismiss" aria-label="Dismiss" onClick={dismissCursorHint}>
+                <Icon name="x" size={14} />
+              </button>
             </div>
           )}
           <div className="stage-toolbar">

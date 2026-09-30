@@ -3,6 +3,7 @@ import type {
   CaptureSource,
   CreateRoomRequest,
   DiscoveredRoom,
+  HiddenCursorState,
   HostedRoom,
   NativeAudioFormat,
   NativeAudioOptions,
@@ -34,6 +35,10 @@ export const IPC = {
   nativeAudioStop: 'native-audio:stop',
   nativeAudioData: 'native-audio:data',
   nativeAudioEnded: 'native-audio:ended',
+  hiddenCursorAffected: 'hidden-cursor:affected',
+  hiddenCursorWatch: 'hidden-cursor:watch',
+  hiddenCursorUnwatch: 'hidden-cursor:unwatch',
+  hiddenCursorChanged: 'hidden-cursor:changed',
   screenPermission: 'capture:permission',
   openPermissionSettings: 'capture:open-settings',
   systemStats: 'system:stats',
@@ -86,6 +91,18 @@ export interface ScreenShareApi {
       onData(cb: (id: number, chunk: Uint8Array) => void): () => void
       /** The helper exited on its own (device removed, crash); not sent after stop(). */
       onEnded(cb: (id: number, reason: string) => void): () => void
+    }
+    /**
+     * Screen capture on Windows before 11 24H2 shows the mouse cursor even
+     * when a game hides it (window capture doesn't).
+     */
+    hiddenCursor: {
+      /** Whether this system is affected. */
+      affected(): Promise<boolean>
+      /** Report while sharing a screen; false when not affected or unavailable. */
+      watch(): Promise<boolean>
+      unwatch(): Promise<void>
+      onChanged(cb: (state: HiddenCursorState) => void): () => void
     }
     permission(): Promise<ScreenPermission>
     openPermissionSettings(): Promise<void>
