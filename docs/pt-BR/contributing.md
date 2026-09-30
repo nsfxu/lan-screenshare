@@ -123,7 +123,7 @@ Se você é um agente de IA, comece pelo [`AGENTS.md`](../../AGENTS.md) na raiz 
 ## Checklist do pull request
 
 - [ ] `npm run typecheck` passa.
-- [ ] `npm test` passa, e lógica nova ou regras novas do servidor têm testes (inclusive os caminhos de recusa).
+- [ ] `npm test` e `npm run test:e2e` passam, e lógica nova ou regras novas do servidor têm testes (inclusive os caminhos de recusa).
 - [ ] A mudança foi testada no app, ou o pull request explica por que não (por exemplo, precisa de Windows).
 - [ ] `PROTOCOL_VERSION` aumentado se apps antigos e novos não conseguem mais conversar.
 - [ ] Documentação atualizada em **en-US e pt-BR**.

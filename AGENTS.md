@@ -15,6 +15,7 @@ npm install
 npm run dev          # run the app with hot reload
 npm run typecheck    # must pass
 npm test             # must pass (vitest, real servers on random ports)
+npm run test:e2e     # must pass: two real app instances in a room (Playwright; Linux: under xvfb-run)
 npm run build        # production build into out/
 ```
 
@@ -51,7 +52,7 @@ npm run build        # production build into out/
 
 ## Verifying your work
 
-- Always run `npm run typecheck` and `npm test`.
+- Always run `npm run typecheck` and `npm test`, and `npm run test:e2e` for anything that touches the app (CI runs all three on every push). New user flows get an end-to-end test (`e2e/`, see [testing](docs/en-US/testing.md#end-to-end-tests)).
 - For UI or media changes, drive the real app headlessly with Playwright's Electron support under Xvfb, and look at the result (screenshots, `.stat-badge` values, computed styles). A tested example script and tips (fake capture source, two instances with `--profile`, Xvfb flags) are in [`docs/en-US/testing.md`](docs/en-US/testing.md#driving-the-real-app).
 - Running Electron as root (containers) needs `--no-sandbox`.
 - You can't run Windows-only features (the audio helper, Discord exclusion) or macOS permissions on Linux. Say clearly what you verified and what still needs a real machine.

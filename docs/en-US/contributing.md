@@ -123,7 +123,7 @@ If you are an AI coding agent, start with [`AGENTS.md`](../../AGENTS.md) at the 
 ## Pull request checklist
 
 - [ ] `npm run typecheck` passes.
-- [ ] `npm test` passes, and new logic or server rules have tests (including rejection paths).
+- [ ] `npm test` and `npm run test:e2e` pass, and new logic or server rules have tests (including rejection paths).
 - [ ] The change was tried in the app, or the pull request says why not (for example it needs Windows).
 - [ ] `PROTOCOL_VERSION` bumped if old and new apps can no longer talk.
 - [ ] Docs updated in **en-US and pt-BR**.
