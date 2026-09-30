@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, dialog, ipcMain, session, shell } from 'electron'
+import { app, BrowserWindow, clipboard, desktopCapturer, dialog, ipcMain, screen, session, shell } from 'electron'
 import os from 'node:os'
 import path from 'node:path'
 import { APP_NAME, DEFAULT_PORT } from '../shared/constants'
@@ -11,6 +11,7 @@ import { NativeLoopback } from './nativeAudio'
 import { RoomManager } from './roomManager'
 import { ScreenCapture } from './screenCapture'
 import { SettingsStore } from './settings'
+import { parsePlacement, tileBounds, type Placement, type Rect } from './windowPlacement'
 
 app.setName(APP_NAME)
 
@@ -53,6 +54,21 @@ let quitting = false
 process.on('uncaughtException', (err) => log.error('uncaught exception', err))
 process.on('unhandledRejection', (err) => log.error('unhandled rejection', err))
 
+/** Where `--display`/`--tile` put the window (see windowPlacement.ts); null if that screen doesn't exist. */
+async function placedBounds(placement: Placement): Promise<Rect | null> {
+  try {
+    // Screens numbered like the source picker ("Screen 3" is screen:2:0).
+    const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 0, height: 0 } })
+    const displayId = sources.find((s) => s.id.startsWith(`screen:${placement.display - 1}:`))?.display_id
+    const display = screen.getAllDisplays().find((d) => String(d.id) === displayId)
+    if (display) return tileBounds(display.workArea, placement.tile, placement.tiles)
+    log.warn(`--display=${placement.display}: no such screen`)
+  } catch (err) {
+    log.warn('window placement failed', err)
+  }
+  return null
+}
+
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1360,
@@ -73,7 +89,19 @@ function createWindow(): void {
   })
   mainWindow = win
 
-  win.once('ready-to-show', () => win.show())
+  const placement = parsePlacement(process.argv)
+  const bounds = placement ? placedBounds(placement) : null
+  win.once('ready-to-show', () => {
+    if (!placement) return win.show()
+    void bounds!.then((rect) => {
+      if (win.isDestroyed()) return
+      if (rect) {
+        win.setMinimumSize(Math.min(960, rect.width), Math.min(600, rect.height))
+        win.setBounds(rect)
+      }
+      win.showInactive()
+    })
+  })
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   win.webContents.on('will-navigate', (e, url) => {
     if (url !== win.webContents.getURL()) e.preventDefault()
