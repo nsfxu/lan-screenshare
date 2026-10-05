@@ -61,7 +61,7 @@ Cada linha mostra um cadeado para salas privadas, quantas transmissões estão a
 
 O botão no canto superior direito de cada coluna lateral a esconde (a coluna de salas vira uma faixa com as iniciais das salas). O app lembra quais colunas você escondeu.
 
-**Connect by IP**: se você está numa VPN ou em outra sub-rede, as salas podem não aparecer sozinhas. Clique no botão **Connect by IP** (o ícone de sinal ao lado de **Create room**) e digite o endereço do anfitrião, por exemplo `10.8.0.5` ou `192.168.1.20:47800`. O anfitrião vê os endereços dele no painel **Access** da sala. A porta padrão é 47800.
+**Connect by IP**: se você está numa VPN ou em outra sub-rede, as salas podem não aparecer sozinhas. Clique no botão **Connect by IP** (o ícone de sinal ao lado de **Create room**) e digite o endereço do anfitrião, por exemplo `10.8.0.5` ou `192.168.1.20:47800`. O anfitrião vê os endereços dele no **ⓘ** ao lado do nome da sala. A porta padrão é 47800.
 
 **Salas privadas** pedem um PIN (de 4 a 6 dígitos) logo abaixo da sala na lista. Depois de 3 PINs errados, seu computador precisa esperar 5 minutos para tentar de novo.
 
@@ -79,35 +79,35 @@ Agora é o seu computador que roda a sala. Se você fechar o ScreenShare, o app 
 
 ## Compartilhar sua tela
 
-Qualquer pessoa na sala pode compartilhar, não só o anfitrião, e várias pessoas podem compartilhar ao mesmo tempo. Clique em **Share screen** na barra de baixo e escolha uma tela ou janela.
+Qualquer pessoa na sala pode compartilhar, não só o anfitrião, e várias pessoas podem compartilhar ao mesmo tempo. Clique em **Share screen** na barra de controles embaixo dos quadros e escolha uma tela ou janela.
 
-Enquanto você compartilha, a barra oferece:
+Enquanto você compartilha, a barra de controles oferece (numa janela estreita, só os ícones):
 
 | Botão | O que faz |
 |---|---|
 | **Pause / Resume** | Congela a transmissão (e o áudio) sem encerrar. |
 | **Mute audio / Unmute audio** | Para de enviar o áudio do sistema enquanto o vídeo continua. Mostra **No audio** se o áudio não está sendo capturado. |
 | **Change source** | Troca para outra tela ou janela, ou muda as opções de áudio, sem ninguém precisar reconectar. |
-| **Seletor de qualidade** | A qualidade máxima que você envia (Native, 1080p, 720p a 60 ou 30 fps, 480p). Vale na hora. Cada espectador ainda pode receber menos, por exemplo se a janela dele for pequena ou a rede estiver lenta. |
 | **Stop sharing** | Encerra a sua transmissão. |
-| **Stats** | Resolução, taxa de quadros, upload, tempo de codificação, codec, codificador, CPU, memória e o que está limitando a qualidade. |
+| **Stats** (ícone de controles deslizantes) | A qualidade máxima que você envia (Native, 1080p, 720p a 60 ou 30 fps, 480p; vale na hora, e cada espectador ainda pode receber menos, por exemplo se a janela dele for pequena ou a rede estiver lenta), e a resolução, taxa de quadros, upload, tempo de codificação, codec, codificador, CPU, memória e o que está limitando a qualidade da sua transmissão. |
+
+O botão vermelho ao lado sai da sala (para o anfitrião, encerra a sala para todos, depois de perguntar).
 
 **Quando a sua transmissão tem dificuldade**, a sala diz o motivo: seu computador não consegue codificar rápido o bastante, seu upload não dá conta de todos que assistem, ou sua placa de vídeo ficou sem codificadores de hardware (alguns espectadores passam a ser codificados pela CPU). O aviso só aparece quando o problema dura vários segundos, some quando ele é resolvido e não volta pelo mesmo motivo por 10 minutos. **Lower to …** baixa a sua qualidade máxima um degrau.
 
-**A sua própria transmissão não é exibida para você**, o que poupa a GPU do seu computador. Você vê um cartão **You** com uma prévia que se atualiza a cada poucos segundos. Clique em **Show** para abrir a sua transmissão num quadro, e feche o quadro (×) para escondê-la de novo. Você continua compartilhando nos dois casos.
+**A sua própria transmissão não é exibida para você**, o que poupa a GPU do seu computador. O seu quadro mostra uma prévia que se atualiza mais ou menos uma vez por minuto. Clique em **Show my stream** para exibi-la, e feche (×) para escondê-la de novo. Você continua compartilhando nos dois casos.
 
 **Jogando enquanto compartilha a tela no Windows 10?** O Windows mostraria o cursor do mouse aos espectadores mesmo quando o jogo o esconde. Por isso, enquanto um jogo em tela cheia esconde o cursor, o app compartilha a janela do jogo no lugar, que fica igual sem o cursor, e volta para a sua tela quando você dá alt-tab. A sala mostra um aviso enquanto isso acontece. Veja [solução de problemas](troubleshooting.md#os-espectadores-veem-o-cursor-do-mouse-num-jogo) para jogos em janela.
 
 ## Assistir outras pessoas
 
-Nada toca até você escolher. Quem está compartilhando tem um selo vermelho **Live** ao lado do nome na coluna de salas, e aparece em **cartões** com uma prévia que se atualiza a cada 5 segundos.
+Todos na sala têm um **quadro** no meio: a foto e o nome. Os quadros mantêm o formato 16:9 e crescem o quanto a janela permite. Nada toca até você escolher: quem está compartilhando tem um selo vermelho **Live**, e o quadro mostra uma prévia da transmissão, tirada quando a pessoa começa e atualizada mais ou menos uma vez por minuto.
 
-- Clique numa pessoa ao vivo na coluna de salas (passe o mouse antes para ver a prévia), no botão **Watch** de um cartão, ou em **Watch all**. Clique na pessoa de novo para parar de assistir; um olho marca as transmissões que você assiste.
-- As transmissões assistidas aparecem numa **grade**. Clique no botão de foco na barra de um quadro para colocar aquela transmissão em **destaque**, com as outras numa faixa. Clique de novo para voltar à grade.
-- As transmissões que você não abriu continuam disponíveis na barra **Also live** no topo.
-- Feche um quadro (×) para parar de assistir.
+- Clique em **Watch stream** no quadro, clique na pessoa na coluna de salas (passe o mouse antes para ver a prévia), ou em **Watch all** na barra de controles. O quadro passa a exibir a transmissão. Clique na pessoa de novo na coluna de salas, ou feche a transmissão do quadro (×), para parar de assistir; um olho marca as transmissões que você assiste.
+- Clique no botão de foco na barra de uma transmissão (ou dê dois cliques num quadro com foto) para colocá-la em **destaque**, com todos os outros numa faixa embaixo. Clique de novo, ou aperte **Esc**, para voltar à grade.
+- Quando você está sozinho na sua sala, um quadro **Invite people** mostra o endereço para passar a quem está numa VPN.
 
-Cada quadro tem:
+Cada transmissão tem:
 
 | Controle | O que faz |
 |---|---|
@@ -131,7 +131,7 @@ Se a sua rede cair por um instante, o app reconecta sozinho e te coloca de volta
 
 ## Se você é o anfitrião
 
-O painel **Access** (no topo da barra lateral) permite:
+O **ⓘ** ao lado do nome da sala mostra os detalhes dela: privacidade, há quanto tempo está aberta, quem hospeda e o tempo de ida e volta até ela (e, para convidados, o endereço para copiar). Para o anfitrião, ele também permite:
 
 - alternar entre **Public** e **Private** a qualquer momento; quem já está dentro continua conectado;
 - mostrar ou esconder o **PIN**, **copiar**, **gerar um novo** ou **definir o seu**;
@@ -139,7 +139,7 @@ O painel **Access** (no topo da barra lateral) permite:
 
 O botão **⋯** ao lado de uma pessoa (passe o mouse por cima) permite **parar a transmissão** dela ou **removê-la** da sala (a pessoa não consegue voltar nesta sessão da sala). No chat você pode **apagar mensagens** e **silenciar o chat** (as pessoas continuam vendo o histórico).
 
-**End room** encerra a sala para todos.
+**End room for everyone** (também no **ⓘ**, ou o botão vermelho na barra de controles) encerra a sala para todos.
 
 ## Configurações
 

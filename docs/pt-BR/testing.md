@@ -232,8 +232,8 @@ Faça isto em máquinas reais (de preferência um Windows e um macOS) numa rede 
 - [ ] Windows: numa chamada do Discord com **Leave out Discord** ligado, os outros não ouvem a própria voz.
 - [ ] Windows com headset 5.1/7.1: o áudio do sistema continua funcionando.
 - [ ] Duas pessoas compartilham ao mesmo tempo; uma terceira assiste as duas; grade, destaque, **Watch all**.
-- [ ] A sua transmissão fica escondida até o **Show**.
-- [ ] O seletor de qualidade de quem transmite e o menu de qualidade de cada quadro mudam o que é recebido (veja os selos de estatística).
+- [ ] A sua transmissão fica escondida até o **Show my stream**.
+- [ ] A qualidade máxima de quem transmite (Stats na barra de controles) e o menu de qualidade de cada quadro mudam o que é recebido (veja os selos de estatística).
 - [ ] Tela cheia: controles e ponteiro somem depois de 2,5 s e voltam ao mexer o mouse.
 - [ ] Bloqueie o UDP (ou ligue **Always use TCP transport**): a transmissão continua pelo TCP.
 - [ ] Desconecte a rede por alguns segundos: todos reconectam e as transmissões voltam.

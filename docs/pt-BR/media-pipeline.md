@@ -106,7 +106,7 @@ Quatro limites independentes decidem o que cada espectador recebe. Eles são com
 
 ```mermaid
 flowchart LR
-  A["Qualidade máxima de quem transmite<br/>(barra de ferramentas ou Settings)"] --> L["Escada de qualidade"]
+  A["Qualidade máxima de quem transmite<br/>(Stats na barra de controles, ou Settings)"] --> L["Escada de qualidade"]
   L --> B["Controlador adaptativo<br/>por espectador: perda, RTT, limitação"]
   B --> C["Limite de exibição<br/>tamanho do quadro x zoom x DPI,<br/>ou a escolha do espectador"]
   C --> D["Banda de upload<br/>divisão justa max-min"]
@@ -234,7 +234,7 @@ Limitações: o process loopback só consegue deixar de fora **um** app por vez,
 
 ## Prévias
 
-A cada 5 s (e 1,2 s depois de começar, trocar de fonte ou retomar) quem transmite captura um quadro, reduz para 320 px de largura e envia como data URL JPEG (`snapshot`). O servidor confere se quem enviou está compartilhando, o tipo e o tamanho, limita a taxa, guarda a última para quem entrar depois e apaga quando a transmissão termina. Os espectadores veem as prévias nos cartões "ao vivo" e nos chips. Quem transmite guarda a própria prévia localmente para o cartão "You".
+A cada minuto (e 1,2 s depois de começar, trocar de fonte ou retomar) quem transmite captura um quadro, reduz para 320 px de largura e envia como data URL JPEG (`snapshot`). O servidor confere se quem enviou está compartilhando, o tipo e o tamanho, limita a taxa, guarda a última para quem entrar depois e apaga quando a transmissão termina. Os espectadores veem as prévias no quadro de quem transmite e ao passar o mouse sobre a pessoa na coluna de salas. Quem transmite guarda a própria prévia localmente para o próprio quadro.
 
 ## Estatísticas e latência
 

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState, type RefObject } from 'react'
 
 /**
  * A layout choice (a collapsed panel, a view mode) remembered on this
@@ -29,3 +29,19 @@ export function useRemembered<T extends string>(key: string, fallback: T, allowe
 
 export type PanelState = 'open' | 'closed'
 export const PANEL_STATES: readonly PanelState[] = ['open', 'closed']
+
+/** The element's content size, kept up to date as it resizes. */
+export function useElementSize(ref: RefObject<HTMLElement | null>): { width: number; height: number } {
+  const [size, setSize] = useState({ width: 0, height: 0 })
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect
+      setSize((s) => (s.width === width && s.height === height ? s : { width, height }))
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [ref])
+  return size
+}

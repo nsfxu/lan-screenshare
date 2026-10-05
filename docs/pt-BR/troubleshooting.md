@@ -29,8 +29,8 @@ flowchart TD
   F -->|Não| C
 ```
 
-- A descoberta usa **multicast (mDNS)**, que muitas VPNs, redes Wi-Fi de visitantes e alguns roteadores bloqueiam. O **Connect by IP** sempre funciona se o anfitrião estiver alcançável: ele vê os próprios endereços no painel **Access**.
-- A porta padrão é **47800**. Se ela estava ocupada, o anfitrião escolheu a próxima livre; o painel Access mostra a correta.
+- A descoberta usa **multicast (mDNS)**, que muitas VPNs, redes Wi-Fi de visitantes e alguns roteadores bloqueiam. O **Connect by IP** sempre funciona se o anfitrião estiver alcançável: ele vê os próprios endereços no **ⓘ** ao lado do nome da sala.
+- A porta padrão é **47800**. Se ela estava ocupada, o anfitrião escolheu a próxima livre; o **ⓘ** mostra a correta.
 - **Firewall do Windows**: na primeira vez que você hospeda, o Windows pergunta se deve permitir o ScreenShare. Permita em redes **privadas**. Se você clicou em Cancelar, permita depois em *Segurança do Windows → Firewall → Permitir um aplicativo*.
 - Uma sala que para de responder por 10 segundos sai da lista. Ela volta assim que responder de novo.
 
@@ -54,7 +54,7 @@ flowchart TD
 - **"Connecting…" por alguns segundos e depois toca**: normal quando a sua rede bloqueia o WebRTC (UDP). Depois de 8 segundos o app passa sozinho para a conexão TCP. O botão ↻ no quadro tenta a conexão mais rápida de novo.
 - **Nunca conecta**: confira se os dois computadores permitem o ScreenShare no firewall. Como último recurso, ligue **Settings → Network → Always use TCP transport** no espectador.
 - **Quem transmite vê a própria transmissão normal, mas você vê preto**: a pessoa pode ter pausado (o quadro avisa) ou compartilhado uma janela minimizada. Peça para ela usar **Change source**.
-- **Você não vê a sua própria transmissão**: é de propósito. Clique em **Show** no seu cartão **You**.
+- **Você não vê a sua própria transmissão**: é de propósito. Clique em **Show my stream** no seu próprio quadro.
 - **Capturas de tela do app saem pretas enquanto você assiste**: também é de propósito; gravar transmissões é bloqueado.
 
 ## A qualidade está baixa
@@ -62,7 +62,7 @@ flowchart TD
 1. Olhe os **selos de estatística** do quadro: resolução, fps e tipo de conexão.
 2. Confira o **menu de qualidade** do quadro: deve estar em **Auto** (ou na qualidade que você quer).
 3. **O Auto acompanha o tamanho do quadro**: um quadro pequeno recebe uma transmissão pequena. Coloque a transmissão em destaque, vá para tela cheia ou dê zoom e a qualidade sobe em menos de um segundo.
-4. Peça para quem transmite conferir o **seletor de qualidade** na barra e **Settings → Upload limit when sharing** (os 100 Mbps padrão são divididos entre todos que assistem; no Wi-Fi, 30–60 Mbps é mais realista).
+4. Peça para quem transmite conferir a qualidade máxima (**Stats** na barra de controles) e **Settings → Upload limit when sharing** (os 100 Mbps padrão são divididos entre todos que assistem; no Wi-Fi, 30–60 Mbps é mais realista).
 5. O **Stats → Limited by** de quem transmite diz o motivo: *bandwidth* (rede), *cpu* (computador ocupado demais) ou *none*. Quando isso dura, quem transmite também recebe um aviso dizendo isso, com um botão para baixar a qualidade.
 6. Na conexão **TCP** o atraso é um pouco maior e uma única codificação é dividida entre todos os espectadores TCP.
 
@@ -91,9 +91,9 @@ No Windows 10 (e no 11 anterior ao 24H2), compartilhar uma tela inteira mostra o
 ## CPU alta ou notebook esquentando
 
 - Abra **Settings → Streaming quality**: a tabela de codecs mostra **Hardware** ou **Software** para cada codec. Codificar em software gasta muito mais CPU. O **Automatic** já prefere H.264 em hardware.
-- Diminua a **qualidade máxima** na barra (por exemplo 720p @ 30 fps).
+- Diminua a **qualidade máxima** em **Stats** na barra de controles (por exemplo 720p @ 30 fps).
 - Feche os quadros que você não está assistindo; cada transmissão assistida custa decodificação.
-- Deixe a sua própria transmissão escondida (não clique em **Show**) enquanto compartilha.
+- Deixe a sua própria transmissão escondida (não clique em **Show my stream**) enquanto compartilha.
 
 ## Permissões do macOS
 

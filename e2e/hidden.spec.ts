@@ -12,7 +12,7 @@ test("viewers who can't see a stream get no video until they can", async ({ peop
   await carol.win.locator('.modal').getByRole('button', { name: 'Share', exact: true }).click()
   await joinByIp(bob, port)
   await bob.win.getByRole('button', { name: "Watch Alice's stream" }).click()
-  await bob.win.locator('.stream-chip', { hasText: 'Carol' }).click() // now in the "Also live" bar
+  await bob.win.getByRole('button', { name: "Watch Carol's stream" }).click()
   for (const name of ['Alice', 'Carol']) {
     await expect.poll(() => framesDuring(bob.win, name, 1000), { timeout: 30_000 }).toBeGreaterThan(15)
   }

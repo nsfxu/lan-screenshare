@@ -47,7 +47,7 @@ Essas escolhas explicam a maior parte do código. Mantenha-as, a não ser que ha
 
 1. **Só rede local, sem serviços externos.** Sem contas, sem nuvem, sem servidores STUN/TURN. Tudo funciona numa rede isolada.
 2. **O servidor é enxuto.** Ele autentica, repassa e aplica regras. Não codifica, não decodifica e não mistura mídia.
-3. **Nada toca sem você pedir.** Assistir é explícito. Nem a sua própria transmissão é exibida para você até clicar em **Show**. Isso economiza banda e GPU.
+3. **Nada toca sem você pedir.** Assistir é explícito. Nem a sua própria transmissão é exibida para você até clicar em **Show my stream**. Isso economiza banda e GPU.
 4. **Uma conexão por espectador.** Cada espectador tem seu próprio controle de congestionamento, qualidade adaptativa e limite de resolução, então um espectador lento nunca piora os outros.
 5. **Só enviar o que aparece na tela.** Os espectadores informam o tamanho em que exibem cada transmissão. Quem transmite nunca envia mais pixels do que isso e divide sua banda de upload de forma justa.
 6. **O servidor garante a autoridade.** Ações exclusivas do anfitrião, verificação de PIN, limites de taxa e validação de dados acontecem no servidor, nunca só na interface.
@@ -268,16 +268,16 @@ flowchart TB
   Rooms --> Members["RoomMembers<br/>pessoas da sua sala: ao vivo, assistir, prévia, menu do anfitrião"]
   App --> Welcome["Welcome<br/>centro fora de uma sala"]
   App --> Room["RoomView<br/>centro e direita, uma por sessão"]
-  App --> Dlg["Dialogs<br/>CreateRoom, Pin, Settings (+ recorte de foto)"]
-  Room --> Stage["Palco<br/>cartões ao vivo, grade ou destaque"]
-  Stage --> Self["SelfTile<br/>sua transmissão, depois do Show"]
+  App --> Dlg["Dialogs<br/>CreateRoom, ChangeSource, Settings (+ recorte de foto)"]
+  Room --> Info["RoomInfo (ⓘ)<br/>detalhes; AccessPanel e End room para o anfitrião"]
+  Room --> Stage["Palco<br/>um quadro 16:9 por pessoa (bestTileGrid), ou destaque"]
+  Stage --> Person["PersonTile<br/>foto, ou a prévia de uma transmissão + Watch"]
+  Stage --> Self["SelfTile<br/>sua transmissão, depois do Show my stream"]
   Stage --> Remote["RemoteTile<br/>uma por transmissão assistida"]
   Self --> SV["ScreenViewer<br/>zoom, arrastar, tela cheia, volume"]
   Remote --> SV
-  Room --> Side["Barra lateral"]
-  Side --> Access["AccessPanel (anfitrião)<br/>privacidade, PIN"]
-  Side --> Chat["ChatPanel"]
-  Room --> Toolbar["Barra de ferramentas<br/>compartilhar, pausar, áudio, fonte, qualidade, parar, estatísticas"]
+  Room --> Bar["Barra de controles<br/>compartilhar, pausar, áudio, fonte, parar, estatísticas e qualidade, sair"]
+  Room --> Chat["ChatPanel (direita)"]
 ```
 
 Os componentes assinam os eventos dos objetos da sessão (`client.on('participants', …)`, `publisher.on('stats', …)`, …) e guardam cópias no estado do React. Os objetos da sessão nunca importam React.

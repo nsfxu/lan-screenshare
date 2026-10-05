@@ -121,7 +121,7 @@ export function RoomMembers({ session }: { session: Session }) {
         <div className="member-preview" style={{ top: preview.top, left: preview.left }} aria-hidden="true">
           <div className="member-preview-image">
             {snapshots.get(previewed.id) ? <img src={snapshots.get(previewed.id)} alt="" /> : <Icon name="screen" size={28} />}
-            {previewed.stream.paused && <span className="stream-card-flag">Paused</span>}
+            {previewed.stream.paused && <span className="preview-flag">Paused</span>}
           </div>
           <div className="member-preview-info">
             <strong>{previewed.name}</strong>
