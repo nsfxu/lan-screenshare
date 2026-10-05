@@ -4,7 +4,8 @@ test('public room: share, watch, chat and stop', async ({ people }) => {
   const [alice, bob] = await people(2)
 
   const port = await createRoom(alice)
-  await expect(alice.win.locator('.stream-card', { hasText: 'You' })).toBeVisible()
+  // Alice's own tile offers her stream; it doesn't play until she asks.
+  await expect(alice.win.getByRole('button', { name: 'Show your own stream' })).toBeVisible()
 
   await joinByIp(bob, port)
   await expect(bob.win.locator('.room')).toBeVisible()
@@ -32,7 +33,8 @@ test('public room: share, watch, chat and stop', async ({ people }) => {
   // Alice stops: Bob's tile and her stream card go away.
   await alice.win.getByRole('button', { name: 'Stop sharing' }).click()
   await expect(bob.win.locator('.tile video')).toHaveCount(0)
-  await expect(bob.win.locator('.stream-card', { hasText: 'Alice' })).toHaveCount(0)
+  await expect(bob.win.getByRole('button', { name: "Watch Alice's stream" })).toHaveCount(0)
+  await expect(bob.win.locator('.person-tile', { hasText: 'Alice' })).toBeVisible()
 })
 
 test('private room: a wrong PIN is refused, the right one lets you in', async ({ people }) => {

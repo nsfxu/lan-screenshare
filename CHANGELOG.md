@@ -16,6 +16,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 - **Recent rooms**: the last 5 rooms you joined are listed first, so you can go back to one in one click, even on a VPN.
 - The people in your room are listed under it in the rooms column, with a **Live** badge on whoever is sharing. Click someone live to watch them (hover to see a preview first), and click again to stop. Hosts moderate from the **⋯** next to a name.
 - Private rooms ask for the PIN right under the room in the list, instead of in a separate window.
+- Everyone in the room has a tile in the middle, with their picture and name; people sharing show a preview of their stream with a **Watch stream** button, and watched streams play in their tile. Tiles keep a 16:9 shape and grow with the window. When you're alone, an **Invite people** tile shows your address.
+- A new control bar under the tiles: share and your sharing controls, **Stats** (now also where you set the quality you send), and a red button to leave. In a narrow window the buttons show only their icons.
+- Stream previews refresh about once a minute instead of every 5 seconds (still right away when someone starts sharing or switches source), so a room of streamers sends far fewer images around.
+- The room's details, privacy, PIN and **End room** are behind the **ⓘ** next to the room's name; the right column is just the chat.
 - The window title shows the room you're in.
 
 ## [1.2.0] - 2026-10-05

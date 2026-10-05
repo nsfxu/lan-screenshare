@@ -59,7 +59,7 @@ Each row shows a lock for private rooms, how many streams are live, and how many
 
 The button at the top right of each side column hides it (the rooms column shrinks to a strip of room initials). The app remembers which columns you hid.
 
-**Connect by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click the **Connect by IP** button (the signal icon next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses in the **Access** panel of the room. The default port is 47800.
+**Connect by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click the **Connect by IP** button (the signal icon next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses behind the **ⓘ** next to the room's name. The default port is 47800.
 
 **Private rooms** ask for a PIN (4 to 6 digits) right under the room in the list. After 3 wrong PINs, your computer has to wait 5 minutes before trying again.
 
@@ -77,35 +77,35 @@ Your computer now runs the room. If you close ScreenShare, the app asks first, b
 
 ## Sharing your screen
 
-Anyone in a room can share, not just the host, and several people can share at the same time. Click **Share screen** in the bottom toolbar and choose a screen or window.
+Anyone in a room can share, not just the host, and several people can share at the same time. Click **Share screen** in the control bar under the tiles and choose a screen or window.
 
-While you share, the toolbar gives you:
+While you share, the control bar gives you (in a narrow window, only their icons):
 
 | Button | What it does |
 |---|---|
 | **Pause / Resume** | Freezes your stream (and its audio) without ending it. |
 | **Mute audio / Unmute audio** | Stops sending system audio while the video keeps going. It says **No audio** if audio isn't being captured. |
 | **Change source** | Switch to another screen or window, or change the audio options, without anyone having to reconnect. |
-| **Quality picker** | The maximum quality you send (Native, 1080p, 720p at 60 or 30 fps, 480p). It applies immediately. Each viewer may still get less, for example if their window is small or their network is slow. |
 | **Stop sharing** | Ends your stream. |
-| **Stats** | Resolution, frame rate, upload, encode time, codec, encoder, CPU, memory and what is limiting quality. |
+| **Stats** (sliders icon) | The maximum quality you send (Native, 1080p, 720p at 60 or 30 fps, 480p; it applies immediately, and each viewer may still get less, for example if their window is small or their network is slow), and your stream's resolution, frame rate, upload, encode time, codec, encoder, CPU, memory and what is limiting quality. |
+
+The red button next to them leaves the room (for the host, it ends the room for everyone, after asking).
 
 **When your stream struggles**, the room tells you why: your computer can't encode fast enough, your upload can't keep up with everyone watching, or your graphics card ran out of hardware encoders (some viewers are then encoded by the CPU). The notice only appears when the problem lasts several seconds, goes away once it's solved, and won't come back for the same reason for 10 minutes. **Lower to …** lowers your maximum quality one step.
 
-**Your own stream isn't played back to you**, which saves your computer's GPU. You'll see a **You** card with a preview that refreshes every few seconds. Click **Show** to open your stream as a tile, and close the tile (×) to hide it again. You keep sharing either way.
+**Your own stream isn't played back to you**, which saves your computer's GPU. Your own tile shows a preview that refreshes about once a minute. Click **Show my stream** to play it, and close it (×) to hide it again. You keep sharing either way.
 
 **Playing a game while sharing your screen on Windows 10?** Windows would show your mouse cursor to viewers even when the game hides it. So while a fullscreen game hides the cursor, the app shares the game's window instead, which looks the same without the cursor, and goes back to your screen when you alt-tab. The room shows a notice while this happens. See [troubleshooting](troubleshooting.md#viewers-see-my-mouse-cursor-in-a-game) for windowed games.
 
 ## Watching other people
 
-Nothing plays until you choose. People who are sharing have a red **Live** badge next to their name in the rooms column, and appear as **cards** with a preview that refreshes every 5 seconds.
+Everyone in the room has a **tile** in the middle: their picture and name. Tiles keep a 16:9 shape and grow as large as the window allows. Nothing plays until you choose: people who are sharing have a red **Live** badge, and their tile shows a preview of their stream, taken when they start and refreshed about once a minute.
 
-- Click a live person in the rooms column (hover first to see their preview), a card's **Watch** button, or **Watch all**. Click the person again to stop watching; an eye marks the streams you watch.
-- Watched streams play in a **grid**. Click the focus button in a tile's bar to put that stream in the **spotlight**, with the others in a strip. Click it again to go back to the grid.
-- Streams you haven't opened stay available in the **Also live** bar at the top.
-- Close a tile (×) to stop watching it.
+- Click **Watch stream** on their tile, click them in the rooms column (hover first to see their preview), or **Watch all** in the control bar. Their tile then plays their stream. Click them in the rooms column again, or close the tile's stream (×), to stop watching; an eye marks the streams you watch.
+- Click the focus button in a stream's bar (or double-click a picture tile) to put it in the **spotlight**, with everyone else in a strip below. Click it again, or press **Esc**, to go back to the grid.
+- When you're alone in your room, an **Invite people** tile shows the address to give people on a VPN.
 
-Each tile has:
+Each stream has:
 
 | Control | What it does |
 |---|---|
@@ -129,7 +129,7 @@ If your network drops for a moment, the app reconnects on its own and puts you b
 
 ## If you are the host
 
-The **Access** panel (top of the sidebar) lets you:
+The **ⓘ** next to the room's name shows the room's details: privacy, how long it has been open, who hosts it and the round trip to it (and, for guests, the address to copy). For the host, it also lets you:
 
 - switch between **Public** and **Private** at any time; people already inside stay connected;
 - show or hide the **PIN**, **copy** it, **generate a new one**, or **set your own**;
@@ -137,7 +137,7 @@ The **Access** panel (top of the sidebar) lets you:
 
 The **⋯** button next to a person (hover over them) lets you **stop their stream** or **remove** them from the room (they can't come back to this room session). In the chat you can **delete messages** and **mute the chat** (people still see the history).
 
-**End room** closes the room for everyone.
+**End room for everyone** (also behind the **ⓘ**, or the red button in the control bar) closes the room for everyone.
 
 ## Settings
 

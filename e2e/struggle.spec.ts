@@ -43,11 +43,15 @@ test('a streamer who struggles is told why, and can lower the quality from the n
   await expect(notice).toHaveCount(0, { timeout: 15_000 })
 
   // The network this time: lower the quality from the notice.
+  // The quality you send is in the Stats popover of the control bar.
+  await alice.win.getByRole('button', { name: 'Stats' }).click()
   const quality = alice.win.getByLabel('Maximum quality you send')
   const before = await quality.inputValue()
+  await alice.win.getByRole('button', { name: 'Stats' }).click()
   await fakeLimitation(alice.win, 'bandwidth')
   await expect(notice).toContainText("The network can't keep up", { timeout: 20_000 })
   await notice.getByRole('button', { name: /^Lower to / }).click()
   await expect(notice).toHaveCount(0)
+  await alice.win.getByRole('button', { name: 'Stats' }).click()
   await expect(quality).not.toHaveValue(before)
 })

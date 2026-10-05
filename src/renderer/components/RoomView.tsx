@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { QUALITY_PRESETS, WATCH_QUALITIES, getWatchQuality, lowerPreset, type WatchQualityId } from '../../shared/quality'
 import { struggleMessage, type StruggleKind } from '../../shared/struggle'
+import { bestTileGrid } from '../../shared/tileGrid'
 import type {
   AudioChoice,
   ChatMessage,
@@ -16,11 +17,10 @@ import {
   captureAudioWarning,
   errorMessage,
   formatBitrate,
-  formatDuration,
   latencyClass
 } from '../lib/format'
 import { useAppVersion } from '../lib/appVersion'
-import { PANEL_STATES, useRemembered } from '../lib/layout'
+import { PANEL_STATES, useElementSize, useRemembered } from '../lib/layout'
 import { useAutoContentHint } from '../lib/autoContentHint'
 import { useGameCursor } from '../lib/gameCursor'
 import { audioDefaults, type SharingState } from '../lib/publisher'
@@ -30,8 +30,10 @@ import type { Subscription, SubscriptionState } from '../lib/subscription'
 import { ChatPanel } from './ChatPanel'
 import { ChangeSourceDialog } from './Dialogs'
 import { Avatar } from './Avatar'
-import { AccessPanel, HostStatsPanel } from './HostControls'
+import { HostStatsPanel } from './HostControls'
 import { Icon } from './Icon'
+import { RoomInfo } from './RoomInfo'
+import { InviteTile, PersonTile } from './RoomStage'
 import { ScreenViewer } from './ScreenViewer'
 
 interface Props {
@@ -42,13 +44,11 @@ interface Props {
   onToast(message: string, tone?: 'error' | 'info'): void
 }
 
-const SELF = 'self'
-
 /**
- * The in-room interface. Anyone can share; nothing is watched until the user
- * picks a stream. Watched streams (and your own, once you choose to show it)
- * are shown as tiles; focusing one puts it in the spotlight while the others
- * keep playing.
+ * The room you're in: a tile per person in the middle (people sharing show
+ * their stream's preview until you watch it), the control bar under it, and
+ * the chat on the right. Nothing plays until you choose; focusing a tile puts
+ * it in the spotlight while the others keep playing.
  */
 export function RoomView({ session, settings, onLeave, onChangeSettings, onToast }: Props) {
   const { client, publisher, watches } = session
@@ -77,6 +77,10 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const [showStats, setShowStats] = useState(false)
   const [pickSource, setPickSource] = useState(false)
   const [sidePanel, setSidePanel] = useRemembered('room-side', 'open', PANEL_STATES)
+  const [infoOpen, setInfoOpen] = useState(false)
+  const stageRef = useRef<HTMLDivElement>(null)
+  const stageSize = useElementSize(stageRef)
+  const closeInfo = useCallback(() => setInfoOpen(false), [])
   const [, setNow] = useState(Date.now())
   const gameCursor = useGameCursor(publisher, sharing.sharing ? publisher.chosenSourceId : null)
   useAutoContentHint(publisher, sharing.sharing ? publisher.chosenSourceId : null, settings.contentHint)
@@ -130,10 +134,18 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     if (!ownStream) setShowSelf(false)
   }, [ownStream])
 
-  // Keep the focus on something that still exists.
+  // Keep the focus on someone who is still here; Esc leaves it.
   useEffect(() => {
-    if (focus === SELF ? !(ownStream && showSelf) : focus !== null && !subs.has(focus)) setFocus(null)
-  }, [focus, ownStream, showSelf, subs])
+    if (focus !== null && !participants.some((p) => p.id === focus)) setFocus(null)
+  }, [focus, participants])
+  useEffect(() => {
+    if (focus === null) return
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape' && !document.fullscreenElement) setFocus(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [focus])
 
   // Nobody may record streams they watch: hide the window from screen capture
   // while watching anything.
@@ -188,195 +200,210 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     onLeave()
   }
 
-  const byId = (id: string): Participant | undefined => participants.find((p) => p.id === id)
   const liveOthers = participants.filter((p) => p.stream && p.id !== client.selfId)
   const unwatched = liveOthers.filter((p) => !subs.has(p.id))
   const watcherCount = (id: string): number => participants.filter((p) => p.watching.includes(id)).length
-  /** Sharing, but not showing our own stream: offer it next to the others. */
-  const selfHidden = !!ownStream && !showSelf
-  const me = byId(client.selfId)
   // The notice goes away by itself once the problem has gone (or sharing stopped).
   const struggleShown = struggle && sharing.sharing && ownStats?.struggling.includes(struggle) ? struggle : null
   const lower = lowerPreset(settings.maxQuality)
   const newer = ourVersion ? newerVersionInRoom(ourVersion, participants.filter((p) => p.id !== client.selfId)) : null
-  const selfPreview: PreviewInfo = {
-    label: 'You',
-    name: me?.name ?? settings.displayName,
-    color: me?.color ?? 'var(--accent)',
-    image: avatars.get(client.selfId) ?? settings.avatar,
-    audio: sharing.hasAudio && !sharing.audioMuted,
-    paused: sharing.paused
-  }
 
-  // --- stage -----------------------------------------------------------------
-  const tiles: string[] = [...(ownStream && showSelf ? [SELF] : []), ...subs.keys()]
-  const renderTile = (id: string, small: boolean) =>
-    id === SELF ? (
-      <SelfTile
-        key={SELF}
-        stream={ownStream}
-        sharing={sharing}
-        stats={ownStats}
-        showOverlay={settings.showStatsOverlay}
-        focused={focus === SELF}
+  // --- stage: a tile per person ------------------------------------------------
+  // People sharing first, then everyone else in the order they came; you last.
+  const people = [...participants].sort(
+    (a, b) =>
+      Number(a.id === client.selfId) - Number(b.id === client.selfId) ||
+      Number(!!b.stream) - Number(!!a.stream) ||
+      a.joinedAt - b.joinedAt
+  )
+  const alone = participants.length <= 1
+  const inviteAddress = hosted
+    ? hosted.addresses[0]
+      ? `${hosted.addresses[0]}:${hosted.port}`
+      : null
+    : `${session.endpoint.address}:${session.endpoint.port}`
+
+  const renderTile = (p: Participant, small: boolean) => {
+    const focused = focus === p.id
+    const onFocus = (): void => setFocus(focused ? null : p.id)
+    if (p.id === client.selfId) {
+      if (ownStream && showSelf) {
+        return (
+          <SelfTile
+            key={p.id}
+            stream={ownStream}
+            sharing={sharing}
+            stats={ownStats}
+            showOverlay={settings.showStatsOverlay}
+            focused={focused}
+            small={small}
+            onFocus={onFocus}
+            onHide={() => setShowSelf(false)}
+          />
+        )
+      }
+      return (
+        <PersonTile
+          key={p.id}
+          name={p.name}
+          color={p.color}
+          image={avatars.get(p.id) ?? settings.avatar}
+          you
+          reconnecting={false}
+          live={
+            ownStream
+              ? {
+                  snapshot: ownSnapshot,
+                  paused: sharing.paused,
+                  watchers: watcherCount(p.id),
+                  action: 'Show my stream',
+                  actionLabel: 'Show your own stream',
+                  onAction: () => setShowSelf(true)
+                }
+              : null
+          }
+          focused={focused}
+          small={small}
+          onFocus={onFocus}
+        />
+      )
+    }
+    const sub = subs.get(p.id)
+    if (sub) {
+      return (
+        <RemoteTile
+          key={p.id}
+          sub={sub}
+          participant={p}
+          avatar={avatars.get(p.id) ?? null}
+          snapshot={snapshots.get(p.id) ?? null}
+          showOverlay={settings.showStatsOverlay}
+          focused={focused}
+          small={small}
+          onFocus={onFocus}
+          onStop={() => watches.unwatch(p.id)}
+        />
+      )
+    }
+    return (
+      <PersonTile
+        key={p.id}
+        name={p.name}
+        color={p.color}
+        image={avatars.get(p.id) ?? null}
+        you={false}
+        reconnecting={p.status === 'reconnecting'}
+        live={
+          p.stream
+            ? {
+                snapshot: snapshots.get(p.id) ?? null,
+                paused: p.stream.paused,
+                watchers: watcherCount(p.id),
+                action: 'Watch stream',
+                actionLabel: `Watch ${p.name}'s stream`,
+                onAction: () => watches.watch(p.id)
+              }
+            : null
+        }
+        focused={focused}
         small={small}
-        onFocus={() => setFocus(focus === SELF ? null : SELF)}
-        onHide={() => setShowSelf(false)}
-      />
-    ) : (
-      <RemoteTile
-        key={id}
-        sub={subs.get(id)!}
-        participant={byId(id)}
-        avatar={avatars.get(id) ?? null}
-        snapshot={snapshots.get(id) ?? null}
-        showOverlay={settings.showStatsOverlay}
-        focused={focus === id}
-        small={small}
-        onFocus={() => setFocus(focus === id ? null : id)}
-        onStop={() => watches.unwatch(id)}
+        onFocus={onFocus}
       />
     )
+  }
 
-  let stage
-  if (tiles.length === 0) {
-    stage = (
-      <div className="stage-empty">
-        {!selfHidden && liveOthers.length === 0 ? (
-          <div className="placeholder-content">
-            <Icon name="screen" size={40} />
-            <h3>No one is sharing yet</h3>
-            <p className="muted">Share your screen, or wait for someone else to.</p>
-            <button className="btn primary" onClick={() => setPickSource(true)}>
-              <Icon name="play" /> Share screen
-            </button>
-          </div>
-        ) : (
-          <div className="live-now">
-            <div className="live-now-header">
-              {liveOthers.length === 0 ? (
-                <div>
-                  <h3>You're sharing your screen</h3>
-                  <p className="muted small">
-                    Your own stream isn't played here, to save resources. Show it to see what others see.
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <h3>
-                    {selfHidden
-                      ? `You and ${liveOthers.length === 1 ? '1 other person are' : `${liveOthers.length} others are`} sharing`
-                      : liveOthers.length === 1
-                        ? '1 person is sharing'
-                        : `${liveOthers.length} people are sharing`}
-                  </h3>
-                  <p className="muted small">Nothing plays until you choose. Pick what you want to watch.</p>
-                </div>
-              )}
-              {liveOthers.length > 1 && (
-                <button className="btn" onClick={() => liveOthers.forEach((p) => watches.watch(p.id))}>
-                  <Icon name="play" /> Watch all
-                </button>
-              )}
-            </div>
-            <div className="stream-cards">
-              {selfHidden && (
-                <StreamCard
-                  key={SELF}
-                  info={selfPreview}
-                  snapshot={ownSnapshot}
-                  watchers={watcherCount(client.selfId)}
-                  action="Show"
-                  title="Show your own stream"
-                  onWatch={() => setShowSelf(true)}
-                />
-              )}
-              {liveOthers.map((p) => (
-                <StreamCard
-                  key={p.id}
-                  info={previewOf(p, avatars)}
-                  snapshot={snapshots.get(p.id) ?? null}
-                  watchers={watcherCount(p.id)}
-                  onWatch={() => watches.watch(p.id)}
-                />
-              ))}
-            </div>
-          </div>
+  const focused = focus ? people.find((p) => p.id === focus) : undefined
+  // Tiles keep a 16:9 shape and grow as large as the stage allows (6 px padding and gaps).
+  const grid = bestTileGrid(people.length + (alone ? 1 : 0), stageSize.width - 12, stageSize.height - 12)
+  const stage =
+    focused && people.length > 1 ? (
+      <div className="stage-spotlight">
+        <div className="spotlight-main">{renderTile(focused, false)}</div>
+        <div className="spotlight-strip">{people.filter((p) => p !== focused).map((p) => renderTile(p, true))}</div>
+      </div>
+    ) : (
+      <div
+        className="stage-grid"
+        style={{ gridTemplateColumns: `repeat(${grid.columns}, ${grid.width}px)`, gridAutoRows: `${grid.height}px` }}
+      >
+        {people.map((p) => renderTile(p, false))}
+        {alone && (
+          <InviteTile
+            address={inviteAddress}
+            onCopy={() =>
+              inviteAddress &&
+              void window.api.system.copyText(inviteAddress).then(() => onToast('Address copied to clipboard'))
+            }
+          />
         )}
       </div>
     )
-  } else if (focus && tiles.includes(focus) && tiles.length > 1) {
-    stage = (
-      <div className="stage-spotlight">
-        <div className="spotlight-main">{renderTile(focus, false)}</div>
-        <div className="spotlight-strip">{tiles.filter((t) => t !== focus).map((t) => renderTile(t, true))}</div>
-      </div>
-    )
-  } else {
-    stage = <div className={`stage-grid count-${Math.min(tiles.length, 9)}`}>{tiles.map((t) => renderTile(t, false))}</div>
-  }
 
+  const liveCount = room?.streams ?? 0
   return (
     <div className="room">
       <header className="room-header">
         <div className="room-title">
           <h2 title={room?.name}>{room?.name ?? 'Room'}</h2>
-          <span className={`badge ${room?.privacy ?? 'public'}`}>
-            <Icon name={room?.privacy === 'private' ? 'lock' : 'globe'} size={12} />
-            {room?.privacy === 'private' ? 'Private' : 'Public'}
+          <button
+            className={`icon-btn room-info-button ${infoOpen ? 'active' : ''}`}
+            title="Room details"
+            aria-label="Room details"
+            aria-expanded={infoOpen}
+            onClick={() => setInfoOpen((v) => !v)}
+          >
+            <Icon name="info" size={17} />
+          </button>
+          <span className="muted small room-count">
+            {participants.length} {participants.length === 1 ? 'person' : 'people'}
+            {liveCount > 0 && <span className="room-count-live"> · {liveCount} live</span>}
           </span>
-          {(room?.streams ?? 0) > 0 && (
-            <span className="status-pill live">{room!.streams === 1 ? '1 live' : `${room!.streams} live`}</span>
-          )}
           {connection === 'reconnecting' && <span className="status-pill warn">Reconnecting…</span>}
         </div>
-        <div className="room-meta muted small">
-          <span>
-            <Icon name="users" size={13} /> {participants.length} in room
-          </span>
-          {room && <span>{formatDuration(Date.now() - room.startedAt)}</span>}
-          {client.rttMs !== null && <span title="Round trip to the room server">RTT {Math.round(client.rttMs)} ms</span>}
-          {!isHost && <span className="mono">{session.endpoint.address}</span>}
-          <button
-            className={`icon-btn ${sidePanel === 'open' ? 'active' : ''}`}
-            title={sidePanel === 'open' ? 'Hide chat' : 'Show chat'}
-            aria-label={sidePanel === 'open' ? 'Hide chat' : 'Show chat'}
-            aria-expanded={sidePanel === 'open'}
-            onClick={() => setSidePanel(sidePanel === 'open' ? 'closed' : 'open')}
-          >
-            <Icon name="panelRight" size={18} />
-          </button>
-        </div>
+        <button
+          className={`icon-btn ${sidePanel === 'open' ? 'active' : ''}`}
+          title={sidePanel === 'open' ? 'Hide chat' : 'Show chat'}
+          aria-label={sidePanel === 'open' ? 'Hide chat' : 'Show chat'}
+          aria-expanded={sidePanel === 'open'}
+          onClick={() => setSidePanel(sidePanel === 'open' ? 'closed' : 'open')}
+        >
+          <Icon name="panelRight" size={18} />
+        </button>
+        {infoOpen && (
+          <RoomInfo
+            room={room}
+            hosted={isHost ? hosted : null}
+            endpoint={session.endpoint}
+            rttMs={client.rttMs}
+            onToast={onToast}
+            onEndRoom={endRoom}
+            onClose={closeInfo}
+          />
+        )}
       </header>
 
       <div className="room-body">
         <main className="stage">
-          {tiles.length > 0 && (unwatched.length > 0 || selfHidden) && (
-            <div className="stream-bar">
-              <span className="muted small">Also live</span>
-              {selfHidden && (
-                <StreamChip
-                  key={SELF}
-                  info={selfPreview}
-                  snapshot={ownSnapshot}
-                  action="Show"
-                  title="Show your own stream"
-                  onWatch={() => setShowSelf(true)}
-                />
-              )}
-              {unwatched.map((p) => (
-                <StreamChip
-                  key={p.id}
-                  info={previewOf(p, avatars)}
-                  snapshot={snapshots.get(p.id) ?? null}
-                  onWatch={() => watches.watch(p.id)}
-                />
-              ))}
-            </div>
-          )}
-          <div className="stage-area">{stage}</div>
+          <div className="stage-area" ref={stageRef}>
+            {stage}
+          </div>
           {showStats && sharing.sharing && (
             <div className="stats-popover">
+              <label className="stats-quality">
+                <span className="muted small">Maximum quality you send</span>
+                <select
+                  aria-label="Maximum quality you send"
+                  title="Each viewer may get less: smaller tile, their own choice, their network"
+                  value={settings.maxQuality}
+                  onChange={(e) => onChangeSettings({ maxQuality: e.target.value as Settings['maxQuality'] })}
+                >
+                  {QUALITY_PRESETS.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <HostStatsPanel stats={ownStats} />
             </div>
           )}
@@ -441,11 +468,17 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
               </button>
             </div>
           )}
-          <div className="stage-toolbar">
+          <div className="control-bar">
             {sharing.sharing ? (
-              <>
-                <button className="btn" onClick={() => publisher.setPaused(!sharing.paused)}>
-                  <Icon name={sharing.paused ? 'play' : 'pause'} /> {sharing.paused ? 'Resume' : 'Pause'}
+              <div className="control-group">
+                <button
+                  className="btn"
+                  aria-label={sharing.paused ? 'Resume' : 'Pause'}
+                  title={sharing.paused ? 'Resume your stream' : 'Pause your stream (and its audio)'}
+                  onClick={() => publisher.setPaused(!sharing.paused)}
+                >
+                  <Icon name={sharing.paused ? 'play' : 'pause'} />
+                  <span className="btn-label">{sharing.paused ? 'Resume' : 'Pause'}</span>
                 </button>
                 <button
                   className={`btn ${sharing.hasAudio && sharing.audioMuted ? 'active' : ''}`}
@@ -459,54 +492,65 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
                           ? 'Mute or unmute the system audio viewers hear (Discord is left out)'
                           : 'Mute or unmute the system audio viewers hear'
                   }
+                  aria-label={!sharing.hasAudio ? 'No audio' : sharing.audioMuted ? 'Unmute audio' : 'Mute audio'}
                   onClick={() => publisher.setAudioMuted(!sharing.audioMuted)}
                 >
                   <Icon name={sharing.hasAudio && !sharing.audioMuted ? 'volume' : 'volumeOff'} />
-                  {!sharing.hasAudio ? 'No audio' : sharing.audioMuted ? 'Unmute audio' : 'Mute audio'}
+                  <span className="btn-label">
+                    {!sharing.hasAudio ? 'No audio' : sharing.audioMuted ? 'Unmute audio' : 'Mute audio'}
+                  </span>
                 </button>
-                <button className="btn" onClick={() => setPickSource(true)}>
-                  <Icon name="swap" /> Change source
-                </button>
-                <select
-                  className="toolbar-select"
-                  aria-label="Maximum quality you send"
-                  title="Maximum quality you send (each viewer may get less: smaller tile, own choice, network)"
-                  value={settings.maxQuality}
-                  onChange={(e) => onChangeSettings({ maxQuality: e.target.value as Settings['maxQuality'] })}
+                <button
+                  className="btn"
+                  aria-label="Change source"
+                  title="Share another screen or window, or change the audio"
+                  onClick={() => setPickSource(true)}
                 >
-                  {QUALITY_PRESETS.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-                <button className="btn" onClick={() => publisher.stopSharing()}>
-                  <Icon name="stop" /> Stop sharing
+                  <Icon name="swap" />
+                  <span className="btn-label">Change source</span>
                 </button>
-                <button className={`btn ${showStats ? 'active' : ''}`} onClick={() => setShowStats((v) => !v)}>
-                  <Icon name="chart" /> Stats
+                <button className="btn" aria-label="Stop sharing" title="Stop sharing" onClick={() => publisher.stopSharing()}>
+                  <Icon name="stop" />
+                  <span className="btn-label">Stop sharing</span>
                 </button>
-              </>
+                <button
+                  className={`btn icon-only ${showStats ? 'active' : ''}`}
+                  title="Quality and stats of your stream"
+                  aria-label="Stats"
+                  aria-expanded={showStats}
+                  onClick={() => setShowStats((v) => !v)}
+                >
+                  <Icon name="sliders" />
+                </button>
+              </div>
             ) : (
               <button className="btn primary" onClick={() => setPickSource(true)}>
-                <Icon name="play" /> Share screen
+                <Icon name="screen" /> Share screen
               </button>
             )}
-            <span className="spacer" />
-            {isHost ? (
-              <button className="btn danger" onClick={endRoom}>
-                <Icon name="logout" /> End room
-              </button>
-            ) : (
-              <button className="btn danger" onClick={() => onLeave()}>
-                <Icon name="logout" /> Leave
+            {unwatched.length > 1 && (
+              <button
+                className="btn"
+                aria-label="Watch all"
+                title="Watch everyone who is sharing"
+                onClick={() => unwatched.forEach((p) => watches.watch(p.id))}
+              >
+                <Icon name="eye" />
+                <span className="btn-label">Watch all</span>
               </button>
             )}
+            <button
+              className="btn hang-up"
+              title={isHost ? 'End the room for everyone' : 'Leave the room'}
+              aria-label={isHost ? 'End room' : 'Leave'}
+              onClick={isHost ? endRoom : () => onLeave()}
+            >
+              <Icon name="hangUp" size={20} />
+            </button>
           </div>
         </main>
 
         <aside className="sidebar" hidden={sidePanel === 'closed'}>
-          {isHost && hosted && <AccessPanel hosted={hosted} onToast={onToast} />}
           <ChatPanel
             messages={messages}
             avatars={avatars}
@@ -533,95 +577,6 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
 }
 
 // ---------------------------------------------------------------------------
-
-/** What a stream card or chip shows about a live stream. */
-interface PreviewInfo {
-  /** Shown on the card ("You" for your own stream). */
-  label: string
-  /** Name the avatar initial comes from. */
-  name: string
-  color: string
-  image: string | null
-  audio: boolean
-  paused: boolean
-}
-
-function previewOf(p: Participant, avatars: ReadonlyMap<string, string>): PreviewInfo {
-  return {
-    label: p.name,
-    name: p.name,
-    color: p.color,
-    image: avatars.get(p.id) ?? null,
-    audio: !!p.stream?.audio,
-    paused: !!p.stream?.paused
-  }
-}
-
-/** Preview card for a live stream the user isn't watching yet. */
-function StreamCard({
-  info,
-  snapshot,
-  watchers,
-  action = 'Watch',
-  title = `Watch ${info.label}'s stream`,
-  onWatch
-}: {
-  info: PreviewInfo
-  snapshot: string | null
-  watchers: number
-  action?: string
-  title?: string
-  onWatch(): void
-}) {
-  return (
-    <button className="stream-card" onClick={onWatch} aria-label={title}>
-      <div className="stream-card-thumb">
-        {snapshot ? <img src={snapshot} alt="" /> : <Icon name="screen" size={32} />}
-        {info.paused && <span className="stream-card-flag">Paused</span>}
-        <span className="stream-card-play" aria-hidden="true">
-          <Icon name="play" size={18} /> {action}
-        </span>
-      </div>
-      <div className="stream-card-info">
-        <Avatar name={info.name} color={info.color} image={info.image} size="tiny" />
-        <span className="stream-card-name">{info.label}</span>
-        {info.audio && <Icon name="volume" size={13} className="muted" />}
-        <span className="muted small">{watchers === 0 ? 'no viewers' : `${watchers} watching`}</span>
-      </div>
-    </button>
-  )
-}
-
-/** Compact "also live" entry above the stage. */
-function StreamChip({
-  info,
-  snapshot,
-  action = 'Watch',
-  title = `Watch ${info.label}'s stream`,
-  onWatch
-}: {
-  info: PreviewInfo
-  snapshot: string | null
-  action?: string
-  title?: string
-  onWatch(): void
-}) {
-  return (
-    <button className="stream-chip" onClick={onWatch} title={title}>
-      {snapshot ? (
-        <img className="stream-chip-thumb" src={snapshot} alt="" />
-      ) : (
-        <Avatar name={info.name} color={info.color} image={info.image} size="tiny" />
-      )}
-      <span className="stream-chip-name">{info.label}</span>
-      {info.audio && <Icon name="volume" size={12} />}
-      {info.paused && <span className="muted small">paused</span>}
-      <span className="stream-chip-action">
-        <Icon name="play" size={12} /> {action}
-      </span>
-    </button>
-  )
-}
 
 interface TileChrome {
   focused: boolean

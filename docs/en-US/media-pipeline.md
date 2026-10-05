@@ -106,7 +106,7 @@ Four independent limits decide what each watcher receives. They are combined in 
 
 ```mermaid
 flowchart LR
-  A["Streamer's maximum quality<br/>(toolbar or Settings)"] --> L["Quality ladder"]
+  A["Streamer's maximum quality<br/>(Stats in the control bar, or Settings)"] --> L["Quality ladder"]
   L --> B["Adaptive controller<br/>per watcher: loss, RTT, limitation"]
   B --> C["View limit<br/>tile size x zoom x DPI,<br/>or the watcher's own choice"]
   C --> D["Upload budget<br/>max-min fair share"]
@@ -234,7 +234,7 @@ Limitations: process loopback can leave out **one** app at a time, and it leaves
 
 ## Previews
 
-Every 5 s (and 1.2 s after starting, switching source or resuming) a streamer grabs a frame, scales it to 320 px wide and sends it as a JPEG data URL (`snapshot`). The server checks the sender is sharing, the type and the size, rate-limits it, stores the latest one for late joiners and clears it when the stream ends. Watchers see previews on the "live now" cards and chips. The streamer keeps its own latest preview locally for its "You" card.
+Every minute (and 1.2 s after starting, switching source or resuming) a streamer grabs a frame, scales it to 320 px wide and sends it as a JPEG data URL (`snapshot`). The server checks the sender is sharing, the type and the size, rate-limits it, stores the latest one for late joiners and clears it when the stream ends. Watchers see previews on the streamer's tile and when hovering over them in the rooms column. The streamer keeps its own latest preview locally for its own tile.
 
 ## Statistics and latency
 

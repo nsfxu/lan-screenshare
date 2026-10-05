@@ -47,7 +47,7 @@ These choices explain most of the code. Please keep them unless there is a stron
 
 1. **LAN only, no external services.** No accounts, no cloud, no STUN/TURN servers. Everything works on an isolated network.
 2. **The server is thin.** It authenticates, relays and enforces rules. It does not encode, decode or mix media.
-3. **Nothing plays unless you ask.** Watching is explicit. Your own stream is not played back either until you click **Show**. This saves bandwidth and GPU time.
+3. **Nothing plays unless you ask.** Watching is explicit. Your own stream is not played back either until you click **Show my stream**. This saves bandwidth and GPU time.
 4. **One connection per watcher.** Each watcher gets its own congestion control, adaptive quality and resolution cap, so one slow viewer never degrades the others.
 5. **Only send what is shown.** Watchers report how big they display each stream. Streamers never send more pixels than that, and they split their upload budget fairly.
 6. **The server enforces authority.** Host-only actions, PIN checks, rate limits and input validation happen on the server, never only in the UI.
@@ -268,16 +268,16 @@ flowchart TB
   Rooms --> Members["RoomMembers<br/>people in your room: live, watch, preview, host menu"]
   App --> Welcome["Welcome<br/>centre when not in a room"]
   App --> Room["RoomView<br/>centre and right, one per session"]
-  App --> Dlg["Dialogs<br/>CreateRoom, Pin, Settings (+ picture cropper)"]
-  Room --> Stage["Stage<br/>live-now cards, grid or spotlight"]
-  Stage --> Self["SelfTile<br/>your stream, after Show"]
+  App --> Dlg["Dialogs<br/>CreateRoom, ChangeSource, Settings (+ picture cropper)"]
+  Room --> Info["RoomInfo (ⓘ)<br/>details; AccessPanel and End room for the host"]
+  Room --> Stage["Stage<br/>a 16:9 tile per person (bestTileGrid), or spotlight"]
+  Stage --> Person["PersonTile<br/>picture, or a live stream's preview + Watch"]
+  Stage --> Self["SelfTile<br/>your stream, after Show my stream"]
   Stage --> Remote["RemoteTile<br/>one per watched stream"]
   Self --> SV["ScreenViewer<br/>zoom, pan, fullscreen, volume"]
   Remote --> SV
-  Room --> Side["Sidebar"]
-  Side --> Access["AccessPanel (host)<br/>privacy, PIN"]
-  Side --> Chat["ChatPanel"]
-  Room --> Toolbar["Toolbar<br/>share, pause, audio, source, quality, stop, stats"]
+  Room --> Bar["Control bar<br/>share, pause, audio, source, stop, stats and quality, leave"]
+  Room --> Chat["ChatPanel (right)"]
 ```
 
 Components subscribe to the session objects' events (`client.on('participants', …)`, `publisher.on('stats', …)`, …) and keep React state as copies. Session objects never import React.
