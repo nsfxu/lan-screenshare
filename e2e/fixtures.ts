@@ -209,7 +209,7 @@ export function cornerColour(win: Page): Promise<number[] | null> {
 }
 
 export async function sendChat(person: Person, text: string): Promise<void> {
-  const input = person.win.getByPlaceholder('Type a message…')
+  const input = person.win.getByLabel('Chat message')
   await input.fill(text)
   await input.press('Enter')
 }

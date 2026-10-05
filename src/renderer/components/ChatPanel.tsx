@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
+import { startsGroup } from '../../shared/chat'
 import { CHAT_MAX_LENGTH } from '../../shared/constants'
 import type { ChatMessage } from '../../shared/types'
 import { formatTime } from '../lib/format'
@@ -9,6 +10,8 @@ const EMOJI = ['😀', '😂', '😊', '😍', '🤔', '😮', '😢', '😡', '
 
 interface Props {
   messages: ChatMessage[]
+  /** Shown in the message box: "Message <room>". */
+  roomName: string
   /** Profile pictures by participant id. */
   avatars: ReadonlyMap<string, string>
   selfId: string
@@ -19,7 +22,7 @@ interface Props {
   onToggleMute(muted: boolean): void
 }
 
-export function ChatPanel({ messages, avatars, selfId, isHost, muted, onSend, onDelete, onToggleMute }: Props) {
+export function ChatPanel({ messages, roomName, avatars, selfId, isHost, muted, onSend, onDelete, onToggleMute }: Props) {
   const [text, setText] = useState('')
   const [emojiOpen, setEmojiOpen] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
@@ -76,8 +79,7 @@ export function ChatPanel({ messages, avatars, selfId, isHost, muted, onSend, on
       >
         {messages.length === 0 && <p className="muted small center">No messages yet. Say hi!</p>}
         {messages.map((m, i) => {
-          const prev = messages[i - 1]
-          const grouped = !!prev && !prev.system && !m.system && prev.userId === m.userId && m.ts - prev.ts < 120_000
+          const grouped = !startsGroup(messages[i - 1], m)
           if (m.system) {
             return (
               <div key={m.id} className="chat-system">
@@ -91,7 +93,10 @@ export function ChatPanel({ messages, avatars, selfId, isHost, muted, onSend, on
               {!grouped ? (
                 <Avatar name={m.name} color={m.color} image={avatars.get(m.userId)} />
               ) : (
-                <span className="avatar-spacer" />
+                // Under the first message of a group: its time shows on hover.
+                <span className="avatar-spacer">
+                  <time className="chat-hover-time">{formatTime(m.ts)}</time>
+                </span>
               )}
               <div className="chat-body">
                 {!grouped && (
@@ -148,7 +153,7 @@ export function ChatPanel({ messages, avatars, selfId, isHost, muted, onSend, on
           value={text}
           maxLength={CHAT_MAX_LENGTH}
           disabled={!canSend}
-          placeholder={canSend ? 'Type a message…' : 'The host has muted the chat'}
+          placeholder={canSend ? `Message ${roomName}` : 'The host has muted the chat'}
           onChange={(e) => setText(e.target.value)}
           aria-label="Chat message"
         />

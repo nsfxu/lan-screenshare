@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { QUALITY_PRESETS, WATCH_QUALITIES, getWatchQuality, lowerPreset, type WatchQualityId } from '../../shared/quality'
+import { countUnread } from '../../shared/chat'
 import { struggleMessage, type StruggleKind } from '../../shared/struggle'
 import { bestTileGrid } from '../../shared/tileGrid'
 import type {
@@ -78,6 +79,8 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const [pickSource, setPickSource] = useState(false)
   const [sidePanel, setSidePanel] = useRemembered('room-side', 'open', PANEL_STATES)
   const [infoOpen, setInfoOpen] = useState(false)
+  // Messages read while the chat was open; the rest count as unread while it's hidden.
+  const [seen, setSeen] = useState<ReadonlySet<string>>(() => new Set(client.messages.map((m) => m.id)))
   const stageRef = useRef<HTMLDivElement>(null)
   const stageSize = useElementSize(stageRef)
   const closeInfo = useCallback(() => setInfoOpen(false), [])
@@ -173,6 +176,11 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     const t = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(t)
   }, [])
+
+  useEffect(() => {
+    if (sidePanel === 'open') setSeen(new Set(messages.map((m) => m.id)))
+  }, [sidePanel, messages])
+  const unread = sidePanel === 'closed' ? countUnread(messages, seen, client.selfId) : 0
 
   // The room's name in the taskbar and alt-tab.
   const roomName = room?.name
@@ -361,13 +369,16 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           {connection === 'reconnecting' && <span className="status-pill warn">Reconnecting…</span>}
         </div>
         <button
-          className={`icon-btn ${sidePanel === 'open' ? 'active' : ''}`}
+          className={`icon-btn chat-toggle ${sidePanel === 'open' ? 'active' : ''}`}
           title={sidePanel === 'open' ? 'Hide chat' : 'Show chat'}
-          aria-label={sidePanel === 'open' ? 'Hide chat' : 'Show chat'}
+          aria-label={
+            sidePanel === 'open' ? 'Hide chat' : unread > 0 ? `Show chat (${unread} unread)` : 'Show chat'
+          }
           aria-expanded={sidePanel === 'open'}
           onClick={() => setSidePanel(sidePanel === 'open' ? 'closed' : 'open')}
         >
-          <Icon name="panelRight" size={18} />
+          <Icon name="chat" size={18} />
+          {unread > 0 && <span className="unread-badge">{unread > 99 ? '99+' : unread}</span>}
         </button>
         {infoOpen && (
           <RoomInfo
@@ -553,6 +564,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
         <aside className="sidebar" hidden={sidePanel === 'closed'}>
           <ChatPanel
             messages={messages}
+            roomName={room?.name ?? 'the room'}
             avatars={avatars}
             selfId={client.selfId}
             isHost={isHost}
