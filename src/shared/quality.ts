@@ -32,6 +32,12 @@ export function getPreset(id: QualityPresetId): QualityPreset {
   return QUALITY_PRESETS.find((p) => p.id === id) ?? QUALITY_PRESETS[1]
 }
 
+/** The next preset below `id`, or null at the bottom. */
+export function lowerPreset(id: QualityPresetId): QualityPreset | null {
+  const i = QUALITY_PRESETS.findIndex((p) => p.id === id)
+  return i >= 0 ? (QUALITY_PRESETS[i + 1] ?? null) : null
+}
+
 /** The presets the controller may use, starting at the user's maximum. */
 export function qualityLadder(max: QualityPresetId): QualityPreset[] {
   const start = QUALITY_PRESETS.findIndex((p) => p.id === max)

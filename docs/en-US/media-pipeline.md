@@ -147,6 +147,8 @@ stateDiagram-v2
 
 Turning **Adaptive quality** off keeps each watcher at the maximum preset.
 
+The same per-watcher samples feed `StruggleDetector` (`src/shared/struggle.ts`), which tells the streamer *why* quality drops: **cpu** (WebRTC reports a CPU limitation, or encoding takes longer than the frame budget), **bandwidth** (every visible watcher is bandwidth-limited, so it's our upload rather than one viewer's Wi-Fi) or **encoders** (some watchers got a hardware encoder and others a software one: the GPU ran out of encoder sessions). A condition must hold in 8 of the last 10 seconds; each kind is shown at most once every 10 minutes, and the notice goes away when the condition no longer holds. Hidden watchers are left out.
+
 ### 2. View limit (only send what is shown)
 
 Each watcher's `ScreenViewer` measures the height it really displays the stream at (tile height × zoom × `devicePixelRatio`) and rounds it **up** to a step: 360, 480, 720, 1080, 1440 or 2160 (`viewHeightStep`). Only step changes are sent (`view-size`).

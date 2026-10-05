@@ -1,4 +1,5 @@
 import type { QualityPresetId } from './quality'
+import type { StruggleKind } from './struggle'
 
 export type Privacy = 'public' | 'private'
 export type Role = 'host' | 'viewer'
@@ -127,6 +128,8 @@ export interface HostStats {
   /** The content hint in use, and whether it was chosen automatically. */
   contentHint: ContentHint
   contentHintAuto: boolean
+  /** What we've been struggling with recently (see shared/struggle.ts); empty when all is well. */
+  struggling: StruggleKind[]
 }
 
 export interface CodecSupport {

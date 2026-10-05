@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { QUALITY_PRESETS, WATCH_QUALITIES, getWatchQuality, type WatchQualityId } from '../../shared/quality'
+import { QUALITY_PRESETS, WATCH_QUALITIES, getWatchQuality, lowerPreset, type WatchQualityId } from '../../shared/quality'
+import { struggleMessage, type StruggleKind } from '../../shared/struggle'
 import type {
   AudioChoice,
   ChatMessage,
@@ -60,6 +61,8 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
   const ourVersion = useAppVersion()
   /** A newer version someone runs that we already acknowledged (the notice comes back for an even newer one). */
   const [dismissedVersion, setDismissedVersion] = useState<string | null>(null)
+  /** The struggle notice on screen (the publisher rate-limits them). */
+  const [struggle, setStruggle] = useState<StruggleKind | null>(null)
   const [ownStream, setOwnStream] = useState<MediaStream | null>(publisher.stream)
   const [ownSnapshot, setOwnSnapshot] = useState<string | null>(publisher.snapshot)
   // Your own stream isn't played back until you ask: rendering it costs GPU
@@ -117,6 +120,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
       publisher.on('stats', setOwnStats),
       publisher.on('watchers', (m) => setMyWatchers(new Map(m))),
       publisher.on('stopped', (reason) => onToast(reason, 'info')),
+      publisher.on('struggle', setStruggle),
       watches.on('changed', (m) => setSubs(new Map(m)))
     ]
     if (session.role === 'host') offs.push(window.api.host.onChanged((h) => h && setHosted(h)))
@@ -184,6 +188,9 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
   /** Sharing, but not showing our own stream: offer it next to the others. */
   const selfHidden = !!ownStream && !showSelf
   const me = byId(client.selfId)
+  // The notice goes away by itself once the problem has gone (or sharing stopped).
+  const struggleShown = struggle && sharing.sharing && ownStats?.struggling.includes(struggle) ? struggle : null
+  const lower = lowerPreset(settings.maxQuality)
   const newer = ourVersion ? newerVersionInRoom(ourVersion, participants.filter((p) => p.id !== client.selfId)) : null
   const selfPreview: PreviewInfo = {
     label: 'You',
@@ -368,6 +375,25 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
               </span>
               <button className="btn small" onClick={() => gameCursor.keepScreen()}>
                 Share the screen instead
+              </button>
+            </div>
+          )}
+          {struggleShown && (
+            <div className="notice warn struggle-hint" role="status">
+              <span className="struggle-hint-text">{struggleMessage(struggleShown, ownStats?.viewers ?? 0)}</span>
+              {lower && (
+                <button
+                  className="btn small"
+                  onClick={() => {
+                    onChangeSettings({ maxQuality: lower.id })
+                    setStruggle(null)
+                  }}
+                >
+                  Lower to {lower.label}
+                </button>
+              )}
+              <button className="btn small" onClick={() => setStruggle(null)}>
+                OK
               </button>
             </div>
           )}

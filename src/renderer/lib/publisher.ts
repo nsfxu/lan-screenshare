@@ -12,6 +12,7 @@ import {
   type QualityPreset,
   type ViewLimit
 } from '../../shared/quality'
+import { STRUGGLE_KINDS, StruggleDetector, type SenderSample, type StruggleKind } from '../../shared/struggle'
 import type {
   AudioChoice,
   CodecSupport,
@@ -101,6 +102,8 @@ type Events = {
   /** The host stopped this stream; carries the reason to show. */
   stopped: string
   error: string
+  /** Our computer or network has been struggling for a while: time to tell the streamer (rate-limited). */
+  struggle: StruggleKind
 }
 
 /** Opus ceiling per viewer; the SDP asks for 128 kbps average. */
@@ -159,6 +162,7 @@ export class Publisher extends Emitter<Events> {
   private readonly statsTimer: number
   private readonly unsubscribe: () => void
   private tick = 0
+  private readonly struggle = new StruggleDetector()
   private readonly snapshotTimer: number
   private snapshotSoon: number | null = null
   private disposed = false
@@ -872,6 +876,21 @@ export class Publisher extends Emitter<Events> {
 
     if (changed) await this.rebalance()
 
+    // Watchers who can't see the stream get no video, so their senders say nothing about us.
+    const senders: SenderSample[] = []
+    for (const [id, peer] of this.peers) {
+      if (!peer.sample || this.isHidden(id)) continue
+      senders.push({
+        limitation: peer.sample.limitation,
+        encodeMs: peer.sample.encodeMs,
+        encoder: peer.sample.encoder,
+        targetFps: Math.min(peer.controller.preset.fps, this.views.get(id)?.fps ?? Infinity)
+      })
+    }
+    let struggle: StruggleKind | null = null
+    if (this.paused || !this.track) this.struggle.reset()
+    else struggle = this.struggle.update(senders, Date.now())
+
     const samples = [...this.peers.values()].map((p) => p.sample).filter((s): s is PeerSample => !!s)
     let tcpKbps = 0
     let tcpAudioKbps = 0
@@ -909,10 +928,12 @@ export class Publisher extends Emitter<Events> {
       viewers: this.peers.size + this.tcpViewers.size,
       qualityLimitation: worst?.limitation ?? 'none',
       contentHint: this.contentHint,
-      contentHintAuto: this.settings.contentHint === 'auto'
+      contentHintAuto: this.settings.contentHint === 'auto',
+      struggling: STRUGGLE_KINDS.filter((k) => this.struggle.holds(k))
     }
     this.lastStats = stats
     this.emit('stats', stats)
+    if (struggle) this.emit('struggle', struggle)
     if (this.tick % 2 === 0 && this.track) this.client.send({ type: 'publisher-stats', encodeMs: stats.encodeMs })
   }
 
