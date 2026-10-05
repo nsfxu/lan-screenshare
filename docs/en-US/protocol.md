@@ -275,7 +275,7 @@ Backpressure: when a watcher's socket has more than **2 MB** queued, the server 
 | Discovery probe / stale room | 3 s / 10 s | `PROBE_INTERVAL_MS`, `ROOM_STALE_MS` |
 | WebSocket heartbeat | 10 s | `HEARTBEAT_INTERVAL_MS` |
 | WebRTC connect timeout before TCP | 8 s | `WEBRTC_CONNECT_TIMEOUT_MS` |
-| Preview size / interval / min interval | ≤ 96 000 chars / 5 s / 1 s | `SNAPSHOT_*` |
+| Preview size / interval / min interval | ≤ 96 000 chars / 60 s / 1 s | `SNAPSHOT_*` |
 | Profile picture size / min interval | ≤ 40 000 chars (128 px JPEG) / 1 s | `AVATAR_*` |
 | Max WebSocket message | 16 MB | `MAX_PAYLOAD_BYTES` (server) |
 | TCP relay queue per watcher | 2 MB | `TCP_MAX_BUFFERED_BYTES` |

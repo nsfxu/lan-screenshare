@@ -48,8 +48,13 @@ export const BINARY_KIND_VIDEO = 1
 export const BINARY_KIND_AUDIO = 2
 export const BINARY_FLAG_KEY = 1
 
-/** Stream previews: small JPEG thumbnails a streamer shares with the whole room. */
-export const SNAPSHOT_INTERVAL_MS = 5_000
+/**
+ * Stream previews: small JPEG thumbnails a streamer shares with the whole room.
+ * Refreshed once a minute (a first one goes out right after starting or
+ * switching source): enough to see what someone shares, without a steady
+ * stream of images to everyone.
+ */
+export const SNAPSHOT_INTERVAL_MS = 60_000
 export const SNAPSHOT_WIDTH = 320
 /** Max length of a snapshot data URL (~70 KB of JPEG). */
 export const SNAPSHOT_MAX_CHARS = 96_000
