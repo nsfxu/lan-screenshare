@@ -465,12 +465,14 @@ input[type='checkbox']:checked::after {
   color: var(--ok);
 }
 .cursor-hint,
-.version-hint {
+.version-hint,
+.struggle-hint {
   margin: 0 12px 8px;
   flex-wrap: nowrap;
 }
 .cursor-hint-text,
-.version-hint-text {
+.version-hint-text,
+.struggle-hint-text {
   flex: 1;
   min-width: 0;
 }

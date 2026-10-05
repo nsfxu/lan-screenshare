@@ -63,7 +63,7 @@ flowchart TD
 2. Check the tile's **quality menu**: it should be **Auto** (or the quality you want).
 3. **Auto follows the tile size**: a small tile gets a small stream. Focus the stream (spotlight), go full screen or zoom in and the quality rises within a second.
 4. Ask the streamer to check their **quality picker** in the toolbar, and **Settings → Upload limit when sharing** (the default 100 Mbps is shared between everyone watching them; on Wi-Fi 30–60 Mbps is more realistic).
-5. The streamer's **Stats → Limited by** tells you why: *bandwidth* (network), *cpu* (computer too busy) or *none*.
+5. The streamer's **Stats → Limited by** tells you why: *bandwidth* (network), *cpu* (computer too busy) or *none*. When it lasts, the streamer also gets a notice saying so, with a button to lower the quality.
 6. On the **TCP** connection, latency is a bit higher and one encode is shared by all TCP viewers.
 
 ## Viewers see my mouse cursor in a game

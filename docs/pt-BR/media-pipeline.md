@@ -147,6 +147,8 @@ stateDiagram-v2
 
 Desligar **Adaptive quality** mantém cada espectador no preset máximo.
 
+As mesmas amostras por espectador alimentam o `StruggleDetector` (`src/shared/struggle.ts`), que diz a quem transmite *por que* a qualidade cai: **cpu** (o WebRTC relata limitação de CPU, ou codificar leva mais que o tempo de um quadro), **bandwidth** (todos os espectadores visíveis estão limitados por banda, então é o nosso upload e não o Wi-Fi de um espectador) ou **encoders** (alguns espectadores ganharam um codificador de hardware e outros um de software: a GPU ficou sem sessões de codificação). Uma condição precisa valer em 8 dos últimos 10 segundos; cada tipo aparece no máximo uma vez a cada 10 minutos, e o aviso some quando a condição deixa de valer. Espectadores ocultos ficam de fora.
+
 ### 2. Limite de exibição (só enviar o que aparece)
 
 O `ScreenViewer` de cada espectador mede a altura em que realmente exibe a transmissão (altura do quadro × zoom × `devicePixelRatio`) e arredonda **para cima** para um degrau: 360, 480, 720, 1080, 1440 ou 2160 (`viewHeightStep`). Só as mudanças de degrau são enviadas (`view-size`).

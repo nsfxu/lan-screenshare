@@ -63,7 +63,7 @@ flowchart TD
 2. Confira o **menu de qualidade** do quadro: deve estar em **Auto** (ou na qualidade que você quer).
 3. **O Auto acompanha o tamanho do quadro**: um quadro pequeno recebe uma transmissão pequena. Coloque a transmissão em destaque, vá para tela cheia ou dê zoom e a qualidade sobe em menos de um segundo.
 4. Peça para quem transmite conferir o **seletor de qualidade** na barra e **Settings → Upload limit when sharing** (os 100 Mbps padrão são divididos entre todos que assistem; no Wi-Fi, 30–60 Mbps é mais realista).
-5. O **Stats → Limited by** de quem transmite diz o motivo: *bandwidth* (rede), *cpu* (computador ocupado demais) ou *none*.
+5. O **Stats → Limited by** de quem transmite diz o motivo: *bandwidth* (rede), *cpu* (computador ocupado demais) ou *none*. Quando isso dura, quem transmite também recebe um aviso dizendo isso, com um botão para baixar a qualidade.
 6. Na conexão **TCP** o atraso é um pouco maior e uma única codificação é dividida entre todos os espectadores TCP.
 
 ## Os espectadores veem o cursor do mouse num jogo
