@@ -10,6 +10,8 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-05
+
 ### Added
 
 - Rooms on an incompatible version now say who has to update, e.g. "This room runs ScreenShare 2.0.0, you have 1.2.0: update to join", on the room card and when joining, instead of "Unreachable" or "This room runs a different app version". Rooms report their app version from now on, so this works when 2.0.0 arrives.
@@ -48,6 +50,7 @@ The first release.
 - Reconnects after short network drops, and switches to TCP when a network blocks WebRTC.
 - Encrypted connections, the PIN kept only in memory, and the window hidden from screenshots while you watch.
 
-[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/nsfxu/lan-screenshare/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/nsfxu/lan-screenshare/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nsfxu/lan-screenshare/releases/tag/v1.0.0
