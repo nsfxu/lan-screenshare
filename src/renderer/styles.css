@@ -1992,6 +1992,15 @@ button.member-main {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
 }
+.split-stop {
+  display: none;
+}
+.split-main:hover .split-state {
+  display: none;
+}
+.split-main:hover .split-stop {
+  display: inline;
+}
 .split-live-dot {
   width: 8px;
   height: 8px;
