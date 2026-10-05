@@ -57,7 +57,7 @@ The rooms column lists:
 
 Each row shows a lock for private rooms, how many streams are live, and how many people are inside; hover over it for who hosts it, for how long, and its address. A room on an incompatible version says *Update to join* or *Older version* (hover for who needs to update). Rooms you added by IP have a **×** to remove them from the list. Click a room to join it. If you're already in a room, you leave it first; the app asks before that ends a room you host or stops your share.
 
-The button at the top right of each side column hides it (the rooms column shrinks to a strip of room initials). The app remembers which columns you hid.
+The button at the top of each side column hides it (the rooms column shrinks to a strip of room initials; the chat button is in the room's header). The app remembers which columns you hid. In a small window (for example snapped next to a game) the columns make room for the tiles by themselves: below 1100 px wide the chat is closed, and below 760 px the rooms column is a strip. Their buttons then open them over the room, and clicking next to them puts them away.
 
 **Connect by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click the **Connect by IP** button (the signal icon next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses behind the **ⓘ** next to the room's name. The default port is 47800.
 

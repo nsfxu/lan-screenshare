@@ -8,7 +8,7 @@ import { RoomView } from './components/RoomView'
 import { Welcome } from './components/Welcome'
 import { detectDecoders, detectEncoders } from './lib/codecs'
 import { captureAudioWarning, errorMessage } from './lib/format'
-import { PANEL_STATES, useRemembered } from './lib/layout'
+import { PANEL_STATES, ROOMS_DOCKED_MIN_WIDTH, useRemembered, useWindowWidth } from './lib/layout'
 import { audioDefaults } from './lib/publisher'
 import { disposeSession, hostRoom, joinRoom, JoinError, updateSessionSettings, type Session } from './lib/session'
 
@@ -37,7 +37,12 @@ export function App() {
   const [busyKey, setBusyKey] = useState<string | null>(null)
   const [toasts, setToasts] = useState<Toast[]>([])
   const [sidebar, setSidebar] = useRemembered('rooms', 'open', PANEL_STATES)
+  // In a narrow window the rooms column is a strip; opening it shows it over the room for a moment.
+  const roomsDocked = useWindowWidth() >= ROOMS_DOCKED_MIN_WIDTH
+  const [roomsFloating, setRoomsFloating] = useState(false)
   const current = useCurrentRoom(session)
+  // Joining or leaving a room puts a floating rooms column away.
+  useEffect(() => setRoomsFloating(false), [session])
   const sessionRef = useRef<Session | null>(null)
   sessionRef.current = session
   const settingsRef = useRef<Settings | null>(null)
@@ -208,6 +213,8 @@ export function App() {
 
   if (!settings) return <div className="boot">Loading…</div>
 
+  const roomsFloatingNow = !roomsDocked && (roomsFloating || !!pinPrompt)
+
   const openCreate = (): void => {
     setCreateError(null)
     setCreating(true)
@@ -216,7 +223,20 @@ export function App() {
   return (
     <>
       <div className="shell">
+        {roomsFloatingNow && (
+          <>
+            <div className="rooms-sidebar-space" />
+            <div
+              className="overlay-backdrop"
+              onClick={() => {
+                setRoomsFloating(false)
+                setPinPrompt(null)
+              }}
+            />
+          </>
+        )}
         <RoomsSidebar
+          floating={roomsFloatingNow}
           settings={settings}
           rooms={rooms}
           current={current}
@@ -233,8 +253,8 @@ export function App() {
           onPinSubmit={(pin) => pinPrompt && void join(pinPrompt.room, pin)}
           onPinCancel={() => setPinPrompt(null)}
           busyKey={busyKey}
-          collapsed={sidebar === 'closed' && !pinPrompt}
-          onToggle={() => setSidebar(sidebar === 'open' ? 'closed' : 'open')}
+          collapsed={roomsDocked ? sidebar === 'closed' && !pinPrompt : !roomsFloatingNow}
+          onToggle={() => (roomsDocked ? setSidebar(sidebar === 'open' ? 'closed' : 'open') : setRoomsFloating((v) => !v))}
           onJoin={switchTo}
           onJoinEndpoint={(ep) => void switchToEndpoint(ep)}
           onForgetRecent={(ep) =>

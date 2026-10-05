@@ -32,7 +32,7 @@ npm run build        # production build into out/
 | Watching | `src/renderer/lib/subscription.ts`, `src/renderer/lib/watches.ts` |
 | TCP fallback | `src/renderer/lib/tcpStream.ts` |
 | Quality maths (pure, tested) | `src/shared/quality.ts` |
-| UI | `src/renderer/components/`, `src/renderer/styles.css` |
+| UI | `src/renderer/App.tsx` (three columns), `src/renderer/components/` (`RoomsSidebar`, `RoomMembers`, `RoomView`, `RoomStage`, `RoomInfo`, `ChatPanel`), `src/renderer/styles.css`, layout helpers in `src/renderer/lib/layout.ts` |
 | Windows helpers (C#) | `native/win-audio-capture/Program.cs` (system audio), `native/win-cursor-watch/Program.cs` (games hiding the cursor) |
 | Tests | `tests/` (`TestClient` in `tests/helpers.ts`) |
 

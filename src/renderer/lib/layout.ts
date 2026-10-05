@@ -45,3 +45,18 @@ export function useElementSize(ref: RefObject<HTMLElement | null>): { width: num
   }, [ref])
   return size
 }
+
+/** Below these window widths the side columns stop taking space: they open over the room instead. */
+export const CHAT_DOCKED_MIN_WIDTH = 1100
+export const ROOMS_DOCKED_MIN_WIDTH = 760
+
+/** The window's width, kept up to date. */
+export function useWindowWidth(): number {
+  const [width, setWidth] = useState(() => window.innerWidth)
+  useEffect(() => {
+    const onResize = (): void => setWidth(window.innerWidth)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  return width
+}

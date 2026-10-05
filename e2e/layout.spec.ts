@@ -1,4 +1,4 @@
-import { createRoom, expect, joinByIp, test } from './fixtures'
+import { createRoom, expect, joinByIp, openChat, resizeWindow, test } from './fixtures'
 
 const shots = process.env.E2E_SHOTS
 
@@ -27,7 +27,9 @@ test('the room list remembers rooms, and the panels stay as you left them', asyn
   await bob.win.getByRole('button', { name: "Join Alice's room" }).first().click()
   await expect(bob.win.locator('.room')).toBeVisible()
 
-  // Hide both side panels; they stay hidden after a restart of the window.
+  // On a wide window, hide both side columns; they stay hidden after a restart of the window.
+  await resizeWindow(bob, 1400, 900)
+  await openChat(bob)
   await bob.win.getByRole('button', { name: 'Hide rooms' }).click()
   await bob.win.getByRole('button', { name: 'Hide chat' }).click()
   await expect(bob.win.locator('.rooms-sidebar.collapsed')).toBeVisible()
@@ -37,4 +39,28 @@ test('the room list remembers rooms, and the panels stay as you left them', asyn
   await expect(bob.win.locator('.rooms-sidebar.collapsed')).toBeVisible()
   await bob.win.getByRole('button', { name: 'Show rooms' }).click()
   await expect(bob.win.locator('.rooms-sidebar:not(.collapsed)')).toBeVisible()
+})
+
+test('in a small window the side columns open over the room instead of squeezing it', async ({ people }) => {
+  const [alice] = await people(1)
+  await resizeWindow(alice, 700, 700)
+  await createRoom(alice)
+
+  // Below 760 px the rooms column is a strip, below 1100 px the chat is closed: the tiles get the room.
+  await expect(alice.win.locator('.rooms-sidebar.collapsed')).toBeVisible()
+  await expect(alice.win.locator('.room .sidebar')).toBeHidden()
+  if (shots) await alice.win.screenshot({ path: `${shots}/4-small.png` })
+
+  // The chat opens over the tiles, and closes again.
+  await alice.win.getByRole('button', { name: 'Show chat' }).click()
+  await expect(alice.win.locator('.room .sidebar.floating')).toBeVisible()
+  if (shots) await alice.win.screenshot({ path: `${shots}/5-small-chat.png` })
+  await alice.win.getByRole('button', { name: 'Hide chat' }).click()
+
+  // So do the rooms; clicking next to them puts them away.
+  await alice.win.getByRole('button', { name: 'Show rooms' }).click()
+  await expect(alice.win.locator('.rooms-sidebar.floating')).toBeVisible()
+  if (shots) await alice.win.screenshot({ path: `${shots}/6-small-rooms.png` })
+  await alice.win.locator('.overlay-backdrop').click({ position: { x: 600, y: 300 } })
+  await expect(alice.win.locator('.rooms-sidebar.collapsed')).toBeVisible()
 })

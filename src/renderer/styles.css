@@ -1892,6 +1892,41 @@ button.member-main {
   color: var(--text);
 }
 
+/* side columns floating over the room (narrow window) */
+.shell,
+.room-body {
+  position: relative;
+}
+.rooms-sidebar-space {
+  width: 56px;
+  flex-shrink: 0;
+  background: var(--bg-elev);
+  border-right: 1px solid var(--border);
+}
+.overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  background: rgba(5, 7, 10, 0.45);
+}
+.rooms-sidebar.floating {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 26;
+  box-shadow: var(--shadow);
+}
+.sidebar.floating {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  width: min(340px, 90%);
+  box-shadow: var(--shadow);
+}
+
 /* control bar under the tiles */
 .stage {
   container-type: inline-size;

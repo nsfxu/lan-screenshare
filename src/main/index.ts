@@ -41,6 +41,10 @@ app.commandLine.appendSwitch('disable-background-timer-throttling')
 app.commandLine.appendSwitch('disable-backgrounding-occluded-windows')
 
 const logDir = process.platform === 'win32' ? path.join(app.getPath('userData'), 'logs') : app.getPath('logs')
+/** Small enough to sit snapped beside a game on a laptop screen; the layout adapts below 1100 px. */
+const MIN_WINDOW_WIDTH = 640
+const MIN_WINDOW_HEIGHT = 480
+
 const log = createFileLogger(logDir, !app.isPackaged)
 const settings = new SettingsStore(app.getPath('userData'))
 const rooms = new RoomManager(settings, app.getPath('userData'), log, app.getVersion())
@@ -73,8 +77,8 @@ function createWindow(): void {
   const win = new BrowserWindow({
     width: 1360,
     height: 840,
-    minWidth: 960,
-    minHeight: 600,
+    minWidth: MIN_WINDOW_WIDTH,
+    minHeight: MIN_WINDOW_HEIGHT,
     show: false,
     title: APP_NAME,
     backgroundColor: '#0f1115',
@@ -96,7 +100,7 @@ function createWindow(): void {
     void bounds!.then((rect) => {
       if (win.isDestroyed()) return
       if (rect) {
-        win.setMinimumSize(Math.min(960, rect.width), Math.min(600, rect.height))
+        win.setMinimumSize(Math.min(MIN_WINDOW_WIDTH, rect.width), Math.min(MIN_WINDOW_HEIGHT, rect.height))
         win.setBounds(rect)
       }
       win.showInactive()

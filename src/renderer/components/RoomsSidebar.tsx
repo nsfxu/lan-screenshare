@@ -41,6 +41,8 @@ interface Props {
   /** Key (address:port) of the room being joined right now. */
   busyKey: string | null
   collapsed: boolean
+  /** Shown over the room (narrow window) rather than beside it. */
+  floating?: boolean
   onToggle(): void
   onJoin(room: DiscoveredRoom): void
   /** A recent room that isn't in the list right now: try it anyway. */
@@ -118,7 +120,7 @@ export function RoomsSidebar(props: Props) {
   }
 
   return (
-    <nav className="rooms-sidebar" aria-label="Rooms">
+    <nav className={`rooms-sidebar ${props.floating ? 'floating' : ''}`} aria-label="Rooms">
       <div className="rooms-actions">
         <button className="btn primary small" onClick={props.onCreate}>
           <Icon name="plus" size={14} /> Create room

@@ -21,7 +21,7 @@ import {
   latencyClass
 } from '../lib/format'
 import { useAppVersion } from '../lib/appVersion'
-import { PANEL_STATES, useElementSize, useRemembered } from '../lib/layout'
+import { CHAT_DOCKED_MIN_WIDTH, PANEL_STATES, useElementSize, useRemembered, useWindowWidth } from '../lib/layout'
 import { useAutoContentHint } from '../lib/autoContentHint'
 import { useGameCursor } from '../lib/gameCursor'
 import { audioDefaults, type SharingState } from '../lib/publisher'
@@ -78,6 +78,12 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const [showStats, setShowStats] = useState(false)
   const [pickSource, setPickSource] = useState(false)
   const [sidePanel, setSidePanel] = useRemembered('room-side', 'open', PANEL_STATES)
+  // In a narrow window the chat doesn't take space from the tiles: it opens over them when asked.
+  const chatDocked = useWindowWidth() >= CHAT_DOCKED_MIN_WIDTH
+  const [chatFloating, setChatFloating] = useState(false)
+  const chatOpen = chatDocked ? sidePanel === 'open' : chatFloating
+  const toggleChat = (): void =>
+    chatDocked ? setSidePanel(sidePanel === 'open' ? 'closed' : 'open') : setChatFloating((v) => !v)
   const [infoOpen, setInfoOpen] = useState(false)
   // Messages read while the chat was open; the rest count as unread while it's hidden.
   const [seen, setSeen] = useState<ReadonlySet<string>>(() => new Set(client.messages.map((m) => m.id)))
@@ -178,9 +184,9 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   }, [])
 
   useEffect(() => {
-    if (sidePanel === 'open') setSeen(new Set(messages.map((m) => m.id)))
-  }, [sidePanel, messages])
-  const unread = sidePanel === 'closed' ? countUnread(messages, seen, client.selfId) : 0
+    if (chatOpen) setSeen(new Set(messages.map((m) => m.id)))
+  }, [chatOpen, messages])
+  const unread = chatOpen ? 0 : countUnread(messages, seen, client.selfId)
 
   // The room's name in the taskbar and alt-tab.
   const roomName = room?.name
@@ -369,13 +375,11 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           {connection === 'reconnecting' && <span className="status-pill warn">Reconnecting…</span>}
         </div>
         <button
-          className={`icon-btn chat-toggle ${sidePanel === 'open' ? 'active' : ''}`}
-          title={sidePanel === 'open' ? 'Hide chat' : 'Show chat'}
-          aria-label={
-            sidePanel === 'open' ? 'Hide chat' : unread > 0 ? `Show chat (${unread} unread)` : 'Show chat'
-          }
-          aria-expanded={sidePanel === 'open'}
-          onClick={() => setSidePanel(sidePanel === 'open' ? 'closed' : 'open')}
+          className={`icon-btn chat-toggle ${chatOpen ? 'active' : ''}`}
+          title={chatOpen ? 'Hide chat' : 'Show chat'}
+          aria-label={chatOpen ? 'Hide chat' : unread > 0 ? `Show chat (${unread} unread)` : 'Show chat'}
+          aria-expanded={chatOpen}
+          onClick={toggleChat}
         >
           <Icon name="chat" size={18} />
           {unread > 0 && <span className="unread-badge">{unread > 99 ? '99+' : unread}</span>}
@@ -561,7 +565,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           </div>
         </main>
 
-        <aside className="sidebar" hidden={sidePanel === 'closed'}>
+        <aside className={`sidebar ${chatDocked ? '' : 'floating'}`} hidden={!chatOpen}>
           <ChatPanel
             messages={messages}
             roomName={room?.name ?? 'the room'}
