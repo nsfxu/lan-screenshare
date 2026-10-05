@@ -99,7 +99,7 @@ Follow [protocol → changing the protocol](protocol.md#changing-the-protocol): 
 
 1. Components subscribe to session objects' events and keep copies in React state; unsubscribe in the effect cleanup.
 2. Reuse existing classes in `styles.css` (`btn`, `icon-btn`, `toggle-row`, `modal`, `avatar`…).
-3. Check it at the minimum window size (960×600).
+3. Check it at the minimum window size (640×480), and at 1100 and 760 px wide, where the chat and then the rooms column stop taking space.
 4. Give buttons a `title` or `aria-label`.
 
 ## Documentation

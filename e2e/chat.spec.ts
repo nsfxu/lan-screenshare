@@ -1,4 +1,4 @@
-import { createRoom, expect, joinByIp, sendChat, test } from './fixtures'
+import { createRoom, expect, joinByIp, openChat, sendChat, test } from './fixtures'
 
 const shots = process.env.E2E_SHOTS
 
@@ -6,6 +6,7 @@ test('chat groups messages, and counts unread ones while it is hidden', async ({
   const [alice, bob] = await people(2)
   const port = await createRoom(alice)
   await joinByIp(bob, port)
+  await openChat(bob)
   await expect(bob.win.getByLabel('Chat message')).toHaveAttribute('placeholder', "Message Alice's room")
 
   // Bob hides the chat; Alice writes twice.

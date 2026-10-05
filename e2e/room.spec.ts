@@ -1,4 +1,4 @@
-import { cornerColour, createRoom, decodedFrames, expect, FAKE_SCREEN_RGB, joinByIp, sendChat, test } from './fixtures'
+import { cornerColour, createRoom, decodedFrames, expect, FAKE_SCREEN_RGB, joinByIp, closeFloatingChat, openChat, sendChat, test } from './fixtures'
 
 test('public room: share, watch, chat and stop', async ({ people }) => {
   const [alice, bob] = await people(2)
@@ -26,9 +26,11 @@ test('public room: share, watch, chat and stop', async ({ people }) => {
 
   // Chat both ways.
   await sendChat(bob, 'hello from Bob')
+  await openChat(alice)
   await expect(alice.win.locator('.chat-text', { hasText: 'hello from Bob' })).toBeVisible()
   await sendChat(alice, 'hi Bob')
   await expect(bob.win.locator('.chat-text', { hasText: 'hi Bob' })).toBeVisible()
+  await closeFloatingChat(alice)
 
   // Alice stops: Bob's tile and her stream card go away.
   await alice.win.getByRole('button', { name: 'Stop sharing' }).click()

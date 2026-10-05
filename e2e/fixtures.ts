@@ -180,6 +180,9 @@ export async function createRoom(host: Person, privacy: 'public' | 'private' = '
 /** Adds the room at 127.0.0.1:port with Connect by IP and clicks it in the room list. */
 export async function joinByIp(guest: Person, port: number): Promise<void> {
   const { win } = guest
+  // A small window shows the rooms as a strip: open them first.
+  const showRooms = win.getByRole('button', { name: 'Show rooms' })
+  if (await showRooms.isVisible()) await showRooms.click()
   await win.getByRole('button', { name: 'Connect by IP' }).click()
   await win.getByPlaceholder(/^Host address/).fill(`127.0.0.1:${port}`)
   await win.getByPlaceholder(/^Host address/).press('Enter')
@@ -208,7 +211,32 @@ export function cornerColour(win: Page): Promise<number[] | null> {
   })
 }
 
+/** Opens the chat if it's hidden (a narrow window starts with it hidden). */
+export async function openChat(person: Person): Promise<void> {
+  await person.win.locator('.room').waitFor()
+  const show = person.win.getByRole('button', { name: /^Show chat/ })
+  if (await show.isVisible()) await show.click()
+  await expect(person.win.getByLabel('Chat message')).toBeVisible()
+}
+
+/** Closes the chat if it's open over the room (a narrow window), so it doesn't cover the control bar. */
+export async function closeFloatingChat(person: Person): Promise<void> {
+  if (await person.win.locator('.room .sidebar.floating').isVisible()) {
+    await person.win.getByRole('button', { name: 'Hide chat' }).click()
+  }
+}
+
+/** Resize the window's content (what the page sees), e.g. to see the layout of a small or snapped window. */
+export async function resizeWindow(person: Person, width: number, height: number): Promise<void> {
+  await person.app.evaluate(
+    ({ BrowserWindow }, [w, h]) => BrowserWindow.getAllWindows()[0].setContentSize(w, h),
+    [width, height] as const
+  )
+  await expect.poll(() => person.win.evaluate(() => window.innerWidth)).toBe(width)
+}
+
 export async function sendChat(person: Person, text: string): Promise<void> {
+  await openChat(person)
   const input = person.win.getByLabel('Chat message')
   await input.fill(text)
   await input.press('Enter')

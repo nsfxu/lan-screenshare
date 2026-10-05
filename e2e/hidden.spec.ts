@@ -1,9 +1,12 @@
-import { createRoom, expect, framesDuring, joinByIp, setWindowState, test } from './fixtures'
+import { createRoom, expect, framesDuring, joinByIp, resizeWindow, setWindowState, test } from './fixtures'
 
 // A viewer who can't see a stream (window minimized, or another tile full
 // screen) gets no video from it until they can again (see HIDDEN_VIEW).
 test("viewers who can't see a stream get no video until they can", async ({ people }) => {
   const [alice, bob, carol] = await people(3)
+  // Wide enough to list the room's people beside the room (they read Bob's status there).
+  await resizeWindow(alice, 1000, 800)
+  await resizeWindow(carol, 1000, 800)
 
   const port = await createRoom(alice)
   await joinByIp(carol, port)

@@ -99,7 +99,7 @@ Siga [protocolo → alterando o protocolo](protocol.md#alterando-o-protocolo): t
 
 1. Os componentes assinam os eventos dos objetos da sessão e guardam cópias no estado do React; cancele a assinatura na limpeza do effect.
 2. Reaproveite as classes que já existem no `styles.css` (`btn`, `icon-btn`, `toggle-row`, `modal`, `avatar`…).
-3. Confira no tamanho mínimo da janela (960×600).
+3. Confira no tamanho mínimo da janela (640×480), e com 1100 e 760 px de largura, onde o chat e depois a coluna de salas deixam de ocupar espaço.
 4. Dê um `title` ou `aria-label` aos botões.
 
 ## Documentação
