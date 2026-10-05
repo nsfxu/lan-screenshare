@@ -22,8 +22,9 @@ Tudo o que trafega entre os apps de uma sala: descoberta, a consulta HTTP, as me
 ## Versionamento
 
 - A versão atual é **`PROTOCOL_VERSION = 4`** (`src/shared/constants.ts`).
-- Todo `hello` informa a versão. O servidor recusa uma versão diferente com o erro fatal `version_mismatch` ("This room runs a different app version").
-- O `GET /info` e o registro TXT do mDNS também informam a versão, para a lista de salas poder mostrar salas incompatíveis.
+- Todo `hello` informa a versão. O servidor recusa uma versão diferente com o erro fatal `version_mismatch`, cuja mensagem diz quem precisa atualizar, por exemplo "This room runs ScreenShare 2.0.0, you have 1.2.0: update to join" (`incompatibleRoomMessage` em `src/shared/version.ts`; servidores anteriores ao 1.2.0 dizem "This room runs a different app version").
+- O `GET /info` e o registro TXT do mDNS também informam a versão, para a lista de salas poder mostrar salas incompatíveis. Desde o 1.2.0, o `/info` também traz a `appVersion` do anfitrião, e o cartão da sala diz **Update to join** ou **Older version** com a mesma mensagem.
+- Desde o 1.2.0, `hello` e `Participant` trazem uma `appVersion` opcional (SemVer, por exemplo `1.2.0`). O servidor descarta uma malformada; apps antigos ignoram o campo. Os outros na sala a usam para sugerir atualizar quando alguém usa uma versão mais nova.
 - Histórico: a v3 trouxe várias transmissões (qualquer pessoa pode compartilhar). A v4 adicionou fotos de perfil (`set-avatar` / `avatar`) e a taxa de quadros escolhida pelo espectador em `view-size` / `watcher-view`.
 
 ## Transportes num relance
@@ -79,6 +80,7 @@ Devolve um `RoomInfo` em JSON, sem segredos:
   "maxUsers": 10,
   "streams": 2,
   "protocol": 4,
+  "appVersion": "1.2.0",
   "startedAt": 1790000000000
 }
 ```
@@ -92,7 +94,7 @@ sequenceDiagram
   participant C as Cliente
   participant S as RoomServer
   C->>S: conecta em wss://host:porta/ws
-  C->>S: hello {protocol, clientId, name, pin?, hostToken?, resumeToken?, decoders}
+  C->>S: hello {protocol, clientId, name, pin?, hostToken?, resumeToken?, decoders, appVersion?}
   Note over S: sem hello em 10 s o socket é fechado
   alt recusado
     S-->>C: error {code, message, fatal: true}, depois fecha
@@ -119,7 +121,7 @@ sequenceDiagram
 
 | `type` | Campos | Quem pode enviar | O que o servidor faz |
 |---|---|---|---|
-| `hello` | `protocol, clientId, name, pin?, hostToken?, resumeToken?, decoders?` | Qualquer um, só como primeira mensagem | Autentica, cria ou retoma o assento, envia `welcome`. |
+| `hello` | `protocol, clientId, name, pin?, hostToken?, resumeToken?, decoders?, appVersion?` | Qualquer um, só como primeira mensagem | Autentica, cria ou retoma o assento, envia `welcome`. |
 | `chat` | `text` | Qualquer um | Valida (≤ 2000 caracteres, ≤ 5 por segundo, chat não silenciado) e envia `chat` a todos. |
 | `set-avatar` | `image: string \| null` | Qualquer um | Valida (data URL JPEG/WebP/PNG ≤ 40 000 caracteres, ≤ 1 troca por segundo, ignora repetições), guarda e envia `avatar` a todos, inclusive a quem mandou. |
 | `signal` | `to, stream, data` | Quem transmite ↔ um dos seus espectadores | Repassa como `signal` só se `to` e `stream` formarem um par transmissor↔espectador existente. |
@@ -167,7 +169,7 @@ Mensagens exclusivas do anfitrião enviadas por outra pessoa recebem o erro não
 | `snapshot` | `from, image \| null` | Todos menos quem transmite (null apaga) |
 | `avatar` | `from, image \| null` | Todos, inclusive quem enviou (null remove) |
 
-Um `Participant` (em `participants` e `welcome`) contém: `id`, `name`, `role` (`host` ou `viewer`), `color`, `joinedAt`, `status` (`connected` ou `reconnecting`), `slot` (0–255, usado no repasse TCP), `stream` (`{paused, audio, startedAt}` ou `null`) e `watching` (ids das transmissões que essa pessoa assiste).
+Um `Participant` (em `participants` e `welcome`) contém: `id`, `name`, `role` (`host` ou `viewer`), `color`, `joinedAt`, `status` (`connected` ou `reconnecting`), `slot` (0–255, usado no repasse TCP), `stream` (`{paused, audio, startedAt}` ou `null`) `watching` (ids das transmissões que essa pessoa assiste) e `appVersion` (a versão do app dela, quando o app a envia).
 
 ## Assistir uma transmissão (WebRTC)
 

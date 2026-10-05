@@ -22,8 +22,9 @@ Everything that travels between apps in a room: discovery, the HTTP probe, the W
 ## Versioning
 
 - The current version is **`PROTOCOL_VERSION = 4`** (`src/shared/constants.ts`).
-- Every `hello` carries it. The server rejects a different version with the fatal error `version_mismatch` ("This room runs a different app version").
-- `GET /info` and the mDNS TXT record also report it, so the room list can show incompatible rooms.
+- Every `hello` carries it. The server rejects a different version with the fatal error `version_mismatch`, whose message says who has to update, e.g. "This room runs ScreenShare 2.0.0, you have 1.2.0: update to join" (`incompatibleRoomMessage` in `src/shared/version.ts`; servers before 1.2.0 say "This room runs a different app version").
+- `GET /info` and the mDNS TXT record also report it, so the room list can show incompatible rooms. Since 1.2.0, `/info` also carries the host's `appVersion`, and the room card says **Update to join** or **Older version** with the same message.
+- Since 1.2.0, `hello` and `Participant` carry an optional `appVersion` (SemVer, e.g. `1.2.0`). The server drops a malformed one; older apps ignore the field. Others in the room use it to suggest updating when someone runs a newer version.
 - History: v3 introduced multi-stream (anyone can share). v4 added profile pictures (`set-avatar` / `avatar`) and the watcher's frame-rate choice in `view-size` / `watcher-view`.
 
 ## Transports at a glance
@@ -79,6 +80,7 @@ Returns `RoomInfo` as JSON, with no secrets:
   "maxUsers": 10,
   "streams": 2,
   "protocol": 4,
+  "appVersion": "1.2.0",
   "startedAt": 1790000000000
 }
 ```
@@ -92,7 +94,7 @@ sequenceDiagram
   participant C as Client
   participant S as RoomServer
   C->>S: connect wss://host:port/ws
-  C->>S: hello {protocol, clientId, name, pin?, hostToken?, resumeToken?, decoders}
+  C->>S: hello {protocol, clientId, name, pin?, hostToken?, resumeToken?, decoders, appVersion?}
   Note over S: no hello within 10 s closes the socket
   alt rejected
     S-->>C: error {code, message, fatal: true}, then close
@@ -119,7 +121,7 @@ sequenceDiagram
 
 | `type` | Fields | Who may send | What the server does |
 |---|---|---|---|
-| `hello` | `protocol, clientId, name, pin?, hostToken?, resumeToken?, decoders?` | Anyone, first message only | Authenticates, creates or resumes the seat, sends `welcome`. |
+| `hello` | `protocol, clientId, name, pin?, hostToken?, resumeToken?, decoders?, appVersion?` | Anyone, first message only | Authenticates, creates or resumes the seat, sends `welcome`. |
 | `chat` | `text` | Anyone | Validates (≤ 2000 chars, ≤ 5 per second, not muted) and broadcasts `chat`. |
 | `set-avatar` | `image: string \| null` | Anyone | Validates (JPEG/WebP/PNG data URL ≤ 40 000 chars, ≤ 1 change per second, ignores repeats), stores it, broadcasts `avatar` to everyone including the sender. |
 | `signal` | `to, stream, data` | Streamer ↔ one of its watchers | Relays as `signal` only if `to` and `stream` form an existing streamer↔watcher pair. |
@@ -167,7 +169,7 @@ Host-only messages from anyone else get the non-fatal error `host_only`.
 | `snapshot` | `from, image \| null` | Everyone except the streamer (null clears it) |
 | `avatar` | `from, image \| null` | Everyone, sender included (null removes it) |
 
-`Participant` (in `participants` and `welcome`) contains: `id`, `name`, `role` (`host` or `viewer`), `color`, `joinedAt`, `status` (`connected` or `reconnecting`), `slot` (0–255, used by the TCP relay), `stream` (`{paused, audio, startedAt}` or `null`) and `watching` (ids of the streams this person watches).
+`Participant` (in `participants` and `welcome`) contains: `id`, `name`, `role` (`host` or `viewer`), `color`, `joinedAt`, `status` (`connected` or `reconnecting`), `slot` (0–255, used by the TCP relay), `stream` (`{paused, audio, startedAt}` or `null`) `watching` (ids of the streams this person watches) and `appVersion` (their app version, when their app sends one).
 
 ## Watching a stream (WebRTC)
 

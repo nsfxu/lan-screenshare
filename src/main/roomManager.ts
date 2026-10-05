@@ -11,6 +11,7 @@ import type {
   RoomEndpoint,
   UpdateRoomRequest
 } from '../shared/types'
+import { incompatibleRoomMessage } from '../shared/version'
 import { clampPinLength, generatePin, isValidPin, randomId, randomToken } from '../utils/crypto'
 import { MdnsDiscovery, type MdnsRoomRecord } from '../utils/mdns'
 import { endpointKey, fingerprintFromPem, getLocalAddresses, probeRoom } from '../utils/network'
@@ -56,7 +57,9 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
   constructor(
     private readonly settings: SettingsStore,
     private readonly userDataDir: string,
-    private readonly log: Logger
+    private readonly log: Logger,
+    /** Our app version, reported by the rooms we host and used in "update to join" messages. */
+    private readonly appVersion: string
   ) {
     super()
   }
@@ -106,7 +109,11 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
     for (const tls of order) {
       try {
         const result = await probeRoom({ address, port, tls }, 2500, existing?.advertisedFingerprint)
-        if (result.info.protocol !== PROTOCOL_VERSION) throw new Error('Room runs an incompatible app version')
+        const incompatible = incompatibleRoomMessage(result.info, {
+          protocol: PROTOCOL_VERSION,
+          appVersion: this.appVersion
+        })
+        if (incompatible) throw new Error(incompatible)
         if (result.fingerprint) this.trust(address, result.fingerprint)
         const room: DiscoveredRoom = {
           ...result.info,
@@ -191,6 +198,7 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
       hostToken,
       tls,
       port: settings.preferredPort || DEFAULT_PORT,
+      appVersion: this.appVersion,
       logger: this.log
     })
     const port = await server.start()

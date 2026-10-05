@@ -59,6 +59,26 @@ describe('RoomServer', () => {
     expect((await getJson(port, '/nope')).status).toBe(404)
   })
 
+  it('reports app versions and tells mismatched apps who has to update', async () => {
+    const port = await startServer({ appVersion: '1.2.0' })
+    expect(JSON.parse((await getJson(port, '/info')).body).appVersion).toBe('1.2.0')
+
+    const host = await connect(port, { hostToken: HOST_TOKEN, name: 'Alice', appVersion: '1.2.0' })
+    await host.wait('welcome')
+    await connect(port, { name: 'Bob', clientId: 'bob', appVersion: '1.3.0' })
+    await connect(port, { name: 'Eve', clientId: 'eve', appVersion: '<img src=x>' as string })
+    const { participants } = await host.wait('participants', (m) => m.participants.length === 3)
+    const versions = Object.fromEntries(participants.map((p) => [p.name, p.appVersion]))
+    expect(versions).toEqual({ Alice: '1.2.0', Bob: '1.3.0', Eve: undefined })
+
+    const old = await connect(port, { name: 'Old', clientId: 'old', protocol: 3, appVersion: '1.0.0' })
+    const err = await old.wait('error')
+    expect(err).toMatchObject({ code: 'version_mismatch', fatal: true })
+    expect(err.message).toBe('This room runs ScreenShare 1.2.0, you have 1.0.0: update to join')
+    const future = await connect(port, { name: 'New', clientId: 'new', protocol: 99 })
+    expect((await future.wait('error')).message).toBe('This room runs ScreenShare 1.2.0: the host needs to update')
+  })
+
   it('lets viewers join a public room and broadcasts presence and chat', async () => {
     const port = await startServer()
     const host = await connect(port, { hostToken: HOST_TOKEN, name: 'Alice' })

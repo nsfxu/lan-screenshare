@@ -21,6 +21,8 @@ export interface RoomClientOptions {
   decoders?: CodecSupport[]
   /** Our profile picture (data URL), sent after every welcome. */
   avatar?: string | null
+  /** Our app version, shown to others in the room. */
+  appVersion?: string
 }
 
 export interface ClientError {
@@ -162,7 +164,8 @@ export class RoomClient extends Emitter<Events> {
         pin: this.opts.pin,
         hostToken: this.opts.hostToken,
         resumeToken: this.resumeToken,
-        decoders: this.opts.decoders
+        decoders: this.opts.decoders,
+        appVersion: this.opts.appVersion
       })
     }
     ws.onmessage = (ev) => {

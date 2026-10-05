@@ -25,7 +25,7 @@ O app está em inglês, então os nomes dos botões aparecem aqui **como estão 
 
 - **Computadores**: Windows 10/11 ou macOS. O áudio do sistema no macOS precisa do macOS 13 ou mais novo. Deixar o Discord fora do áudio precisa do Windows 10 versão 2004 ou mais novo.
 - **Rede**: todos precisam estar na mesma rede local ou VPN. Nada passa pela internet e não existem contas.
-- **Mesma versão**: todos na sala precisam usar a mesma versão do app. Senão aparece "This room runs a different app version".
+- **Versões compatíveis**: apps com a mesma versão principal (1.x) podem estar na mesma sala. Uma nova versão principal (2.0.0) exige que todos atualizem; a lista de salas diz quem precisa, por exemplo "This room runs ScreenShare 2.0.0, you have 1.2.0: update to join". Quando alguém na sua sala usa uma versão mais nova, aparece uma sugestão (uma vez) para atualizar.
 - **macOS**: na primeira vez que você compartilhar, o macOS pede a permissão de **Gravação de Tela** e pode pedir acesso à **Rede Local**. Permita as duas e reinicie o app se ele pedir.
 
 ```mermaid
@@ -52,7 +52,7 @@ flowchart LR
 
 A tela inicial lista as salas da sua rede. Ela se atualiza sozinha (repare no ponto verde **live**).
 
-Cada cartão de sala mostra se ela é **Public** ou **Private** (ícone de cadeado), quantas transmissões estão ao vivo (ou *No one sharing*, ou *Unreachable*), o nome, quem hospeda e há quanto tempo, quantas pessoas estão dentro e o endereço. Use **Search rooms** para filtrar a lista. Salas adicionadas pelo IP têm um botão de lixeira para tirá-las da lista.
+Cada cartão de sala mostra se ela é **Public** ou **Private** (ícone de cadeado), quantas transmissões estão ao vivo (ou *No one sharing*, *Unreachable*, ou *Update to join* / *Older version* dizendo quem precisa atualizar), o nome, quem hospeda e há quanto tempo, quantas pessoas estão dentro e o endereço. Use **Search rooms** para filtrar a lista. Salas adicionadas pelo IP têm um botão de lixeira para tirá-las da lista.
 
 **Connect by IP**: se você está numa VPN ou em outra sub-rede, as salas podem não aparecer sozinhas. Clique em **Connect by IP** e digite o endereço do anfitrião, por exemplo `10.8.0.5` ou `192.168.1.20:47800`. O anfitrião vê os endereços dele no painel **Access** da sala. A porta padrão é 47800.
 

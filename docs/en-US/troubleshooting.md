@@ -38,11 +38,14 @@ flowchart TD
 
 | Message | What it means | What to do |
 |---|---|---|
-| *This room runs a different app version* | You and the host run incompatible versions | Everyone updates to the same version. |
+| *This room runs ScreenShare 2.0.0, you have 1.2.0: update to join* | The host runs a newer major version, which older apps can't join | Update ScreenShare. |
+| *…: the host needs to update* | The host runs an older major version | The host updates (or someone on your version hosts). |
+| *This room runs a different app version* | Same as above, from a host older than 1.2.0 | Everyone updates to the same major version. |
 | *Wrong PIN* (attempts left) | The PIN doesn't match | Ask the host again: the PIN can change during a session. |
 | *Too many wrong PINs. Try again later.* | 3 wrong PINs from your computer | Wait 5 minutes. |
 | *Room is full* | 10 people already inside | Wait for someone to leave. |
 | *You were removed from this room* | The host removed you | Only the host can help; a new room session clears it. |
+| The room card says *Update to join* or *Older version* | The room runs an incompatible major version (the card says which) | As above. |
 | The room is grey / *Unreachable* | The app can't reach the host | Check the network and firewall, or that the host is still running. |
 | Certificate error in the log (`rejected certificate`) | The host's certificate doesn't match the one your app saw before | Restart ScreenShare on your side so it learns the host again. If the host deleted `host-identity.json`, that's expected. |
 

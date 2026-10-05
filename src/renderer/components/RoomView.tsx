@@ -10,6 +10,7 @@ import type {
   Settings,
   ViewerStats
 } from '../../shared/types'
+import { newerVersionInRoom } from '../../shared/version'
 import {
   captureAudioWarning,
   errorMessage,
@@ -17,6 +18,7 @@ import {
   formatDuration,
   latencyClass
 } from '../lib/format'
+import { useAppVersion } from '../lib/appVersion'
 import { useAutoContentHint } from '../lib/autoContentHint'
 import { useGameCursor } from '../lib/gameCursor'
 import { audioDefaults, type SharingState, type WatcherInfo } from '../lib/publisher'
@@ -55,6 +57,9 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
   const [participants, setParticipants] = useState<Participant[]>(client.participants)
   const [messages, setMessages] = useState<ChatMessage[]>(client.messages)
   const [connection, setConnection] = useState<ConnectionState>(client.state)
+  const ourVersion = useAppVersion()
+  /** A newer version someone runs that we already acknowledged (the notice comes back for an even newer one). */
+  const [dismissedVersion, setDismissedVersion] = useState<string | null>(null)
   const [ownStream, setOwnStream] = useState<MediaStream | null>(publisher.stream)
   const [ownSnapshot, setOwnSnapshot] = useState<string | null>(publisher.snapshot)
   // Your own stream isn't played back until you ask: rendering it costs GPU
@@ -179,6 +184,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
   /** Sharing, but not showing our own stream: offer it next to the others. */
   const selfHidden = !!ownStream && !showSelf
   const me = byId(client.selfId)
+  const newer = ourVersion ? newerVersionInRoom(ourVersion, participants.filter((p) => p.id !== client.selfId)) : null
   const selfPreview: PreviewInfo = {
     label: 'You',
     name: me?.name ?? settings.displayName,
@@ -362,6 +368,17 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
               </span>
               <button className="btn small" onClick={() => gameCursor.keepScreen()}>
                 Share the screen instead
+              </button>
+            </div>
+          )}
+          {newer && newer.appVersion !== dismissedVersion && (
+            <div className="notice info version-hint" role="status">
+              <span className="version-hint-text">
+                <strong>{newer.name}</strong> runs ScreenShare {newer.appVersion}, a newer version than yours ({ourVersion}).
+                Update when you can.
+              </span>
+              <button className="btn small" onClick={() => setDismissedVersion(newer.appVersion)}>
+                OK
               </button>
             </div>
           )}

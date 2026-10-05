@@ -1,5 +1,8 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { PROTOCOL_VERSION } from '../../shared/constants'
 import type { DiscoveredRoom, Settings } from '../../shared/types'
+import { incompatibleRoomMessage } from '../../shared/version'
+import { useAppVersion } from '../lib/appVersion'
 import { errorMessage, formatDuration } from '../lib/format'
 import { Avatar } from './Avatar'
 import { Icon } from './Icon'
@@ -108,9 +111,16 @@ export function HomeScreen({ settings, rooms, busyKey, onJoin, onCreate, onSetti
 }
 
 function RoomCard({ room, busy, onJoin }: { room: DiscoveredRoom; busy: boolean; onJoin(): void }) {
+  const ours = useAppVersion()
   const full = room.maxUsers > 0 && room.viewerCount + 1 >= room.maxUsers
   const live = room.reachable && room.streams > 0
-  const status = !room.reachable
+  // Rooms on another protocol answer probes but can't be joined: say who has to update.
+  const versionProblem = incompatibleRoomMessage(room, { protocol: PROTOCOL_VERSION, appVersion: ours })
+  const status = versionProblem
+    ? room.protocol > PROTOCOL_VERSION
+      ? 'Update to join'
+      : 'Older version'
+    : !room.reachable
     ? 'Unreachable'
     : room.streams === 0
       ? 'No one sharing'
@@ -118,19 +128,20 @@ function RoomCard({ room, busy, onJoin }: { room: DiscoveredRoom; busy: boolean;
         ? '1 stream live'
         : `${room.streams} streams live`
   return (
-    <article className={`room-card ${room.reachable ? '' : 'offline'}`}>
+    <article className={`room-card ${room.reachable || versionProblem ? '' : 'offline'}`}>
       <div className="room-card-top">
         <span className={`badge ${room.privacy}`}>
           <Icon name={room.privacy === 'private' ? 'lock' : 'globe'} size={12} />
           {room.privacy === 'private' ? 'Private' : 'Public'}
         </span>
-        <span className={`status-pill ${live ? 'live' : ''}`}>{status}</span>
+        <span className={`status-pill ${live ? 'live' : versionProblem ? 'warn' : ''}`}>{status}</span>
       </div>
       <h3 title={room.name}>{room.name}</h3>
       <p className="muted small">
         {room.hostName ? `Hosted by ${room.hostName}` : 'Unknown host'}
         {room.startedAt > 0 && room.reachable ? ` · ${formatDuration(Date.now() - room.startedAt)}` : ''}
       </p>
+      {versionProblem && <p className="small room-card-version">{versionProblem}</p>}
       <div className="room-card-meta">
         <span title="People in the room">
           <Icon name="users" size={14} /> {room.viewerCount + 1}
