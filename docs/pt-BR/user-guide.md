@@ -79,24 +79,24 @@ Agora é o seu computador que roda a sala. Se você fechar o ScreenShare, o app 
 
 ## Compartilhar sua tela
 
-Qualquer pessoa na sala pode compartilhar, não só o anfitrião, e várias pessoas podem compartilhar ao mesmo tempo. Clique em **Share screen** na barra de controles embaixo dos quadros e escolha uma tela ou janela.
+Qualquer pessoa na sala pode compartilhar, não só o anfitrião, e várias pessoas podem compartilhar ao mesmo tempo. Clique em **Share screen** na barra de controles embaixo dos quadros (à direita do botão vermelho de sair) e escolha uma tela ou janela.
 
 Enquanto você compartilha, o botão vira um botão vermelho **Live** (**Paused** quando pausado):
 
-- **Clique nele** para trocar para outra tela ou janela, ou mudar as opções de áudio, sem ninguém precisar reconectar.
+- **Clique nele** para parar de compartilhar (ele mostra **Stop** quando você aponta para ele).
 - **Clique na seta dele** (ou clique com o botão direito no seu próprio quadro) para o menu de compartilhamento:
 
 | Opção | O que faz |
 |---|---|
 | **Pause / Resume** | Congela a transmissão (e o áudio) sem encerrar. |
 | **Mute audio / Unmute audio** | Para de enviar o áudio do sistema enquanto o vídeo continua. Mostra **No audio** se o áudio não está sendo capturado. |
-| **Change source…** | O mesmo que clicar em **Live**. |
+| **Change source…** | Troca para outra tela ou janela, ou muda as opções de áudio, sem ninguém precisar reconectar. |
 | **Quality you send** | A qualidade máxima que você envia (Native, 1080p, 720p a 60 ou 30 fps, 480p). Vale na hora; cada espectador ainda pode receber menos, por exemplo se a janela dele for pequena ou a rede estiver lenta. |
 | **Stop sharing** | Encerra a sua transmissão. |
 
 **Stats** (o botão de controles deslizantes ao lado) mostra a resolução, taxa de quadros, upload, tempo de codificação, codec, codificador, CPU, memória e o que está limitando a qualidade da sua transmissão, e também permite mudar a qualidade que você envia.
 
-O botão vermelho no fim da barra sai da sala (para o anfitrião, encerra a sala para todos, depois de perguntar).
+O botão vermelho à esquerda dele sai da sala (para o anfitrião, encerra a sala para todos, depois de perguntar).
 
 **Quando a sua transmissão tem dificuldade**, a sala diz o motivo: seu computador não consegue codificar rápido o bastante, seu upload não dá conta de todos que assistem, ou sua placa de vídeo ficou sem codificadores de hardware (alguns espectadores passam a ser codificados pela CPU). O aviso só aparece quando o problema dura vários segundos, some quando ele é resolvido e não volta pelo mesmo motivo por 10 minutos. **Lower to …** baixa a sua qualidade máxima um degrau.
 

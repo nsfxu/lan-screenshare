@@ -590,27 +590,45 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
             </div>
           )}
           <div className="control-bar">
+            {unwatched.length > 1 && (
+              <button
+                className="btn"
+                aria-label="Watch all"
+                title="Watch everyone who is sharing"
+                onClick={() => unwatched.forEach((p) => watches.watch(p.id))}
+              >
+                <Icon name="eye" />
+                <span className="btn-label">Watch all</span>
+              </button>
+            )}
+            <button
+              className="btn hang-up"
+              title={isHost ? 'End the room for everyone' : 'Leave the room'}
+              aria-label={isHost ? 'End room' : 'Leave'}
+              onClick={isHost ? endRoom : () => onLeave()}
+            >
+              <Icon name="hangUp" size={20} />
+            </button>
             {sharing.sharing ? (
               <div className="control-group">
                 <div className={`split-button ${sharing.paused ? 'paused' : 'live'}`}>
-                  <button
-                    className="btn split-main"
-                    aria-label="Change what you share"
-                    title="You're sharing: click to share another screen or window, or change the audio"
-                    onClick={() => setPickSource(true)}
-                  >
+                  {/* Shows the state; a click stops sharing (hovering says so). */}
+                  <button className="btn split-main" aria-label="Stop sharing" title="Stop sharing" onClick={() => publisher.stopSharing()}>
                     <span className="split-live-dot" />
                     <Icon name="screen" />
-                    {sharing.paused ? 'Paused' : 'Live'}
+                    <span className="split-state">{sharing.paused ? 'Paused' : 'Live'}</span>
+                    <span className="split-stop">Stop</span>
                   </button>
                   <button
                     className={`btn split-arrow ${menu?.label === 'Sharing' ? 'active' : ''}`}
                     aria-label="Sharing options"
-                    title="Pause, mute, quality, stop"
+                    title="Pause, mute, change source, quality"
                     aria-haspopup="menu"
                     aria-expanded={menu?.label === 'Sharing'}
                     onClick={(e) =>
-                      menu?.label === 'Sharing' ? setMenu(null) : openMenu(menuAbove(e.currentTarget.parentElement!), 'Sharing', [sharingItems()])
+                      menu?.label === 'Sharing'
+                        ? setMenu(null)
+                        : openMenu(menuAbove(e.currentTarget.parentElement!), 'Sharing', [sharingItems()])
                     }
                   >
                     <Icon name="chevronUp" size={14} />
@@ -631,25 +649,6 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
                 <Icon name="screen" /> Share screen
               </button>
             )}
-            {unwatched.length > 1 && (
-              <button
-                className="btn"
-                aria-label="Watch all"
-                title="Watch everyone who is sharing"
-                onClick={() => unwatched.forEach((p) => watches.watch(p.id))}
-              >
-                <Icon name="eye" />
-                <span className="btn-label">Watch all</span>
-              </button>
-            )}
-            <button
-              className="btn hang-up"
-              title={isHost ? 'End the room for everyone' : 'Leave the room'}
-              aria-label={isHost ? 'End room' : 'Leave'}
-              onClick={isHost ? endRoom : () => onLeave()}
-            >
-              <Icon name="hangUp" size={20} />
-            </button>
           </div>
         </main>
 

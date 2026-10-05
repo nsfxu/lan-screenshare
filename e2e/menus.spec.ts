@@ -7,21 +7,20 @@ test('the Live button and right-click menus hold the sharing and watching option
   const port = await createRoom(alice)
   const { win } = alice
 
-  // Live button: its main part changes what you share.
-  await win.getByRole('button', { name: 'Change what you share' }).click()
-  await expect(win.locator('.modal')).toBeVisible()
-  await win.locator('.modal').getByRole('button', { name: 'Cancel' }).click()
-
   // Its arrow opens the sharing menu: pause, then the quality you send.
   await win.getByRole('button', { name: 'Sharing options' }).click()
   const menu = win.getByRole('menu', { name: 'Sharing' })
   await expect(menu.getByRole('menuitem', { name: 'Stop sharing' })).toBeVisible()
   if (shots) await win.screenshot({ path: `${shots}/1-sharing-menu.png` })
   await menu.getByRole('menuitem', { name: 'Pause' }).click()
-  await expect(win.getByRole('button', { name: 'Change what you share' })).toHaveText('Paused')
+  await expect(win.locator('.split-state')).toHaveText('Paused')
   await win.getByRole('button', { name: 'Sharing options' }).click()
   await menu.getByRole('menuitem', { name: 'Resume' }).click()
-  await expect(win.getByRole('button', { name: 'Change what you share' })).toHaveText('Live')
+  await expect(win.locator('.split-state')).toHaveText('Live')
+  // The Live button sits right of the hang-up button.
+  const hangUp = await win.locator('.hang-up').boundingBox()
+  const live = await win.locator('.split-button').boundingBox()
+  expect(live!.x).toBeGreaterThan(hangUp!.x)
   await win.getByRole('button', { name: 'Sharing options' }).click()
   await menu.getByRole('menuitemradio', { name: '720p @ 30 fps' }).click()
   await win.getByRole('button', { name: 'Sharing options' }).click()
@@ -54,4 +53,9 @@ test('the Live button and right-click menus hold the sharing and watching option
   // The host's menu on Bob's tile has the moderation actions.
   await win.locator('.person-tile', { hasText: 'Bob' }).click({ button: 'right' })
   await expect(win.getByRole('menuitem', { name: 'Remove from room' })).toBeVisible()
+  await win.keyboard.press('Escape')
+
+  // Clicking Live itself stops sharing.
+  await win.getByRole('button', { name: 'Stop sharing' }).click()
+  await expect(win.getByRole('button', { name: 'Share screen' })).toBeVisible()
 })
