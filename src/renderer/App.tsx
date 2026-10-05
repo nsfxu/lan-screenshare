@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { CodecSupport, DiscoveredRoom, RoomEndpoint, Settings } from '../shared/types'
+import { pushRecentRoom, sameEndpoint } from '../shared/recentRooms'
+import type { CodecSupport, DiscoveredRoom, RoomEndpoint, RoomState, Settings } from '../shared/types'
 import { CreateRoomDialog, PinDialog, SettingsPanel, type CreateRoomResult } from './components/Dialogs'
-import { HomeScreen } from './components/HomeScreen'
+import { RoomsSidebar, type CurrentRoom } from './components/RoomsSidebar'
 import { RoomView } from './components/RoomView'
+import { Welcome } from './components/Welcome'
 import { detectDecoders, detectEncoders } from './lib/codecs'
 import { captureAudioWarning, errorMessage } from './lib/format'
+import { PANEL_STATES, useRemembered } from './lib/layout'
 import { audioDefaults } from './lib/publisher'
 import { disposeSession, hostRoom, joinRoom, JoinError, updateSessionSettings, type Session } from './lib/session'
 
@@ -32,8 +35,12 @@ export function App() {
   const [pinPrompt, setPinPrompt] = useState<PinPrompt | null>(null)
   const [busyKey, setBusyKey] = useState<string | null>(null)
   const [toasts, setToasts] = useState<Toast[]>([])
+  const [sidebar, setSidebar] = useRemembered('rooms', 'open', PANEL_STATES)
+  const current = useCurrentRoom(session)
   const sessionRef = useRef<Session | null>(null)
   sessionRef.current = session
+  const settingsRef = useRef<Settings | null>(null)
+  settingsRef.current = settings
 
   const toast = useCallback((message: string, tone: 'error' | 'info' = 'info') => {
     const id = Date.now() + Math.random()
@@ -74,7 +81,7 @@ export function App() {
         const s = await joinRoom(endpoint, settings, codecs, pin)
         setPinPrompt(null)
         setSession(s)
-        void updateSettings({ lastRoom: endpoint })
+        void updateSettings({ lastRoom: endpoint, recentRooms: pushRecentRoom(settingsRef.current?.recentRooms ?? [], endpoint) })
       } catch (err) {
         if (err instanceof JoinError) {
           const d = err.detail
@@ -117,9 +124,59 @@ export function App() {
       .catch(() => toast(`Last room (${last.name ?? last.address}) is not available`, 'info'))
   }, [settings, join, toast])
 
+  const leave = useCallback(
+    (reason?: string) => {
+      const s = sessionRef.current
+      if (!s) return
+      sessionRef.current = null
+      setSession(null)
+      disposeSession(s)
+      if (s.role === 'host') void window.api.host.close()
+      if (reason && reason !== 'You left the room') toast(reason, s.role === 'host' ? 'info' : 'error')
+    },
+    [toast]
+  )
+
+  /** Before going to another room: leave this one, asking first when that ends the room or a share. */
+  const leaveForAnother = (): boolean => {
+    const s = sessionRef.current
+    if (!s) return true
+    const name = s.client.room?.name ?? 'this room'
+    const question =
+      s.role === 'host'
+        ? `Switching rooms ends ${name} for everyone. Continue?`
+        : s.publisher.sharing
+          ? `Leave ${name}? This stops sharing your screen.`
+          : null
+    if (question && !confirm(question)) return false
+    leave()
+    return true
+  }
+
+  const switchTo = (room: DiscoveredRoom): void => {
+    if (busyKey || (current?.endpoint && sameEndpoint(current.endpoint, room))) return
+    if (leaveForAnother()) void join(room)
+  }
+
+  /** A remembered room that isn't in the list: ask it directly, it may be on a VPN. */
+  const switchToEndpoint = async (ep: RoomEndpoint): Promise<void> => {
+    if (busyKey || (current?.endpoint && sameEndpoint(current.endpoint, ep))) return
+    if (!leaveForAnother()) return
+    const key = `${ep.address}:${ep.port}`
+    setBusyKey(key)
+    try {
+      const room = await window.api.rooms.resolve(ep.address, ep.port, ep.tls)
+      setBusyKey(null)
+      await join(room)
+    } catch (err) {
+      setBusyKey(null)
+      toast(`${ep.name ?? key} isn't available: ${errorMessage(err)}`, 'error')
+    }
+  }
+
   // --- hosting ---------------------------------------------------------------------
   const create = async (req: CreateRoomResult): Promise<void> => {
-    if (!settings) return
+    if (!settings || !leaveForAnother()) return
     setCreateBusy(true)
     setCreateError(null)
     let hostedCreated = false
@@ -148,49 +205,49 @@ export function App() {
     }
   }
 
-  const leave = useCallback(
-    (reason?: string) => {
-      const s = sessionRef.current
-      if (!s) return
-      sessionRef.current = null
-      setSession(null)
-      disposeSession(s)
-      if (s.role === 'host') void window.api.host.close()
-      if (reason && reason !== 'You left the room') toast(reason, s.role === 'host' ? 'info' : 'error')
-    },
-    [toast]
-  )
-
   if (!settings) return <div className="boot">Loading…</div>
+
+  const openCreate = (): void => {
+    setCreateError(null)
+    setCreating(true)
+  }
 
   return (
     <>
-      {session ? (
-        <RoomView
-          key={session.client.url}
-          session={session}
-          settings={settings}
-          onLeave={leave}
-          onOpenSettings={() => setSettingsOpen(true)}
-          onChangeSettings={(p) => void updateSettings(p)}
-          onToast={toast}
-        />
-      ) : (
-        <HomeScreen
+      <div className="shell">
+        <RoomsSidebar
           settings={settings}
           rooms={rooms}
+          current={current}
           busyKey={busyKey}
-          onJoin={(r) => void join(r)}
-          onCreate={() => {
-            setCreateError(null)
-            setCreating(true)
-          }}
+          collapsed={sidebar === 'closed'}
+          onToggle={() => setSidebar(sidebar === 'open' ? 'closed' : 'open')}
+          onJoin={switchTo}
+          onJoinEndpoint={(ep) => void switchToEndpoint(ep)}
+          onForgetRecent={(ep) =>
+            void updateSettings({ recentRooms: settings.recentRooms.filter((r) => !sameEndpoint(r, ep)) })
+          }
+          onCreate={openCreate}
           onSettings={() => setSettingsOpen(true)}
           onRename={(displayName) => void updateSettings({ displayName })}
         />
-      )}
+        <main className="shell-main">
+          {session ? (
+            <RoomView
+              key={session.client.url}
+              session={session}
+              settings={settings}
+              onLeave={leave}
+              onChangeSettings={(p) => void updateSettings(p)}
+              onToast={toast}
+            />
+          ) : (
+            <Welcome hasRooms={rooms.length > 0} onCreate={openCreate} />
+          )}
+        </main>
+      </div>
 
-      {creating && !session && (
+      {creating && (
         <CreateRoomDialog
           defaultName={`${settings.displayName}'s room`}
           defaultAudio={audioDefaults(settings)}
@@ -231,4 +288,21 @@ export function App() {
       </div>
     </>
   )
+}
+
+/** The room we're in, kept up to date for the sidebar. */
+function useCurrentRoom(session: Session | null): CurrentRoom | null {
+  const [room, setRoom] = useState<RoomState | null>(session?.client.room ?? null)
+  useEffect(() => {
+    setRoom(session?.client.room ?? null)
+    return session?.client.on('room', setRoom)
+  }, [session])
+  if (!session) return null
+  return {
+    id: room?.id ?? '',
+    name: room?.name ?? session.endpoint.name ?? 'Room',
+    endpoint: session.role === 'host' ? null : session.endpoint,
+    people: room ? room.viewerCount + 1 : 1,
+    live: room?.streams ?? 0
+  }
 }

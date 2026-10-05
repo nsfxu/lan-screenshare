@@ -10,6 +10,12 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Changed
+
+- New layout in three columns: your rooms on the left, the room in the middle, people and chat on the right. You can switch rooms in one click, and hide either side column (the app remembers which). Your name, picture and Settings are at the bottom left.
+- **Recent rooms**: the last 5 rooms you joined are listed first, so you can go back to one in one click, even on a VPN.
+- The window title shows the room you're in.
+
 ## [1.2.0] - 2026-10-05
 
 ### Added

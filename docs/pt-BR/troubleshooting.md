@@ -45,7 +45,7 @@ flowchart TD
 | *Too many wrong PINs. Try again later.* | 3 PINs errados vindos do seu computador | Espere 5 minutos. |
 | *Room is full* | Já há 10 pessoas dentro | Espere alguém sair. |
 | *You were removed from this room* | O anfitrião removeu você | Só o anfitrião pode ajudar; uma nova sessão da sala limpa isso. |
-| O cartão da sala diz *Update to join* ou *Older version* | A sala usa uma versão principal incompatível (o cartão diz qual) | Como acima. |
+| A lista de salas diz *Update to join* ou *Older version* | A sala usa uma versão principal incompatível (passe o mouse por cima para ver quem precisa atualizar) | Como acima. |
 | A sala fica cinza / *Unreachable* | O app não consegue alcançar o anfitrião | Confira a rede e o firewall, ou se o anfitrião ainda está com o app aberto. |
 | Erro de certificado no log (`rejected certificate`) | O certificado do anfitrião não bate com o que o seu app viu antes | Reinicie o ScreenShare do seu lado para ele reconhecer o anfitrião de novo. Se o anfitrião apagou o `host-identity.json`, isso é esperado. |
 

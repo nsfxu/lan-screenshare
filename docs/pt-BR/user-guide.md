@@ -40,7 +40,7 @@ flowchart LR
 
 ## Seu nome e sua foto
 
-- Seu **nome** aparece no canto superior direito da tela inicial. Clique nele para mudar. Também dá para mudar em **Settings → Profile**.
+- Seu **nome** aparece embaixo da coluna de salas, à esquerda. Clique nele para mudar. Também dá para mudar em **Settings → Profile**.
 - Sua **foto de perfil** fica em **Settings → Profile → Choose…**. Depois de escolher uma imagem, abre uma janela de recorte:
   - arraste a imagem para posicioná-la;
   - use a rodinha do mouse ou o controle deslizante para dar zoom;
@@ -50,11 +50,18 @@ flowchart LR
 
 ## Encontrar uma sala
 
-A tela inicial lista as salas da sua rede. Ela se atualiza sozinha (repare no ponto verde **live**).
+A janela tem três colunas: as **salas** à esquerda, a sala em que você está (ou uma página de boas-vindas) no meio, e as **pessoas e o chat** da sala à direita.
 
-Cada cartão de sala mostra se ela é **Public** ou **Private** (ícone de cadeado), quantas transmissões estão ao vivo (ou *No one sharing*, *Unreachable*, ou *Update to join* / *Older version* dizendo quem precisa atualizar), o nome, quem hospeda e há quanto tempo, quantas pessoas estão dentro e o endereço. Use **Search rooms** para filtrar a lista. Salas adicionadas pelo IP têm um botão de lixeira para tirá-las da lista.
+A coluna de salas mostra:
 
-**Connect by IP**: se você está numa VPN ou em outra sub-rede, as salas podem não aparecer sozinhas. Clique em **Connect by IP** e digite o endereço do anfitrião, por exemplo `10.8.0.5` ou `192.168.1.20:47800`. O anfitrião vê os endereços dele no painel **Access** da sala. A porta padrão é 47800.
+- **Recent rooms**: as últimas 5 salas em que você entrou, da mais recente para a mais antiga, com a sala atual em destaque. Clique numa para voltar a ela, mesmo que esteja numa VPN e não apareça sozinha. Salas que não respondem aparecem como *offline*. O **×** de uma linha a esquece.
+- **Rooms on your network**: todas as outras salas encontradas na sua rede. A lista se atualiza sozinha (repare no ponto verde).
+
+Cada linha mostra um cadeado para salas privadas, quantas transmissões estão ao vivo e quantas pessoas estão dentro; passe o mouse por cima para ver quem hospeda, há quanto tempo e o endereço. Uma sala numa versão incompatível diz *Update to join* ou *Older version* (passe o mouse para ver quem precisa atualizar). Salas adicionadas pelo IP têm um **×** para tirá-las da lista. Clique numa sala para entrar. Se você já está numa sala, sai dela antes; o app pergunta antes quando isso encerra uma sala que você hospeda ou para o seu compartilhamento.
+
+O botão no canto superior direito de cada coluna lateral a esconde (a coluna de salas vira uma faixa com as iniciais das salas). O app lembra quais colunas você escondeu.
+
+**Connect by IP**: se você está numa VPN ou em outra sub-rede, as salas podem não aparecer sozinhas. Clique no botão **Connect by IP** (o ícone de sinal ao lado de **Create room**) e digite o endereço do anfitrião, por exemplo `10.8.0.5` ou `192.168.1.20:47800`. O anfitrião vê os endereços dele no painel **Access** da sala. A porta padrão é 47800.
 
 **Salas privadas** pedem um PIN (de 4 a 6 dígitos). Depois de 3 PINs errados, seu computador precisa esperar 5 minutos para tentar de novo.
 
@@ -136,7 +143,7 @@ Na lista **People** você pode **parar a transmissão** de alguém ou **remover*
 
 ## Configurações
 
-Abra as configurações pelo ícone de engrenagem (na tela inicial ou no topo da sala).
+Abra as configurações pelo ícone de engrenagem embaixo da coluna de salas.
 
 | Seção | Configuração | Padrão | Significado |
 |---|---|---|---|

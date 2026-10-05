@@ -81,14 +81,14 @@ async function launchPerson(
     }
   )
 
-  await win.waitForSelector('.home')
+  await win.waitForSelector('.rooms-sidebar')
   await win.evaluate(
     (displayName) =>
       window.api.settings.update({ displayName, shareAudio: false, excludeDiscordAudio: false, notifications: false }),
     name
   )
   await win.reload() // the UI reads the settings above at startup
-  await win.waitForSelector('.home')
+  await win.waitForSelector('.rooms-sidebar')
   await fakeScreenCapture(win)
   return { name, app, win, userData }
 }
@@ -177,14 +177,13 @@ export async function createRoom(host: Person, privacy: 'public' | 'private' = '
   return port
 }
 
-/** Adds the room at 127.0.0.1:port with Connect by IP and clicks Join. */
+/** Adds the room at 127.0.0.1:port with Connect by IP and clicks it in the room list. */
 export async function joinByIp(guest: Person, port: number): Promise<void> {
   const { win } = guest
   await win.getByRole('button', { name: 'Connect by IP' }).click()
   await win.getByPlaceholder(/^Host address/).fill(`127.0.0.1:${port}`)
   await win.getByPlaceholder(/^Host address/).press('Enter')
-  const card = win.locator('.room-card', { hasText: `127.0.0.1:${port}` })
-  await card.getByRole('button', { name: 'Join' }).click()
+  await win.locator(`.room-row-main[title*="127.0.0.1:${port}"]`).click()
 }
 
 /** Frames decoded so far by the first watched tile. */

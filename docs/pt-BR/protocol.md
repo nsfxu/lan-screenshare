@@ -23,7 +23,7 @@ Tudo o que trafega entre os apps de uma sala: descoberta, a consulta HTTP, as me
 
 - A versão atual é **`PROTOCOL_VERSION = 4`** (`src/shared/constants.ts`).
 - Todo `hello` informa a versão. O servidor recusa uma versão diferente com o erro fatal `version_mismatch`, cuja mensagem diz quem precisa atualizar, por exemplo "This room runs ScreenShare 2.0.0, you have 1.2.0: update to join" (`incompatibleRoomMessage` em `src/shared/version.ts`; servidores anteriores ao 1.2.0 dizem "This room runs a different app version").
-- O `GET /info` e o registro TXT do mDNS também informam a versão, para a lista de salas poder mostrar salas incompatíveis. Desde o 1.2.0, o `/info` também traz a `appVersion` do anfitrião, e o cartão da sala diz **Update to join** ou **Older version** com a mesma mensagem.
+- O `GET /info` e o registro TXT do mDNS também informam a versão, para a lista de salas poder mostrar salas incompatíveis. Desde o 1.2.0, o `/info` também traz a `appVersion` do anfitrião, e a lista de salas diz **Update to join** ou **Older version** com a mesma mensagem.
 - Desde o 1.2.0, `hello` e `Participant` trazem uma `appVersion` opcional (SemVer, por exemplo `1.2.0`). O servidor descarta uma malformada; apps antigos ignoram o campo. Os outros na sala a usam para sugerir atualizar quando alguém usa uma versão mais nova.
 - Histórico: a v3 trouxe várias transmissões (qualquer pessoa pode compartilhar). A v4 adicionou fotos de perfil (`set-avatar` / `avatar`) e a taxa de quadros escolhida pelo espectador em `view-size` / `watcher-view`.
 

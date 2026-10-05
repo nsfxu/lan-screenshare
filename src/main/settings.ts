@@ -4,11 +4,12 @@ import path from 'node:path'
 import { DEFAULT_PORT, NAME_MAX_LENGTH } from '../shared/constants'
 import { isAvatar } from '../shared/images'
 import { QUALITY_PRESETS } from '../shared/quality'
+import { RECENT_ROOMS_MAX } from '../shared/recentRooms'
 import type { RoomEndpoint, Settings } from '../shared/types'
 import { randomId } from '../utils/crypto'
 
 /** Format version of settings.json written by this app; see migrate(). */
-export const SETTINGS_VERSION = 2
+export const SETTINGS_VERSION = 3
 
 /** Upgrades settings written by an older version of the app. */
 export function migrate(raw: Partial<Settings>): Partial<Settings> {
@@ -17,6 +18,8 @@ export function migrate(raw: Partial<Settings>): Partial<Settings> {
   // 2 (1.2.0): "Optimize for" got Automatic as its default. "motion" was the
   // old default, saved whether or not anyone chose it.
   if (version < 2 && out.contentHint === 'motion') out.contentHint = 'auto'
+  // 3 (1.3.0): the room list remembers recent rooms; start with the last one.
+  if (version < 3 && !out.recentRooms && out.lastRoom) out.recentRooms = [out.lastRoom]
   return out
 }
 
@@ -39,6 +42,7 @@ function defaults(): Settings {
     preferredPort: DEFAULT_PORT,
     autoRejoin: false,
     lastRoom: null,
+    recentRooms: [],
     manualServers: [],
     notifications: true,
     pauseOnMinimize: false,
@@ -104,6 +108,7 @@ function sanitize(s: Settings, fallback: Settings): Settings {
   out.preferredPort = Number.isInteger(port) && port >= 0 && port <= 65535 ? port : fallback.preferredPort
   out.manualServers = Array.isArray(s.manualServers) ? s.manualServers.filter(isEndpoint).slice(0, 50) : []
   out.lastRoom = isEndpoint(s.lastRoom) ? s.lastRoom : null
+  out.recentRooms = Array.isArray(s.recentRooms) ? s.recentRooms.filter(isEndpoint).slice(0, RECENT_ROOMS_MAX) : []
   const budget = Number(s.uploadBudgetMbps)
   out.uploadBudgetMbps = Number.isInteger(budget) && budget >= 0 && budget <= 10_000 ? budget : fallback.uploadBudgetMbps
   out.avatar = s.avatar === null || isAvatar(s.avatar) ? s.avatar : fallback.avatar
