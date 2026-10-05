@@ -275,7 +275,7 @@ Contrapressão: quando o socket de um espectador tem mais de **2 MB** na fila, o
 | Consulta de descoberta / sala considerada inativa | 3 s / 10 s | `PROBE_INTERVAL_MS`, `ROOM_STALE_MS` |
 | Heartbeat do WebSocket | 10 s | `HEARTBEAT_INTERVAL_MS` |
 | Tempo do WebRTC antes do TCP | 8 s | `WEBRTC_CONNECT_TIMEOUT_MS` |
-| Prévia: tamanho / intervalo / intervalo mínimo | ≤ 96 000 caracteres / 5 s / 1 s | `SNAPSHOT_*` |
+| Prévia: tamanho / intervalo / intervalo mínimo | ≤ 96 000 caracteres / 60 s / 1 s | `SNAPSHOT_*` |
 | Foto de perfil: tamanho / intervalo mínimo | ≤ 40 000 caracteres (JPEG de 128 px) / 1 s | `AVATAR_*` |
 | Maior mensagem no WebSocket | 16 MB | `MAX_PAYLOAD_BYTES` (servidor) |
 | Fila do repasse TCP por espectador | 2 MB | `TCP_MAX_BUFFERED_BYTES` |

@@ -18,7 +18,7 @@ Words used in the code and in these docs.
 | **Main process / renderer / preload** | Electron's Node.js process, the sandboxed Chromium page, and the bridge between them. |
 | **mDNS / DNS-SD** | Multicast DNS service discovery, used to advertise and find rooms (`_lanshare._tcp`). |
 | **Participant** | Anyone in a room, including the host. |
-| **Preview / snapshot** | A 320 px JPEG of a live stream, refreshed every 5 s, shown on stream cards. |
+| **Preview / snapshot** | A 320 px JPEG of a live stream, refreshed every minute, shown on people's tiles and in the rooms column. |
 | **Process loopback** | Capturing the system mix minus one process tree (Windows 10 2004+). Used to leave Discord out. |
 | **Profile (`--profile`)** | A command-line option that gives an app instance its own settings folder, for running several instances on one computer. |
 | **Protocol version** | `PROTOCOL_VERSION`. Must match between everyone in a room. |

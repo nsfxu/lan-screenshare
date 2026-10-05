@@ -22,7 +22,7 @@ Termos usados no código e nesta documentação. Os nomes em inglês são os que
 | **mDNS / DNS-SD** | Descoberta de serviços por DNS multicast, usada para anunciar e encontrar salas (`_lanshare._tcp`). |
 | **Participante** | Qualquer pessoa na sala, inclusive o anfitrião. |
 | **Perfil (`--profile`)** | Uma opção de linha de comando que dá a uma instância do app sua própria pasta de configurações, para rodar várias instâncias no mesmo computador. |
-| **Prévia** (*preview / snapshot*) | Um JPEG de 320 px de uma transmissão ao vivo, atualizado a cada 5 s, mostrado nos cartões. |
+| **Prévia** (*preview / snapshot*) | Um JPEG de 320 px de uma transmissão ao vivo, atualizado a cada minuto, mostrado nos quadros das pessoas e na coluna de salas. |
 | **Process loopback** | Capturar o som do sistema menos uma árvore de processos (Windows 10 2004+). Usado para deixar o Discord de fora. |
 | **Processo principal / renderer / preload** | O processo Node.js do Electron, a página Chromium em sandbox e a ponte entre os dois. |
 | **Publisher** | O objeto do renderer que cuida do *seu* compartilhamento (`src/renderer/lib/publisher.ts`). |
