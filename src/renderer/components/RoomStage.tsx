@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react'
 import { Avatar } from './Avatar'
 import { Icon } from './Icon'
 
@@ -27,7 +28,8 @@ export function PersonTile({
   live,
   focused,
   small,
-  onFocus
+  onFocus,
+  onContextMenu
 }: {
   name: string
   color?: string
@@ -38,11 +40,13 @@ export function PersonTile({
   focused: boolean
   small: boolean
   onFocus(): void
+  onContextMenu?(e: MouseEvent): void
 }) {
   return (
     <div
       className={`tile person-tile ${live ? 'live' : ''} ${focused ? 'focused' : ''} ${small ? 'small' : ''}`}
       onDoubleClick={onFocus}
+      onContextMenu={onContextMenu}
     >
       {live?.snapshot && <div className="person-tile-preview" style={{ backgroundImage: `url(${live.snapshot})` }} />}
       <div className="person-tile-body">

@@ -62,7 +62,7 @@ flowchart TD
 1. Look at the tile's **stats badges**: resolution, fps and connection type.
 2. Check the tile's **quality menu**: it should be **Auto** (or the quality you want).
 3. **Auto follows the tile size**: a small tile gets a small stream. Focus the stream (spotlight), go full screen or zoom in and the quality rises within a second.
-4. Ask the streamer to check their maximum quality (**Stats** in the control bar), and **Settings → Upload limit when sharing** (the default 100 Mbps is shared between everyone watching them; on Wi-Fi 30–60 Mbps is more realistic).
+4. Ask the streamer to check their maximum quality (the **Live** button's menu, or **Stats**), and **Settings → Upload limit when sharing** (the default 100 Mbps is shared between everyone watching them; on Wi-Fi 30–60 Mbps is more realistic).
 5. The streamer's **Stats → Limited by** tells you why: *bandwidth* (network), *cpu* (computer too busy) or *none*. When it lasts, the streamer also gets a notice saying so, with a button to lower the quality.
 6. On the **TCP** connection, latency is a bit higher and one encode is shared by all TCP viewers.
 
@@ -91,7 +91,7 @@ On Windows 10 (and 11 before 24H2), sharing a whole screen shows the cursor even
 ## High CPU or a hot laptop
 
 - Open **Settings → Streaming quality**: the codec table shows **Hardware** or **Software** for each codec. Software encoding uses much more CPU. **Automatic** already prefers hardware H.264.
-- Lower the **maximum quality** under **Stats** in the control bar (for example 720p @ 30 fps).
+- Lower the **maximum quality** in the **Live** button's menu (for example 720p @ 30 fps).
 - Close tiles you're not watching; each watched stream costs decoding.
 - Keep your own stream hidden (don't **Show my stream**) while sharing.
 

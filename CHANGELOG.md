@@ -19,6 +19,8 @@ Each change adds its line under **Unreleased** in the same pull request, written
 - Everyone in the room has a tile in the middle, with their picture and name; people sharing show a preview of their stream with a **Watch stream** button, and watched streams play in their tile. Tiles keep a 16:9 shape and grow with the window. When you're alone, an **Invite people** tile shows your address.
 - A new control bar under the tiles: share and your sharing controls, **Stats** (now also where you set the quality you send), and a red button to leave. In a narrow window the buttons show only their icons.
 - Chat: messages someone sends within 5 minutes share one name and picture (hover for each time), the message box says which room you're writing to, and while the chat is hidden its button counts the new messages.
+- While you share, a red **Live** button replaces the row of sharing buttons: click it to change what you share, or its arrow for pause, mute, change source, the quality you send and stop sharing.
+- Right-click menus: on your own tile (show your stream, and the sharing options), on someone else's (watch, focus, full screen, mute, the quality you receive) and on people in the rooms column. Hosts also find stop stream and remove there.
 - In a small window (from 640×480, for example snapped next to a game) the chat and then the rooms column make room for the tiles, and open over the room when you need them.
 - Stream previews refresh about once a minute instead of every 5 seconds (still right away when someone starts sharing or switches source), so a room of streamers sends far fewer images around.
 - The room's details, privacy, PIN and **End room** are behind the **ⓘ** next to the room's name; the right column is just the chat.

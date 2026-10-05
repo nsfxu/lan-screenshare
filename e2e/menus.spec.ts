@@ -1,0 +1,57 @@
+import { createRoom, decodedFrames, expect, joinByIp, test } from './fixtures'
+
+const shots = process.env.E2E_SHOTS
+
+test('the Live button and right-click menus hold the sharing and watching options', async ({ people }) => {
+  const [alice, bob] = await people(2)
+  const port = await createRoom(alice)
+  const { win } = alice
+
+  // Live button: its main part changes what you share.
+  await win.getByRole('button', { name: 'Change what you share' }).click()
+  await expect(win.locator('.modal')).toBeVisible()
+  await win.locator('.modal').getByRole('button', { name: 'Cancel' }).click()
+
+  // Its arrow opens the sharing menu: pause, then the quality you send.
+  await win.getByRole('button', { name: 'Sharing options' }).click()
+  const menu = win.getByRole('menu', { name: 'Sharing' })
+  await expect(menu.getByRole('menuitem', { name: 'Stop sharing' })).toBeVisible()
+  if (shots) await win.screenshot({ path: `${shots}/1-sharing-menu.png` })
+  await menu.getByRole('menuitem', { name: 'Pause' }).click()
+  await expect(win.getByRole('button', { name: 'Change what you share' })).toHaveText('Paused')
+  await win.getByRole('button', { name: 'Sharing options' }).click()
+  await menu.getByRole('menuitem', { name: 'Resume' }).click()
+  await expect(win.getByRole('button', { name: 'Change what you share' })).toHaveText('Live')
+  await win.getByRole('button', { name: 'Sharing options' }).click()
+  await menu.getByRole('menuitemradio', { name: '720p @ 30 fps' }).click()
+  await win.getByRole('button', { name: 'Sharing options' }).click()
+  await expect(menu.getByRole('menuitemradio', { name: '720p @ 30 fps' })).toHaveAttribute('aria-checked', 'true')
+  await win.keyboard.press('Escape')
+  await expect(menu).toHaveCount(0)
+
+  // Right-click on her own tile: show her stream, and the same sharing options.
+  await win.locator('.person-tile', { hasText: 'Alice (you)' }).click({ button: 'right' })
+  const own = win.getByRole('menu', { name: 'Your stream' })
+  await expect(own.getByRole('menuitem', { name: 'Stop sharing' })).toBeVisible()
+  await own.getByRole('menuitem', { name: 'Show my stream' }).click()
+  await expect(win.locator('.tile video')).toHaveCount(1)
+
+  // Bob, on Alice's tile: watch, then pick the quality he receives and stop, all by right-click.
+  await joinByIp(bob, port)
+  await bob.win.locator('.person-tile', { hasText: 'Alice' }).click({ button: 'right' })
+  await bob.win.getByRole('menuitem', { name: 'Watch stream' }).click()
+  await expect.poll(() => decodedFrames(bob.win), { timeout: 30_000 }).toBeGreaterThan(10)
+  await bob.win.locator('.tile', { has: bob.win.locator('video') }).click({ button: 'right' })
+  const theirs = bob.win.getByRole('menu', { name: "Alice's stream" })
+  await expect(theirs.getByRole('menuitem', { name: 'Full screen' })).toBeVisible()
+  if (shots) await bob.win.screenshot({ path: `${shots}/2-stream-menu.png` })
+  await theirs.getByRole('menuitemradio', { name: '480p · 30 fps' }).click()
+  await expect(bob.win.getByLabel("Quality you receive from Alice")).toHaveValue('480p30')
+  await bob.win.locator('.tile', { has: bob.win.locator('video') }).click({ button: 'right' })
+  await theirs.getByRole('menuitem', { name: 'Stop watching' }).click()
+  await expect(bob.win.locator('.tile video')).toHaveCount(0)
+
+  // The host's menu on Bob's tile has the moderation actions.
+  await win.locator('.person-tile', { hasText: 'Bob' }).click({ button: 'right' })
+  await expect(win.getByRole('menuitem', { name: 'Remove from room' })).toBeVisible()
+})

@@ -106,7 +106,7 @@ Four independent limits decide what each watcher receives. They are combined in 
 
 ```mermaid
 flowchart LR
-  A["Streamer's maximum quality<br/>(Stats in the control bar, or Settings)"] --> L["Quality ladder"]
+  A["Streamer's maximum quality<br/>(Live button menu, Stats, or Settings)"] --> L["Quality ladder"]
   L --> B["Adaptive controller<br/>per watcher: loss, RTT, limitation"]
   B --> C["View limit<br/>tile size x zoom x DPI,<br/>or the watcher's own choice"]
   C --> D["Upload budget<br/>max-min fair share"]
