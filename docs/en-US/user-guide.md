@@ -23,7 +23,7 @@ Everything you can do in ScreenShare, from finding a room to fine-tuning quality
 
 - **Computers**: Windows 10/11 or macOS. System audio on macOS needs macOS 13 or newer. Leaving Discord out of the audio needs Windows 10 version 2004 or newer.
 - **Network**: everyone must be on the same local network or VPN. Nothing goes over the internet and there are no accounts.
-- **Same version**: everyone in a room must run the same version of the app. Otherwise you'll see "This room runs a different app version".
+- **Compatible versions**: apps with the same major version (1.x) can share a room. A new major version (2.0.0) needs everyone to update; the room list then says who has to, e.g. "This room runs ScreenShare 2.0.0, you have 1.2.0: update to join". When someone in your room runs a newer version, you get a one-time suggestion to update.
 - **macOS**: the first time you share, macOS asks for **Screen Recording** permission, and it may ask for **Local Network** access. Allow both, then restart the app if asked.
 
 ```mermaid
@@ -50,7 +50,7 @@ flowchart LR
 
 The home screen lists the rooms on your network. It updates by itself (look for the green **live** dot).
 
-Each room card shows whether it is **Public** or **Private** (lock icon), how many streams are live (or *No one sharing*, or *Unreachable*), its name, who hosts it and for how long, how many people are inside, and its address. Use **Search rooms** to filter the list. Rooms you added by IP have a bin button to remove them from the list.
+Each room card shows whether it is **Public** or **Private** (lock icon), how many streams are live (or *No one sharing*, *Unreachable*, or *Update to join* / *Older version* with who needs to update), its name, who hosts it and for how long, how many people are inside, and its address. Use **Search rooms** to filter the list. Rooms you added by IP have a bin button to remove them from the list.
 
 **Connect by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click **Connect by IP** and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses in the **Access** panel of the room. The default port is 47800.
 

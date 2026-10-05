@@ -5,6 +5,7 @@ import net from 'node:net'
 import { createHash, X509Certificate } from 'node:crypto'
 import type { TLSSocket } from 'node:tls'
 import type { RoomEndpoint, RoomInfo } from '../shared/types'
+import { isAppVersion } from '../shared/version'
 
 const VIRTUAL_ADAPTER = /vethernet|virtualbox|vmware|hyper-v|wsl|docker|vbox|loopback|bridge|utun/i
 
@@ -129,6 +130,7 @@ export function probeRoom(
         try {
           const info = JSON.parse(body) as RoomInfo
           if (typeof info?.id !== 'string' || typeof info.name !== 'string') throw new Error('not a room')
+          if (!isAppVersion(info.appVersion)) delete info.appVersion
           resolve({ info, fingerprint, ms: Date.now() - started })
         } catch (err) {
           reject(err instanceof Error ? err : new Error(String(err)))

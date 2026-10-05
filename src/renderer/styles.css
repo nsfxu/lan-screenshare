@@ -464,11 +464,13 @@ input[type='checkbox']:checked::after {
   background: rgba(245, 185, 66, 0.1);
   color: var(--ok);
 }
-.cursor-hint {
+.cursor-hint,
+.version-hint {
   margin: 0 12px 8px;
   flex-wrap: nowrap;
 }
-.cursor-hint-text {
+.cursor-hint-text,
+.version-hint-text {
   flex: 1;
   min-width: 0;
 }
@@ -625,6 +627,9 @@ input[type='checkbox']:checked::after {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+.room-card-version {
+  color: var(--ok);
 }
 .room-card-meta {
   display: flex;

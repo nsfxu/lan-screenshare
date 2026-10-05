@@ -12,6 +12,8 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ### Added
 
+- Rooms on an incompatible version now say who has to update, e.g. "This room runs ScreenShare 2.0.0, you have 1.2.0: update to join", on the room card and when joining, instead of "Unreachable" or "This room runs a different app version". Rooms report their app version from now on, so this works when 2.0.0 arrives.
+- When someone in your room runs a newer version of ScreenShare, you get a one-time suggestion to update.
 - **Only this app's sound** (Windows): when you share a single window, viewers hear only that app, for example your game without Discord, music or notifications. On by default when you share a window; turn it off in the share dialog, or change the default in Settings.
 
 ### Changed

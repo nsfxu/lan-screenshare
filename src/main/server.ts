@@ -36,6 +36,7 @@ import type {
   Transport
 } from '../shared/types'
 import { isAvatar, isSnapshot } from '../shared/images'
+import { incompatibleRoomMessage, isAppVersion } from '../shared/version'
 import { PinGuard, pinsEqual, randomId, randomToken } from '../utils/crypto'
 
 export interface Logger {
@@ -59,6 +60,8 @@ export interface RoomServerOptions {
   port: number
   bindAddress?: string
   maxUsers?: number
+  /** The host's app version, reported in /info and the welcome message so others can tell who needs to update. */
+  appVersion?: string
   logger?: Logger
   pinGuard?: PinGuard
 }
@@ -220,6 +223,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       maxUsers: this.opts.maxUsers ?? MAX_USERS,
       streams: [...this.seats.values()].filter((s) => s.participant.stream).length,
       protocol: PROTOCOL_VERSION,
+      appVersion: isAppVersion(this.opts.appVersion) ? this.opts.appVersion : undefined,
       startedAt: this.startedAt
     }
   }
@@ -297,8 +301,17 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
 
   private handleHello(ws: WebSocket, ip: string, msg: Extract<ClientMessage, { type: 'hello' }>): void {
     if (this.ended) return this.fail(ws, 'bad_request', 'Room has ended', true)
+    // Unknown or malformed versions are dropped, not rejected: apps before 1.2.0 don't send one.
+    const appVersion = isAppVersion(msg.appVersion) ? msg.appVersion : undefined
     if (msg.protocol !== PROTOCOL_VERSION) {
-      return this.fail(ws, 'version_mismatch', 'This room runs a different app version', true)
+      const message =
+        (typeof msg.protocol === 'number' &&
+          incompatibleRoomMessage(
+            { protocol: PROTOCOL_VERSION, appVersion: this.opts.appVersion },
+            { protocol: msg.protocol, appVersion }
+          )) ||
+        'This room runs a different app version'
+      return this.fail(ws, 'version_mismatch', message, true)
     }
     const clientId = typeof msg.clientId === 'string' ? msg.clientId.slice(0, 64) : ''
     if (!clientId) return this.fail(ws, 'bad_request', 'Missing client id', true)
@@ -317,6 +330,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       }
       const seat: Seat = existing ?? this.newSeat(HOST_ID, clientId, name, 'host', ip, decoders)
       seat.participant.name = name
+      seat.participant.appVersion = appVersion
       seat.decoders = decoders
       this.attach(seat, ws)
       this.welcome(seat)
@@ -337,6 +351,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       }
       resumable.decoders = decoders
       resumable.participant.name = name
+      resumable.participant.appVersion = appVersion
       this.attach(resumable, ws)
       this.welcome(resumable)
       this.broadcastParticipants()
@@ -365,6 +380,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
     if (this.seats.size >= capacity) return this.fail(ws, 'room_full', 'Room is full', true)
 
     const seat = this.newSeat(randomId(), clientId, name, 'viewer', ip, decoders)
+    seat.participant.appVersion = appVersion
     this.attach(seat, ws)
     this.welcome(seat)
     this.systemMessage(`${name} joined`)

@@ -19,6 +19,8 @@ export interface RoomInfo {
   /** Number of participants currently sharing their screen. */
   streams: number
   protocol: number
+  /** The host's app version (e.g. "1.2.0"); missing for hosts before 1.2.0. */
+  appVersion?: string
   startedAt: number
 }
 
@@ -76,6 +78,8 @@ export interface Participant {
   stream: StreamInfo | null
   /** Ids of the participants whose streams this participant is watching. */
   watching: string[]
+  /** Their app version, as sent in hello; missing for apps before 1.2.0. */
+  appVersion?: string
 }
 
 export interface ChatMessage {
@@ -175,6 +179,8 @@ export type ClientMessage =
       resumeToken?: string
       /** Codecs this client can decode, used by the host's codec selection. */
       decoders?: CodecSupport[]
+      /** Our app version (e.g. "1.2.0"), shown to others in the room. Optional: older apps don't send it. */
+      appVersion?: string
     }
   | { type: 'chat'; text: string }
   /** My profile picture (small JPEG/WebP/PNG data URL) or null to remove it; sent after every welcome. */
