@@ -110,7 +110,8 @@ Todos na sala têm um **quadro** no meio: a foto e o nome. Os quadros mantêm o 
 
 - Clique em **Watch stream** no quadro, clique na pessoa na coluna de salas (passe o mouse antes para ver a prévia), ou em **Watch all** na barra de controles. O quadro passa a exibir a transmissão. Clique na pessoa de novo na coluna de salas, ou feche a transmissão do quadro (×), para parar de assistir; um olho marca as transmissões que você assiste.
 - **Clique com o botão direito** num quadro para tudo sobre aquela pessoa: assistir ou parar, foco, tela cheia, silenciar e a qualidade que você recebe (o anfitrião também pode parar a transmissão e remover).
-- Clique no botão de foco na barra de uma transmissão (ou dê dois cliques num quadro com foto) para colocá-la em **destaque**, com todos os outros numa faixa embaixo. Clique de novo, ou aperte **Esc**, para voltar à grade.
+- **Clique num quadro** para colocá-lo em **destaque**, com todos os outros numa faixa embaixo (clicar num deles o coloca em destaque no lugar). Clique de novo no quadro em destaque, no botão de grade no topo, ou aperte **Esc** para voltar à grade. Dois cliques numa transmissão continuam dando zoom.
+- No destaque, **Hide others** guarda a faixa para o quadro em destaque ocupar toda a altura; as transmissões nela param de te mandar vídeo até você mostrá-las de novo (o som continua).
 - Quando você está sozinho na sua sala, um quadro **Invite people** mostra o endereço para passar a quem está numa VPN.
 
 Cada transmissão tem:

@@ -35,7 +35,7 @@ import { HostStatsPanel } from './HostControls'
 import { Menu, menuAbove, type MenuAt, type MenuItem } from './Menu'
 import { Icon } from './Icon'
 import { RoomInfo } from './RoomInfo'
-import { InviteTile, PersonTile } from './RoomStage'
+import { InviteTile, PersonTile, useClickToFocus } from './RoomStage'
 import { ScreenViewer, type ScreenViewerHandle } from './ScreenViewer'
 
 interface Props {
@@ -86,6 +86,8 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const toggleChat = (): void =>
     chatDocked ? setSidePanel(sidePanel === 'open' ? 'closed' : 'open') : setChatFloating((v) => !v)
   const [infoOpen, setInfoOpen] = useState(false)
+  /** In focus view, the strip of everyone else can be put away; its streams then pause their video. */
+  const [strip, setStrip] = useRemembered('focus-strip', 'open', PANEL_STATES)
   /** The open popup menu: the sharing menu, or a tile's right-click menu. */
   const [menu, setMenu] = useState<{ at: MenuAt; items: MenuItem[]; label: string } | null>(null)
   const closeMenu = useCallback(() => setMenu(null), [])
@@ -336,7 +338,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
       openMenu({ x: e.clientX, y: e.clientY }, label, groups())
     }
 
-  const renderTile = (p: Participant, small: boolean) => {
+  const renderTile = (p: Participant, small: boolean, collapsed = false) => {
     const focused = focus === p.id
     const onFocus = (): void => setFocus(focused ? null : p.id)
     const onSelfMenu = rightClick('Your stream', () => [selfItems()])
@@ -398,6 +400,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           small={small}
           onFocus={onFocus}
           onStop={() => watches.unwatch(p.id)}
+          collapsed={collapsed}
           menuItems={personItems(p)}
           moderation={moderationItems(p)}
           onMenu={(at, groups) => openMenu(at, `${p.name}'s stream`, groups)}
@@ -437,9 +440,20 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const grid = bestTileGrid(people.length + (alone ? 1 : 0), stageSize.width - 12, stageSize.height - 12)
   const stage =
     focused && people.length > 1 ? (
-      <div className="stage-spotlight">
+      <div className={`stage-spotlight ${strip === 'closed' ? 'strip-closed' : ''}`}>
         <div className="spotlight-main">{renderTile(focused, false)}</div>
-        <div className="spotlight-strip">{people.filter((p) => p !== focused).map((p) => renderTile(p, true))}</div>
+        <button
+          className="strip-toggle"
+          aria-expanded={strip === 'open'}
+          title={strip === 'open' ? 'Hide the others (their video pauses)' : 'Show the others'}
+          onClick={() => setStrip(strip === 'open' ? 'closed' : 'open')}
+        >
+          <Icon name={strip === 'open' ? 'chevronDown' : 'chevronUp'} size={14} />
+          {strip === 'open' ? 'Hide others' : `Show others (${people.length - 1})`}
+        </button>
+        <div className="spotlight-strip" hidden={strip === 'closed'}>
+          {people.filter((p) => p !== focused).map((p) => renderTile(p, true, strip === 'closed'))}
+        </div>
       </div>
     ) : (
       <div
@@ -480,6 +494,11 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           </span>
           {connection === 'reconnecting' && <span className="status-pill warn">Reconnecting…</span>}
         </div>
+        {focused && people.length > 1 && (
+          <button className="icon-btn" title="Back to the grid (Esc)" aria-label="Grid view" onClick={() => setFocus(null)}>
+            <Icon name="grid" size={18} />
+          </button>
+        )}
         <button
           className={`icon-btn chat-toggle ${chatOpen ? 'active' : ''}`}
           title={chatOpen ? 'Hide chat' : 'Show chat'}
@@ -702,6 +721,8 @@ function SelfTile({
   onHide,
   onContextMenu
 }: TileChrome & { stream: MediaStream | null; sharing: SharingState; stats: HostStats | null; onHide(): void }) {
+  const viewer = useRef<ScreenViewerHandle>(null)
+  const clickToFocus = useClickToFocus(onFocus, () => viewer.current?.isZoomed() ?? false)
   const overlay =
     showOverlay && stats && !small ? (
       <div className="stat-badges">
@@ -717,7 +738,11 @@ function SelfTile({
       </div>
     ) : null
   return (
-    <div className={`tile ${focused ? 'focused' : ''} ${small ? 'small' : ''}`} onContextMenu={onContextMenu}>
+    <div
+      className={`tile ${focused ? 'focused' : ''} ${small ? 'small' : ''}`}
+      onClick={clickToFocus}
+      onContextMenu={onContextMenu}
+    >
       <div className="tile-bar">
         <span className="tile-name">
           <Icon name="screen" size={13} /> Your screen
@@ -728,6 +753,7 @@ function SelfTile({
         </button>
       </div>
       <ScreenViewer
+        ref={viewer}
         stream={stream}
         local
         overlay={overlay}
@@ -754,6 +780,7 @@ function RemoteTile({
   avatar,
   snapshot,
   onStop,
+  collapsed,
   menuItems,
   moderation,
   onMenu
@@ -763,12 +790,18 @@ function RemoteTile({
   avatar: string | null
   snapshot: string | null
   onStop(): void
+  /** In the put-away strip of the focus view: not visible, so the streamer pauses our video. */
+  collapsed: boolean
   /** The start of the right-click menu (stop watching, focus) and the host's actions at its end. */
   menuItems: MenuItem[]
   moderation: MenuItem[]
   onMenu(at: MenuAt, groups: MenuItem[][]): void
 }) {
   const viewer = useRef<ScreenViewerHandle>(null)
+  const clickToFocus = useClickToFocus(onFocus, () => viewer.current?.isZoomed() ?? false)
+  // Hidden behind another full-screen tile, or put away with the strip.
+  const [behindFullscreen, setBehindFullscreen] = useState(false)
+  useEffect(() => sub.setTileHidden(behindFullscreen || collapsed), [sub, behindFullscreen, collapsed])
   const [stream, setStream] = useState<MediaStream | null>(sub.stream)
   const [state, setState] = useState<SubscriptionState>(sub.state)
   const [stats, setStats] = useState<ViewerStats | null>(null)
@@ -828,6 +861,7 @@ function RemoteTile({
   return (
     <div
       className={`tile ${focused ? 'focused' : ''} ${small ? 'small' : ''}`}
+      onClick={clickToFocus}
       onContextMenu={(e) => {
         e.preventDefault()
         const v = viewer.current
@@ -903,7 +937,7 @@ function RemoteTile({
         audioAvailable={!!participant?.stream?.audio && state === 'streaming'}
         volumeKey={participant?.name}
         onViewHeight={(px) => sub.setViewHeight(px)}
-        onHiddenChange={(hidden) => sub.setTileHidden(hidden)}
+        onHiddenChange={setBehindFullscreen}
       />
     </div>
   )

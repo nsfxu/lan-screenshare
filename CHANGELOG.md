@@ -21,6 +21,7 @@ Each change adds its line under **Unreleased** in the same pull request, written
 - Chat: messages someone sends within 5 minutes share one name and picture (hover for each time), the message box says which room you're writing to, and while the chat is hidden its button counts the new messages.
 - While you share, a red **Live** button replaces the row of sharing buttons: click it to stop sharing, or its arrow for pause, mute, change source, the quality you send and stop sharing. It sits right of the leave button, like **Share screen**.
 - Right-click menus: on your own tile (show your stream, and the sharing options), on someone else's (watch, focus, full screen, mute, the quality you receive) and on people in the rooms column. Hosts also find stop stream and remove there.
+- Click a tile to focus it, and again (or the new grid button, or Esc) to go back to the grid. In focus, **Hide others** puts the strip away and pauses the video of the streams in it.
 - In a small window (from 640×480, for example snapped next to a game) the chat and then the rooms column make room for the tiles, and open over the room when you need them.
 - Stream previews refresh about once a minute instead of every 5 seconds (still right away when someone starts sharing or switches source), so a room of streamers sends far fewer images around.
 - The room's details, privacy, PIN and **End room** are behind the **ⓘ** next to the room's name; the right column is just the chat.
