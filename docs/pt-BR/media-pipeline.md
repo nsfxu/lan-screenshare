@@ -106,7 +106,7 @@ Quatro limites independentes decidem o que cada espectador recebe. Eles são com
 
 ```mermaid
 flowchart LR
-  A["Qualidade máxima de quem transmite<br/>(Stats na barra de controles, ou Settings)"] --> L["Escada de qualidade"]
+  A["Qualidade máxima de quem transmite<br/>(menu do botão Live, Stats, ou Settings)"] --> L["Escada de qualidade"]
   L --> B["Controlador adaptativo<br/>por espectador: perda, RTT, limitação"]
   B --> C["Limite de exibição<br/>tamanho do quadro x zoom x DPI,<br/>ou a escolha do espectador"]
   C --> D["Banda de upload<br/>divisão justa max-min"]

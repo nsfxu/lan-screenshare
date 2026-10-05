@@ -62,7 +62,7 @@ flowchart TD
 1. Olhe os **selos de estatística** do quadro: resolução, fps e tipo de conexão.
 2. Confira o **menu de qualidade** do quadro: deve estar em **Auto** (ou na qualidade que você quer).
 3. **O Auto acompanha o tamanho do quadro**: um quadro pequeno recebe uma transmissão pequena. Coloque a transmissão em destaque, vá para tela cheia ou dê zoom e a qualidade sobe em menos de um segundo.
-4. Peça para quem transmite conferir a qualidade máxima (**Stats** na barra de controles) e **Settings → Upload limit when sharing** (os 100 Mbps padrão são divididos entre todos que assistem; no Wi-Fi, 30–60 Mbps é mais realista).
+4. Peça para quem transmite conferir a qualidade máxima (o menu do botão **Live**, ou **Stats**) e **Settings → Upload limit when sharing** (os 100 Mbps padrão são divididos entre todos que assistem; no Wi-Fi, 30–60 Mbps é mais realista).
 5. O **Stats → Limited by** de quem transmite diz o motivo: *bandwidth* (rede), *cpu* (computador ocupado demais) ou *none*. Quando isso dura, quem transmite também recebe um aviso dizendo isso, com um botão para baixar a qualidade.
 6. Na conexão **TCP** o atraso é um pouco maior e uma única codificação é dividida entre todos os espectadores TCP.
 
@@ -91,7 +91,7 @@ No Windows 10 (e no 11 anterior ao 24H2), compartilhar uma tela inteira mostra o
 ## CPU alta ou notebook esquentando
 
 - Abra **Settings → Streaming quality**: a tabela de codecs mostra **Hardware** ou **Software** para cada codec. Codificar em software gasta muito mais CPU. O **Automatic** já prefere H.264 em hardware.
-- Diminua a **qualidade máxima** em **Stats** na barra de controles (por exemplo 720p @ 30 fps).
+- Diminua a **qualidade máxima** no menu do botão **Live** (por exemplo 720p @ 30 fps).
 - Feche os quadros que você não está assistindo; cada transmissão assistida custa decodificação.
 - Deixe a sua própria transmissão escondida (não clique em **Show my stream**) enquanto compartilha.
 

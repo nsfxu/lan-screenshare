@@ -81,17 +81,22 @@ Agora é o seu computador que roda a sala. Se você fechar o ScreenShare, o app 
 
 Qualquer pessoa na sala pode compartilhar, não só o anfitrião, e várias pessoas podem compartilhar ao mesmo tempo. Clique em **Share screen** na barra de controles embaixo dos quadros e escolha uma tela ou janela.
 
-Enquanto você compartilha, a barra de controles oferece (numa janela estreita, só os ícones):
+Enquanto você compartilha, o botão vira um botão vermelho **Live** (**Paused** quando pausado):
 
-| Botão | O que faz |
+- **Clique nele** para trocar para outra tela ou janela, ou mudar as opções de áudio, sem ninguém precisar reconectar.
+- **Clique na seta dele** (ou clique com o botão direito no seu próprio quadro) para o menu de compartilhamento:
+
+| Opção | O que faz |
 |---|---|
 | **Pause / Resume** | Congela a transmissão (e o áudio) sem encerrar. |
 | **Mute audio / Unmute audio** | Para de enviar o áudio do sistema enquanto o vídeo continua. Mostra **No audio** se o áudio não está sendo capturado. |
-| **Change source** | Troca para outra tela ou janela, ou muda as opções de áudio, sem ninguém precisar reconectar. |
+| **Change source…** | O mesmo que clicar em **Live**. |
+| **Quality you send** | A qualidade máxima que você envia (Native, 1080p, 720p a 60 ou 30 fps, 480p). Vale na hora; cada espectador ainda pode receber menos, por exemplo se a janela dele for pequena ou a rede estiver lenta. |
 | **Stop sharing** | Encerra a sua transmissão. |
-| **Stats** (ícone de controles deslizantes) | A qualidade máxima que você envia (Native, 1080p, 720p a 60 ou 30 fps, 480p; vale na hora, e cada espectador ainda pode receber menos, por exemplo se a janela dele for pequena ou a rede estiver lenta), e a resolução, taxa de quadros, upload, tempo de codificação, codec, codificador, CPU, memória e o que está limitando a qualidade da sua transmissão. |
 
-O botão vermelho ao lado sai da sala (para o anfitrião, encerra a sala para todos, depois de perguntar).
+**Stats** (o botão de controles deslizantes ao lado) mostra a resolução, taxa de quadros, upload, tempo de codificação, codec, codificador, CPU, memória e o que está limitando a qualidade da sua transmissão, e também permite mudar a qualidade que você envia.
+
+O botão vermelho no fim da barra sai da sala (para o anfitrião, encerra a sala para todos, depois de perguntar).
 
 **Quando a sua transmissão tem dificuldade**, a sala diz o motivo: seu computador não consegue codificar rápido o bastante, seu upload não dá conta de todos que assistem, ou sua placa de vídeo ficou sem codificadores de hardware (alguns espectadores passam a ser codificados pela CPU). O aviso só aparece quando o problema dura vários segundos, some quando ele é resolvido e não volta pelo mesmo motivo por 10 minutos. **Lower to …** baixa a sua qualidade máxima um degrau.
 
@@ -104,6 +109,7 @@ O botão vermelho ao lado sai da sala (para o anfitrião, encerra a sala para to
 Todos na sala têm um **quadro** no meio: a foto e o nome. Os quadros mantêm o formato 16:9 e crescem o quanto a janela permite. Nada toca até você escolher: quem está compartilhando tem um selo vermelho **Live**, e o quadro mostra uma prévia da transmissão, tirada quando a pessoa começa e atualizada mais ou menos uma vez por minuto.
 
 - Clique em **Watch stream** no quadro, clique na pessoa na coluna de salas (passe o mouse antes para ver a prévia), ou em **Watch all** na barra de controles. O quadro passa a exibir a transmissão. Clique na pessoa de novo na coluna de salas, ou feche a transmissão do quadro (×), para parar de assistir; um olho marca as transmissões que você assiste.
+- **Clique com o botão direito** num quadro para tudo sobre aquela pessoa: assistir ou parar, foco, tela cheia, silenciar e a qualidade que você recebe (o anfitrião também pode parar a transmissão e remover).
 - Clique no botão de foco na barra de uma transmissão (ou dê dois cliques num quadro com foto) para colocá-la em **destaque**, com todos os outros numa faixa embaixo. Clique de novo, ou aperte **Esc**, para voltar à grade.
 - Quando você está sozinho na sua sala, um quadro **Invite people** mostra o endereço para passar a quem está numa VPN.
 
@@ -137,7 +143,7 @@ O **ⓘ** ao lado do nome da sala mostra os detalhes dela: privacidade, há quan
 - mostrar ou esconder o **PIN**, **copiar**, **gerar um novo** ou **definir o seu**;
 - ver os endereços que as pessoas podem usar no **Connect by IP**.
 
-O botão **⋯** ao lado de uma pessoa (passe o mouse por cima) permite **parar a transmissão** dela ou **removê-la** da sala (a pessoa não consegue voltar nesta sessão da sala). No chat você pode **apagar mensagens** e **silenciar o chat** (as pessoas continuam vendo o histórico).
+Clicar com o botão direito numa pessoa (no quadro dela, ou no nome dela na coluna de salas, onde também aparece um botão **⋯** ao passar o mouse) permite **parar a transmissão** dela ou **removê-la** da sala (a pessoa não consegue voltar nesta sessão da sala). No chat você pode **apagar mensagens** e **silenciar o chat** (as pessoas continuam vendo o histórico).
 
 **End room for everyone** (também no **ⓘ**, ou o botão vermelho na barra de controles) encerra a sala para todos.
 

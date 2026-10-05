@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState, type MouseEvent } from 'react'
 import type { Participant } from '../../shared/types'
 import { latencyClass } from '../lib/format'
 import type { WatcherInfo } from '../lib/publisher'
@@ -6,8 +6,9 @@ import { useRoomPeople } from '../lib/roomPeople'
 import type { Session } from '../lib/session'
 import { Avatar } from './Avatar'
 import { Icon } from './Icon'
+import { Menu, type MenuAt, type MenuItem } from './Menu'
 
-/** Where a floating card (stream preview, host menu) goes: next to the row it belongs to. */
+/** Where the stream preview goes: next to the row it belongs to. */
 interface Anchor {
   id: string
   top: number
@@ -24,22 +25,7 @@ export function RoomMembers({ session }: { session: Session }) {
   const isHost = session.role === 'host'
   const { participants, avatars, snapshots, watching, myWatchers } = useRoomPeople(session)
   const [preview, setPreview] = useState<Anchor | null>(null)
-  const [menu, setMenu] = useState<Anchor | null>(null)
-
-  // A menu closes on any click elsewhere, or Esc.
-  useEffect(() => {
-    if (!menu) return
-    const close = (): void => setMenu(null)
-    const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') close()
-    }
-    window.addEventListener('mousedown', close)
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('mousedown', close)
-      window.removeEventListener('keydown', onKey)
-    }
-  }, [menu])
+  const [menu, setMenu] = useState<{ at: MenuAt; id: string } | null>(null)
 
   const sorted = [...participants].sort(
     (a, b) =>
@@ -57,6 +43,42 @@ export function RoomMembers({ session }: { session: Session }) {
 
   const previewed = preview && byId(preview.id)
   const menuFor = menu && byId(menu.id)
+
+  /** What you can do about someone: watch them, and for the host, moderate. */
+  const itemsFor = (p: Participant): MenuItem[] => {
+    const items: MenuItem[] = []
+    if (p.stream && p.id !== client.selfId) {
+      items.push(
+        watching.has(p.id)
+          ? { label: 'Stop watching', icon: 'x', onSelect: () => watches.unwatch(p.id) }
+          : { label: 'Watch stream', icon: 'eye', onSelect: () => watches.watch(p.id) }
+      )
+    }
+    if (isHost && p.id !== client.selfId) {
+      if (items.length > 0) items.push({ kind: 'separator' })
+      if (p.stream) {
+        items.push({
+          label: `Stop ${p.name}'s stream`,
+          icon: 'stop',
+          danger: true,
+          onSelect: () => confirm(`Stop ${p.name}'s stream?`) && client.send({ type: 'stop-stream', userId: p.id })
+        })
+      }
+      if (p.role === 'viewer') {
+        items.push({
+          label: 'Remove from room',
+          icon: 'kick',
+          danger: true,
+          onSelect: () => confirm(`Remove ${p.name} from the room?`) && client.send({ type: 'kick', userId: p.id })
+        })
+      }
+    }
+    return items
+  }
+  const rightClick = (p: Participant) => (e: MouseEvent): void => {
+    e.preventDefault()
+    if (itemsFor(p).length > 0) setMenu({ at: { x: e.clientX, y: e.clientY }, id: p.id })
+  }
 
   return (
     <ul className="room-members" aria-label="People in this room">
@@ -82,7 +104,7 @@ export function RoomMembers({ session }: { session: Session }) {
           </>
         )
         return (
-          <li key={p.id} className={`member ${watched ? 'watching' : ''}`}>
+          <li key={p.id} className={`member ${watched ? 'watching' : ''}`} onContextMenu={rightClick(p)}>
             {canWatch ? (
               <button
                 className="member-main"
@@ -107,8 +129,11 @@ export function RoomMembers({ session }: { session: Session }) {
                 title={`Moderate ${p.name}`}
                 aria-label={`Moderate ${p.name}`}
                 aria-haspopup="menu"
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={(e) => setMenu(menu?.id === p.id ? null : anchorAt(e, p.id, 90))}
+                aria-expanded={menu?.id === p.id}
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  setMenu(menu?.id === p.id ? null : { at: { x: rect.right + 4, y: rect.top }, id: p.id })
+                }}
               >
                 <Icon name="more" size={16} />
               </button>
@@ -134,36 +159,7 @@ export function RoomMembers({ session }: { session: Session }) {
       )}
 
       {menu && menuFor && (
-        <div
-          className="member-menu"
-          role="menu"
-          style={{ top: menu.top, left: menu.left }}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          {menuFor.stream && (
-            <button
-              role="menuitem"
-              onClick={() => {
-                setMenu(null)
-                if (confirm(`Stop ${menuFor.name}'s stream?`)) client.send({ type: 'stop-stream', userId: menuFor.id })
-              }}
-            >
-              <Icon name="stop" size={14} /> Stop stream
-            </button>
-          )}
-          {menuFor.role === 'viewer' && (
-            <button
-              role="menuitem"
-              className="danger"
-              onClick={() => {
-                setMenu(null)
-                if (confirm(`Remove ${menuFor.name} from the room?`)) client.send({ type: 'kick', userId: menuFor.id })
-              }}
-            >
-              <Icon name="kick" size={14} /> Remove from room
-            </button>
-          )}
-        </div>
+        <Menu items={itemsFor(menuFor)} at={menu.at} label={`${menuFor.name}`} onClose={() => setMenu(null)} />
       )}
     </ul>
   )

@@ -233,7 +233,7 @@ Run through this on real machines (ideally one Windows and one macOS) on a real 
 - [ ] Windows with a 5.1/7.1 headset: system audio still works.
 - [ ] Two people share at once; a third watches both; grid, spotlight, **Watch all**.
 - [ ] Your own stream is hidden until **Show my stream**.
-- [ ] The streamer's maximum quality (Stats in the control bar) and the watcher's per-tile quality menu both change what is received (see the stats badges).
+- [ ] The streamer's maximum quality (the Live button's menu, or Stats) and the watcher's per-tile quality menu both change what is received (see the stats badges).
 - [ ] Full screen: controls and cursor hide after 2.5 s, come back on mouse move.
 - [ ] Block UDP (or enable **Always use TCP transport**): the stream still plays over TCP.
 - [ ] Unplug the network for a few seconds: everyone reconnects and streams resume.

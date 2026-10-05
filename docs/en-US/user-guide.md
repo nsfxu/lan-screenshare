@@ -79,17 +79,22 @@ Your computer now runs the room. If you close ScreenShare, the app asks first, b
 
 Anyone in a room can share, not just the host, and several people can share at the same time. Click **Share screen** in the control bar under the tiles and choose a screen or window.
 
-While you share, the control bar gives you (in a narrow window, only their icons):
+While you share, the button becomes a red **Live** button (**Paused** while paused):
 
-| Button | What it does |
+- **Click it** to switch to another screen or window, or change the audio options, without anyone having to reconnect.
+- **Click its arrow** (or right-click your own tile) for the sharing menu:
+
+| Option | What it does |
 |---|---|
 | **Pause / Resume** | Freezes your stream (and its audio) without ending it. |
 | **Mute audio / Unmute audio** | Stops sending system audio while the video keeps going. It says **No audio** if audio isn't being captured. |
-| **Change source** | Switch to another screen or window, or change the audio options, without anyone having to reconnect. |
+| **Change source…** | The same as clicking **Live**. |
+| **Quality you send** | The maximum quality you send (Native, 1080p, 720p at 60 or 30 fps, 480p). It applies immediately; each viewer may still get less, for example if their window is small or their network is slow. |
 | **Stop sharing** | Ends your stream. |
-| **Stats** (sliders icon) | The maximum quality you send (Native, 1080p, 720p at 60 or 30 fps, 480p; it applies immediately, and each viewer may still get less, for example if their window is small or their network is slow), and your stream's resolution, frame rate, upload, encode time, codec, encoder, CPU, memory and what is limiting quality. |
 
-The red button next to them leaves the room (for the host, it ends the room for everyone, after asking).
+**Stats** (the sliders button next to it) shows your stream's resolution, frame rate, upload, encode time, codec, encoder, CPU, memory and what is limiting quality, and also lets you change the quality you send.
+
+The red button at the end of the bar leaves the room (for the host, it ends the room for everyone, after asking).
 
 **When your stream struggles**, the room tells you why: your computer can't encode fast enough, your upload can't keep up with everyone watching, or your graphics card ran out of hardware encoders (some viewers are then encoded by the CPU). The notice only appears when the problem lasts several seconds, goes away once it's solved, and won't come back for the same reason for 10 minutes. **Lower to …** lowers your maximum quality one step.
 
@@ -102,6 +107,7 @@ The red button next to them leaves the room (for the host, it ends the room for 
 Everyone in the room has a **tile** in the middle: their picture and name. Tiles keep a 16:9 shape and grow as large as the window allows. Nothing plays until you choose: people who are sharing have a red **Live** badge, and their tile shows a preview of their stream, taken when they start and refreshed about once a minute.
 
 - Click **Watch stream** on their tile, click them in the rooms column (hover first to see their preview), or **Watch all** in the control bar. Their tile then plays their stream. Click them in the rooms column again, or close the tile's stream (×), to stop watching; an eye marks the streams you watch.
+- **Right-click** a tile for everything about that person: watch or stop watching, focus, full screen, mute, and the quality you receive (the host also gets stop stream and remove).
 - Click the focus button in a stream's bar (or double-click a picture tile) to put it in the **spotlight**, with everyone else in a strip below. Click it again, or press **Esc**, to go back to the grid.
 - When you're alone in your room, an **Invite people** tile shows the address to give people on a VPN.
 
@@ -135,7 +141,7 @@ The **ⓘ** next to the room's name shows the room's details: privacy, how long 
 - show or hide the **PIN**, **copy** it, **generate a new one**, or **set your own**;
 - see the addresses people can use with **Connect by IP**.
 
-The **⋯** button next to a person (hover over them) lets you **stop their stream** or **remove** them from the room (they can't come back to this room session). In the chat you can **delete messages** and **mute the chat** (people still see the history).
+Right-clicking a person (their tile, or their name in the rooms column, where a **⋯** button also appears on hover) lets you **stop their stream** or **remove** them from the room (they can't come back to this room session). In the chat you can **delete messages** and **mute the chat** (people still see the history).
 
 **End room for everyone** (also behind the **ⓘ**, or the red button in the control bar) closes the room for everyone.
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, type ReactNode } from 'react'
 import { Icon } from './Icon'
 
 interface Props {
@@ -16,6 +16,15 @@ interface Props {
   onViewHeight?(pixels: number): void
   /** Called with true while this viewer can't be seen because another element is full screen. */
   onHiddenChange?(hidden: boolean): void
+}
+
+/** What a tile's right-click menu can do to its viewer. */
+export interface ScreenViewerHandle {
+  toggleFullscreen(): void
+  isFullscreen(): boolean
+  /** Muted (or at zero volume). */
+  isMuted(): boolean
+  toggleMute(): void
 }
 
 const MIN_ZOOM = 1
@@ -43,16 +52,10 @@ function loadVolume(key: string): { volume: number; muted: boolean } {
  * a full-screen toggle. Viewers also get volume/mute for the host's system
  * audio (remembered on this machine); the host's own preview is always muted.
  */
-export function ScreenViewer({
-  stream,
-  placeholder,
-  overlay,
-  local,
-  audioAvailable,
-  volumeKey,
-  onViewHeight,
-  onHiddenChange
-}: Props) {
+export const ScreenViewer = forwardRef<ScreenViewerHandle, Props>(function ScreenViewer(
+  { stream, placeholder, overlay, local, audioAvailable, volumeKey, onViewHeight, onHiddenChange },
+  handle
+) {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [zoom, setZoom] = useState(1)
@@ -194,6 +197,14 @@ export function ScreenViewer({
     else void containerRef.current?.requestFullscreen()
   }
 
+  useImperativeHandle(handle, () => ({
+    toggleFullscreen,
+    isFullscreen: () => document.fullscreenElement === containerRef.current,
+    isMuted: () => audio.muted || audio.volume === 0,
+    toggleMute: () =>
+      setAudio((a) => (a.muted || a.volume === 0 ? { volume: a.volume || 1, muted: false } : { ...a, muted: true }))
+  }))
+
   return (
     <div
       ref={containerRef}
@@ -271,4 +282,4 @@ export function ScreenViewer({
       </div>
     </div>
   )
-}
+})
