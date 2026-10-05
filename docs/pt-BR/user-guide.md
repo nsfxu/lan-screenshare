@@ -124,7 +124,7 @@ Enquanto você **minimiza** o app, ou deixa um quadro em tela cheia, as transmis
 
 ## Chat e pessoas
 
-- O **chat** fica à direita: mensagens com horário e foto, e um seletor de emojis. As mensagens só existem enquanto a sala existir.
+- O **chat** fica à direita: mensagens com horário e foto, e um seletor de emojis. Mensagens que alguém manda com até 5 minutos de diferença ficam sob um só nome e foto (passe o mouse numa delas para ver o horário). Esconda o chat com o botão de chat no canto superior direito; enquanto ele está escondido, o botão conta as mensagens novas. As mensagens só existem enquanto a sala existir.
 - As **pessoas** aparecem embaixo da sala em que você está, na coluna de salas: quem hospeda, quem está ao vivo (**Live**, ou **Paused**) e quem está reconectando. Enquanto você compartilha, quem está te assistindo mostra como está indo embaixo do nome (*watching you · 60 fps · 20 ms*, ou *not looking*).
 
 Se a sua rede cair por um instante, o app reconecta sozinho e te coloca de volta no mesmo lugar sem pedir o PIN de novo, desde que você volte em até 30 segundos. As transmissões que você assistia reconectam automaticamente.

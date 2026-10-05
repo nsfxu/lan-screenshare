@@ -1510,6 +1510,38 @@ button.member-main {
   overflow-wrap: anywhere;
   line-height: 1.45;
 }
+.chat-hover-time {
+  display: block;
+  padding-top: 3px;
+  font-size: 10px;
+  text-align: right;
+  color: var(--text-muted);
+  visibility: hidden;
+  white-space: nowrap;
+}
+.chat-message:hover .chat-hover-time {
+  visibility: visible;
+}
+.chat-toggle {
+  position: relative;
+}
+.unread-badge {
+  position: absolute;
+  top: -3px;
+  right: -5px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--bad);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
+  border: 2px solid var(--bg-elev);
+  box-sizing: content-box;
+}
 .chat-delete {
   position: absolute;
   top: 4px;
