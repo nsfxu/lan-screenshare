@@ -864,13 +864,6 @@ input[type='checkbox']:checked::after {
   border-color: var(--accent);
   background: var(--accent-soft);
 }
-.pin-input {
-  font-family: var(--mono);
-  font-size: 28px;
-  letter-spacing: 0.4em;
-  text-align: center;
-  padding: 12px;
-}
 .settings section {
   display: flex;
   flex-direction: column;
@@ -1274,42 +1267,194 @@ input[type='checkbox']:checked::after {
   align-items: center;
 }
 
-/* viewer list */
-.viewer-list {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
-  max-height: 34%;
-  overflow-y: auto;
-  flex-shrink: 0;
+/* people in the current room (rooms sidebar) */
+.current-room {
+  margin-bottom: 2px;
 }
-.viewer-list ul {
+.room-members {
   list-style: none;
-  margin: 0;
-  padding: 0;
+  margin: 2px 0 4px;
+  padding: 0 0 0 14px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 1px;
 }
-.viewer-list li {
+.member {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px;
   border-radius: var(--radius-sm);
 }
-.viewer-list li:hover {
+.member:hover {
   background: var(--bg-hover);
 }
-.viewer-info {
+.member.watching {
+  background: var(--accent-soft);
+}
+.member-main {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text);
+  text-align: left;
+}
+button.member-main {
+  cursor: pointer;
+}
+.avatar.small {
+  width: 24px;
+  height: 24px;
+  font-size: 10px;
+}
+.member-text {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  min-width: 0;
 }
-.viewer-name {
+.member-name {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.member-you {
+  margin-left: 4px;
+}
+.member-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.member-status {
+  font-size: 11px;
+  color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.member-status.warn {
+  color: var(--ok);
+}
+.live-badge {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--bad);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.live-badge.paused {
+  background: var(--bg-hover);
+  color: var(--text-muted);
+}
+.member-watching {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.member-more {
+  width: 24px;
+  height: 24px;
+  margin-right: 2px;
+  opacity: 0;
+}
+.member:hover .member-more,
+.member-more:focus-visible,
+.member-more[aria-expanded='true'] {
+  opacity: 1;
+}
+.member-preview {
+  position: fixed;
+  z-index: 40;
+  width: 240px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: var(--radius);
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+.member-preview-image {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: #000;
+  color: var(--text-muted);
+  overflow: hidden;
+}
+.member-preview-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.member-preview-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.member-menu {
+  position: fixed;
+  z-index: 40;
+  min-width: 170px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.member-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.member-menu button:hover {
+  background: var(--bg-hover);
+}
+.member-menu button.danger {
+  color: var(--bad);
+}
+.pin-form {
+  margin: 2px 4px 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+}
+.pin-form-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.pin-form-row input {
+  flex: 1;
+  min-width: 0;
+  letter-spacing: 0.2em;
 }
 .lat.good {
   color: var(--good);

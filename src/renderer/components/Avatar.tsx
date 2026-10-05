@@ -12,7 +12,7 @@ export function Avatar({
   name: string
   color?: string
   image?: string | null
-  size?: 'tiny' | 'normal' | 'large'
+  size?: 'tiny' | 'small' | 'normal' | 'large'
   /** Overlays such as the presence dot. */
   children?: ReactNode
 }) {

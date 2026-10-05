@@ -19,7 +19,7 @@ test("viewers who can't see a stream get no video until they can", async ({ peop
 
   // Minimized: both streams pause, and the streamers see why.
   await setWindowState(bob, 'minimized')
-  await expect(alice.win.locator('.viewer-list li', { hasText: 'Bob' })).toContainText('not looking (video paused)')
+  await expect(alice.win.locator('.room-members .member', { hasText: 'Bob' })).toContainText('not looking (video paused)')
   await bob.win.waitForTimeout(1000) // frames already in flight
   expect(await framesDuring(bob.win, 'Alice', 3000)).toBeLessThanOrEqual(2)
   expect(await framesDuring(bob.win, 'Carol', 3000)).toBeLessThanOrEqual(2)
@@ -29,7 +29,7 @@ test("viewers who can't see a stream get no video until they can", async ({ peop
   for (const name of ['Alice', 'Carol']) {
     await expect.poll(() => framesDuring(bob.win, name, 1000), { timeout: 15_000 }).toBeGreaterThan(15)
   }
-  await expect(alice.win.locator('.viewer-list li', { hasText: 'Bob' })).not.toContainText('not looking')
+  await expect(alice.win.locator('.room-members .member', { hasText: 'Bob' })).not.toContainText('not looking')
 
   // Alice's tile full screen: Carol's can't be seen and pauses; Alice's keeps playing.
   // (Simulated: real full screen would take over the screen and the focus.)
@@ -41,7 +41,7 @@ test("viewers who can't see a stream get no video until they can", async ({ peop
       document.dispatchEvent(new Event('fullscreenchange'))
     }, on)
   await fullscreen(true)
-  await expect(carol.win.locator('.viewer-list li', { hasText: 'Bob' })).toContainText('not looking (video paused)')
+  await expect(carol.win.locator('.room-members .member', { hasText: 'Bob' })).toContainText('not looking (video paused)')
   await bob.win.waitForTimeout(1000)
   expect(await framesDuring(bob.win, 'Carol', 3000)).toBeLessThanOrEqual(2)
   expect(await framesDuring(bob.win, 'Alice', 2000)).toBeGreaterThan(20)

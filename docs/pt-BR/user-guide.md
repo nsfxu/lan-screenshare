@@ -50,7 +50,7 @@ flowchart LR
 
 ## Encontrar uma sala
 
-A janela tem três colunas: as **salas** à esquerda, a sala em que você está (ou uma página de boas-vindas) no meio, e as **pessoas e o chat** da sala à direita.
+A janela tem três colunas: as **salas** à esquerda, a sala em que você está (ou uma página de boas-vindas) no meio, e o **chat** da sala à direita.
 
 A coluna de salas mostra:
 
@@ -63,7 +63,7 @@ O botão no canto superior direito de cada coluna lateral a esconde (a coluna de
 
 **Connect by IP**: se você está numa VPN ou em outra sub-rede, as salas podem não aparecer sozinhas. Clique no botão **Connect by IP** (o ícone de sinal ao lado de **Create room**) e digite o endereço do anfitrião, por exemplo `10.8.0.5` ou `192.168.1.20:47800`. O anfitrião vê os endereços dele no painel **Access** da sala. A porta padrão é 47800.
 
-**Salas privadas** pedem um PIN (de 4 a 6 dígitos). Depois de 3 PINs errados, seu computador precisa esperar 5 minutos para tentar de novo.
+**Salas privadas** pedem um PIN (de 4 a 6 dígitos) logo abaixo da sala na lista. Depois de 3 PINs errados, seu computador precisa esperar 5 minutos para tentar de novo.
 
 ## Criar uma sala
 
@@ -100,9 +100,9 @@ Enquanto você compartilha, a barra oferece:
 
 ## Assistir outras pessoas
 
-Nada toca até você escolher. Quem está compartilhando aparece em **cartões** com uma prévia que se atualiza a cada 5 segundos.
+Nada toca até você escolher. Quem está compartilhando tem um selo vermelho **Live** ao lado do nome na coluna de salas, e aparece em **cartões** com uma prévia que se atualiza a cada 5 segundos.
 
-- Clique no botão **Watch** de um cartão, ou em **Watch all**.
+- Clique numa pessoa ao vivo na coluna de salas (passe o mouse antes para ver a prévia), no botão **Watch** de um cartão, ou em **Watch all**. Clique na pessoa de novo para parar de assistir; um olho marca as transmissões que você assiste.
 - As transmissões assistidas aparecem numa **grade**. Clique no botão de foco na barra de um quadro para colocar aquela transmissão em **destaque**, com as outras numa faixa. Clique de novo para voltar à grade.
 - As transmissões que você não abriu continuam disponíveis na barra **Also live** no topo.
 - Feche um quadro (×) para parar de assistir.
@@ -120,12 +120,12 @@ Cada quadro tem:
 
 Se uma transmissão não conectar em 8 segundos (algumas VPNs e firewalls bloqueiam), o app passa sozinho para uma conexão TCP. Ela acrescenta um pouco de atraso, mas continua funcionando.
 
-Enquanto você **minimiza** o app, ou deixa um quadro em tela cheia, as transmissões que você não consegue ver param de te mandar vídeo (o som continua), o que poupa o upload de quem transmite e a sua rede. A imagem volta em menos de um segundo quando você olha de novo. Quem transmite vê você como "not looking" na lista de pessoas.
+Enquanto você **minimiza** o app, ou deixa um quadro em tela cheia, as transmissões que você não consegue ver param de te mandar vídeo (o som continua), o que poupa o upload de quem transmite e a sua rede. A imagem volta em menos de um segundo quando você olha de novo. Quem transmite vê "not looking" embaixo do seu nome.
 
 ## Chat e pessoas
 
 - O **chat** fica à direita: mensagens com horário e foto, e um seletor de emojis. As mensagens só existem enquanto a sala existir.
-- **People** mostra todos na sala e o que estão fazendo: *Sharing · 2 watching*, *Watching Alice, Bob*, *Connected* ou *Reconnecting*. Daqui você também pode assistir alguém (**Watch**) ou parar de assistir.
+- As **pessoas** aparecem embaixo da sala em que você está, na coluna de salas: quem hospeda, quem está ao vivo (**Live**, ou **Paused**) e quem está reconectando. Enquanto você compartilha, quem está te assistindo mostra como está indo embaixo do nome (*watching you · 60 fps · 20 ms*, ou *not looking*).
 
 Se a sua rede cair por um instante, o app reconecta sozinho e te coloca de volta no mesmo lugar sem pedir o PIN de novo, desde que você volte em até 30 segundos. As transmissões que você assistia reconectam automaticamente.
 
@@ -137,7 +137,7 @@ O painel **Access** (no topo da barra lateral) permite:
 - mostrar ou esconder o **PIN**, **copiar**, **gerar um novo** ou **definir o seu**;
 - ver os endereços que as pessoas podem usar no **Connect by IP**.
 
-Na lista **People** você pode **parar a transmissão** de alguém ou **remover** alguém da sala (a pessoa não consegue voltar nesta sessão da sala). No chat você pode **apagar mensagens** e **silenciar o chat** (as pessoas continuam vendo o histórico).
+O botão **⋯** ao lado de uma pessoa (passe o mouse por cima) permite **parar a transmissão** dela ou **removê-la** da sala (a pessoa não consegue voltar nesta sessão da sala). No chat você pode **apagar mensagens** e **silenciar o chat** (as pessoas continuam vendo o histórico).
 
 **End room** encerra a sala para todos.
 

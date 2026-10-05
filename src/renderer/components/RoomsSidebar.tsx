@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from 'react'
-import { PROTOCOL_VERSION } from '../../shared/constants'
-import { sameEndpoint } from '../../shared/recentRooms'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { PIN_MAX_LENGTH, PIN_MIN_LENGTH, PROTOCOL_VERSION } from '../../shared/constants'
+import { onePerRoom, sameEndpoint } from '../../shared/roomList'
 import type { DiscoveredRoom, RoomEndpoint, Settings } from '../../shared/types'
 import { incompatibleRoomMessage } from '../../shared/version'
 import { useAppVersion } from '../lib/appVersion'
@@ -19,10 +19,25 @@ export interface CurrentRoom {
   live: number
 }
 
+/** A private room asking for its PIN, shown as a small form under the room's row. */
+export interface PinPrompt {
+  /** Key (address:port) of the room's row. */
+  key: string
+  roomName: string
+  hostName: string
+  error: string | null
+  lockedUntil: number | null
+}
+
 interface Props {
   settings: Settings
   rooms: DiscoveredRoom[]
   current: CurrentRoom | null
+  /** Who's in the current room, shown under it. */
+  members: ReactNode
+  pin: PinPrompt | null
+  onPinSubmit(pin: string): void
+  onPinCancel(): void
   /** Key (address:port) of the room being joined right now. */
   busyKey: string | null
   collapsed: boolean
@@ -58,11 +73,15 @@ export function RoomsSidebar(props: Props) {
     const room = rooms.find((r) => sameEndpoint(r, ep)) ?? null
     return { key: `${ep.address}:${ep.port}`, name: room?.name || ep.name || `${ep.address}:${ep.port}`, room, endpoint: ep }
   })
-  // One row per room, even when it answers on several addresses.
+  // One row per room, even when it answers on several addresses; recent and current rooms aren't repeated.
   const shown = new Set([current?.id, ...recent.map((row) => row.room?.id)].filter(Boolean))
-  const network: Row[] = rooms
+  const network: Row[] = onePerRoom(rooms)
     .filter((r) => !settings.recentRooms.some((ep) => sameEndpoint(r, ep)) && !(r.id && shown.has(r.id)))
     .map((r) => ({ key: r.key, name: r.name, room: r, endpoint: { address: r.address, port: r.port, tls: r.tls, name: r.name } }))
+
+  const pinForm = props.pin && (
+    <PinForm prompt={props.pin} busy={props.busyKey === props.pin.key} onSubmit={props.onPinSubmit} onCancel={props.onPinCancel} />
+  )
 
   const refresh = async (): Promise<void> => {
     setRefreshing(true)
@@ -123,22 +142,29 @@ export function RoomsSidebar(props: Props) {
       {manualOpen && <ManualConnect onClose={() => setManualOpen(false)} />}
 
       <div className="rooms-scroll">
+        {/* A room that asks for a PIN but isn't in the list (e.g. rejoining the last room at startup). */}
+        {props.pin && ![...recent, ...network].some((row) => row.key === props.pin!.key) && pinForm}
         {(current || recent.length > 0) && (
           <section className="rooms-group">
             <h3 className="rooms-group-title">Recent rooms</h3>
-            {current && !current.endpoint && <CurrentRow current={current} />}
+            {/* Your own room, or one just joined that isn't in the recent rooms yet. */}
+            {current && !recent.some((row) => isCurrent(row.endpoint)) && (
+              <CurrentRow current={current} members={props.members} />
+            )}
             {recent.map((row) =>
               isCurrent(row.endpoint) && current ? (
-                <CurrentRow key={row.key} current={current} />
+                <CurrentRow key={row.key} current={current} members={props.members} />
               ) : (
-                <RoomRow
-                  key={row.key}
-                  row={row}
-                  busy={props.busyKey === row.key}
-                  onJoin={() => (row.room?.reachable ? props.onJoin(row.room) : props.onJoinEndpoint(row.endpoint))}
-                  onRemove={() => props.onForgetRecent(row.endpoint)}
-                  removeLabel="Forget this room"
-                />
+                <div key={row.key}>
+                  <RoomRow
+                    row={row}
+                    busy={props.busyKey === row.key}
+                    onJoin={() => (row.room?.reachable ? props.onJoin(row.room) : props.onJoinEndpoint(row.endpoint))}
+                    onRemove={() => props.onForgetRecent(row.endpoint)}
+                    removeLabel="Forget this room"
+                  />
+                  {props.pin?.key === row.key && pinForm}
+                </div>
               )
             )}
           </section>
@@ -156,14 +182,16 @@ export function RoomsSidebar(props: Props) {
             </p>
           ) : (
             network.map((row) => (
-              <RoomRow
-                key={row.key}
-                row={row}
-                busy={props.busyKey === row.key}
-                onJoin={() => row.room && props.onJoin(row.room)}
-                onRemove={row.room?.source === 'manual' ? () => void window.api.rooms.removeManual(row.key) : undefined}
-                removeLabel="Remove from list"
-              />
+              <div key={row.key}>
+                <RoomRow
+                  row={row}
+                  busy={props.busyKey === row.key}
+                  onJoin={() => row.room && props.onJoin(row.room)}
+                  onRemove={row.room?.source === 'manual' ? () => void window.api.rooms.removeManual(row.key) : undefined}
+                  removeLabel="Remove from list"
+                />
+                {props.pin?.key === row.key && pinForm}
+              </div>
             ))
           )}
         </section>
@@ -179,18 +207,81 @@ export function RoomsSidebar(props: Props) {
   )
 }
 
-function CurrentRow({ current }: { current: CurrentRoom }) {
+function CurrentRow({ current, members }: { current: CurrentRoom; members: ReactNode }) {
   return (
-    <div className="room-row current" aria-current="true">
-      <Icon name="screen" size={15} />
-      <span className="room-row-name" title={current.name}>
-        {current.name}
-      </span>
-      <span className="room-row-meta">
-        {current.live > 0 && <span className="room-row-live">{current.live} live</span>}
-        <Icon name="users" size={13} /> {current.people}
-      </span>
+    <div className="current-room">
+      <div className="room-row current" aria-current="true">
+        <Icon name="screen" size={15} />
+        <span className="room-row-name" title={current.name}>
+          {current.name}
+        </span>
+        <span className="room-row-meta">
+          {current.live > 0 && <span className="room-row-live">{current.live} live</span>}
+          <Icon name="users" size={13} /> {current.people}
+        </span>
+      </div>
+      {members}
     </div>
+  )
+}
+
+function PinForm({
+  prompt,
+  busy,
+  onSubmit,
+  onCancel
+}: {
+  prompt: PinPrompt
+  busy: boolean
+  onSubmit(pin: string): void
+  onCancel(): void
+}) {
+  const [pin, setPin] = useState('')
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    if (!prompt.lockedUntil) return
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [prompt.lockedUntil])
+  const lockedFor = prompt.lockedUntil ? Math.max(0, prompt.lockedUntil - now) : 0
+  const valid = new RegExp(`^\\d{${PIN_MIN_LENGTH},${PIN_MAX_LENGTH}}$`).test(pin)
+
+  return (
+    <form
+      className="pin-form"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (valid && !lockedFor) onSubmit(pin)
+      }}
+      onKeyDown={(e) => e.key === 'Escape' && onCancel()}
+    >
+      <p className="muted small">
+        <Icon name="lock" size={12} /> {prompt.roomName} is private. Ask {prompt.hostName || 'the host'} for the PIN.
+      </p>
+      <div className="pin-form-row">
+        <input
+          autoFocus
+          inputMode="numeric"
+          autoComplete="off"
+          maxLength={PIN_MAX_LENGTH}
+          placeholder="PIN"
+          value={pin}
+          onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+          aria-label="Room PIN"
+        />
+        <button className="btn primary small" disabled={!valid || busy || lockedFor > 0}>
+          {busy ? 'Joining…' : 'Join'}
+        </button>
+        <button type="button" className="icon-btn" title="Cancel" aria-label="Cancel" onClick={onCancel}>
+          <Icon name="x" size={14} />
+        </button>
+      </div>
+      {lockedFor > 0 ? (
+        <p className="error-text">Too many wrong attempts. Try again in {Math.ceil(lockedFor / 1000)} s.</p>
+      ) : (
+        prompt.error && <p className="error-text">{prompt.error}</p>
+      )}
+    </form>
   )
 }
 

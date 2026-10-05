@@ -29,7 +29,7 @@ test('the room list remembers rooms, and the panels stay as you left them', asyn
 
   // Hide both side panels; they stay hidden after a restart of the window.
   await bob.win.getByRole('button', { name: 'Hide rooms' }).click()
-  await bob.win.getByRole('button', { name: 'Hide people and chat' }).click()
+  await bob.win.getByRole('button', { name: 'Hide chat' }).click()
   await expect(bob.win.locator('.rooms-sidebar.collapsed')).toBeVisible()
   await expect(bob.win.locator('.room .sidebar')).toBeHidden()
   if (shots) await bob.win.screenshot({ path: `${shots}/3-panels-hidden.png` })

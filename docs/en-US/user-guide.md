@@ -48,7 +48,7 @@ flowchart LR
 
 ## Finding a room
 
-The window has three columns: **rooms** on the left, the room you're in (or a welcome page) in the middle, and the room's **people and chat** on the right.
+The window has three columns: **rooms** on the left, the room you're in (or a welcome page) in the middle, and the room's **chat** on the right.
 
 The rooms column lists:
 
@@ -61,7 +61,7 @@ The button at the top right of each side column hides it (the rooms column shrin
 
 **Connect by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click the **Connect by IP** button (the signal icon next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses in the **Access** panel of the room. The default port is 47800.
 
-**Private rooms** ask for a PIN (4 to 6 digits). After 3 wrong PINs, your computer has to wait 5 minutes before trying again.
+**Private rooms** ask for a PIN (4 to 6 digits) right under the room in the list. After 3 wrong PINs, your computer has to wait 5 minutes before trying again.
 
 ## Creating a room
 
@@ -98,9 +98,9 @@ While you share, the toolbar gives you:
 
 ## Watching other people
 
-Nothing plays until you choose. People who are sharing appear as **cards** with a preview that refreshes every 5 seconds.
+Nothing plays until you choose. People who are sharing have a red **Live** badge next to their name in the rooms column, and appear as **cards** with a preview that refreshes every 5 seconds.
 
-- Click a card's **Watch** button, or **Watch all**.
+- Click a live person in the rooms column (hover first to see their preview), a card's **Watch** button, or **Watch all**. Click the person again to stop watching; an eye marks the streams you watch.
 - Watched streams play in a **grid**. Click the focus button in a tile's bar to put that stream in the **spotlight**, with the others in a strip. Click it again to go back to the grid.
 - Streams you haven't opened stay available in the **Also live** bar at the top.
 - Close a tile (×) to stop watching it.
@@ -118,12 +118,12 @@ Each tile has:
 
 If a stream can't connect in 8 seconds (some VPNs and firewalls block it), the app switches to a TCP connection by itself. It adds a little latency but keeps working.
 
-While you **minimize** the app, or put one tile in full screen, the streams you can't see stop sending you video (you still hear them), which saves the streamer's upload and your network. The picture comes back within a second when you look again. The streamer sees you as "not looking" in the People list.
+While you **minimize** the app, or put one tile in full screen, the streams you can't see stop sending you video (you still hear them), which saves the streamer's upload and your network. The picture comes back within a second when you look again. The streamer sees you as "not looking" under your name.
 
 ## Chat and people
 
 - **Chat** is on the right: messages with time and picture, and an emoji picker. Messages are kept only while the room exists.
-- **People** shows everyone in the room and what they are doing: *Sharing · 2 watching*, *Watching Alice, Bob*, *Connected* or *Reconnecting*. From here you can also **Watch** or **Stop watching** someone.
+- **People** are listed under the room you're in, in the rooms column: who hosts it, who is **Live** (or **Paused**), and who is reconnecting. While you share, the people watching you show how it's going under their name (*watching you · 60 fps · 20 ms*, or *not looking*).
 
 If your network drops for a moment, the app reconnects on its own and puts you back in your seat without asking for the PIN again, as long as you're back within 30 seconds. Streams you were watching reconnect automatically.
 
@@ -135,7 +135,7 @@ The **Access** panel (top of the sidebar) lets you:
 - show or hide the **PIN**, **copy** it, **generate a new one**, or **set your own**;
 - see the addresses people can use with **Connect by IP**.
 
-In the **People** list you can **stop someone's stream** or **remove** someone from the room (they can't come back to this room session). In the chat you can **delete messages** and **mute the chat** (people still see the history).
+The **⋯** button next to a person (hover over them) lets you **stop their stream** or **remove** them from the room (they can't come back to this room session). In the chat you can **delete messages** and **mute the chat** (people still see the history).
 
 **End room** closes the room for everyone.
 

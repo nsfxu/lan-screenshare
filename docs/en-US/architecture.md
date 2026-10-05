@@ -264,7 +264,8 @@ classDiagram
 ```mermaid
 flowchart TB
   App["App.tsx<br/>settings, toasts, join/host"]
-  App --> Rooms["RoomsSidebar (left)<br/>recent and network rooms, Connect by IP, name, settings"]
+  App --> Rooms["RoomsSidebar (left)<br/>recent and network rooms, PIN, Connect by IP, name, settings"]
+  Rooms --> Members["RoomMembers<br/>people in your room: live, watch, preview, host menu"]
   App --> Welcome["Welcome<br/>centre when not in a room"]
   App --> Room["RoomView<br/>centre and right, one per session"]
   App --> Dlg["Dialogs<br/>CreateRoom, Pin, Settings (+ picture cropper)"]
@@ -275,7 +276,6 @@ flowchart TB
   Remote --> SV
   Room --> Side["Sidebar"]
   Side --> Access["AccessPanel (host)<br/>privacy, PIN"]
-  Side --> People["ViewerList<br/>who shares, who watches whom"]
   Side --> Chat["ChatPanel"]
   Room --> Toolbar["Toolbar<br/>share, pause, audio, source, quality, stop, stats"]
 ```

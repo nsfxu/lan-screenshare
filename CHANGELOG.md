@@ -14,6 +14,8 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 - New layout in three columns: your rooms on the left, the room in the middle, people and chat on the right. You can switch rooms in one click, and hide either side column (the app remembers which). Your name, picture and Settings are at the bottom left.
 - **Recent rooms**: the last 5 rooms you joined are listed first, so you can go back to one in one click, even on a VPN.
+- The people in your room are listed under it in the rooms column, with a **Live** badge on whoever is sharing. Click someone live to watch them (hover to see a preview first), and click again to stop. Hosts moderate from the **⋯** next to a name.
+- Private rooms ask for the PIN right under the room in the list, instead of in a separate window.
 - The window title shows the room you're in.
 
 ## [1.2.0] - 2026-10-05

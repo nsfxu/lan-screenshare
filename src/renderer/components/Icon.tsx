@@ -34,7 +34,9 @@ const PATHS: Record<string, string> = {
   volume: 'M4 9v6h4l5 4V5L8 9z M16 9a4 4 0 0 1 0 6 M18.5 6.5a8 8 0 0 1 0 11',
   volumeOff: 'M4 9v6h4l5 4V5L8 9z M17 9l5 6 M22 9l-5 6',
   panelLeft: 'M4 4h16v16H4z M9 4v16',
-  panelRight: 'M4 4h16v16H4z M15 4v16'
+  panelRight: 'M4 4h16v16H4z M15 4v16',
+  eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+  more: 'M5 12h.01 M12 12h.01 M19 12h.01'
 }
 
 export type IconName = keyof typeof PATHS

@@ -4,7 +4,7 @@ import path from 'node:path'
 import { DEFAULT_PORT, NAME_MAX_LENGTH } from '../shared/constants'
 import { isAvatar } from '../shared/images'
 import { QUALITY_PRESETS } from '../shared/quality'
-import { RECENT_ROOMS_MAX } from '../shared/recentRooms'
+import { RECENT_ROOMS_MAX } from '../shared/roomList'
 import type { RoomEndpoint, Settings } from '../shared/types'
 import { randomId } from '../utils/crypto'
 

@@ -271,7 +271,7 @@ export interface Settings {
   preferredPort: number
   autoRejoin: boolean
   lastRoom: RoomEndpoint | null
-  /** Rooms joined lately, newest first (see shared/recentRooms.ts). */
+  /** Rooms joined lately, newest first (see shared/roomList.ts). */
   recentRooms: RoomEndpoint[]
   manualServers: RoomEndpoint[]
   notifications: boolean

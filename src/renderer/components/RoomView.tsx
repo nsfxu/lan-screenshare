@@ -23,7 +23,7 @@ import { useAppVersion } from '../lib/appVersion'
 import { PANEL_STATES, useRemembered } from '../lib/layout'
 import { useAutoContentHint } from '../lib/autoContentHint'
 import { useGameCursor } from '../lib/gameCursor'
-import { audioDefaults, type SharingState, type WatcherInfo } from '../lib/publisher'
+import { audioDefaults, type SharingState } from '../lib/publisher'
 import type { ConnectionState } from '../lib/roomClient'
 import type { Session } from '../lib/session'
 import type { Subscription, SubscriptionState } from '../lib/subscription'
@@ -33,7 +33,6 @@ import { Avatar } from './Avatar'
 import { AccessPanel, HostStatsPanel } from './HostControls'
 import { Icon } from './Icon'
 import { ScreenViewer } from './ScreenViewer'
-import { ViewerList } from './ViewerList'
 
 interface Props {
   session: Session
@@ -70,7 +69,6 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const [showSelf, setShowSelf] = useState(false)
   const [sharing, setSharing] = useState<SharingState>(publisher.state)
   const [ownStats, setOwnStats] = useState<HostStats | null>(null)
-  const [myWatchers, setMyWatchers] = useState<ReadonlyMap<string, WatcherInfo>>(new Map())
   const [subs, setSubs] = useState<ReadonlyMap<string, Subscription>>(new Map(watches.all))
   const [focus, setFocus] = useState<string | null>(null)
   const [snapshots, setSnapshots] = useState<ReadonlyMap<string, string>>(new Map(client.snapshots))
@@ -119,7 +117,6 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
       publisher.on('snapshot', setOwnSnapshot),
       publisher.on('sharing', setSharing),
       publisher.on('stats', setOwnStats),
-      publisher.on('watchers', (m) => setMyWatchers(new Map(m))),
       publisher.on('stopped', (reason) => onToast(reason, 'info')),
       publisher.on('struggle', setStruggle),
       watches.on('changed', (m) => setSubs(new Map(m)))
@@ -342,8 +339,8 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           {!isHost && <span className="mono">{session.endpoint.address}</span>}
           <button
             className={`icon-btn ${sidePanel === 'open' ? 'active' : ''}`}
-            title={sidePanel === 'open' ? 'Hide people and chat' : 'Show people and chat'}
-            aria-label={sidePanel === 'open' ? 'Hide people and chat' : 'Show people and chat'}
+            title={sidePanel === 'open' ? 'Hide chat' : 'Show chat'}
+            aria-label={sidePanel === 'open' ? 'Hide chat' : 'Show chat'}
             aria-expanded={sidePanel === 'open'}
             onClick={() => setSidePanel(sidePanel === 'open' ? 'closed' : 'open')}
           >
@@ -510,24 +507,6 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
 
         <aside className="sidebar" hidden={sidePanel === 'closed'}>
           {isHost && hosted && <AccessPanel hosted={hosted} onToast={onToast} />}
-          <ViewerList
-            participants={participants}
-            avatars={avatars}
-            selfId={client.selfId}
-            isHost={isHost}
-            myWatchers={myWatchers}
-            watching={new Set(subs.keys())}
-            onWatch={(id) => watches.watch(id)}
-            onUnwatch={(id) => watches.unwatch(id)}
-            onKick={(id) => {
-              const p = byId(id)
-              if (p && confirm(`Remove ${p.name} from the room?`)) client.send({ type: 'kick', userId: id })
-            }}
-            onStopStream={(id) => {
-              const p = byId(id)
-              if (p && confirm(`Stop ${p.name}'s stream?`)) client.send({ type: 'stop-stream', userId: id })
-            }}
-          />
           <ChatPanel
             messages={messages}
             avatars={avatars}
