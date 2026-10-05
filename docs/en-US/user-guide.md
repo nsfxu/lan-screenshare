@@ -108,7 +108,8 @@ Everyone in the room has a **tile** in the middle: their picture and name. Tiles
 
 - Click **Watch stream** on their tile, click them in the rooms column (hover first to see their preview), or **Watch all** in the control bar. Their tile then plays their stream. Click them in the rooms column again, or close the tile's stream (×), to stop watching; an eye marks the streams you watch.
 - **Right-click** a tile for everything about that person: watch or stop watching, focus, full screen, mute, and the quality you receive (the host also gets stop stream and remove).
-- Click the focus button in a stream's bar (or double-click a picture tile) to put it in the **spotlight**, with everyone else in a strip below. Click it again, or press **Esc**, to go back to the grid.
+- **Click a tile** to put it in the **spotlight**, with everyone else in a strip below (clicking one of them focuses it instead). Click the focused tile again, the grid button at the top, or press **Esc** to go back to the grid. Double-clicking a stream still zooms it.
+- In the spotlight, **Hide others** puts the strip away so the focused tile gets the whole height; the streams in it stop sending you video until you show them again (you still hear them).
 - When you're alone in your room, an **Invite people** tile shows the address to give people on a VPN.
 
 Each stream has:

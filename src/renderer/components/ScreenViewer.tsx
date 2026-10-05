@@ -25,6 +25,8 @@ export interface ScreenViewerHandle {
   /** Muted (or at zero volume). */
   isMuted(): boolean
   toggleMute(): void
+  /** Zoomed in: a click is part of dragging the picture around, not a click on the tile. */
+  isZoomed(): boolean
 }
 
 const MIN_ZOOM = 1
@@ -200,6 +202,7 @@ export const ScreenViewer = forwardRef<ScreenViewerHandle, Props>(function Scree
   useImperativeHandle(handle, () => ({
     toggleFullscreen,
     isFullscreen: () => document.fullscreenElement === containerRef.current,
+    isZoomed: () => zoom > 1,
     isMuted: () => audio.muted || audio.volume === 0,
     toggleMute: () =>
       setAudio((a) => (a.muted || a.volume === 0 ? { volume: a.volume || 1, muted: false } : { ...a, muted: true }))
