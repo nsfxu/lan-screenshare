@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { pushRecentRoom, sameEndpoint } from '../shared/recentRooms'
+import { pushRecentRoom, sameEndpoint } from '../shared/roomList'
 import type { CodecSupport, DiscoveredRoom, RoomEndpoint, RoomState, Settings } from '../shared/types'
-import { CreateRoomDialog, PinDialog, SettingsPanel, type CreateRoomResult } from './components/Dialogs'
+import { CreateRoomDialog, SettingsPanel, type CreateRoomResult } from './components/Dialogs'
+import { RoomMembers } from './components/RoomMembers'
 import { RoomsSidebar, type CurrentRoom } from './components/RoomsSidebar'
 import { RoomView } from './components/RoomView'
 import { Welcome } from './components/Welcome'
@@ -219,8 +220,20 @@ export function App() {
           settings={settings}
           rooms={rooms}
           current={current}
+          members={session && <RoomMembers key={session.client.url} session={session} />}
+          pin={
+            pinPrompt && {
+              key: pinPrompt.room.key,
+              roomName: pinPrompt.room.name,
+              hostName: pinPrompt.room.hostName,
+              error: pinPrompt.error,
+              lockedUntil: pinPrompt.lockedUntil
+            }
+          }
+          onPinSubmit={(pin) => pinPrompt && void join(pinPrompt.room, pin)}
+          onPinCancel={() => setPinPrompt(null)}
           busyKey={busyKey}
-          collapsed={sidebar === 'closed'}
+          collapsed={sidebar === 'closed' && !pinPrompt}
           onToggle={() => setSidebar(sidebar === 'open' ? 'closed' : 'open')}
           onJoin={switchTo}
           onJoinEndpoint={(ep) => void switchToEndpoint(ep)}
@@ -258,16 +271,6 @@ export function App() {
         />
       )}
 
-      {pinPrompt && !session && (
-        <PinDialog
-          room={pinPrompt.room}
-          busy={busyKey === pinPrompt.room.key}
-          error={pinPrompt.error}
-          lockedUntil={pinPrompt.lockedUntil}
-          onCancel={() => setPinPrompt(null)}
-          onSubmit={(pin) => void join(pinPrompt.room, pin)}
-        />
-      )}
 
       {settingsOpen && (
         <SettingsPanel

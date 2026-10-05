@@ -8,7 +8,7 @@ test('public room: share, watch, chat and stop', async ({ people }) => {
 
   await joinByIp(bob, port)
   await expect(bob.win.locator('.room')).toBeVisible()
-  await expect(bob.win.locator('.viewer-list')).toContainText('Alice')
+  await expect(bob.win.locator('.room-members')).toContainText('Alice')
 
   // Nothing plays until Bob chooses Alice's stream.
   await expect(bob.win.locator('.tile video')).toHaveCount(0)
@@ -21,7 +21,7 @@ test('public room: share, watch, chat and stop', async ({ people }) => {
   const colour = await cornerColour(bob.win)
   expect(colour).not.toBeNull()
   colour!.forEach((c, i) => expect(Math.abs(c - FAKE_SCREEN_RGB[i])).toBeLessThanOrEqual(16))
-  await expect(alice.win.locator('.viewer-list')).toContainText('Bob')
+  await expect(alice.win.locator('.room-members')).toContainText('Bob')
 
   // Chat both ways.
   await sendChat(bob, 'hello from Bob')
@@ -47,14 +47,16 @@ test('private room: a wrong PIN is refused, the right one lets you in', async ({
     .join('')
 
   await joinByIp(bob, port)
-  const dialog = bob.win.locator('.modal')
+  // The PIN is asked right under the room in the list.
+  const dialog = bob.win.locator('.pin-form')
   await dialog.getByLabel('Room PIN').fill(wrong)
   await dialog.getByRole('button', { name: 'Join' }).click()
-  await expect(dialog.locator('.notice.error')).toBeVisible()
+  await expect(dialog.locator('.error-text')).toContainText('Wrong PIN')
+  if (process.env.E2E_SHOTS) await bob.win.screenshot({ path: `${process.env.E2E_SHOTS}/4-pin.png` })
   await expect(bob.win.locator('.room')).toHaveCount(0)
 
   await dialog.getByLabel('Room PIN').fill(pin)
   await dialog.getByRole('button', { name: 'Join' }).click()
   await expect(bob.win.locator('.room')).toBeVisible()
-  await expect(alice.win.locator('.viewer-list')).toContainText('Bob')
+  await expect(alice.win.locator('.room-members')).toContainText('Bob')
 })
