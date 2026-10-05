@@ -72,7 +72,7 @@ flowchart TB
     API["contextBridge<br/>window.api"]
   end
   subgraph Renderer["Renderer (Chromium, em sandbox) · src/renderer"]
-    UI["Interface React<br/>App, HomeScreen, RoomView…"]
+    UI["Interface React<br/>App, RoomsSidebar, RoomView…"]
     SES["Sessão<br/>RoomClient + Publisher + WatchManager"]
     UI --> SES
   end
@@ -264,8 +264,9 @@ classDiagram
 ```mermaid
 flowchart TB
   App["App.tsx<br/>configurações, avisos, entrar/hospedar"]
-  App --> Home["HomeScreen<br/>lista de salas, busca, Connect by IP, nome"]
-  App --> Room["RoomView<br/>uma por sessão"]
+  App --> Rooms["RoomsSidebar (esquerda)<br/>salas recentes e da rede, Connect by IP, nome, configurações"]
+  App --> Welcome["Welcome<br/>centro fora de uma sala"]
+  App --> Room["RoomView<br/>centro e direita, uma por sessão"]
   App --> Dlg["Dialogs<br/>CreateRoom, Pin, Settings (+ recorte de foto)"]
   Room --> Stage["Palco<br/>cartões ao vivo, grade ou destaque"]
   Stage --> Self["SelfTile<br/>sua transmissão, depois do Show"]

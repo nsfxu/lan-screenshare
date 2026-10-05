@@ -39,6 +39,15 @@ describe('settings', () => {
     expect(new SettingsStore(dir).get().contentHint).toBe('motion')
   })
 
+  it('starts the recent rooms with the last room, and keeps only valid ones', () => {
+    const last = { address: '10.0.0.5', port: 47800, tls: true, name: 'Game night' }
+    expect(migrate({ lastRoom: last, settingsVersion: 2 }).recentRooms).toEqual([last])
+    expect(migrate({ lastRoom: null, settingsVersion: 2 }).recentRooms).toBeUndefined()
+    const store = new SettingsStore(tempDir())
+    const many = Array.from({ length: 8 }, (_, i) => ({ address: `10.0.0.${i}`, port: 1, tls: false }))
+    expect(store.update({ recentRooms: [...many, { address: 5 } as never] }).recentRooms).toHaveLength(5)
+  })
+
   it('rejects unknown content hints', () => {
     const store = new SettingsStore(tempDir())
     expect(store.update({ contentHint: 'fast' as never }).contentHint).toBe('auto')

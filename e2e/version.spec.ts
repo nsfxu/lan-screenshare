@@ -38,17 +38,15 @@ test('a room on a newer, incompatible version says to update', async ({ people }
       `This room runs ScreenShare 9.0.0, you have ${version}: update to join`
     )
 
-    // A room added while compatible whose host then upgrades: its card says so instead of "Unreachable".
+    // A room added while compatible whose host then upgrades: its row says so instead of "offline".
     protocol = PROTOCOL_VERSION
     await alice.win.locator('.manual-connect').getByRole('button', { name: 'Add' }).click()
-    const card = alice.win.locator('.room-card', { hasText: 'Future room' })
-    await expect(card.getByRole('button', { name: 'Join' })).toBeEnabled()
+    const row = alice.win.getByRole('button', { name: 'Join Future room' })
+    await expect(row).toBeEnabled()
     protocol = 999
-    await expect(card.locator('.status-pill')).toHaveText('Update to join')
-    await expect(card.locator('.room-card-version')).toHaveText(
-      `This room runs ScreenShare 9.0.0, you have ${version}: update to join`
-    )
-    await expect(card.getByRole('button', { name: 'Join' })).toBeDisabled()
+    await expect(row.locator('.room-row-warn')).toHaveText('Update to join')
+    expect(await row.getAttribute('title')).toContain(`This room runs ScreenShare 9.0.0, you have ${version}: update to join`)
+    await expect(row).toBeDisabled()
   } finally {
     future.close()
   }

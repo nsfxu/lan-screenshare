@@ -45,7 +45,7 @@ flowchart TD
 | *Too many wrong PINs. Try again later.* | 3 wrong PINs from your computer | Wait 5 minutes. |
 | *Room is full* | 10 people already inside | Wait for someone to leave. |
 | *You were removed from this room* | The host removed you | Only the host can help; a new room session clears it. |
-| The room card says *Update to join* or *Older version* | The room runs an incompatible major version (the card says which) | As above. |
+| The room list says *Update to join* or *Older version* | The room runs an incompatible major version (hover over it to see who has to update) | As above. |
 | The room is grey / *Unreachable* | The app can't reach the host | Check the network and firewall, or that the host is still running. |
 | Certificate error in the log (`rejected certificate`) | The host's certificate doesn't match the one your app saw before | Restart ScreenShare on your side so it learns the host again. If the host deleted `host-identity.json`, that's expected. |
 

@@ -32,7 +32,9 @@ const PATHS: Record<string, string> = {
   search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M21 21l-5-5',
   folder: 'M3 6h6l2 2h10v11H3z',
   volume: 'M4 9v6h4l5 4V5L8 9z M16 9a4 4 0 0 1 0 6 M18.5 6.5a8 8 0 0 1 0 11',
-  volumeOff: 'M4 9v6h4l5 4V5L8 9z M17 9l5 6 M22 9l-5 6'
+  volumeOff: 'M4 9v6h4l5 4V5L8 9z M17 9l5 6 M22 9l-5 6',
+  panelLeft: 'M4 4h16v16H4z M9 4v16',
+  panelRight: 'M4 4h16v16H4z M15 4v16'
 }
 
 export type IconName = keyof typeof PATHS

@@ -38,7 +38,7 @@ flowchart LR
 
 ## Your name and picture
 
-- Your **name** is shown at the top right of the home screen. Click it to change it. You can also change it in **Settings → Profile**.
+- Your **name** is shown at the bottom of the rooms column, on the left. Click it to change it. You can also change it in **Settings → Profile**.
 - Your **profile picture** is set in **Settings → Profile → Choose…**. After you pick an image, a crop window opens:
   - drag the picture to move it;
   - scroll, or use the slider, to zoom;
@@ -48,11 +48,18 @@ flowchart LR
 
 ## Finding a room
 
-The home screen lists the rooms on your network. It updates by itself (look for the green **live** dot).
+The window has three columns: **rooms** on the left, the room you're in (or a welcome page) in the middle, and the room's **people and chat** on the right.
 
-Each room card shows whether it is **Public** or **Private** (lock icon), how many streams are live (or *No one sharing*, *Unreachable*, or *Update to join* / *Older version* with who needs to update), its name, who hosts it and for how long, how many people are inside, and its address. Use **Search rooms** to filter the list. Rooms you added by IP have a bin button to remove them from the list.
+The rooms column lists:
 
-**Connect by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click **Connect by IP** and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses in the **Access** panel of the room. The default port is 47800.
+- **Recent rooms**: the last 5 rooms you joined, newest first, with the one you're in highlighted. Click one to go back to it, even if it's on a VPN and not found by itself. Rooms that don't answer show as *offline*. The **×** on a row forgets it.
+- **Rooms on your network**: everything else found on your network. It updates by itself (look for the green dot).
+
+Each row shows a lock for private rooms, how many streams are live, and how many people are inside; hover over it for who hosts it, for how long, and its address. A room on an incompatible version says *Update to join* or *Older version* (hover for who needs to update). Rooms you added by IP have a **×** to remove them from the list. Click a room to join it. If you're already in a room, you leave it first; the app asks before that ends a room you host or stops your share.
+
+The button at the top right of each side column hides it (the rooms column shrinks to a strip of room initials). The app remembers which columns you hid.
+
+**Connect by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click the **Connect by IP** button (the signal icon next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses in the **Access** panel of the room. The default port is 47800.
 
 **Private rooms** ask for a PIN (4 to 6 digits). After 3 wrong PINs, your computer has to wait 5 minutes before trying again.
 
@@ -134,7 +141,7 @@ In the **People** list you can **stop someone's stream** or **remove** someone f
 
 ## Settings
 
-Open Settings with the gear icon (home screen or room header).
+Open Settings with the gear icon at the bottom of the rooms column.
 
 | Section | Setting | Default | Meaning |
 |---|---|---|---|

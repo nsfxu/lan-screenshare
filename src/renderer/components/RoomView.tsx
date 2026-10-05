@@ -20,6 +20,7 @@ import {
   latencyClass
 } from '../lib/format'
 import { useAppVersion } from '../lib/appVersion'
+import { PANEL_STATES, useRemembered } from '../lib/layout'
 import { useAutoContentHint } from '../lib/autoContentHint'
 import { useGameCursor } from '../lib/gameCursor'
 import { audioDefaults, type SharingState, type WatcherInfo } from '../lib/publisher'
@@ -38,7 +39,6 @@ interface Props {
   session: Session
   settings: Settings
   onLeave(reason?: string): void
-  onOpenSettings(): void
   onChangeSettings(patch: Partial<Settings>): void
   onToast(message: string, tone?: 'error' | 'info'): void
 }
@@ -51,7 +51,7 @@ const SELF = 'self'
  * are shown as tiles; focusing one puts it in the spotlight while the others
  * keep playing.
  */
-export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeSettings, onToast }: Props) {
+export function RoomView({ session, settings, onLeave, onChangeSettings, onToast }: Props) {
   const { client, publisher, watches } = session
   const isHost = session.role === 'host'
   const [room, setRoom] = useState<RoomState | null>(client.room)
@@ -78,6 +78,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
   const [hosted, setHosted] = useState<HostedRoom | null>(session.hosted)
   const [showStats, setShowStats] = useState(false)
   const [pickSource, setPickSource] = useState(false)
+  const [sidePanel, setSidePanel] = useRemembered('room-side', 'open', PANEL_STATES)
   const [, setNow] = useState(Date.now())
   const gameCursor = useGameCursor(publisher, sharing.sharing ? publisher.chosenSourceId : null)
   useAutoContentHint(publisher, sharing.sharing ? publisher.chosenSourceId : null, settings.contentHint)
@@ -163,6 +164,15 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
     const t = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(t)
   }, [])
+
+  // The room's name in the taskbar and alt-tab.
+  const roomName = room?.name
+  useEffect(() => {
+    document.title = roomName ? `ScreenShare · ${roomName}` : 'ScreenShare'
+    return () => {
+      document.title = 'ScreenShare'
+    }
+  }, [roomName])
 
   // --- actions ---------------------------------------------------------------
   const shareSource = async (id: string, audio: AudioChoice): Promise<void> => {
@@ -330,8 +340,14 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
           {room && <span>{formatDuration(Date.now() - room.startedAt)}</span>}
           {client.rttMs !== null && <span title="Round trip to the room server">RTT {Math.round(client.rttMs)} ms</span>}
           {!isHost && <span className="mono">{session.endpoint.address}</span>}
-          <button className="icon-btn" title="Settings" onClick={onOpenSettings}>
-            <Icon name="settings" size={16} />
+          <button
+            className={`icon-btn ${sidePanel === 'open' ? 'active' : ''}`}
+            title={sidePanel === 'open' ? 'Hide people and chat' : 'Show people and chat'}
+            aria-label={sidePanel === 'open' ? 'Hide people and chat' : 'Show people and chat'}
+            aria-expanded={sidePanel === 'open'}
+            onClick={() => setSidePanel(sidePanel === 'open' ? 'closed' : 'open')}
+          >
+            <Icon name="panelRight" size={18} />
           </button>
         </div>
       </header>
@@ -492,7 +508,7 @@ export function RoomView({ session, settings, onLeave, onOpenSettings, onChangeS
           </div>
         </main>
 
-        <aside className="sidebar">
+        <aside className="sidebar" hidden={sidePanel === 'closed'}>
           {isHost && hosted && <AccessPanel hosted={hosted} onToast={onToast} />}
           <ViewerList
             participants={participants}

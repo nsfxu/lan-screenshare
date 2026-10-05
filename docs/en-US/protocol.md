@@ -23,7 +23,7 @@ Everything that travels between apps in a room: discovery, the HTTP probe, the W
 
 - The current version is **`PROTOCOL_VERSION = 4`** (`src/shared/constants.ts`).
 - Every `hello` carries it. The server rejects a different version with the fatal error `version_mismatch`, whose message says who has to update, e.g. "This room runs ScreenShare 2.0.0, you have 1.2.0: update to join" (`incompatibleRoomMessage` in `src/shared/version.ts`; servers before 1.2.0 say "This room runs a different app version").
-- `GET /info` and the mDNS TXT record also report it, so the room list can show incompatible rooms. Since 1.2.0, `/info` also carries the host's `appVersion`, and the room card says **Update to join** or **Older version** with the same message.
+- `GET /info` and the mDNS TXT record also report it, so the room list can show incompatible rooms. Since 1.2.0, `/info` also carries the host's `appVersion`, and the room list says **Update to join** or **Older version** with the same message.
 - Since 1.2.0, `hello` and `Participant` carry an optional `appVersion` (SemVer, e.g. `1.2.0`). The server drops a malformed one; older apps ignore the field. Others in the room use it to suggest updating when someone runs a newer version.
 - History: v3 introduced multi-stream (anyone can share). v4 added profile pictures (`set-avatar` / `avatar`) and the watcher's frame-rate choice in `view-size` / `watcher-view`.
 
