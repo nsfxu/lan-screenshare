@@ -13,6 +13,7 @@ import {
   type Point
 } from '../../shared/crop'
 import { QUALITY_PRESETS } from '../../shared/quality'
+import { THEMES } from '../../shared/themes'
 import type { AppInfo, AudioChoice, CodecSupport, DiscoveredRoom, Privacy, Settings } from '../../shared/types'
 import { shortCodecName } from '../lib/codecs'
 import { errorMessage } from '../lib/format'
@@ -364,6 +365,30 @@ export function SettingsPanel({
                 defaultValue={settings.displayName}
                 onBlur={(e) => e.target.value.trim() && onChange({ displayName: e.target.value.trim() })}
               />
+            </div>
+          </section>
+
+          <section>
+            <h3>Appearance</h3>
+            <div className="theme-picker" role="radiogroup" aria-label="Theme">
+              {THEMES.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={settings.theme === t.id}
+                  className={`theme-option ${settings.theme === t.id ? 'selected' : ''}`}
+                  onClick={() => onChange({ theme: t.id })}
+                >
+                  <span className="theme-preview" aria-hidden="true">
+                    {t.swatches.map((c, i) => (
+                      <span key={i} style={{ background: c }} />
+                    ))}
+                  </span>
+                  <span className="theme-label">{t.label}</span>
+                  <span className="muted small">{t.description}</span>
+                </button>
+              ))}
             </div>
           </section>
 

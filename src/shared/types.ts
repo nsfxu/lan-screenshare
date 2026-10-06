@@ -1,5 +1,6 @@
 import type { QualityPresetId } from './quality'
 import type { StruggleKind } from './struggle'
+import type { ThemeId } from './themes'
 
 export type Privacy = 'public' | 'private'
 export type Role = 'host' | 'viewer'
@@ -289,6 +290,8 @@ export interface Settings {
   uploadBudgetMbps: number
   /** Profile picture shown to others (square JPEG data URL), or null for initials. */
   avatar: string | null
+  /** Colour theme of the app (src/shared/themes.ts). */
+  theme: ThemeId
 }
 
 export interface CreateRoomRequest {

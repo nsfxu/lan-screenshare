@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Added
+
+- **Themes**: choose the app's colours in **Settings → Appearance**: Classic, Graphite, Midnight or Charcoal. They apply immediately.
+
 ### Changed
 
 - New layout in three columns: your rooms on the left, the room in the middle, people and chat on the right. You can switch rooms in one click, and hide either side column (the app remembers which). Your name, picture and Settings are at the bottom left.

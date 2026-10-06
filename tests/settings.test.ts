@@ -48,6 +48,13 @@ describe('settings', () => {
     expect(store.update({ recentRooms: [...many, { address: 5 } as never] }).recentRooms).toHaveLength(5)
   })
 
+  it('starts on Classic, and ignores unknown themes', () => {
+    const store = new SettingsStore(tempDir())
+    expect(store.get().theme).toBe('classic')
+    expect(store.update({ theme: 'graphite' }).theme).toBe('graphite')
+    expect(store.update({ theme: 'neon' as never }).theme).toBe('graphite')
+  })
+
   it('rejects unknown content hints', () => {
     const store = new SettingsStore(tempDir())
     expect(store.update({ contentHint: 'fast' as never }).contentHint).toBe('auto')

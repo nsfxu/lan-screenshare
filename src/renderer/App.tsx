@@ -9,6 +9,7 @@ import { Welcome } from './components/Welcome'
 import { detectDecoders, detectEncoders } from './lib/codecs'
 import { captureAudioWarning, errorMessage } from './lib/format'
 import { PANEL_STATES, ROOMS_DOCKED_MIN_WIDTH, useRemembered, useWindowWidth } from './lib/layout'
+import { applyTheme } from './lib/theme'
 import { audioDefaults } from './lib/publisher'
 import { disposeSession, hostRoom, joinRoom, JoinError, updateSessionSettings, type Session } from './lib/session'
 
@@ -64,6 +65,11 @@ export function App() {
     })
     return window.api.rooms.onChanged(setRooms)
   }, [])
+
+  const theme = settings?.theme
+  useEffect(() => {
+    if (theme) applyTheme(theme)
+  }, [theme])
 
   const updateSettings = useCallback(async (patch: Partial<Settings>) => {
     const next = await window.api.settings.update(patch)
