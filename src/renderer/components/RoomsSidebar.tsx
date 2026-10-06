@@ -126,17 +126,13 @@ export function RoomsSidebar(props: Props) {
           <Icon name="plus" size={14} /> Create room
         </button>
         <button
-          className={`icon-btn ${manualOpen ? 'active' : ''}`}
-          title="Connect by IP"
-          aria-label="Connect by IP"
+          className={`btn small ${manualOpen ? 'active' : ''}`}
+          title="Join a room by its address, e.g. over a VPN"
+          aria-expanded={manualOpen}
           onClick={() => setManualOpen((v) => !v)}
         >
-          <Icon name="network" />
+          <Icon name="network" size={14} /> Join by IP
         </button>
-        <button className="icon-btn" title="Scan the network again" aria-label="Refresh" onClick={refresh}>
-          <Icon name="refresh" className={refreshing ? 'spin' : ''} />
-        </button>
-        <span className="spacer" />
         <button className="icon-btn" title="Hide rooms" aria-label="Hide rooms" onClick={onToggle}>
           <Icon name="panelLeft" />
         </button>
@@ -175,11 +171,19 @@ export function RoomsSidebar(props: Props) {
         <section className="rooms-group">
           <h3 className="rooms-group-title">
             Rooms on your network <span className="live-dot" title="Listening for rooms on your network" />
+            <button
+              className="icon-btn rooms-refresh"
+              title="Scan the network again"
+              aria-label="Refresh"
+              onClick={() => void refresh()}
+            >
+              <Icon name="refresh" size={13} className={refreshing ? 'spin' : ''} />
+            </button>
           </h3>
           {network.length === 0 ? (
             <p className="muted small rooms-empty">
               {rooms.length === 0
-                ? 'Rooms on this network show up here by themselves. On a VPN, use Connect by IP.'
+                ? 'Rooms on this network show up here by themselves. On a VPN, use Join by IP.'
                 : 'No other rooms right now.'}
             </p>
           ) : (

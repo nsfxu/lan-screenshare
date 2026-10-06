@@ -78,7 +78,7 @@ export function InviteTile({ address, onCopy }: { address: string | null; onCopy
         <Icon name="users" size={28} />
         <strong>Invite people</strong>
         <span className="muted small">
-          People on your network see this room in their list. On a VPN, they can use Connect by IP:
+          People on your network see this room in their list. On a VPN, they can use Join by IP:
         </span>
         {address && (
           <button className="btn small" onClick={onCopy} title="Copy address">
