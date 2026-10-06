@@ -1135,7 +1135,8 @@ input[type='checkbox']:checked::after {
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  padding: 12px 18px;
+  min-height: 44px;
+  padding: 4px 10px 4px 16px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-elev);
 }
@@ -1146,6 +1147,7 @@ input[type='checkbox']:checked::after {
   min-width: 0;
 }
 .room-title h2 {
+  font-size: 15px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2213,7 +2215,38 @@ button.member-main {
   position: relative;
 }
 .room-count-live {
+  padding: 0 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--bad) 16%, transparent);
   color: var(--bad);
+  font-size: 11px;
+  font-weight: 600;
+}
+/* who's in the room: overlapping pictures, then "+N" */
+.room-people {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+}
+.room-people .avatar {
+  box-shadow: 0 0 0 2px var(--bg-elev);
+}
+.room-people .avatar + .avatar,
+.room-people .room-people-more {
+  margin-left: -6px;
+}
+.room-people-more {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 11px;
+  background: var(--bg-hover);
+  box-shadow: 0 0 0 2px var(--bg-elev);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
 }
 .room-info {
   position: absolute;

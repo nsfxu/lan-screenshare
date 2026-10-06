@@ -15,6 +15,9 @@ test('everyone has a tile: watch from it, focus it, and find the room details be
   await expect(alice.win.locator('.invite-tile')).toHaveCount(0)
   await expect(bob.win.locator('.stage-grid > .tile')).toHaveCount(2)
   await expect(bob.win.locator('.person-tile', { hasText: 'Bob (you)' })).toBeVisible()
+  // The header shows who's here as pictures.
+  await expect(bob.win.locator('.room-people .avatar')).toHaveCount(2)
+  await expect(bob.win.locator('.room-people')).toHaveAttribute('aria-label', /^2 people: /)
   const aliceTile = bob.win.locator('.person-tile', { hasText: 'Alice' })
   await expect(aliceTile.locator('.live-badge')).toHaveText('Live')
   if (shots) await bob.win.screenshot({ path: `${shots}/2-tiles.png` })

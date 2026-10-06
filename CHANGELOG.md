@@ -27,8 +27,9 @@ Each change adds its line under **Unreleased** in the same pull request, written
 - Right-click menus: on your own tile (show or hide your stream, and the sharing options), on someone else's (volume slider, mute, stop watching, focus, full screen, the quality you receive) and on people in the rooms column. Hosts also find stop stream and remove there.
 - Streams show just their name over the top: the quality, focus and stop buttons moved to the right-click menu, and zooming is gone. Under a focused stream, a speaker mutes it (or unmutes to the last volume; point at it for a slider), next to a full-screen button.
 - Double-click a stream for full screen: the stream with everyone else and its controls below, which fade (with the pointer) when the mouse rests.
-- Click a tile to focus it, and again (or the new grid button, or Esc) to go back to the grid. In focus, **Hide others** puts the strip away and pauses the video of the streams in it.
+- Click a tile to focus it, and again (or the grid button under it, or Esc) to go back to the grid. In focus, **Hide others** puts the strip away and pauses the video of the streams in it.
 - The window has its own title bar in the theme's colours (the system's window buttons stay as they are).
+- The room's header is slimmer and shows who's in the room as pictures instead of a head count.
 - **Join by IP** (was the unlabelled "Connect by IP" icon) is now a labelled button next to **Create room**; refreshing the list moved next to "Rooms on your network".
 - Settings lists its sections on the side (Profile, Appearance, Sharing, Notifications, Connection, Advanced, About); a click jumps there.
 - In a small window (from 640×480, for example snapped next to a game) the chat and then the rooms column make room for the tiles, and open over the room when you need them.
