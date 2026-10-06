@@ -39,6 +39,9 @@ import { RoomInfo } from './RoomInfo'
 import { InviteTile, PersonTile, useClickToFocus } from './RoomStage'
 import { ScreenViewer } from './ScreenViewer'
 
+/** How many pictures the room header shows before "+N". */
+const HEADER_FACES = 5
+
 /** In full screen, the strip and controls (and the cursor) hide after this long without mouse movement. */
 const FULLSCREEN_IDLE_MS = 2500
 
@@ -476,7 +479,11 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
       <div className={`stage-spotlight ${strip === 'closed' ? 'strip-closed' : ''}`}>
         <div className="spotlight-main">{renderTile(focused, false)}</div>
         <div className="focus-bar">
-          <span className="focus-bar-side" />
+          <span className="focus-bar-side">
+            <button className="icon-btn" title="Back to the grid (Esc)" aria-label="Grid view" onClick={() => setFocus(null)}>
+              <Icon name="grid" size={18} />
+            </button>
+          </span>
           <button
             className="strip-toggle"
             aria-expanded={strip === 'open'}
@@ -537,17 +544,25 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           >
             <Icon name="info" size={17} />
           </button>
-          <span className="muted small room-count">
-            {participants.length} {participants.length === 1 ? 'person' : 'people'}
-            {liveCount > 0 && <span className="room-count-live"> · {liveCount} live</span>}
+          <span
+            className="room-people"
+            title={people.map((p) => (p.id === client.selfId ? `${p.name} (you)` : p.name)).join('\n')}
+            aria-label={`${participants.length} ${participants.length === 1 ? 'person' : 'people'}: ${people.map((p) => p.name).join(', ')}`}
+          >
+            {people.slice(0, HEADER_FACES).map((p) => (
+              <Avatar
+                key={p.id}
+                name={p.name}
+                color={p.color}
+                image={avatars.get(p.id) ?? (p.id === client.selfId ? settings.avatar : null)}
+                size="tiny"
+              />
+            ))}
+            {people.length > HEADER_FACES && <span className="room-people-more">+{people.length - HEADER_FACES}</span>}
           </span>
+          {liveCount > 0 && <span className="room-count-live">{liveCount} live</span>}
           {connection === 'reconnecting' && <span className="status-pill warn">Reconnecting…</span>}
         </div>
-        {focused && people.length > 1 && (
-          <button className="icon-btn" title="Back to the grid (Esc)" aria-label="Grid view" onClick={() => setFocus(null)}>
-            <Icon name="grid" size={18} />
-          </button>
-        )}
         <button
           className={`icon-btn chat-toggle ${chatOpen ? 'active' : ''}`}
           title={chatOpen ? 'Hide chat' : 'Show chat'}
