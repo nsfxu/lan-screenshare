@@ -50,7 +50,7 @@ flowchart LR
 - **Network conditions**: the adaptive quality logic is unit-tested, but real packet loss hasn't been simulated.
 - **TCP fallback**: one encode is shared by all TCP viewers of a streamer, sized for the most demanding one.
 - **Latency figures** on WebRTC are estimates (see [media pipeline](media-pipeline.md#statistics-and-latency)).
-- **Discovery** needs multicast; on VPNs use **Connect by IP**.
+- **Discovery** needs multicast; on VPNs use **Join by IP**.
 - **Version**: everyone in a room must run the same protocol version (currently 4).
 - **Out of scope** for now: remote control, microphone audio, several monitors in one stream, recording, Linux as a supported platform.
 

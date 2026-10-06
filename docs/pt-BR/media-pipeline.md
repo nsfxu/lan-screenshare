@@ -108,7 +108,7 @@ Quatro limites independentes decidem o que cada espectador recebe. Eles são com
 flowchart LR
   A["Qualidade máxima de quem transmite<br/>(menu do botão Live, Stats, ou Settings)"] --> L["Escada de qualidade"]
   L --> B["Controlador adaptativo<br/>por espectador: perda, RTT, limitação"]
-  B --> C["Limite de exibição<br/>tamanho do quadro x zoom x DPI,<br/>ou a escolha do espectador"]
+  B --> C["Limite de exibição<br/>tamanho do quadro x DPI,<br/>ou a escolha do espectador"]
   C --> D["Banda de upload<br/>divisão justa max-min"]
   D --> E["setParameters:<br/>scaleResolutionDownBy,<br/>maxFramerate, maxBitrate"]
 ```
@@ -151,7 +151,7 @@ As mesmas amostras por espectador alimentam o `StruggleDetector` (`src/shared/st
 
 ### 2. Limite de exibição (só enviar o que aparece)
 
-O `ScreenViewer` de cada espectador mede a altura em que realmente exibe a transmissão (altura do quadro × zoom × `devicePixelRatio`) e arredonda **para cima** para um degrau: 360, 480, 720, 1080, 1440 ou 2160 (`viewHeightStep`). Só as mudanças de degrau são enviadas (`view-size`).
+O `ScreenViewer` de cada espectador mede a altura em que realmente exibe a transmissão (altura do quadro × `devicePixelRatio`) e arredonda **para cima** para um degrau: 360, 480, 720, 1080, 1440 ou 2160 (`viewHeightStep`). Só as mudanças de degrau são enviadas (`view-size`).
 
 O espectador também pode escolher uma **qualidade** no menu do quadro (`WATCH_QUALITIES`): Auto, 1080p, 720p, 720p·30, 480p·30, 360p·30. A altura enviada é a menor entre o degrau exibido e a escolha (`watchLimit`), mais um limite de fps nas opções de 30 fps.
 
@@ -168,7 +168,7 @@ A minimização é informada pelo processo principal (`window:state`); a própri
 ### 4. Mudanças ao vivo
 
 - Quem transmite muda o máximo: a captura é ajustada, o controlador de cada espectador recomeça na nova escada, o codificador TCP acompanha.
-- O espectador redimensiona, dá zoom, vai para tela cheia ou escolhe uma qualidade: novo `view-size`, aplicado em menos de um segundo.
+- O espectador redimensiona, coloca em destaque, vai para tela cheia ou escolhe uma qualidade: novo `view-size`, aplicado em menos de um segundo.
 - Um espectador entra ou sai: a banda é dividida de novo.
 
 ## Fallback TCP
@@ -251,7 +251,7 @@ Windows 10, GPU NVIDIA, todas as instâncias no mesmo computador (rede de loopba
 | Uma transmissão, WebRTC | 1920×1080 a 57–58 fps, H.265 via `MediaFoundationVideoEncodeAccelerator (NVIDIA HEVC Encoder MFT)`, codificação de 4,3 ms/quadro, latência estimada de ponta a ponta ~30–65 ms |
 | Capacidade do codificador de hardware | 8 codificações 1080p simultâneas em hardware (H.264 e H.265) a ~57 fps cada, ~13 % de CPU total, decodificando 8 transmissões ao mesmo tempo |
 | Duas pessoas compartilhando, uma terceira assistindo as duas | As duas em 1080p ~57 fps; as duas também se assistiram ao mesmo tempo |
-| Limite de exibição | Dois quadros na grade (≈276 px de altura) → 640×360 cada. Destaque (505 px) → 1280×720. Zoom de 212 % → 1920×1080 |
+| Limite de exibição | Dois quadros na grade (≈276 px de altura) → 640×360 cada. Destaque (505 px) → 1280×720. (Medido quando o app ainda tinha zoom: 212 % → 1920×1080.) |
 | Banda de upload | O upload de quem transmitia caiu de 6,2–7,5 Mbps para 2,3–3,5 Mbps com um limite de 3 Mbps, aplicado durante a sessão |
 | Fallback TCP | Duas transmissões ao mesmo tempo por TCP, cada uma roteada ao seu quadro pelo slot, 57–58 fps, H.264 em hardware via WebCodecs |
 | Áudio | Tom de 440 Hz recebido como 439 Hz (WebRTC ~160 kbps, Opus por TCP a 128 kbps); um headset 7.1 pelo auxiliar nativo: 880 Hz recebido como 879 Hz |

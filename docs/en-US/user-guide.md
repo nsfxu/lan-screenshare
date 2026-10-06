@@ -30,7 +30,7 @@ Everything you can do in ScreenShare, from finding a room to fine-tuning quality
 flowchart LR
   A["Open ScreenShare"] --> B{"Is there a room?"}
   B -->|"Yes, in the list"| C["Join it"]
-  B -->|"On a VPN or another subnet"| D["Connect by IP"] --> C
+  B -->|"On a VPN or another subnet"| D["Join by IP"] --> C
   B -->|"No"| E["Create room"] --> F["Pick a screen or window"]
   C --> G["Watch streams, chat, share your own screen"]
   F --> G
@@ -59,7 +59,7 @@ Each row shows a lock for private rooms, how many streams are live, and how many
 
 The button at the top of each side column hides it (the rooms column shrinks to a strip of room initials; the chat button is in the room's header). The app remembers which columns you hid. In a small window (for example snapped next to a game) the columns make room for the tiles by themselves: below 1100 px wide the chat is closed, and below 760 px the rooms column is a strip. Their buttons then open them over the room, and clicking next to them puts them away.
 
-**Connect by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click the **Connect by IP** button (the signal icon next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses behind the **ⓘ** next to the room's name. The default port is 47800.
+**Join by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click **Join by IP** (next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses behind the **ⓘ** next to the room's name. The default port is 47800.
 
 **Private rooms** ask for a PIN (4 to 6 digits) right under the room in the list. After 3 wrong PINs, your computer has to wait 5 minutes before trying again.
 
@@ -79,16 +79,12 @@ Your computer now runs the room. If you close ScreenShare, the app asks first, b
 
 Anyone in a room can share, not just the host, and several people can share at the same time. Click **Share screen** in the control bar under the tiles (right of the red leave button) and choose a screen or window.
 
-While you share, the button becomes a red **Live** button (**Paused** while paused):
-
-- **Click it** to stop sharing (it says **Stop** when you point at it).
-- **Click its arrow** (or right-click your own tile) for the sharing menu:
+While you share, the button becomes a green **Sharing** button. Click it (or right-click your own tile) for the sharing menu:
 
 | Option | What it does |
 |---|---|
-| **Pause / Resume** | Freezes your stream (and its audio) without ending it. |
-| **Mute audio / Unmute audio** | Stops sending system audio while the video keeps going. It says **No audio** if audio isn't being captured. |
 | **Change source…** | Switch to another screen or window, or change the audio options, without anyone having to reconnect. |
+| **Mute audio / Unmute audio** | Stops sending system audio while the video keeps going. It says **No audio** if audio isn't being captured. |
 | **Quality you send** | The maximum quality you send (Native, 1080p, 720p at 60 or 30 fps, 480p). It applies immediately; each viewer may still get less, for example if their window is small or their network is slow. |
 | **Stop sharing** | Ends your stream. |
 
@@ -98,7 +94,7 @@ The red button left of it leaves the room (for the host, it ends the room for ev
 
 **When your stream struggles**, the room tells you why: your computer can't encode fast enough, your upload can't keep up with everyone watching, or your graphics card ran out of hardware encoders (some viewers are then encoded by the CPU). The notice only appears when the problem lasts several seconds, goes away once it's solved, and won't come back for the same reason for 10 minutes. **Lower to …** lowers your maximum quality one step.
 
-**Your own stream isn't played back to you**, which saves your computer's GPU. Your own tile shows a preview that refreshes about once a minute. Click **Show my stream** to play it, and close it (×) to hide it again. You keep sharing either way.
+**Your own stream isn't played back to you**, which saves your computer's GPU. Your own tile shows a preview that refreshes about once a minute. Click **Show my stream** to play it; **Hide my stream** in its right-click menu hides it again. You keep sharing either way.
 
 **Playing a game while sharing your screen on Windows 10?** Windows would show your mouse cursor to viewers even when the game hides it. So while a fullscreen game hides the cursor, the app shares the game's window instead, which looks the same without the cursor, and goes back to your screen when you alt-tab. The room shows a notice while this happens. See [troubleshooting](troubleshooting.md#viewers-see-my-mouse-cursor-in-a-game) for windowed games.
 
@@ -106,22 +102,25 @@ The red button left of it leaves the room (for the host, it ends the room for ev
 
 Everyone in the room has a **tile** in the middle: their picture and name. Tiles keep a 16:9 shape and grow as large as the window allows. Nothing plays until you choose: people who are sharing have a red **Live** badge, and their tile shows a preview of their stream, taken when they start and refreshed about once a minute.
 
-- Click **Watch stream** on their tile, click them in the rooms column (hover first to see their preview), or **Watch all** in the control bar. Their tile then plays their stream. Click them in the rooms column again, or close the tile's stream (×), to stop watching; an eye marks the streams you watch.
-- **Right-click** a tile for everything about that person: watch or stop watching, focus, full screen, mute, and the quality you receive (the host also gets stop stream and remove).
-- **Click a tile** to put it in the **spotlight**, with everyone else in a strip below (clicking one of them focuses it instead). Click the focused tile again, the grid button at the top, or press **Esc** to go back to the grid. Double-clicking a stream still zooms it.
+- Click **Watch stream** on their tile, click them in the rooms column (hover first to see their preview), or **Watch all** in the control bar. Their tile then plays their stream, with their name over its top. Click them in the rooms column again, or **Stop watching** in the stream's right-click menu, to stop; an eye marks the streams you watch.
+- **Click a tile** to put it in the **spotlight**, with everyone else in a strip below (clicking one of them focuses it instead). Click the focused tile again, the grid button at the top, or press **Esc** to go back to the grid.
+- **Double-click a stream** to fill the screen with it: the stream, everyone else in the strip and the controls under it. The strip, the controls and the pointer fade after 2.5 s without moving the mouse. **Esc** or the button under the stream brings the window back.
 - In the spotlight, **Hide others** puts the strip away so the focused tile gets the whole height; the streams in it stop sending you video until you show them again (you still hear them).
 - When you're alone in your room, an **Invite people** tile shows the address to give people on a VPN.
 
-Each stream has:
+**Right-click a stream** for everything about it:
 
-| Control | What it does |
+| Option | What it does |
 |---|---|
-| **Quality menu** (tile bar) | **Auto** follows the size you watch at, so a small tile uses little bandwidth. You can also cap it at 1080p, 720p, or 720p/480p/360p at 30 fps. Remembered per person. |
-| **Volume** | Each stream has its own volume and mute, remembered per person. |
-| **Zoom** | Mouse wheel (zooms where your pointer is), or the − / + buttons. Drag to move around while zoomed. Double-click to zoom in 2× or back to fit. |
-| **Full screen** | Fills the screen. The controls and the pointer hide after 2.5 s without moving the mouse and come back when you move it. |
-| **Stats badges** | Frame rate, latency, resolution, codec and connection type. Turn them off in Settings. |
-| **Retry (↻)** | Only shown when a stream fell back to the slower TCP connection. Tries the faster connection again. |
+| **Volume** (slider) and **Mute** | Each stream has its own volume and mute, remembered per person. |
+| **Stop watching**, **Focus**, **Full screen** | As above. |
+| **Quality you receive** | **Auto** follows the size you watch at, so a small tile uses little bandwidth. You can also cap it at 1080p, 720p, or 720p/480p/360p at 30 fps. Remembered per person. |
+| **Try the faster connection again** | Only when the stream fell back to the slower TCP connection. |
+| **Stop *name*'s stream**, **Remove from room** | Host only. |
+
+**Under a focused stream**, the speaker mutes it, or unmutes it back to the last volume; point at the speaker for its volume slider. The button next to it fills the screen.
+
+The **stats badges** on a stream show its frame rate, latency, resolution, codec and connection type; turn them off in **Settings → Appearance**.
 
 If a stream can't connect in 8 seconds (some VPNs and firewalls block it), the app switches to a TCP connection by itself. It adds a little latency but keeps working.
 
@@ -140,7 +139,7 @@ The **ⓘ** next to the room's name shows the room's details: privacy, how long 
 
 - switch between **Public** and **Private** at any time; people already inside stay connected;
 - show or hide the **PIN**, **copy** it, **generate a new one**, or **set your own**;
-- see the addresses people can use with **Connect by IP**.
+- see the addresses people can use with **Join by IP**.
 
 Right-clicking a person (their tile, or their name in the rooms column, where a **⋯** button also appears on hover) lets you **stop their stream** or **remove** them from the room (they can't come back to this room session). In the chat you can **delete messages** and **mute the chat** (people still see the history).
 
@@ -148,39 +147,40 @@ Right-clicking a person (their tile, or their name in the rooms column, where a 
 
 ## Settings
 
-Open Settings with the gear icon at the bottom of the rooms column.
+Open Settings with the gear icon at the bottom of the rooms column. The list on its left jumps to a section, and follows as you scroll.
 
 | Section | Setting | Default | Meaning |
 |---|---|---|---|
 | Profile | Profile picture | none | Shown instead of your initials. |
 | Profile | Display name | your computer user name | Up to 32 characters. |
 | Appearance | Theme | Classic | The app's colours: **Classic** (blue on blue-grey), **Graphite** (neutral greys and indigo, so streams look true to colour), **Midnight** (blue-black and teal) or **Charcoal** (warm greys and violet). Applies immediately. |
-| Streaming quality | Maximum quality | 1080p @ 60 fps | The most you send when sharing. Applies immediately. |
-| Streaming quality | Adaptive quality | on | Lowers resolution/frame rate per viewer when their network struggles. |
-| Streaming quality | Video codec | Automatic | Automatic prefers hardware H.264. You can force H.264, H.265, VP9 or AV1 if both sides support it. The table below shows what your computer supports. |
-| Streaming quality | Optimize for | Automatic | *Smooth motion* keeps 60 fps. *Sharp text* keeps the resolution. *Automatic* (Windows) uses smooth motion while a fullscreen game or video is in front of what you share, and sharp text on the desktop; on macOS it means smooth motion. The Stats panel shows which one is in use. |
-| Streaming quality | Upload limit when sharing | 100 Mbps | Your total upload, shared fairly between everyone watching you. Lower it on Wi-Fi or VPN. |
-| Network | Encrypt connections (TLS) | on | Encrypts chat and signaling. Video is always encrypted. |
-| Network | Always use TCP transport | off | For networks that block UDP. Adds some latency. |
-| Network | Hosting port | 47800 | The first port tried when you host. |
-| Network | Rejoin last room on startup | off | Joins your last room automatically when the app starts. |
-| Behaviour | Chat notifications | on | When the window is in the background. |
-| Behaviour | Pause sharing while minimized | off | Resumes when you restore the window. |
-| Behaviour | Show FPS and latency overlay | on | The badges on each stream. |
-| Behaviour | Share system audio by default | on | Pre-selects the audio switch. |
-| Behaviour | Leave out Discord by default | on | Windows only. Pre-selects the Discord switch. |
-| Behaviour | Only the shared app's sound by default | on | Windows only. Pre-selects **Only this app's sound** when you share a window. |
+| Appearance | Show FPS and latency on streams | on | The badges on each stream. |
+| Sharing | Maximum quality | 1080p @ 60 fps | The most you send when sharing. Applies immediately. |
+| Sharing | Optimize for | Automatic | *Smooth motion* keeps 60 fps. *Sharp text* keeps the resolution. *Automatic* (Windows) uses smooth motion while a fullscreen game or video is in front of what you share, and sharp text on the desktop; on macOS it means smooth motion. The Stats panel shows which one is in use. |
+| Sharing | Upload limit when sharing | 100 Mbps | Your total upload, shared fairly between everyone watching you. Lower it on Wi-Fi or VPN. |
+| Sharing | Share system audio by default | on | Pre-selects the audio switch. |
+| Sharing | Only the shared app's sound by default | on | Windows only. Pre-selects **Only this app's sound** when you share a window. |
+| Sharing | Leave out Discord by default | on | Windows only. Pre-selects the Discord switch. |
+| Sharing | Pause sharing while minimized | off | Resumes when you restore the window. |
+| Notifications | Chat notifications | on | When the window is in the background. |
+| Connection | Rejoin last room on startup | off | Joins your last room automatically when the app starts. |
+| Connection | Encrypt connections (TLS) | on | Encrypts chat and signaling. Video is always encrypted. |
+| Connection | Always use TCP transport | off | For networks that block UDP. Adds some latency. |
+| Connection | Hosting port | 47800 | The first port tried when you host. |
+| Advanced | Video codec | Automatic | Automatic prefers hardware H.264. You can force H.264, H.265, VP9 or AV1 if both sides support it. The table below it shows what your computer supports. |
+| Advanced | Adaptive quality | on | Lowers resolution/frame rate per viewer when their network struggles. |
 
-The footer shows the app version and has **Open logs**.
+**About** shows the app version and has **Open logs**.
 
 ## Mouse and keyboard
 
 | Where | Action | Result |
 |---|---|---|
-| A stream | Mouse wheel | Zoom in/out at the pointer |
-| A stream | Double-click | Zoom 2× / back to fit |
-| A zoomed stream | Drag | Move around |
-| Full screen | Move the mouse | Show the controls again |
+| A tile | Click | Focus it / back to the grid |
+| A stream | Double-click | Full screen |
+| A tile | Right-click | Its menu (volume, quality, …) |
+| A focused stream | Esc | Leave full screen, then back to the grid |
+| Full screen | Move the mouse | Show the strip and controls again |
 | Picture crop | Drag / wheel / slider | Move / zoom |
 | Picture crop | Arrow keys, Shift + arrows, + and − | Move a little, move more, zoom |
 | Any dialog | Esc | Close the top dialog |

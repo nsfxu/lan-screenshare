@@ -87,13 +87,23 @@ A pasta `e2e/` roda o app de verdade: duas instâncias (Alice e Bob, o build de 
 
 | Teste | Cobre |
 |---|---|
-| Sala pública | A Alice cria uma sala e compartilha; o Bob entra com **Connect by IP**; nada toca até ele escolher a transmissão dela; os quadros chegam com a cor da tela dela; chat nos dois sentidos; quando ela para de compartilhar, o quadro dele e o cartão dela somem. |
-| Sala privada | Um PIN errado é recusado (erro, continua do lado de fora); o PIN certo deixa o Bob entrar. |
+| Sala pública (`room.spec.ts`) | A Alice cria uma sala e compartilha; o Bob entra com **Join by IP**; nada toca até ele escolher a transmissão dela; os quadros chegam com a cor da tela dela; chat nos dois sentidos; quando ela para de compartilhar (menu Sharing), a transmissão some para ele. |
+| Sala privada (`room.spec.ts`) | Um PIN errado é recusado (erro embaixo da sala, continua do lado de fora); o PIN certo deixa o Bob entrar. |
 | Qualidade automática (`quality.spec.ts`) | A Alice compartilha; o teste informa o que está na frente como o auxiliar do Windows faria. O painel Stats mostra movimento suave antes de saber qualquer coisa, texto nítido para uma janela normal, movimento suave para um app em tela cheia na tela compartilhada, texto nítido para um em outra tela; Automatic é o padrão e uma escolha fixa em Settings tem prioridade. |
 | Espectadores que não veem (`hidden.spec.ts`) | Alice e Carol compartilham, Bob assiste as duas. Bob minimizado: nenhum quadro das duas, e a Alice vê "not looking (video paused)"; restaurado: as duas voltam a tocar. Quadro da Alice em tela cheia (simulado): a transmissão da Carol pausa, a da Alice continua. |
+| Versões (`version.spec.ts`) | Uma sala num protocolo mais novo diz quem precisa atualizar (pelo IP e na linha dela); alguém numa versão mais nova gera um aviso único para os outros. |
+| Avisos de dificuldade (`struggle.spec.ts`) | `qualityLimitationReason` simulado: um pico curto não diz nada, um longo mostra o aviso, ele some com o problema, e "Lower to" baixa a qualidade. |
+| Layout (`layout.spec.ts`) | Salas recentes, voltar a entrar, o título da janela, colunas escondidas sobrevivendo a um recarregamento; numa janela de 700 px o chat e as salas abrem por cima da sala. |
+| Pessoas na coluna (`members.spec.ts`) | A lista do Bob embaixo da sala, a prévia ao passar o mouse, assistir dali, o anfitrião removendo alguém. |
+| Quadros (`stage.spec.ts`) | O quadro de convite, um quadro por pessoa, assistir pelo quadro, destaque e Esc, os detalhes do ⓘ para convidado e anfitrião. |
+| Chat (`chat.spec.ts`) | A caixa de mensagem com o nome da sala, a contagem de não lidas com o chat escondido, o agrupamento. |
+| Menus (`menus.spec.ts`) | O menu do botão Sharing (qualidade, parar), o botão direito no próprio quadro e numa transmissão (qualidade recebida, parar de assistir), as ações do anfitrião. |
+| Destaque e volume (`focus.spec.ts`) | A Alice compartilha com um tom de teste: clicar para destacar e voltar, o alto-falante silencia e volta, o controle dele e o do menu mudam o volume tocado, dois cliques para tela cheia, esconder a faixa pausa a transmissão dela. |
+| Temas (`theme.spec.ts`) | Cada tema muda as cores da página; a escolha sobrevive a um recarregamento. |
+| Configurações (`settings.spec.ts`) | A lista de seções pula para uma seção e acompanha a rolagem. |
 
 ```bash
-npm run test:e2e                 # compila e roda a pasta e2e/ (uns 40 s)
+npm run test:e2e                 # compila e roda a pasta e2e/ (uns 5 minutos)
 npx playwright test              # sem recompilar (depois de npm run build)
 xvfb-run -a -s "-screen 0 1920x1080x24" npx playwright test   # Linux sem tela, como no CI
 ```
@@ -195,7 +205,7 @@ NODE_PATH=$(npm root -g) xvfb-run -a -s "-screen 0 1600x1000x24" node drive.cjs
 
 Dicas:
 
-- **Duas pessoas**: abra uma segunda instância com outro `--profile`, clique em **Connect by IP**, digite `127.0.0.1:47800`, aperte Enter, espere um instante pela consulta e clique em **Join**.
+- **Duas pessoas**: abra uma segunda instância com outro `--profile`, clique em **Join by IP**, digite `127.0.0.1:47800`, aperte Enter, espere um instante pela consulta e clique em **Join**.
 - **Captura de tela real** no Xvfb precisa das extensões `Composite` e `DAMAGE` (`-s "-screen 0 1600x1000x24 +extension Composite +extension DAMAGE"`) e ainda pode falhar às vezes; o canvas falso acima é mais confiável.
 - **Leia o que o usuário veria**: selos de estatística (`.tile .stat-badge`), estilos calculados (`getComputedStyle(...).opacity`) ou pixels de uma imagem (desenhe-a num canvas e leia com `getImageData`).
 - **Finja ser outro sistema** para interfaces exclusivas de uma plataforma: substitua o handler de IPC `system:app-info` para devolver `platform: 'win32'`.
@@ -226,14 +236,14 @@ Em outros sistemas, confira se os auxiliares ainda compilam como C# 5 com o Mono
 
 Faça isto em máquinas reais (de preferência um Windows e um macOS) numa rede real:
 
-- [ ] Uma sala aparece sozinha em outro computador (mDNS), e o **Connect by IP** funciona.
+- [ ] Uma sala aparece sozinha em outro computador (mDNS), e o **Join by IP** funciona.
 - [ ] Sala privada: PIN errado mostra as tentativas restantes, 3 PINs errados bloqueiam por 5 minutos, o PIN certo funciona.
 - [ ] Compartilhar uma tela e uma janela, com e sem áudio do sistema.
 - [ ] Windows: numa chamada do Discord com **Leave out Discord** ligado, os outros não ouvem a própria voz.
 - [ ] Windows com headset 5.1/7.1: o áudio do sistema continua funcionando.
 - [ ] Duas pessoas compartilham ao mesmo tempo; uma terceira assiste as duas; grade, destaque, **Watch all**.
 - [ ] A sua transmissão fica escondida até o **Show my stream**.
-- [ ] A qualidade máxima de quem transmite (o menu do botão Live, ou Stats) e o menu de qualidade de cada quadro mudam o que é recebido (veja os selos de estatística).
+- [ ] A qualidade máxima de quem transmite (o menu do botão Sharing, ou Stats) e o Quality you receive de cada espectador (menu do botão direito da transmissão) mudam o que é recebido (veja os selos de estatística).
 - [ ] Tela cheia: controles e ponteiro somem depois de 2,5 s e voltam ao mexer o mouse.
 - [ ] Bloqueie o UDP (ou ligue **Always use TCP transport**): a transmissão continua pelo TCP.
 - [ ] Desconecte a rede por alguns segundos: todos reconectam e as transmissões voltam.

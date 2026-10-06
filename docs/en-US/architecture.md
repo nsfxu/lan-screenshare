@@ -37,7 +37,7 @@ flowchart LR
   A -. "TCP fallback: media relayed over the WebSocket" .-> HM
 ```
 
-- **Discovery**: rooms advertise themselves over mDNS (`_lanshare._tcp`). Other apps browse for them and also poll each room's `GET /info` every 3 s for live data. People on VPNs or other subnets can type an address instead (**Connect by IP**).
+- **Discovery**: rooms advertise themselves over mDNS (`_lanshare._tcp`). Other apps browse for them and also poll each room's `GET /info` every 3 s for live data. People on VPNs or other subnets can type an address instead (**Join by IP**).
 - **Signaling**: WebRTC offers, answers and ICE candidates travel through the room's WebSocket, but only between a streamer and one of its current watchers.
 - **Media**: one `RTCPeerConnection` per streamer→watcher pair. When UDP is blocked, that single pair falls back to a **TCP path**: the streamer encodes with WebCodecs and the server relays the encoded chunks.
 
@@ -264,7 +264,7 @@ classDiagram
 ```mermaid
 flowchart TB
   App["App.tsx<br/>settings, toasts, join/host"]
-  App --> Rooms["RoomsSidebar (left)<br/>recent and network rooms, PIN, Connect by IP, name, settings"]
+  App --> Rooms["RoomsSidebar (left)<br/>recent and network rooms, PIN, Join by IP, name, settings"]
   Rooms --> Members["RoomMembers<br/>people in your room: live, watch, preview, host menu"]
   App --> Welcome["Welcome<br/>centre when not in a room"]
   App --> Room["RoomView<br/>centre and right, one per session"]
@@ -274,7 +274,7 @@ flowchart TB
   Stage --> Person["PersonTile<br/>picture, or a live stream's preview + Watch"]
   Stage --> Self["SelfTile<br/>your stream, after Show my stream"]
   Stage --> Remote["RemoteTile<br/>one per watched stream"]
-  Self --> SV["ScreenViewer<br/>zoom, pan, fullscreen, volume"]
+  Self --> SV["ScreenViewer<br/>video, stats badges, volume (lib/volume.ts)"]
   Remote --> SV
   Room --> Bar["Control bar<br/>share, pause, audio, source, stop, stats and quality, leave"]
   Room --> Chat["ChatPanel (right)"]
@@ -309,7 +309,7 @@ sequenceDiagram
   participant V as Viewer app
   participant M as Viewer main process
   participant S as RoomServer
-  M->>M: mDNS browse finds the room (or Connect by IP)
+  M->>M: mDNS browse finds the room (or Join by IP)
   M->>S: GET /info (checks certificate fingerprint)
   S-->>M: name, privacy, people, live streams
   V->>M: rooms.resolve (fresh probe, trusts the certificate)

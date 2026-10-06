@@ -21,15 +21,15 @@ Common problems and how to fix them. If yours isn't here, open **Settings → Op
 ```mermaid
 flowchart TD
   A["Room missing from the list"] --> B{"Same network<br/>and subnet?"}
-  B -->|"No (VPN, other subnet)"| C["Use Connect by IP<br/>with the host's address"]
+  B -->|"No (VPN, other subnet)"| C["Use Join by IP<br/>with the host's address"]
   B -->|Yes| D{"Firewall allows<br/>ScreenShare?"}
   D -->|No| E["Allow ScreenShare on private networks<br/>(TCP port 47800+, mDNS UDP 5353)"]
   D -->|Yes| F{"Guest Wi-Fi or<br/>client isolation?"}
-  F -->|Yes| G["Use a normal network,<br/>or Connect by IP"]
+  F -->|Yes| G["Use a normal network,<br/>or Join by IP"]
   F -->|No| C
 ```
 
-- Discovery uses **multicast (mDNS)**, which many VPNs, guest Wi-Fi networks and some routers block. **Connect by IP** always works if the host can be reached: the host sees its addresses behind the **ⓘ** next to the room's name.
+- Discovery uses **multicast (mDNS)**, which many VPNs, guest Wi-Fi networks and some routers block. **Join by IP** always works if the host can be reached: the host sees its addresses behind the **ⓘ** next to the room's name.
 - The default port is **47800**. If it was busy, the host picked the next free one; the **ⓘ** shows the right one.
 - **Windows firewall**: the first time you host, Windows asks whether to allow ScreenShare. Allow it on **private** networks. If you clicked Cancel, allow it later in *Windows Security → Firewall → Allow an app*.
 - A room that stops answering for 10 seconds is removed from the list. It comes back as soon as it answers again.
@@ -60,9 +60,9 @@ flowchart TD
 ## The quality is low
 
 1. Look at the tile's **stats badges**: resolution, fps and connection type.
-2. Check the tile's **quality menu**: it should be **Auto** (or the quality you want).
-3. **Auto follows the tile size**: a small tile gets a small stream. Focus the stream (spotlight), go full screen or zoom in and the quality rises within a second.
-4. Ask the streamer to check their maximum quality (the **Live** button's menu, or **Stats**), and **Settings → Upload limit when sharing** (the default 100 Mbps is shared between everyone watching them; on Wi-Fi 30–60 Mbps is more realistic).
+2. Check **Quality you receive** in the stream's right-click menu: it should be **Auto** (or the quality you want).
+3. **Auto follows the tile size**: a small tile gets a small stream. Focus the stream (spotlight) or go full screen and the quality rises within a second.
+4. Ask the streamer to check their maximum quality (the **Sharing** button's menu, or **Stats**), and **Settings → Upload limit when sharing** (the default 100 Mbps is shared between everyone watching them; on Wi-Fi 30–60 Mbps is more realistic).
 5. The streamer's **Stats → Limited by** tells you why: *bandwidth* (network), *cpu* (computer too busy) or *none*. When it lasts, the streamer also gets a notice saying so, with a button to lower the quality.
 6. On the **TCP** connection, latency is a bit higher and one encode is shared by all TCP viewers.
 
@@ -91,7 +91,7 @@ On Windows 10 (and 11 before 24H2), sharing a whole screen shows the cursor even
 ## High CPU or a hot laptop
 
 - Open **Settings → Streaming quality**: the codec table shows **Hardware** or **Software** for each codec. Software encoding uses much more CPU. **Automatic** already prefers hardware H.264.
-- Lower the **maximum quality** in the **Live** button's menu (for example 720p @ 30 fps).
+- Lower the **maximum quality** in the **Sharing** button's menu (for example 720p @ 30 fps).
 - Close tiles you're not watching; each watched stream costs decoding.
 - Keep your own stream hidden (don't **Show my stream**) while sharing.
 
@@ -104,7 +104,7 @@ On Windows 10 (and 11 before 24H2), sharing a whole screen shows the cursor even
 
 Please include:
 
-1. App version (Settings footer) and operating system on each computer involved.
+1. App version (**Settings → About**) and operating system on each computer involved.
 2. What you did, what you expected, what happened.
 3. The relevant part of `screenshare.log` from each computer (**Settings → Open logs**). Remove anything private first.
 4. For quality problems: a screenshot of the tile's stats badges and of the streamer's **Stats** panel.

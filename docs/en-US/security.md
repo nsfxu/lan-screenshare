@@ -45,7 +45,7 @@ sequenceDiagram
   V->>V: remember fp for this host address
   V->>H: GET /info over TLS
   V->>V: presented certificate must match the advertised fp
-  Note over V: Connect by IP: no advert, so the fp seen on the first probe is remembered
+  Note over V: Join by IP: no advert, so the fp seen on the first probe is remembered
   C->>H: wss:// connection
   C->>V: certificate check (setCertificateVerifyProc)
   V-->>C: accept only if the fingerprint is trusted for that host
@@ -53,7 +53,7 @@ sequenceDiagram
 
 Any certificate that is not trusted for that exact host name is rejected, even if the system would otherwise accept it.
 
-**Trade-off:** with **Connect by IP**, the first probe is *trust on first use*. Someone who can intercept that very first connection could present their own certificate. Rooms found over mDNS don't have this gap because the fingerprint arrives in the advert.
+**Trade-off:** with **Join by IP**, the first probe is *trust on first use*. Someone who can intercept that very first connection could present their own certificate. Rooms found over mDNS don't have this gap because the fingerprint arrives in the advert.
 
 ## Electron hardening
 

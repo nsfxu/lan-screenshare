@@ -108,7 +108,7 @@ Four independent limits decide what each watcher receives. They are combined in 
 flowchart LR
   A["Streamer's maximum quality<br/>(Live button menu, Stats, or Settings)"] --> L["Quality ladder"]
   L --> B["Adaptive controller<br/>per watcher: loss, RTT, limitation"]
-  B --> C["View limit<br/>tile size x zoom x DPI,<br/>or the watcher's own choice"]
+  B --> C["View limit<br/>tile size x DPI,<br/>or the watcher's own choice"]
   C --> D["Upload budget<br/>max-min fair share"]
   D --> E["setParameters:<br/>scaleResolutionDownBy,<br/>maxFramerate, maxBitrate"]
 ```
@@ -151,7 +151,7 @@ The same per-watcher samples feed `StruggleDetector` (`src/shared/struggle.ts`),
 
 ### 2. View limit (only send what is shown)
 
-Each watcher's `ScreenViewer` measures the height it really displays the stream at (tile height × zoom × `devicePixelRatio`) and rounds it **up** to a step: 360, 480, 720, 1080, 1440 or 2160 (`viewHeightStep`). Only step changes are sent (`view-size`).
+Each watcher's `ScreenViewer` measures the height it really displays the stream at (tile height × `devicePixelRatio`) and rounds it **up** to a step: 360, 480, 720, 1080, 1440 or 2160 (`viewHeightStep`). Only step changes are sent (`view-size`).
 
 The watcher can also pick a **quality** in the tile menu (`WATCH_QUALITIES`): Auto, 1080p, 720p, 720p·30, 480p·30, 360p·30. The height sent is the smaller of the displayed step and the choice (`watchLimit`), plus an fps cap for the 30 fps options.
 
@@ -168,7 +168,7 @@ Settings → *Upload limit when sharing* (default 100 Mbps, or Unlimited) is the
 ### 4. Live changes
 
 - Streamer changes the maximum: capture re-constrained, every watcher's controller restarts on the new ladder, the TCP encoder follows.
-- Watcher resizes, zooms, goes fullscreen or picks a quality: new `view-size`, applied within a second.
+- Watcher resizes, focuses, goes full screen or picks a quality: new `view-size`, applied within a second.
 - A new watcher joins or leaves: the budget is split again.
 
 ## TCP fallback
@@ -251,7 +251,7 @@ Windows 10, NVIDIA GPU, all instances on one machine (loopback network), before 
 | One stream, WebRTC | 1920×1080 @ 57–58 fps, H.265 via `MediaFoundationVideoEncodeAccelerator (NVIDIA HEVC Encoder MFT)`, encode 4.3 ms/frame, estimated glass-to-glass latency ~30–65 ms |
 | Hardware encoder capacity | 8 simultaneous 1080p hardware encodes (H.264 and H.265) at ~57 fps each, ~13 % total CPU, while decoding 8 streams |
 | Two people sharing, a third watching both | Both at 1080p ~57 fps; the two streamers also watched each other |
-| View-size cap | Two grid tiles (≈276 px tall) → 640×360 each. Spotlight (505 px) → 1280×720. Zoom 212 % → 1920×1080 |
+| View-size cap | Two grid tiles (≈276 px tall) → 640×360 each. Spotlight (505 px) → 1280×720. (Measured when the app still had zoom: 212 % → 1920×1080.) |
 | Upload budget | A streamer's upload went from 6.2–7.5 Mbps to 2.3–3.5 Mbps with a 3 Mbps limit, applied mid-session |
 | TCP fallback | Two streams at once over TCP, each routed to its tile by slot, 57–58 fps, WebCodecs hardware H.264 |
 | Audio | 440 Hz tone received as 439 Hz (WebRTC ~160 kbps, TCP Opus 128 kbps); a 7.1 headset through the native helper: 880 Hz received as 879 Hz |

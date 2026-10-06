@@ -45,7 +45,7 @@ sequenceDiagram
   V->>V: guarda o fp para o endereço desse host
   V->>H: GET /info via TLS
   V->>V: o certificado apresentado precisa bater com o fp anunciado
-  Note over V: Connect by IP: sem anúncio, então o fp visto na primeira consulta é guardado
+  Note over V: Join by IP: sem anúncio, então o fp visto na primeira consulta é guardado
   C->>H: conexão wss://
   C->>V: verificação do certificado (setCertificateVerifyProc)
   V-->>C: aceita só se a impressão digital é confiável para esse host
@@ -53,7 +53,7 @@ sequenceDiagram
 
 Qualquer certificado que não seja confiável para aquele nome de host exato é recusado, mesmo que o sistema fosse aceitá-lo.
 
-**Concessão:** com **Connect by IP**, a primeira consulta é do tipo *confiar no primeiro uso*. Quem conseguisse interceptar exatamente essa primeira conexão poderia apresentar o próprio certificado. As salas encontradas por mDNS não têm essa brecha, porque a impressão digital chega no anúncio.
+**Concessão:** com **Join by IP**, a primeira consulta é do tipo *confiar no primeiro uso*. Quem conseguisse interceptar exatamente essa primeira conexão poderia apresentar o próprio certificado. As salas encontradas por mDNS não têm essa brecha, porque a impressão digital chega no anúncio.
 
 ## Endurecimento do Electron
 

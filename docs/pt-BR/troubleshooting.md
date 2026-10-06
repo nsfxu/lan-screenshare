@@ -21,15 +21,15 @@ Problemas comuns e como resolvê-los. Se o seu não estiver aqui, abra **Setting
 ```mermaid
 flowchart TD
   A["A sala não aparece na lista"] --> B{"Mesma rede<br/>e sub-rede?"}
-  B -->|"Não (VPN, outra sub-rede)"| C["Use Connect by IP<br/>com o endereço do anfitrião"]
+  B -->|"Não (VPN, outra sub-rede)"| C["Use Join by IP<br/>com o endereço do anfitrião"]
   B -->|Sim| D{"O firewall permite<br/>o ScreenShare?"}
   D -->|Não| E["Permita o ScreenShare em redes privadas<br/>(porta TCP 47800+, mDNS UDP 5353)"]
   D -->|Sim| F{"Wi-Fi de visitantes ou<br/>isolamento de clientes?"}
-  F -->|Sim| G["Use uma rede normal,<br/>ou Connect by IP"]
+  F -->|Sim| G["Use uma rede normal,<br/>ou Join by IP"]
   F -->|Não| C
 ```
 
-- A descoberta usa **multicast (mDNS)**, que muitas VPNs, redes Wi-Fi de visitantes e alguns roteadores bloqueiam. O **Connect by IP** sempre funciona se o anfitrião estiver alcançável: ele vê os próprios endereços no **ⓘ** ao lado do nome da sala.
+- A descoberta usa **multicast (mDNS)**, que muitas VPNs, redes Wi-Fi de visitantes e alguns roteadores bloqueiam. O **Join by IP** sempre funciona se o anfitrião estiver alcançável: ele vê os próprios endereços no **ⓘ** ao lado do nome da sala.
 - A porta padrão é **47800**. Se ela estava ocupada, o anfitrião escolheu a próxima livre; o **ⓘ** mostra a correta.
 - **Firewall do Windows**: na primeira vez que você hospeda, o Windows pergunta se deve permitir o ScreenShare. Permita em redes **privadas**. Se você clicou em Cancelar, permita depois em *Segurança do Windows → Firewall → Permitir um aplicativo*.
 - Uma sala que para de responder por 10 segundos sai da lista. Ela volta assim que responder de novo.
@@ -60,9 +60,9 @@ flowchart TD
 ## A qualidade está baixa
 
 1. Olhe os **selos de estatística** do quadro: resolução, fps e tipo de conexão.
-2. Confira o **menu de qualidade** do quadro: deve estar em **Auto** (ou na qualidade que você quer).
-3. **O Auto acompanha o tamanho do quadro**: um quadro pequeno recebe uma transmissão pequena. Coloque a transmissão em destaque, vá para tela cheia ou dê zoom e a qualidade sobe em menos de um segundo.
-4. Peça para quem transmite conferir a qualidade máxima (o menu do botão **Live**, ou **Stats**) e **Settings → Upload limit when sharing** (os 100 Mbps padrão são divididos entre todos que assistem; no Wi-Fi, 30–60 Mbps é mais realista).
+2. Confira **Quality you receive** no menu do botão direito da transmissão: deve estar em **Auto** (ou na qualidade que você quer).
+3. **O Auto acompanha o tamanho do quadro**: um quadro pequeno recebe uma transmissão pequena. Coloque a transmissão em destaque ou vá para tela cheia e a qualidade sobe em menos de um segundo.
+4. Peça para quem transmite conferir a qualidade máxima (o menu do botão **Sharing**, ou **Stats**) e **Settings → Upload limit when sharing** (os 100 Mbps padrão são divididos entre todos que assistem; no Wi-Fi, 30–60 Mbps é mais realista).
 5. O **Stats → Limited by** de quem transmite diz o motivo: *bandwidth* (rede), *cpu* (computador ocupado demais) ou *none*. Quando isso dura, quem transmite também recebe um aviso dizendo isso, com um botão para baixar a qualidade.
 6. Na conexão **TCP** o atraso é um pouco maior e uma única codificação é dividida entre todos os espectadores TCP.
 
@@ -91,7 +91,7 @@ No Windows 10 (e no 11 anterior ao 24H2), compartilhar uma tela inteira mostra o
 ## CPU alta ou notebook esquentando
 
 - Abra **Settings → Streaming quality**: a tabela de codecs mostra **Hardware** ou **Software** para cada codec. Codificar em software gasta muito mais CPU. O **Automatic** já prefere H.264 em hardware.
-- Diminua a **qualidade máxima** no menu do botão **Live** (por exemplo 720p @ 30 fps).
+- Diminua a **qualidade máxima** no menu do botão **Sharing** (por exemplo 720p @ 30 fps).
 - Feche os quadros que você não está assistindo; cada transmissão assistida custa decodificação.
 - Deixe a sua própria transmissão escondida (não clique em **Show my stream**) enquanto compartilha.
 
@@ -104,7 +104,7 @@ No Windows 10 (e no 11 anterior ao 24H2), compartilhar uma tela inteira mostra o
 
 Inclua, por favor:
 
-1. A versão do app (rodapé das configurações) e o sistema operacional de cada computador envolvido.
+1. A versão do app (**Settings → About**) e o sistema operacional de cada computador envolvido.
 2. O que você fez, o que esperava e o que aconteceu.
 3. O trecho relevante do `screenshare.log` de cada computador (**Settings → Open logs**). Tire antes qualquer informação privada.
 4. Para problemas de qualidade: uma captura dos selos de estatística do quadro e do painel **Stats** de quem transmite.
