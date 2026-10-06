@@ -32,7 +32,7 @@ O app está em inglês, então os nomes dos botões aparecem aqui **como estão 
 flowchart LR
   A["Abrir o ScreenShare"] --> B{"Existe uma sala?"}
   B -->|"Sim, na lista"| C["Entrar"]
-  B -->|"Numa VPN ou outra sub-rede"| D["Connect by IP"] --> C
+  B -->|"Numa VPN ou outra sub-rede"| D["Join by IP"] --> C
   B -->|"Não"| E["Create room"] --> F["Escolher uma tela ou janela"]
   C --> G["Assistir, conversar, compartilhar a sua tela"]
   F --> G
@@ -61,7 +61,7 @@ Cada linha mostra um cadeado para salas privadas, quantas transmissões estão a
 
 O botão no topo de cada coluna lateral a esconde (a coluna de salas vira uma faixa com as iniciais das salas; o botão do chat fica no topo da sala). O app lembra quais colunas você escondeu. Numa janela pequena (por exemplo encaixada ao lado de um jogo) as colunas abrem espaço para os quadros sozinhas: abaixo de 1100 px de largura o chat fica fechado, e abaixo de 760 px a coluna de salas vira uma faixa. Os botões delas então as abrem por cima da sala, e clicar ao lado as fecha.
 
-**Connect by IP**: se você está numa VPN ou em outra sub-rede, as salas podem não aparecer sozinhas. Clique no botão **Connect by IP** (o ícone de sinal ao lado de **Create room**) e digite o endereço do anfitrião, por exemplo `10.8.0.5` ou `192.168.1.20:47800`. O anfitrião vê os endereços dele no **ⓘ** ao lado do nome da sala. A porta padrão é 47800.
+**Join by IP**: se você está numa VPN ou em outra sub-rede, as salas podem não aparecer sozinhas. Clique em **Join by IP** (ao lado de **Create room**) e digite o endereço do anfitrião, por exemplo `10.8.0.5` ou `192.168.1.20:47800`. O anfitrião vê os endereços dele no **ⓘ** ao lado do nome da sala. A porta padrão é 47800.
 
 **Salas privadas** pedem um PIN (de 4 a 6 dígitos) logo abaixo da sala na lista. Depois de 3 PINs errados, seu computador precisa esperar 5 minutos para tentar de novo.
 
@@ -81,16 +81,12 @@ Agora é o seu computador que roda a sala. Se você fechar o ScreenShare, o app 
 
 Qualquer pessoa na sala pode compartilhar, não só o anfitrião, e várias pessoas podem compartilhar ao mesmo tempo. Clique em **Share screen** na barra de controles embaixo dos quadros (à direita do botão vermelho de sair) e escolha uma tela ou janela.
 
-Enquanto você compartilha, o botão vira um botão vermelho **Live** (**Paused** quando pausado):
-
-- **Clique nele** para parar de compartilhar (ele mostra **Stop** quando você aponta para ele).
-- **Clique na seta dele** (ou clique com o botão direito no seu próprio quadro) para o menu de compartilhamento:
+Enquanto você compartilha, o botão vira um botão verde **Sharing**. Clique nele (ou clique com o botão direito no seu próprio quadro) para o menu de compartilhamento:
 
 | Opção | O que faz |
 |---|---|
-| **Pause / Resume** | Congela a transmissão (e o áudio) sem encerrar. |
-| **Mute audio / Unmute audio** | Para de enviar o áudio do sistema enquanto o vídeo continua. Mostra **No audio** se o áudio não está sendo capturado. |
 | **Change source…** | Troca para outra tela ou janela, ou muda as opções de áudio, sem ninguém precisar reconectar. |
+| **Mute audio / Unmute audio** | Para de enviar o áudio do sistema enquanto o vídeo continua. Mostra **No audio** se o áudio não está sendo capturado. |
 | **Quality you send** | A qualidade máxima que você envia (Native, 1080p, 720p a 60 ou 30 fps, 480p). Vale na hora; cada espectador ainda pode receber menos, por exemplo se a janela dele for pequena ou a rede estiver lenta. |
 | **Stop sharing** | Encerra a sua transmissão. |
 
@@ -100,7 +96,7 @@ O botão vermelho à esquerda dele sai da sala (para o anfitrião, encerra a sal
 
 **Quando a sua transmissão tem dificuldade**, a sala diz o motivo: seu computador não consegue codificar rápido o bastante, seu upload não dá conta de todos que assistem, ou sua placa de vídeo ficou sem codificadores de hardware (alguns espectadores passam a ser codificados pela CPU). O aviso só aparece quando o problema dura vários segundos, some quando ele é resolvido e não volta pelo mesmo motivo por 10 minutos. **Lower to …** baixa a sua qualidade máxima um degrau.
 
-**A sua própria transmissão não é exibida para você**, o que poupa a GPU do seu computador. O seu quadro mostra uma prévia que se atualiza mais ou menos uma vez por minuto. Clique em **Show my stream** para exibi-la, e feche (×) para escondê-la de novo. Você continua compartilhando nos dois casos.
+**A sua própria transmissão não é exibida para você**, o que poupa a GPU do seu computador. O seu quadro mostra uma prévia que se atualiza mais ou menos uma vez por minuto. Clique em **Show my stream** para exibi-la; **Hide my stream** no menu do botão direito a esconde de novo. Você continua compartilhando nos dois casos.
 
 **Jogando enquanto compartilha a tela no Windows 10?** O Windows mostraria o cursor do mouse aos espectadores mesmo quando o jogo o esconde. Por isso, enquanto um jogo em tela cheia esconde o cursor, o app compartilha a janela do jogo no lugar, que fica igual sem o cursor, e volta para a sua tela quando você dá alt-tab. A sala mostra um aviso enquanto isso acontece. Veja [solução de problemas](troubleshooting.md#os-espectadores-veem-o-cursor-do-mouse-num-jogo) para jogos em janela.
 
@@ -108,22 +104,25 @@ O botão vermelho à esquerda dele sai da sala (para o anfitrião, encerra a sal
 
 Todos na sala têm um **quadro** no meio: a foto e o nome. Os quadros mantêm o formato 16:9 e crescem o quanto a janela permite. Nada toca até você escolher: quem está compartilhando tem um selo vermelho **Live**, e o quadro mostra uma prévia da transmissão, tirada quando a pessoa começa e atualizada mais ou menos uma vez por minuto.
 
-- Clique em **Watch stream** no quadro, clique na pessoa na coluna de salas (passe o mouse antes para ver a prévia), ou em **Watch all** na barra de controles. O quadro passa a exibir a transmissão. Clique na pessoa de novo na coluna de salas, ou feche a transmissão do quadro (×), para parar de assistir; um olho marca as transmissões que você assiste.
-- **Clique com o botão direito** num quadro para tudo sobre aquela pessoa: assistir ou parar, foco, tela cheia, silenciar e a qualidade que você recebe (o anfitrião também pode parar a transmissão e remover).
-- **Clique num quadro** para colocá-lo em **destaque**, com todos os outros numa faixa embaixo (clicar num deles o coloca em destaque no lugar). Clique de novo no quadro em destaque, no botão de grade no topo, ou aperte **Esc** para voltar à grade. Dois cliques numa transmissão continuam dando zoom.
+- Clique em **Watch stream** no quadro, clique na pessoa na coluna de salas (passe o mouse antes para ver a prévia), ou em **Watch all** na barra de controles. O quadro passa a exibir a transmissão, com o nome da pessoa por cima. Clique na pessoa de novo na coluna de salas, ou em **Stop watching** no menu do botão direito da transmissão, para parar; um olho marca as transmissões que você assiste.
+- **Clique num quadro** para colocá-lo em **destaque**, com todos os outros numa faixa embaixo (clicar num deles o coloca em destaque no lugar). Clique de novo no quadro em destaque, no botão de grade no topo, ou aperte **Esc** para voltar à grade.
+- **Dois cliques numa transmissão** a colocam em tela cheia: a transmissão, todos os outros na faixa e os controles embaixo dela. A faixa, os controles e o ponteiro somem depois de 2,5 s sem mexer o mouse. **Esc** ou o botão embaixo da transmissão volta à janela.
 - No destaque, **Hide others** guarda a faixa para o quadro em destaque ocupar toda a altura; as transmissões nela param de te mandar vídeo até você mostrá-las de novo (o som continua).
 - Quando você está sozinho na sua sala, um quadro **Invite people** mostra o endereço para passar a quem está numa VPN.
 
-Cada transmissão tem:
+**Clique com o botão direito numa transmissão** para tudo sobre ela:
 
-| Controle | O que faz |
+| Opção | O que faz |
 |---|---|
-| **Menu de qualidade** (barra do quadro) | **Auto** acompanha o tamanho em que você assiste, então um quadro pequeno gasta pouca banda. Você também pode limitar em 1080p, 720p, ou 720p/480p/360p a 30 fps. Fica guardado por pessoa. |
-| **Volume** | Cada transmissão tem seu próprio volume e mudo, guardados por pessoa. |
-| **Zoom** | Rodinha do mouse (dá zoom onde está o ponteiro) ou os botões − / +. Arraste para se mover com zoom. Clique duas vezes para dar zoom de 2× ou voltar a caber na tela. |
-| **Tela cheia** | Ocupa a tela toda. Os controles e o ponteiro somem depois de 2,5 s sem mexer o mouse e voltam quando você mexe. |
-| **Selos de estatística** | Taxa de quadros, latência, resolução, codec e tipo de conexão. Dá para desligar nas configurações. |
-| **Tentar de novo (↻)** | Só aparece quando a transmissão caiu para a conexão TCP, mais lenta. Tenta a conexão mais rápida de novo. |
+| **Volume** (controle deslizante) e **Mute** | Cada transmissão tem seu próprio volume e mudo, guardados por pessoa. |
+| **Stop watching**, **Focus**, **Full screen** | Como acima. |
+| **Quality you receive** | **Auto** acompanha o tamanho em que você assiste, então um quadro pequeno gasta pouca banda. Você também pode limitar em 1080p, 720p, ou 720p/480p/360p a 30 fps. Fica guardado por pessoa. |
+| **Try the faster connection again** | Só quando a transmissão caiu para a conexão TCP, mais lenta. |
+| **Stop *nome*'s stream**, **Remove from room** | Só o anfitrião. |
+
+**Embaixo de uma transmissão em destaque**, o alto-falante a silencia, ou volta ao último volume; aponte para ele para ver o controle de volume. O botão ao lado coloca em tela cheia.
+
+Os **selos de estatística** numa transmissão mostram taxa de quadros, latência, resolução, codec e tipo de conexão; dá para desligar em **Settings → Appearance**.
 
 Se uma transmissão não conectar em 8 segundos (algumas VPNs e firewalls bloqueiam), o app passa sozinho para uma conexão TCP. Ela acrescenta um pouco de atraso, mas continua funcionando.
 
@@ -142,7 +141,7 @@ O **ⓘ** ao lado do nome da sala mostra os detalhes dela: privacidade, há quan
 
 - alternar entre **Public** e **Private** a qualquer momento; quem já está dentro continua conectado;
 - mostrar ou esconder o **PIN**, **copiar**, **gerar um novo** ou **definir o seu**;
-- ver os endereços que as pessoas podem usar no **Connect by IP**.
+- ver os endereços que as pessoas podem usar no **Join by IP**.
 
 Clicar com o botão direito numa pessoa (no quadro dela, ou no nome dela na coluna de salas, onde também aparece um botão **⋯** ao passar o mouse) permite **parar a transmissão** dela ou **removê-la** da sala (a pessoa não consegue voltar nesta sessão da sala). No chat você pode **apagar mensagens** e **silenciar o chat** (as pessoas continuam vendo o histórico).
 
@@ -150,39 +149,40 @@ Clicar com o botão direito numa pessoa (no quadro dela, ou no nome dela na colu
 
 ## Configurações
 
-Abra as configurações pelo ícone de engrenagem embaixo da coluna de salas.
+Abra as configurações pelo ícone de engrenagem embaixo da coluna de salas. A lista à esquerda pula para uma seção e acompanha a rolagem.
 
 | Seção | Configuração | Padrão | Significado |
 |---|---|---|---|
 | Profile | Profile picture | nenhuma | Aparece no lugar das suas iniciais. |
 | Profile | Display name | seu usuário do computador | Até 32 caracteres. |
 | Appearance | Theme | Classic | As cores do app: **Classic** (azul sobre cinza-azulado), **Graphite** (cinzas neutros e índigo, para as transmissões manterem as cores reais), **Midnight** (preto-azulado e verde-água) ou **Charcoal** (cinzas quentes e violeta). Vale na hora. |
-| Streaming quality | Maximum quality | 1080p @ 60 fps | O máximo que você envia ao compartilhar. Vale na hora. |
-| Streaming quality | Adaptive quality | ligado | Reduz resolução/taxa de quadros por espectador quando a rede dele sofre. |
-| Streaming quality | Video codec | Automatic | O automático prefere H.264 em hardware. Dá para forçar H.264, H.265, VP9 ou AV1 se os dois lados suportarem. A tabela abaixo mostra o que o seu computador suporta. |
-| Streaming quality | Optimize for | Automatic | *Smooth motion* mantém 60 fps. *Sharp text* mantém a resolução. *Automatic* (Windows) usa movimento suave enquanto um jogo ou vídeo em tela cheia está na frente do que você compartilha, e texto nítido na área de trabalho; no macOS quer dizer movimento suave. O painel Stats mostra qual está em uso. |
-| Streaming quality | Upload limit when sharing | 100 Mbps | O seu upload total, dividido de forma justa entre quem te assiste. Diminua no Wi-Fi ou na VPN. |
-| Network | Encrypt connections (TLS) | ligado | Cifra o chat e a sinalização. O vídeo é sempre cifrado. |
-| Network | Always use TCP transport | desligado | Para redes que bloqueiam UDP. Acrescenta um pouco de atraso. |
-| Network | Hosting port | 47800 | A primeira porta tentada quando você hospeda. |
-| Network | Rejoin last room on startup | desligado | Entra automaticamente na última sala quando o app abre. |
-| Behaviour | Chat notifications | ligado | Quando a janela está em segundo plano. |
-| Behaviour | Pause sharing while minimized | desligado | Retoma quando você restaura a janela. |
-| Behaviour | Show FPS and latency overlay | ligado | Os selos em cada transmissão. |
-| Behaviour | Share system audio by default | ligado | Deixa o interruptor de áudio pré-marcado. |
-| Behaviour | Leave out Discord by default | ligado | Só no Windows. Deixa o interruptor do Discord pré-marcado. |
-| Behaviour | Only the shared app's sound by default | ligado | Só no Windows. Deixa **Only this app's sound** pré-marcado quando você compartilha uma janela. |
+| Appearance | Show FPS and latency on streams | ligado | Os selos em cada transmissão. |
+| Sharing | Maximum quality | 1080p @ 60 fps | O máximo que você envia ao compartilhar. Vale na hora. |
+| Sharing | Optimize for | Automatic | *Smooth motion* mantém 60 fps. *Sharp text* mantém a resolução. *Automatic* (Windows) usa movimento suave enquanto um jogo ou vídeo em tela cheia está na frente do que você compartilha, e texto nítido na área de trabalho; no macOS quer dizer movimento suave. O painel Stats mostra qual está em uso. |
+| Sharing | Upload limit when sharing | 100 Mbps | O seu upload total, dividido de forma justa entre quem te assiste. Diminua no Wi-Fi ou na VPN. |
+| Sharing | Share system audio by default | ligado | Deixa o interruptor de áudio pré-marcado. |
+| Sharing | Only the shared app's sound by default | ligado | Só no Windows. Deixa **Only this app's sound** pré-marcado quando você compartilha uma janela. |
+| Sharing | Leave out Discord by default | ligado | Só no Windows. Deixa o interruptor do Discord pré-marcado. |
+| Sharing | Pause sharing while minimized | desligado | Retoma quando você restaura a janela. |
+| Notifications | Chat notifications | ligado | Quando a janela está em segundo plano. |
+| Connection | Rejoin last room on startup | desligado | Entra automaticamente na última sala quando o app abre. |
+| Connection | Encrypt connections (TLS) | ligado | Cifra o chat e a sinalização. O vídeo é sempre cifrado. |
+| Connection | Always use TCP transport | desligado | Para redes que bloqueiam UDP. Acrescenta um pouco de atraso. |
+| Connection | Hosting port | 47800 | A primeira porta tentada quando você hospeda. |
+| Advanced | Video codec | Automatic | O automático prefere H.264 em hardware. Dá para forçar H.264, H.265, VP9 ou AV1 se os dois lados suportarem. A tabela abaixo dele mostra o que o seu computador suporta. |
+| Advanced | Adaptive quality | ligado | Reduz resolução/taxa de quadros por espectador quando a rede dele sofre. |
 
-O rodapé mostra a versão do app e tem o botão **Open logs**.
+**About** mostra a versão do app e tem o botão **Open logs**.
 
 ## Mouse e teclado
 
 | Onde | Ação | Resultado |
 |---|---|---|
-| Uma transmissão | Rodinha do mouse | Zoom para dentro/fora no ponteiro |
-| Uma transmissão | Clique duplo | Zoom de 2× / voltar a caber |
-| Uma transmissão com zoom | Arrastar | Mover a imagem |
-| Tela cheia | Mexer o mouse | Mostrar os controles de novo |
+| Um quadro | Clique | Destaque / voltar à grade |
+| Uma transmissão | Clique duplo | Tela cheia |
+| Um quadro | Botão direito | O menu dele (volume, qualidade, …) |
+| Uma transmissão em destaque | Esc | Sai da tela cheia, depois volta à grade |
+| Tela cheia | Mexer o mouse | Mostrar a faixa e os controles de novo |
 | Recorte da foto | Arrastar / rodinha / controle deslizante | Mover / zoom |
 | Recorte da foto | Setas, Shift + setas, + e − | Mover pouco, mover mais, zoom |
 | Qualquer janela de diálogo | Esc | Fecha o diálogo do topo |

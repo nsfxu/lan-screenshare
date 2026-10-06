@@ -73,7 +73,7 @@ npx electron . --profile=alice
 npx electron . --profile=bob
 ```
 
-O `--profile=alice` guarda tudo numa pasta de dados separada (`ScreenShare-alice`). Uma instância cria a sala; a outra a encontra na lista (mDNS no mesmo computador), ou você pode usar **Connect by IP** com `127.0.0.1:47800`.
+O `--profile=alice` guarda tudo numa pasta de dados separada (`ScreenShare-alice`). Uma instância cria a sala; a outra a encontra na lista (mDNS no mesmo computador), ou você pode usar **Join by IP** com `127.0.0.1:47800`.
 
 Para deixá-las fora da tela que você está usando, adicione `--display=<n>` (a tela, numerada como no seletor de fontes: "Tela 3") e `--tile=<i>/<total>` (espaços lado a lado nela). Uma janela posicionada assim abre sem pegar o foco:
 
