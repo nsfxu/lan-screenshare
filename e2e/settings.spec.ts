@@ -16,7 +16,11 @@ test('Settings lists its sections on the side: a click jumps there, scrolling fo
   await expect(win.getByText('Rejoin last room on startup')).toBeInViewport()
   await expect(nav.getByRole('button', { name: 'Connection' })).toHaveAttribute('aria-current', 'true')
 
-  // Scrolling to the end makes About current.
+  // Scrolling to the end makes About current (once the jump's scrolling is over).
+  await win.waitForTimeout(800)
+  // (In a short window, the jump to Connection may already be at the end: start from the top.)
+  await win.locator('.settings').evaluate((el) => el.scrollTo({ top: 0 }))
+  await expect(nav.getByRole('button', { name: 'Profile' })).toHaveAttribute('aria-current', 'true')
   await win.locator('.settings').evaluate((el) => el.scrollTo({ top: el.scrollHeight }))
   await expect(nav.getByRole('button', { name: 'About' })).toHaveAttribute('aria-current', 'true')
   await expect(win.getByRole('button', { name: 'Open logs' })).toBeInViewport()
