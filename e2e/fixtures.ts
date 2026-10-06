@@ -65,6 +65,8 @@ async function launchPerson(
       }
       replace(ch.listSources, () => [fake])
       replace(ch.nativeAudioAvailable, () => false)
+      // The fake screen brings its own tone (fakeScreenCapture), so the audio switch is offered on Linux too.
+      replace(ch.audioSupported, () => true)
       replace(ch.nativeAudioStart, () => Promise.reject(new Error('disabled in end-to-end tests')))
       replace(ch.hiddenCursorAffected, () => false)
       replace(ch.hiddenCursorWatch, () => true)
@@ -74,6 +76,7 @@ async function launchPerson(
     {
       listSources: IPC.listSources,
       nativeAudioAvailable: IPC.nativeAudioAvailable,
+      audioSupported: IPC.audioSupported,
       nativeAudioStart: IPC.nativeAudioStart,
       hiddenCursorAffected: IPC.hiddenCursorAffected,
       hiddenCursorWatch: IPC.hiddenCursorWatch,

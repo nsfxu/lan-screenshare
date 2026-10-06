@@ -346,9 +346,12 @@ export function SettingsPanel({
       return [id, el ? el.offsetTop - body.offsetTop : 0]
     })
   }
+  // After a click in the list, that section stays current while the page scrolls to it (and if it
+  // can't reach the top, near the end of a short window); scrolling by hand takes over afterwards.
+  const jumping = useRef<number | null>(null)
   const followScroll = (): void => {
     const body = bodyRef.current
-    if (!body) return
+    if (!body || jumping.current !== null) return
     const tops = sectionTops()
     // At the very bottom, the last section counts even if it's short.
     if (body.scrollTop + body.clientHeight >= body.scrollHeight - 4) return setActive(tops[tops.length - 1][0])
@@ -361,6 +364,10 @@ export function SettingsPanel({
     if (!body || top === undefined) return
     body.scrollTo({ top, behavior: 'smooth' })
     setActive(id)
+    if (jumping.current !== null) clearTimeout(jumping.current)
+    jumping.current = window.setTimeout(() => {
+      jumping.current = null
+    }, 700)
   }
 
   return (
