@@ -104,7 +104,9 @@ const updatedChangelog =
 const notesPath = file('docs', 'releases', `${tag}.md`)
 const compatibility = protocolChanged
   ? `**Everyone in a room needs this version**: older versions can't join its rooms, and it can't join theirs.`
-  : `Works in the same rooms as other ${nextParts[0]}.x versions, so people can update when they like.`
+  : nextParts[0] > major
+    ? `Works in the same rooms as ${major}.x versions, so people can update when they like.`
+    : `Works in the same rooms as other ${nextParts[0]}.x versions, so people can update when they like.`
 const notes = `TODO: one or two sentences on what this version brings.
 
 > 🇧🇷 Resumo em português no final.

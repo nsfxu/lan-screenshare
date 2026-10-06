@@ -162,7 +162,7 @@ ScreenShare follows [Semantic Versioning](https://semver.org/), where "breaking"
 
 | Bump | When | Example |
 |---|---|---|
-| **Major** | `PROTOCOL_VERSION` changed: older apps can't join the new rooms, so everyone must update | 1.4.2 → 2.0.0 |
+| **Major** | `PROTOCOL_VERSION` changed (older apps can't join the new rooms, so everyone must update), or a big redesign that keeps the protocol (2.0.0: the new layout). The notes say which. | 1.4.2 → 2.0.0 |
 | **Minor** | New features that still work with other apps of the same major version | 1.0.0 → 1.1.0 |
 | **Patch** | Fixes only | 1.1.0 → 1.1.1 |
 

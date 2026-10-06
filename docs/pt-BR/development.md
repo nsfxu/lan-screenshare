@@ -162,7 +162,7 @@ O ScreenShare segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/)
 
 | Aumento | Quando | Exemplo |
 |---|---|---|
-| **Maior** (major) | O `PROTOCOL_VERSION` mudou: apps antigos não conseguem entrar nas salas novas, então todos precisam atualizar | 1.4.2 → 2.0.0 |
+| **Maior** (major) | O `PROTOCOL_VERSION` mudou (apps antigos não conseguem entrar nas salas novas, então todos precisam atualizar), ou um grande redesenho que mantém o protocolo (2.0.0: o novo layout). As notas dizem qual. | 1.4.2 → 2.0.0 |
 | **Menor** (minor) | Novidades que ainda funcionam com outros apps da mesma versão maior | 1.0.0 → 1.1.0 |
 | **Correção** (patch) | Só correções | 1.1.0 → 1.1.1 |
 
