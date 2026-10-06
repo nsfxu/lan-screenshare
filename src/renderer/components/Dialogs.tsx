@@ -266,6 +266,17 @@ export function ChangeSourceDialog({
 
 // ---------------------------------------------------------------------------
 
+const SETTINGS_SECTIONS = [
+  ['profile', 'Profile'],
+  ['appearance', 'Appearance'],
+  ['sharing', 'Sharing'],
+  ['notifications', 'Notifications'],
+  ['connection', 'Connection'],
+  ['advanced', 'Advanced'],
+  ['about', 'About']
+] as const
+type SettingsSection = (typeof SETTINGS_SECTIONS)[number][0]
+
 export function SettingsPanel({
   settings,
   encoders,
@@ -324,183 +335,230 @@ export function SettingsPanel({
     </label>
   )
 
+  // The section list on the left jumps to a section and follows the scrolling.
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const [active, setActive] = useState<SettingsSection>('profile')
+  const sectionTops = (): [SettingsSection, number][] => {
+    const body = bodyRef.current
+    if (!body) return []
+    return SETTINGS_SECTIONS.map(([id]) => {
+      const el = body.querySelector<HTMLElement>(`[data-section="${id}"]`)
+      return [id, el ? el.offsetTop - body.offsetTop : 0]
+    })
+  }
+  const followScroll = (): void => {
+    const body = bodyRef.current
+    if (!body) return
+    const tops = sectionTops()
+    // At the very bottom, the last section counts even if it's short.
+    if (body.scrollTop + body.clientHeight >= body.scrollHeight - 4) return setActive(tops[tops.length - 1][0])
+    const current = tops.filter(([, top]) => top <= body.scrollTop + 24).pop()
+    if (current) setActive(current[0])
+  }
+  const jumpTo = (id: SettingsSection): void => {
+    const body = bodyRef.current
+    const top = sectionTops().find(([s]) => s === id)?.[1]
+    if (!body || top === undefined) return
+    body.scrollTo({ top, behavior: 'smooth' })
+    setActive(id)
+  }
+
   return (
     <>
       <Modal title="Settings" onClose={onClose} wide>
-        <div className="modal-body settings">
-          <section>
-            <h3>Profile</h3>
-            <div className="form-row inline">
-              <label>
-                Profile picture
-                <span className="muted small block">Shown to everyone in the room instead of your initials</span>
-              </label>
-              <div className="avatar-picker">
-                <Avatar name={settings.displayName} color="var(--accent)" image={settings.avatar} size="large" />
-                <label className="btn small">
-                  {settings.avatar ? 'Change…' : 'Choose…'}
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp,image/gif,image/bmp"
-                    hidden
-                    onChange={(e) => {
-                      void chooseAvatar(e.target.files?.[0])
-                      e.target.value = '' // choosing the same file again still fires
-                    }}
-                  />
+        <div className="settings-layout">
+          <nav className="settings-nav" aria-label="Settings sections">
+            {SETTINGS_SECTIONS.map(([id, label]) => (
+              <button
+                key={id}
+                className={active === id ? 'active' : ''}
+                aria-current={active === id ? 'true' : undefined}
+                onClick={() => jumpTo(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </nav>
+          <div className="modal-body settings" ref={bodyRef} onScroll={followScroll}>
+            <section data-section="profile">
+              <h3>Profile</h3>
+              <div className="form-row inline">
+                <label>
+                  Profile picture
+                  <span className="muted small block">Shown to everyone in the room instead of your initials</span>
                 </label>
-                {settings.avatar && (
-                  <button className="btn ghost small" onClick={() => onChange({ avatar: null })}>
-                    Remove
-                  </button>
-                )}
+                <div className="avatar-picker">
+                  <Avatar name={settings.displayName} color="var(--accent)" image={settings.avatar} size="large" />
+                  <label className="btn small">
+                    {settings.avatar ? 'Change…' : 'Choose…'}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif,image/bmp"
+                      hidden
+                      onChange={(e) => {
+                        void chooseAvatar(e.target.files?.[0])
+                        e.target.value = '' // choosing the same file again still fires
+                      }}
+                    />
+                  </label>
+                  {settings.avatar && (
+                    <button className="btn ghost small" onClick={() => onChange({ avatar: null })}>
+                      Remove
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-            {avatarError && <div className="notice error">{avatarError}</div>}
-            <div className="form-row inline">
-              <label htmlFor="display-name">Display name</label>
-              <input
-                id="display-name"
-                maxLength={32}
-                defaultValue={settings.displayName}
-                onBlur={(e) => e.target.value.trim() && onChange({ displayName: e.target.value.trim() })}
-              />
-            </div>
-          </section>
+              {avatarError && <div className="notice error">{avatarError}</div>}
+              <div className="form-row inline">
+                <label htmlFor="display-name">Display name</label>
+                <input
+                  id="display-name"
+                  maxLength={32}
+                  defaultValue={settings.displayName}
+                  onBlur={(e) => e.target.value.trim() && onChange({ displayName: e.target.value.trim() })}
+                />
+              </div>
+            </section>
 
-          <section>
-            <h3>Appearance</h3>
-            <div className="theme-picker" role="radiogroup" aria-label="Theme">
-              {THEMES.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={settings.theme === t.id}
-                  className={`theme-option ${settings.theme === t.id ? 'selected' : ''}`}
-                  onClick={() => onChange({ theme: t.id })}
-                >
-                  <span className="theme-preview" aria-hidden="true">
-                    {t.swatches.map((c, i) => (
-                      <span key={i} style={{ background: c }} />
-                    ))}
-                  </span>
-                  <span className="theme-label">{t.label}</span>
-                  <span className="muted small">{t.description}</span>
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section>
-            <h3>Streaming quality</h3>
-            <div className="form-row inline">
-              <label htmlFor="max-quality">
-                Maximum quality
-                <span className="muted small block">Applies immediately, also while sharing</span>
-              </label>
-              <select
-                id="max-quality"
-                value={settings.maxQuality}
-                onChange={(e) => onChange({ maxQuality: e.target.value as Settings['maxQuality'] })}
-              >
-                {QUALITY_PRESETS.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label} · up to {p.maxBitrate / 1_000_000} Mbps
-                  </option>
+            <section data-section="appearance">
+              <h3>Appearance</h3>
+              <div className="theme-picker" role="radiogroup" aria-label="Theme">
+                {THEMES.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={settings.theme === t.id}
+                    className={`theme-option ${settings.theme === t.id ? 'selected' : ''}`}
+                    onClick={() => onChange({ theme: t.id })}
+                  >
+                    <span className="theme-preview" aria-hidden="true">
+                      {t.swatches.map((c, i) => (
+                        <span key={i} style={{ background: c }} />
+                      ))}
+                    </span>
+                    <span className="theme-label">{t.label}</span>
+                    <span className="muted small">{t.description}</span>
+                  </button>
                 ))}
-              </select>
-            </div>
-            {toggle('adaptiveQuality', 'Adaptive quality', 'Lower resolution/frame rate per viewer when the network degrades')}
-            <div className="form-row inline">
-              <label htmlFor="codec">Video codec</label>
-              <select id="codec" value={settings.codec} onChange={(e) => onChange({ codec: e.target.value as Settings['codec'] })}>
-                <option value="auto">Automatic (hardware H.264 preferred)</option>
-                <option value="h264">H.264</option>
-                <option value="h265">H.265 / HEVC</option>
-                <option value="vp9">VP9</option>
-                <option value="av1">AV1</option>
-              </select>
-            </div>
-            <div className="form-row inline">
-              <label htmlFor="content-hint">Optimize for</label>
-              <select
-                id="content-hint"
-                value={settings.contentHint}
-                onChange={(e) => onChange({ contentHint: e.target.value as Settings['contentHint'] })}
-              >
-                <option value="auto">Automatic (smooth for fullscreen games and videos)</option>
-                <option value="motion">Smooth motion (keep 60 fps)</option>
-                <option value="detail">Sharp text (keep resolution)</option>
-              </select>
-            </div>
-            <div className="form-row inline">
-              <label htmlFor="upload-budget">
-                Upload limit when sharing
-                <span className="muted small block">Shared between everyone watching you; applies immediately</span>
-              </label>
-              <select
-                id="upload-budget"
-                value={settings.uploadBudgetMbps}
-                onChange={(e) => onChange({ uploadBudgetMbps: Number(e.target.value) })}
-              >
-                <option value={0}>Unlimited (wired gigabit)</option>
-                <option value={200}>200 Mbps</option>
-                <option value={100}>100 Mbps (default)</option>
-                <option value={60}>60 Mbps (good Wi-Fi)</option>
-                <option value={30}>30 Mbps</option>
-                <option value={15}>15 Mbps (slow Wi-Fi / VPN)</option>
-              </select>
-            </div>
-            <CodecTable encoders={encoders} decoders={decoders} />
-          </section>
+              </div>
+              {toggle('showStatsOverlay', 'Show FPS and latency on streams')}
+            </section>
 
-          <section>
-            <h3>Network</h3>
-            {toggle('useTls', 'Encrypt connections (TLS)', 'Chat and signaling use TLS; video is always DTLS-SRTP encrypted')}
-            {toggle('forceTcp', 'Always use TCP transport', 'For VPNs/firewalls that block UDP (adds some latency)')}
-            <div className="form-row inline">
-              <label htmlFor="port">Hosting port</label>
-              <input
-                id="port"
-                type="number"
-                min={0}
-                max={65535}
-                defaultValue={settings.preferredPort}
-                onBlur={(e) => onChange({ preferredPort: Number(e.target.value) })}
-              />
-            </div>
-            {toggle('autoRejoin', 'Rejoin last room on startup')}
-          </section>
+            <section data-section="sharing">
+              <h3>Sharing</h3>
+              <div className="form-row inline">
+                <label htmlFor="max-quality">
+                  Maximum quality
+                  <span className="muted small block">Applies immediately, also while sharing</span>
+                </label>
+                <select
+                  id="max-quality"
+                  value={settings.maxQuality}
+                  onChange={(e) => onChange({ maxQuality: e.target.value as Settings['maxQuality'] })}
+                >
+                  {QUALITY_PRESETS.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label} · up to {p.maxBitrate / 1_000_000} Mbps
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-row inline">
+                <label htmlFor="content-hint">Optimize for</label>
+                <select
+                  id="content-hint"
+                  value={settings.contentHint}
+                  onChange={(e) => onChange({ contentHint: e.target.value as Settings['contentHint'] })}
+                >
+                  <option value="auto">Automatic (smooth for fullscreen games and videos)</option>
+                  <option value="motion">Smooth motion (keep 60 fps)</option>
+                  <option value="detail">Sharp text (keep resolution)</option>
+                </select>
+              </div>
+              <div className="form-row inline">
+                <label htmlFor="upload-budget">
+                  Upload limit when sharing
+                  <span className="muted small block">Shared between everyone watching you; applies immediately</span>
+                </label>
+                <select
+                  id="upload-budget"
+                  value={settings.uploadBudgetMbps}
+                  onChange={(e) => onChange({ uploadBudgetMbps: Number(e.target.value) })}
+                >
+                  <option value={0}>Unlimited (wired gigabit)</option>
+                  <option value={200}>200 Mbps</option>
+                  <option value={100}>100 Mbps (default)</option>
+                  <option value={60}>60 Mbps (good Wi-Fi)</option>
+                  <option value={30}>30 Mbps</option>
+                  <option value={15}>15 Mbps (slow Wi-Fi / VPN)</option>
+                </select>
+              </div>
+              {toggle('shareAudio', 'Share system audio by default', 'Pre-selects the audio switch when you start sharing')}
+              {info?.platform === 'win32' &&
+                toggle(
+                  'appAudioOnly',
+                  "Only the shared app's sound by default",
+                  'When you share a single window, viewers hear only that app'
+                )}
+              {info?.platform === 'win32' &&
+                toggle(
+                  'excludeDiscordAudio',
+                  'Leave out Discord by default',
+                  "People in your Discord call don't hear themselves through your stream"
+                )}
+              {toggle('pauseOnMinimize', 'Pause sharing while minimized', 'Sharing resumes automatically when restored')}
+            </section>
 
-          <section>
-            <h3>Behaviour</h3>
-            {toggle('notifications', 'Chat notifications when the window is in the background')}
-            {toggle('pauseOnMinimize', 'Pause sharing while minimized', 'Sharing resumes automatically when restored')}
-            {toggle('showStatsOverlay', 'Show FPS and latency overlay')}
-            {toggle('shareAudio', 'Share system audio by default', 'Pre-selects the audio switch when you start sharing')}
-            {info?.platform === 'win32' &&
-              toggle(
-                'excludeDiscordAudio',
-                'Leave out Discord by default',
-                "People in your Discord call don't hear themselves through your stream"
-              )}
-            {info?.platform === 'win32' &&
-              toggle(
-                'appAudioOnly',
-                "Only the shared app's sound by default",
-                'When you share a single window, viewers hear only that app'
-              )}
-          </section>
+            <section data-section="notifications">
+              <h3>Notifications</h3>
+              {toggle('notifications', 'Chat notifications when the window is in the background')}
+            </section>
 
-          <footer className="modal-footer spread">
-            <span className="muted small">
-              {info ? `ScreenShare ${info.version} · ${info.platform}` : ''}
-            </span>
-            <button className="btn ghost small" onClick={() => void window.api.system.openLogs()}>
-              <Icon name="folder" size={14} /> Open logs
-            </button>
-          </footer>
+            <section data-section="connection">
+              <h3>Connection</h3>
+              {toggle('autoRejoin', 'Rejoin last room on startup')}
+              {toggle('useTls', 'Encrypt connections (TLS)', 'Chat and signaling use TLS; video is always DTLS-SRTP encrypted')}
+              {toggle('forceTcp', 'Always use TCP transport', 'For VPNs/firewalls that block UDP (adds some latency)')}
+              <div className="form-row inline">
+                <label htmlFor="port">Hosting port</label>
+                <input
+                  id="port"
+                  type="number"
+                  min={0}
+                  max={65535}
+                  defaultValue={settings.preferredPort}
+                  onBlur={(e) => onChange({ preferredPort: Number(e.target.value) })}
+                />
+              </div>
+            </section>
+
+            <section data-section="advanced">
+              <h3>Advanced</h3>
+              <div className="form-row inline">
+                <label htmlFor="codec">Video codec</label>
+                <select id="codec" value={settings.codec} onChange={(e) => onChange({ codec: e.target.value as Settings['codec'] })}>
+                  <option value="auto">Automatic (hardware H.264 preferred)</option>
+                  <option value="h264">H.264</option>
+                  <option value="h265">H.265 / HEVC</option>
+                  <option value="vp9">VP9</option>
+                  <option value="av1">AV1</option>
+                </select>
+              </div>
+              {toggle('adaptiveQuality', 'Adaptive quality', 'Lower resolution/frame rate per viewer when the network degrades')}
+              <CodecTable encoders={encoders} decoders={decoders} />
+            </section>
+
+            <section data-section="about">
+              <h3>About</h3>
+              <div className="form-row inline">
+                <span>{info ? `ScreenShare ${info.version} · ${info.platform}` : ''}</span>
+                <button className="btn ghost small" onClick={() => void window.api.system.openLogs()}>
+                  <Icon name="folder" size={14} /> Open logs
+                </button>
+              </div>
+            </section>
+          </div>
         </div>
       </Modal>
       {cropping && (

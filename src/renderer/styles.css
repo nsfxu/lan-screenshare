@@ -976,6 +976,43 @@ input[type='checkbox']:checked::after {
   border-color: var(--accent);
   background: var(--accent-soft);
 }
+/* Settings: the section list on the left, the options scrolling on the right */
+.settings-layout {
+  display: flex;
+  min-height: 0;
+  height: min(640px, calc(100vh - 140px));
+}
+.settings-nav {
+  width: 150px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 8px 20px 12px;
+  border-right: 1px solid var(--border);
+}
+.settings-nav button {
+  padding: 6px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-muted);
+  text-align: left;
+  cursor: pointer;
+}
+.settings-nav button:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.settings-nav button.active {
+  background: var(--bg-hover);
+  color: var(--text);
+  font-weight: 600;
+}
+.settings-layout .modal-body {
+  flex: 1;
+  min-width: 0;
+}
 .settings section {
   display: flex;
   flex-direction: column;
