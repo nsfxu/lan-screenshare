@@ -31,7 +31,7 @@ test('a room on a newer, incompatible version says to update', async ({ people }
     const { version } = await alice.win.evaluate(() => window.api.system.info())
     const { port } = future.address() as AddressInfo
 
-    await alice.win.getByRole('button', { name: 'Connect by IP' }).click()
+    await alice.win.getByRole('button', { name: 'Join by IP' }).click()
     await alice.win.getByPlaceholder(/^Host address/).fill(`127.0.0.1:${port}`)
     await alice.win.getByPlaceholder(/^Host address/).press('Enter')
     await expect(alice.win.locator('.manual-connect .error-text')).toHaveText(
@@ -59,6 +59,9 @@ test('someone in the room runs a newer version: the others hear about it once', 
     ipcMain.removeHandler(channel)
     ipcMain.handle(channel, () => ({ version: '9.9.0', platform: process.platform, logDir: '' }))
   }, IPC.appInfo)
+  // The app asks for its version once and keeps it: start Bob's window again to pick up the new one.
+  await bob.win.reload()
+  await bob.win.waitForSelector('.rooms-sidebar')
   const { version } = await alice.win.evaluate(() => window.api.system.info())
 
   const port = await createRoom(alice)

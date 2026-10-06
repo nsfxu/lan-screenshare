@@ -177,13 +177,13 @@ export async function createRoom(host: Person, privacy: 'public' | 'private' = '
   return port
 }
 
-/** Adds the room at 127.0.0.1:port with Connect by IP and clicks it in the room list. */
+/** Adds the room at 127.0.0.1:port with Join by IP and clicks it in the room list. */
 export async function joinByIp(guest: Person, port: number): Promise<void> {
   const { win } = guest
   // A small window shows the rooms as a strip: open them first.
   const showRooms = win.getByRole('button', { name: 'Show rooms' })
   if (await showRooms.isVisible()) await showRooms.click()
-  await win.getByRole('button', { name: 'Connect by IP' }).click()
+  await win.getByRole('button', { name: 'Join by IP' }).click()
   await win.getByPlaceholder(/^Host address/).fill(`127.0.0.1:${port}`)
   await win.getByPlaceholder(/^Host address/).press('Enter')
   await win.locator(`.room-row-main[title*="127.0.0.1:${port}"]`).click()

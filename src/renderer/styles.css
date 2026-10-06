@@ -630,7 +630,15 @@ input[type='checkbox']:checked::after {
   border-bottom: 1px solid var(--border);
 }
 .rooms-actions .btn {
-  margin-right: 4px;
+  flex: 1;
+  justify-content: center;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.rooms-refresh {
+  width: 22px;
+  height: 22px;
+  margin-left: auto;
 }
 .icon-btn.active {
   color: var(--text);
