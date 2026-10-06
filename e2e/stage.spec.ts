@@ -24,8 +24,8 @@ test('everyone has a tile: watch from it, focus it, and find the room details be
   await expect.poll(() => decodedFrames(bob.win), { timeout: 30_000 }).toBeGreaterThan(10)
   await expect(bob.win.locator('.stage-grid > .tile')).toHaveCount(2)
 
-  // Focus puts it in the spotlight with the others below; Esc goes back.
-  await bob.win.getByRole('button', { name: 'Focus this stream' }).click()
+  // A click puts it in the spotlight with the others below; Esc goes back.
+  await bob.win.locator('.stream-tile').click()
   await expect(bob.win.locator('.spotlight-main video')).toHaveCount(1)
   await expect(bob.win.locator('.spotlight-strip .person-tile', { hasText: 'Bob' })).toBeVisible()
   if (shots) await bob.win.screenshot({ path: `${shots}/3-focus.png` })

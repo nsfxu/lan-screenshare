@@ -1178,20 +1178,12 @@ input[type='checkbox']:checked::after {
   min-height: 0;
   user-select: none;
 }
-.screen-viewer.zoomed {
-  cursor: grab;
-}
-.screen-viewer.dragging {
-  cursor: grabbing;
-}
 .screen-viewer video {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transform-origin: center center;
-  will-change: transform;
 }
 .screen-placeholder {
   position: absolute;
@@ -1226,8 +1218,8 @@ input[type='checkbox']:checked::after {
 }
 .screen-overlay {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: 36px;
+  left: 10px;
   pointer-events: none;
 }
 .stat-badges {
@@ -1252,44 +1244,6 @@ input[type='checkbox']:checked::after {
 }
 .stat-badge.bad {
   color: var(--bad);
-}
-.screen-controls {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.62);
-  backdrop-filter: blur(6px);
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.screen-viewer:hover .screen-controls {
-  opacity: 1;
-}
-/* Full screen, no recent mouse movement: hide the controls and the cursor,
-   unless the pointer rests on the controls or they have keyboard focus. */
-.screen-viewer.idle {
-  cursor: none;
-}
-.screen-viewer.idle .screen-controls {
-  cursor: default;
-}
-.screen-viewer.idle .screen-controls:not(:hover):not(:has(:focus-visible)) {
-  opacity: 0;
-}
-.screen-controls .icon-btn {
-  color: #ddd;
-}
-.zoom-label {
-  font-family: var(--mono);
-  font-size: 11px;
-  min-width: 42px;
-  text-align: center;
-  color: #ddd;
 }
 .stats-popover {
   position: absolute;
@@ -1740,26 +1694,6 @@ button.member-main {
   }
 }
 
-/* volume control (screen viewer) */
-.volume {
-  display: flex;
-  align-items: center;
-  margin-right: 4px;
-  padding-right: 6px;
-  border-right: 1px solid rgba(255, 255, 255, 0.15);
-}
-.volume.unavailable {
-  opacity: 0.45;
-}
-.volume input[type='range'] {
-  width: 84px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  box-shadow: none;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
 .stat-badge.muted-badge {
   color: var(--ok);
 }
@@ -1796,12 +1730,96 @@ button.member-main {
 .spotlight-main > .tile {
   flex: 1;
 }
+.focus-bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin: -2px 0;
+  min-height: 30px;
+  transition: opacity 0.2s;
+}
+.focus-bar-controls {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 2px;
+}
+.volume-control {
+  position: relative;
+}
+.volume-pop {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  z-index: 10;
+}
+/* A bridge over the gap, so the pointer can move from the speaker to the slider. */
+.volume-pop::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 8px;
+}
+.volume-control:hover .volume-pop,
+.volume-control:focus-within .volume-pop {
+  display: flex;
+}
+.volume-pop input[type='range'],
+.menu-slider input[type='range'] {
+  width: 120px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.menu-slider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.menu-slider-value {
+  min-width: 34px;
+  text-align: right;
+}
+/* Full screen: the stage fills the screen; after a moment without the mouse moving,
+   everything but the focused stream fades, and so does the cursor. */
+.stage-area.fullscreen {
+  background: var(--stage);
+}
+.stage-area.idle {
+  cursor: none;
+}
+.stage-area.idle .focus-bar,
+.stage-area.idle .spotlight-strip {
+  opacity: 0;
+}
+.spotlight-strip {
+  transition: opacity 0.2s;
+}
 .strip-toggle {
-  align-self: center;
+  justify-self: center;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin: -2px 0;
   padding: 2px 10px;
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -1849,25 +1867,20 @@ button.member-main {
   flex: 1;
 }
 .tile-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 3px 4px 3px 10px;
-  background: var(--bg-elev);
-  border-bottom: 1px solid var(--border);
+  padding: 6px 10px 14px;
+  background: linear-gradient(rgba(0, 0, 0, 0.55), transparent);
+  color: #fff;
   font-size: 12px;
-  flex-shrink: 0;
+  pointer-events: none;
 }
-.tile-bar .icon-btn {
-  width: 26px;
-  height: 26px;
-}
-.tile-quality {
-  font-size: 11px;
-  padding: 2px 4px;
-  margin-right: 2px;
-  background: var(--bg);
-  color: var(--text-muted);
+.stream-tile {
+  position: relative;
 }
 .toolbar-select {
   padding: 7px 8px;
@@ -1886,9 +1899,6 @@ button.member-main {
 }
 .tile.small .placeholder-content h3 {
   font-size: 12px;
-}
-.tile.small .screen-controls {
-  display: none;
 }
 
 .role-tag {

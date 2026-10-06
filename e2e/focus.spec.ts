@@ -2,41 +2,74 @@ import { createRoom, decodedFrames, expect, joinByIp, test } from './fixtures'
 
 const shots = process.env.E2E_SHOTS
 
-test('click a tile to focus it, click again for the grid; the others can be put away', async ({ people }) => {
+/** The volume Bob's player uses for the stream he watches. */
+const playedVolume = (win: import('@playwright/test').Page): Promise<{ volume: number; muted: boolean }> =>
+  win.evaluate(() => {
+    const v = document.querySelector<HTMLVideoElement>('.stream-tile video')!
+    return { volume: Math.round(v.volume * 100) / 100, muted: v.muted }
+  })
+
+test('click to focus, double-click for full screen; volume below a focused stream and in its menu', async ({ people }) => {
   const [alice, bob] = await people(2)
-  const port = await createRoom(alice)
+  const port = await createRoom(alice, 'public', { audio: true })
   await joinByIp(bob, port)
   const { win } = bob
   await win.getByRole('button', { name: "Watch Alice's stream" }).click()
   await expect.poll(() => decodedFrames(win), { timeout: 30_000 }).toBeGreaterThan(10)
-  const aliceVideo = win.locator('.tile', { has: win.locator('video') }).locator('.screen-viewer')
+  const aliceStream = win.locator('.stream-tile')
 
-  // One click focuses, another goes back to the grid.
-  await aliceVideo.click()
+  // One click focuses, another goes back to the grid. No zooming, no controls over the stream.
+  await expect(aliceStream.locator('.tile-bar')).toContainText('Alice')
+  await expect(aliceStream.getByRole('button')).toHaveCount(0)
+  await aliceStream.click()
   await expect(win.locator('.spotlight-main video')).toHaveCount(1)
-  await win.locator('.spotlight-main .screen-viewer').click()
+  await win.locator('.spotlight-main .stream-tile').click()
   await expect(win.locator('.stage-spotlight')).toHaveCount(0)
 
-  // A double-click still zooms, without focusing.
-  await aliceVideo.dblclick()
-  await expect(win.locator('.zoom-label')).toHaveText('200%')
-  await win.waitForTimeout(400)
-  await expect(win.locator('.stage-spotlight')).toHaveCount(0)
-  await aliceVideo.dblclick()
-  await expect(win.locator('.zoom-label')).toHaveText('100%')
+  // Focused: the speaker below mutes and unmutes back to the volume; pointing at it shows the slider.
+  await aliceStream.click()
+  const speaker = win.getByRole('button', { name: 'Mute Alice' })
+  await speaker.click()
+  await expect(win.getByRole('button', { name: 'Unmute Alice' })).toBeVisible()
+  expect((await playedVolume(win)).muted).toBe(true)
+  await win.getByRole('button', { name: 'Unmute Alice' }).click()
+  expect((await playedVolume(win)).muted).toBe(false)
+  await win.getByRole('button', { name: 'Mute Alice' }).hover()
+  const slider = win.locator('.volume-pop').getByLabel('Volume of Alice')
+  await expect(slider).toBeVisible()
+  await slider.fill('0.4')
+  await expect.poll(() => playedVolume(win)).toEqual({ volume: 0.4, muted: false })
+  if (shots) await win.screenshot({ path: `${shots}/1-focus-volume.png` })
+
+  // The right-click menu has the same volume.
+  await win.locator('.spotlight-main .stream-tile').click({ button: 'right' })
+  const menu = win.getByRole('menu', { name: "Alice's stream" })
+  await expect(menu.getByLabel('Volume of Alice')).toHaveValue('0.4')
+  await menu.getByLabel('Volume of Alice').fill('0.7')
+  await expect.poll(() => playedVolume(win)).toEqual({ volume: 0.7, muted: false })
+  if (shots) await win.screenshot({ path: `${shots}/2-menu-volume.png` })
+  await win.keyboard.press('Escape')
+
+  // Double-click: the stage fills the screen, with the strip and the controls; the button brings it back.
+  await win.locator('.spotlight-main .stream-tile').dblclick()
+  await expect.poll(() => win.evaluate(() => document.fullscreenElement?.className ?? '')).toContain('stage-area')
+  await expect(win.locator('.spotlight-main video')).toHaveCount(1)
+  await expect(win.locator('.spotlight-strip .person-tile', { hasText: 'Bob' })).toBeVisible()
+  if (shots) await win.screenshot({ path: `${shots}/3-fullscreen.png` })
+  await win.mouse.move(10, 10)
+  await win.getByRole('button', { name: 'Exit full screen' }).click()
+  await expect.poll(() => win.evaluate(() => !!document.fullscreenElement)).toBe(false)
 
   // Focus his own picture: Alice's stream goes to the strip, and the grid button appears.
   await win.locator('.person-tile', { hasText: 'Bob (you)' }).click()
   await expect(win.locator('.spotlight-strip video')).toHaveCount(1)
   await expect(win.getByRole('button', { name: 'Grid view' })).toBeVisible()
-  if (shots) await win.screenshot({ path: `${shots}/1-focus-strip.png` })
 
   // Putting the strip away pauses Alice's video to him; she sees it.
   await win.getByRole('button', { name: 'Hide others' }).click()
   await expect(win.locator('.spotlight-strip')).toBeHidden()
   const bobOnAlice = alice.win.locator('.room-members .member', { hasText: 'Bob' })
   await expect(bobOnAlice).toContainText('not looking (video paused)', { timeout: 15_000 })
-  if (shots) await win.screenshot({ path: `${shots}/2-strip-hidden.png` })
   await win.getByRole('button', { name: 'Show others (1)' }).click()
   await expect(bobOnAlice).not.toContainText('not looking', { timeout: 15_000 })
 

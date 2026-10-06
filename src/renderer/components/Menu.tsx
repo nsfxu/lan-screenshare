@@ -15,6 +15,8 @@ export type MenuItem =
     }
   | { kind: 'separator' }
   | { kind: 'heading'; label: string }
+  /** A slider row (volume): 0–1, applied while it moves; the menu stays open. */
+  | { kind: 'slider'; label: string; icon?: IconName; value: number; onChange(value: number): void }
 
 /** Where a menu opens: at the pointer (right-click), or above a button (`above`: y is the button's top). */
 export interface MenuAt {
@@ -52,7 +54,7 @@ export function Menu({ items, at, label, onClose }: { items: MenuItem[]; at: Men
 
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null
-    ref.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus()
+    ref.current?.querySelector<HTMLElement>('button:not(:disabled), input')?.focus()
     const onDown = (e: MouseEvent): void => {
       const target = e.target as Element
       // The button that opens a menu toggles it itself.
@@ -80,8 +82,8 @@ export function Menu({ items, at, label, onClose }: { items: MenuItem[]; at: Men
   const onKeyDown = (e: ReactKeyboardEvent): void => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Home' && e.key !== 'End') return
     e.preventDefault()
-    const buttons = [...(ref.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? [])]
-    const i = buttons.indexOf(document.activeElement as HTMLButtonElement)
+    const buttons = [...(ref.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input') ?? [])]
+    const i = buttons.indexOf(document.activeElement as HTMLElement)
     const next =
       e.key === 'Home' ? 0 : e.key === 'End' ? buttons.length - 1 : (i + (e.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length
     buttons[next]?.focus()
@@ -104,6 +106,8 @@ export function Menu({ items, at, label, onClose }: { items: MenuItem[]; at: Men
           <div key={i} className="menu-heading">
             {item.label}
           </div>
+        ) : item.kind === 'slider' ? (
+          <SliderRow key={i} item={item} />
         ) : (
           <button
             key={i}
@@ -125,5 +129,29 @@ export function Menu({ items, at, label, onClose }: { items: MenuItem[]; at: Men
       )}
     </div>,
     document.fullscreenElement ?? document.body
+  )
+}
+
+function SliderRow({ item }: { item: Extract<MenuItem, { kind: 'slider' }> }) {
+  // The menu's items are built once when it opens: the slider keeps its own position from there.
+  const [value, setValue] = useState(item.value)
+  return (
+    <label className="menu-slider">
+      <span className="menu-icon">{item.icon && <Icon name={item.icon} size={14} />}</span>
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.02}
+        value={value}
+        aria-label={item.label}
+        onChange={(e) => {
+          const v = Number(e.target.value)
+          setValue(v)
+          item.onChange(v)
+        }}
+      />
+      <span className="menu-slider-value">{Math.round(value * 100)}%</span>
+    </label>
   )
 }

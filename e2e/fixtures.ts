@@ -93,10 +93,13 @@ async function launchPerson(
   return { name, app, win, userData }
 }
 
-/** getDisplayMedia() returns an animated 1280×720 canvas (background FAKE_SCREEN_RGB). */
+/**
+ * getDisplayMedia() returns an animated 1280×720 canvas (background
+ * FAKE_SCREEN_RGB), with a 440 Hz tone when audio is asked for.
+ */
 async function fakeScreenCapture(win: Page): Promise<void> {
   await win.evaluate(([r, g, b]) => {
-    navigator.mediaDevices.getDisplayMedia = async () => {
+    navigator.mediaDevices.getDisplayMedia = async (constraints?: DisplayMediaStreamOptions) => {
       const canvas = document.createElement('canvas')
       canvas.width = 1280
       canvas.height = 720
@@ -110,7 +113,17 @@ async function fakeScreenCapture(win: Page): Promise<void> {
         ctx.font = '64px sans-serif'
         ctx.fillText(`frame ${frame++}`, 440, 600)
       }, 33)
-      return canvas.captureStream(30)
+      const stream = canvas.captureStream(30)
+      if (constraints?.audio) {
+        const ctx = new AudioContext()
+        const tone = ctx.createOscillator()
+        const out = ctx.createMediaStreamDestination()
+        tone.frequency.value = 440
+        tone.connect(out)
+        tone.start()
+        stream.addTrack(out.stream.getAudioTracks()[0])
+      }
+      return stream
     }
   }, FAKE_SCREEN_RGB)
 }
@@ -164,12 +177,17 @@ export { expect }
 // --- flows -----------------------------------------------------------------------
 
 /** Creates a room sharing the fake screen; returns its port. */
-export async function createRoom(host: Person, privacy: 'public' | 'private' = 'public'): Promise<number> {
+export async function createRoom(
+  host: Person,
+  privacy: 'public' | 'private' = 'public',
+  options: { audio?: boolean } = {}
+): Promise<number> {
   const { win } = host
   await win.getByRole('button', { name: /^Create( a)? room$/ }).first().click()
   const dialog = win.locator('.modal')
   if (privacy === 'private') await dialog.locator('.privacy-option', { hasText: 'Private' }).click()
   await dialog.locator('.source', { hasText: 'Fake screen' }).click()
+  if (options.audio) await dialog.getByRole('checkbox', { name: /Share system audio/ }).check()
   await dialog.getByRole('button', { name: 'Start sharing' }).click()
   await win.waitForSelector('.room')
   const port = await win.evaluate(() => window.api.host.get().then((h) => h?.port ?? 0))
