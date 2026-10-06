@@ -44,6 +44,7 @@ export const IPC = {
   systemStats: 'system:stats',
   appInfo: 'system:app-info',
   setViewerProtection: 'window:protect',
+  setTitleBarColors: 'window:title-bar-colors',
   windowState: 'window:state',
   copyText: 'clipboard:write',
   openLogs: 'system:open-logs',
@@ -113,6 +114,8 @@ export interface ScreenShareApi {
     copyText(text: string): Promise<void>
     openLogs(): Promise<void>
     setViewerProtection(enabled: boolean): Promise<void>
+    /** Colours of the system's window buttons over our title bar (Windows, Linux), as #rrggbb. */
+    setTitleBarColors(color: string, symbolColor: string): Promise<void>
     onWindowState(cb: (state: WindowState) => void): () => void
     log(level: 'info' | 'warn' | 'error', message: string): void
   }

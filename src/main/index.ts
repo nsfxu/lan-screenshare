@@ -1,7 +1,7 @@
 import { app, BrowserWindow, clipboard, desktopCapturer, dialog, ipcMain, screen, session, shell } from 'electron'
 import os from 'node:os'
 import path from 'node:path'
-import { APP_NAME, DEFAULT_PORT } from '../shared/constants'
+import { APP_NAME, DEFAULT_PORT, TITLE_BAR_HEIGHT } from '../shared/constants'
 import { IPC } from '../shared/ipc'
 import type { AppInfo, CreateRoomRequest, NativeAudioOptions, Settings, SystemStats, UpdateRoomRequest } from '../shared/types'
 import { parseHostPort } from '../utils/network'
@@ -83,6 +83,14 @@ function createWindow(): void {
     title: APP_NAME,
     backgroundColor: '#0f1115',
     autoHideMenuBar: true,
+    // Our own title bar: the system draws its window buttons over it (macOS:
+    // the traffic lights inside it, on the left), recoloured with the theme.
+    ...(process.platform === 'darwin'
+      ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 12, y: 9 } }
+      : {
+          titleBarStyle: 'hidden' as const,
+          titleBarOverlay: { color: '#0f1115', symbolColor: '#e7e9ee', height: TITLE_BAR_HEIGHT }
+        }),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -202,6 +210,16 @@ function registerIpc(): void {
   )
   ipcMain.handle(IPC.copyText, (_e, text: string) => clipboard.writeText(String(text)))
   ipcMain.handle(IPC.openLogs, () => shell.openPath(log.dir))
+  ipcMain.handle(IPC.setTitleBarColors, (e, color: unknown, symbolColor: unknown) => {
+    const hex = /^#[0-9a-f]{6}$/i
+    if (process.platform === 'darwin' || typeof color !== 'string' || typeof symbolColor !== 'string') return
+    if (!hex.test(color) || !hex.test(symbolColor)) return
+    try {
+      BrowserWindow.fromWebContents(e.sender)?.setTitleBarOverlay({ color, symbolColor, height: TITLE_BAR_HEIGHT })
+    } catch (err) {
+      log.debug('title bar colours not applied', err)
+    }
+  })
   // Viewers are not allowed to record the stream: hide the window from OS
   // screen capture/screenshots while watching.
   ipcMain.handle(IPC.setViewerProtection, (_e, enabled: boolean) => {

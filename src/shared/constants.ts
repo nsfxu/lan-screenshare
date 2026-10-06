@@ -1,5 +1,8 @@
 export const APP_NAME = 'ScreenShare'
 
+/** Height of the app's own title bar (the system's window buttons are drawn over its right or left end). */
+export const TITLE_BAR_HEIGHT = 32
+
 /** DNS-SD service type, advertised as `_lanshare._tcp.local`. */
 export const MDNS_SERVICE_TYPE = 'lanshare'
 

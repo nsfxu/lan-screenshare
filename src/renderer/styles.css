@@ -557,9 +557,45 @@ input[type='checkbox']:checked::after {
 [hidden] {
   display: none !important;
 }
-.shell {
+#root {
   display: flex;
-  height: 100%;
+  flex-direction: column;
+}
+.title-bar {
+  flex-shrink: 0;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* Room for the system's window buttons: on the right (Windows, Linux), left (macOS). */
+  padding: 0 150px 0 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 12px;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+.title-bar.mac {
+  padding: 0 12px 0 80px;
+}
+.title-bar-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.title-bar-name {
+  font-weight: 600;
+  color: var(--text);
+}
+.shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
 }
 .shell-main {
   flex: 1;
