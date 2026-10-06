@@ -33,7 +33,7 @@ test('public room: share, watch, chat and stop', async ({ people }) => {
   await closeFloatingChat(alice)
 
   // Alice stops: Bob's tile and her stream card go away.
-  await alice.win.getByRole('button', { name: 'Sharing options' }).click()
+  await alice.win.getByRole('button', { name: 'Sharing', exact: true }).click()
   await alice.win.getByRole('menuitem', { name: 'Stop sharing' }).click()
   await expect(bob.win.locator('.tile video')).toHaveCount(0)
   await expect(bob.win.getByRole('button', { name: "Watch Alice's stream" })).toHaveCount(0)

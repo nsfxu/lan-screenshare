@@ -244,20 +244,15 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     : `${session.endpoint.address}:${session.endpoint.port}`
 
   // --- menus -------------------------------------------------------------------
-  /** Everything about our share: the menu next to the Live button, and our own tile's right-click. */
+  /** Everything about our share: the Sharing button's menu, and our own tile's right-click. */
   const sharingItems = (): MenuItem[] => [
-    {
-      label: sharing.paused ? 'Resume' : 'Pause',
-      icon: sharing.paused ? 'play' : 'pause',
-      onSelect: () => publisher.setPaused(!sharing.paused)
-    },
+    { label: 'Change source…', icon: 'swap', onSelect: () => setPickSource(true) },
     {
       label: !sharing.hasAudio ? 'No audio' : sharing.audioMuted ? 'Unmute audio' : 'Mute audio',
       icon: sharing.hasAudio && !sharing.audioMuted ? 'volumeOff' : 'volume',
       disabled: !sharing.hasAudio,
       onSelect: () => publisher.setAudioMuted(!sharing.audioMuted)
     },
-    { label: 'Change source…', icon: 'swap', onSelect: () => setPickSource(true) },
     { kind: 'separator' },
     { kind: 'heading', label: 'Quality you send' },
     ...QUALITY_PRESETS.map(
@@ -630,29 +625,22 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
             </button>
             {sharing.sharing ? (
               <div className="control-group">
-                <div className={`split-button ${sharing.paused ? 'paused' : 'live'}`}>
-                  {/* Shows the state; a click stops sharing (hovering says so). */}
-                  <button className="btn split-main" aria-label="Stop sharing" title="Stop sharing" onClick={() => publisher.stopSharing()}>
-                    <span className="split-live-dot" />
-                    <Icon name="screen" />
-                    <span className="split-state">{sharing.paused ? 'Paused' : 'Live'}</span>
-                    <span className="split-stop">Stop</span>
-                  </button>
-                  <button
-                    className={`btn split-arrow ${menu?.label === 'Sharing' ? 'active' : ''}`}
-                    aria-label="Sharing options"
-                    title="Pause, mute, change source, quality"
-                    aria-haspopup="menu"
-                    aria-expanded={menu?.label === 'Sharing'}
-                    onClick={(e) =>
-                      menu?.label === 'Sharing'
-                        ? setMenu(null)
-                        : openMenu(menuAbove(e.currentTarget.parentElement!), 'Sharing', [sharingItems()])
-                    }
-                  >
-                    <Icon name="chevronUp" size={14} />
-                  </button>
-                </div>
+                {/* Shows that we're sharing; its menu changes the source, mutes, sets the quality or stops. */}
+                <button
+                  className={`btn sharing-button ${menu?.label === 'Sharing' ? 'active' : ''}`}
+                  title="You're sharing: change the source, mute, set the quality or stop"
+                  aria-haspopup="menu"
+                  aria-expanded={menu?.label === 'Sharing'}
+                  onClick={(e) =>
+                    menu?.label === 'Sharing'
+                      ? setMenu(null)
+                      : openMenu(menuAbove(e.currentTarget), 'Sharing', [sharingItems()])
+                  }
+                >
+                  <Icon name="screen" />
+                  {sharing.paused ? 'Paused' : 'Sharing'}
+                  <Icon name="chevronUp" size={14} />
+                </button>
                 <button
                   className={`btn icon-only ${showStats ? 'active' : ''}`}
                   title="Quality and stats of your stream"

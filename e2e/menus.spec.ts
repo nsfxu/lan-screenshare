@@ -2,28 +2,23 @@ import { createRoom, decodedFrames, expect, joinByIp, test } from './fixtures'
 
 const shots = process.env.E2E_SHOTS
 
-test('the Live button and right-click menus hold the sharing and watching options', async ({ people }) => {
+test('the Sharing button and right-click menus hold the sharing and watching options', async ({ people }) => {
   const [alice, bob] = await people(2)
   const port = await createRoom(alice)
   const { win } = alice
 
-  // Its arrow opens the sharing menu: pause, then the quality you send.
-  await win.getByRole('button', { name: 'Sharing options' }).click()
+  // The Sharing button (right of the hang-up button) opens the sharing menu; nothing pauses from it.
+  const sharingButton = win.getByRole('button', { name: 'Sharing', exact: true })
+  const hangUp = await win.locator('.hang-up').boundingBox()
+  expect((await sharingButton.boundingBox())!.x).toBeGreaterThan(hangUp!.x)
+  await sharingButton.click()
   const menu = win.getByRole('menu', { name: 'Sharing' })
   await expect(menu.getByRole('menuitem', { name: 'Stop sharing' })).toBeVisible()
+  await expect(menu.getByRole('menuitem', { name: 'Change source…' })).toBeVisible()
+  await expect(menu.getByRole('menuitem', { name: 'Pause' })).toHaveCount(0)
   if (shots) await win.screenshot({ path: `${shots}/1-sharing-menu.png` })
-  await menu.getByRole('menuitem', { name: 'Pause' }).click()
-  await expect(win.locator('.split-state')).toHaveText('Paused')
-  await win.getByRole('button', { name: 'Sharing options' }).click()
-  await menu.getByRole('menuitem', { name: 'Resume' }).click()
-  await expect(win.locator('.split-state')).toHaveText('Live')
-  // The Live button sits right of the hang-up button.
-  const hangUp = await win.locator('.hang-up').boundingBox()
-  const live = await win.locator('.split-button').boundingBox()
-  expect(live!.x).toBeGreaterThan(hangUp!.x)
-  await win.getByRole('button', { name: 'Sharing options' }).click()
   await menu.getByRole('menuitemradio', { name: '720p @ 30 fps' }).click()
-  await win.getByRole('button', { name: 'Sharing options' }).click()
+  await sharingButton.click()
   await expect(menu.getByRole('menuitemradio', { name: '720p @ 30 fps' })).toHaveAttribute('aria-checked', 'true')
   await win.keyboard.press('Escape')
   await expect(menu).toHaveCount(0)
@@ -55,7 +50,8 @@ test('the Live button and right-click menus hold the sharing and watching option
   await expect(win.getByRole('menuitem', { name: 'Remove from room' })).toBeVisible()
   await win.keyboard.press('Escape')
 
-  // Clicking Live itself stops sharing.
-  await win.getByRole('button', { name: 'Stop sharing' }).click()
+  // Stop sharing, from the Sharing button's menu.
+  await win.getByRole('button', { name: 'Sharing', exact: true }).click()
+  await win.getByRole('menuitem', { name: 'Stop sharing' }).click()
   await expect(win.getByRole('button', { name: 'Share screen' })).toBeVisible()
 })
