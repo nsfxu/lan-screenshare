@@ -2,13 +2,15 @@
 
 Every user-visible change to ScreenShare, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/) with one rule of our own (see [development → versions](docs/en-US/development.md#versions-and-the-changelog)):
 
-- **Major** (2.0.0): `PROTOCOL_VERSION` changed. Older apps can't join rooms of this version, so everyone must update.
+- **Major** (2.0.0): `PROTOCOL_VERSION` changed (older apps can't join rooms of this version, so everyone must update), or a big redesign. The release notes always say whether older apps can still join.
 - **Minor** (1.1.0): new features that still work with other 1.x apps.
 - **Patch** (1.0.1): fixes only.
 
 Each change adds its line under **Unreleased** in the same pull request, written for the people using the app. `npm run release` turns that section into a version.
 
 ## [Unreleased]
+
+## [2.0.0] - 2026-10-06
 
 ### Added
 
@@ -77,7 +79,8 @@ The first release.
 - Reconnects after short network drops, and switches to TCP when a network blocks WebRTC.
 - Encrypted connections, the PIN kept only in memory, and the window hidden from screenshots while you watch.
 
-[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/nsfxu/lan-screenshare/compare/v1.2.0...v2.0.0
 [1.2.0]: https://github.com/nsfxu/lan-screenshare/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/nsfxu/lan-screenshare/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nsfxu/lan-screenshare/releases/tag/v1.0.0
