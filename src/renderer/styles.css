@@ -12,12 +12,80 @@
   --good: #3ecf8e;
   --ok: #f5b942;
   --bad: #ff5d5d;
+  /** Error text on dark panels: a lighter red. */
+  --bad-text: #ff9a9a;
+  /** Text on accent-coloured buttons. */
+  --on-accent: #fff;
+  /** Behind the tiles. */
+  --stage: #07080a;
+  --scrollbar: #2c3240;
   --radius: 10px;
   --radius-sm: 6px;
   --shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
   --font: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
   --mono: 'Cascadia Mono', 'SF Mono', Menlo, Consolas, monospace;
   color-scheme: dark;
+}
+
+/* Themes (Settings → Appearance). The values above are "Classic"; each theme
+   replaces the colours on <html data-theme="…">. Keep the ids in sync with
+   src/shared/themes.ts. */
+:root[data-theme='graphite'] {
+  --bg: #111214;
+  --bg-elev: #1a1b1e;
+  --bg-elev-2: #232428;
+  --bg-hover: #2b2d31;
+  --border: #2e3035;
+  --text: #f2f3f5;
+  --text-muted: #949ba4;
+  --accent: #6d74ff;
+  --accent-hover: #858bff;
+  --accent-soft: rgba(109, 116, 255, 0.16);
+  --good: #3fb67a;
+  --ok: #f0b232;
+  --bad: #f2545b;
+  --bad-text: #ff9da1;
+  --on-accent: #fff;
+  --stage: #0b0c0d;
+  --scrollbar: #33353b;
+}
+:root[data-theme='midnight'] {
+  --bg: #0b1220;
+  --bg-elev: #111a2b;
+  --bg-elev-2: #17233a;
+  --bg-hover: #1e2c47;
+  --border: #24324d;
+  --text: #e6edf7;
+  --text-muted: #8a9bb8;
+  --accent: #2dd4bf;
+  --accent-hover: #5eead4;
+  --accent-soft: rgba(45, 212, 191, 0.14);
+  --good: #34d399;
+  --ok: #fbbf24;
+  --bad: #ff5470;
+  --bad-text: #ff9aab;
+  --on-accent: #04201c;
+  --stage: #060b14;
+  --scrollbar: #24324d;
+}
+:root[data-theme='charcoal'] {
+  --bg: #121016;
+  --bg-elev: #1a1720;
+  --bg-elev-2: #221e2a;
+  --bg-hover: #2b2635;
+  --border: #322c3d;
+  --text: #ece8f3;
+  --text-muted: #9a92aa;
+  --accent: #9b6dff;
+  --accent-hover: #b08cff;
+  --accent-soft: rgba(155, 109, 255, 0.16);
+  --good: #4ade80;
+  --ok: #facc15;
+  --bad: #ff5a6e;
+  --bad-text: #ffa3ae;
+  --on-accent: #fff;
+  --stage: #0b0a0e;
+  --scrollbar: #3a3346;
 }
 
 * {
@@ -170,7 +238,7 @@ input[type='checkbox']:checked::after {
 .btn.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 .btn.primary:hover:not(:disabled) {
   background: var(--accent-hover);
@@ -180,11 +248,11 @@ input[type='checkbox']:checked::after {
 }
 .btn.danger {
   color: var(--bad);
-  border-color: rgba(255, 93, 93, 0.35);
-  background: rgba(255, 93, 93, 0.08);
+  border-color: color-mix(in srgb, var(--bad) 35%, transparent);
+  background: color-mix(in srgb, var(--bad) 8%, transparent);
 }
 .btn.danger:hover:not(:disabled) {
-  background: rgba(255, 93, 93, 0.18);
+  background: color-mix(in srgb, var(--bad) 18%, transparent);
 }
 .btn.active {
   border-color: var(--accent);
@@ -219,7 +287,7 @@ input[type='checkbox']:checked::after {
 }
 .icon-btn.danger:hover {
   color: var(--bad);
-  background: rgba(255, 93, 93, 0.12);
+  background: color-mix(in srgb, var(--bad) 12%, transparent);
 }
 .link {
   background: none;
@@ -281,11 +349,11 @@ input[type='checkbox']:checked::after {
   letter-spacing: 0.02em;
 }
 .badge.public {
-  background: rgba(62, 207, 142, 0.14);
+  background: color-mix(in srgb, var(--good) 14%, transparent);
   color: var(--good);
 }
 .badge.private {
-  background: rgba(245, 185, 66, 0.14);
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
   color: var(--ok);
 }
 .status-pill {
@@ -296,7 +364,7 @@ input[type='checkbox']:checked::after {
   color: var(--text-muted);
 }
 .status-pill.live {
-  background: rgba(255, 93, 93, 0.16);
+  background: color-mix(in srgb, var(--bad) 16%, transparent);
   color: var(--bad);
 }
 .status-pill.live::before {
@@ -311,7 +379,7 @@ input[type='checkbox']:checked::after {
   animation: blink 1.6s infinite;
 }
 .status-pill.warn {
-  background: rgba(245, 185, 66, 0.16);
+  background: color-mix(in srgb, var(--ok) 16%, transparent);
   color: var(--ok);
 }
 @keyframes blink {
@@ -453,15 +521,15 @@ input[type='checkbox']:checked::after {
   flex-wrap: wrap;
 }
 .notice.error {
-  background: rgba(255, 93, 93, 0.1);
-  color: #ff9a9a;
+  background: color-mix(in srgb, var(--bad) 10%, transparent);
+  color: var(--bad-text);
 }
 .notice.info {
   background: var(--accent-soft);
   color: var(--text);
 }
 .notice.warn {
-  background: rgba(245, 185, 66, 0.1);
+  background: color-mix(in srgb, var(--ok) 10%, transparent);
   color: var(--ok);
 }
 .cursor-hint,
@@ -480,7 +548,7 @@ input[type='checkbox']:checked::after {
   margin: 0 0 8px;
 }
 .error-text {
-  color: #ff9a9a;
+  color: var(--bad-text);
   font-size: 12px;
   width: 100%;
 }
@@ -615,7 +683,7 @@ input[type='checkbox']:checked::after {
   margin-right: 4px;
   padding: 0 5px;
   border-radius: 4px;
-  background: rgba(255, 93, 93, 0.16);
+  background: color-mix(in srgb, var(--bad) 16%, transparent);
   color: var(--bad);
   font-size: 11px;
   font-weight: 600;
@@ -661,7 +729,7 @@ input[type='checkbox']:checked::after {
 .room-badge.active {
   border-radius: 12px;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 .room-badge-live {
   position: absolute;
@@ -728,15 +796,15 @@ input[type='checkbox']:checked::after {
   height: 7px;
   border-radius: 50%;
   background: var(--good);
-  box-shadow: 0 0 0 0 rgba(62, 207, 142, 0.6);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--good) 60%, transparent);
   animation: ping 2s infinite;
 }
 @keyframes ping {
   70% {
-    box-shadow: 0 0 0 8px rgba(62, 207, 142, 0);
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--good) 0%, transparent);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(62, 207, 142, 0);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--good) 0%, transparent);
   }
 }
 .welcome {
@@ -1186,7 +1254,7 @@ input[type='checkbox']:checked::after {
   width: 300px;
   padding: 14px;
   border-radius: var(--radius);
-  background: rgba(22, 25, 32, 0.96);
+  background: var(--bg-elev-2);
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
   z-index: 5;
@@ -1601,8 +1669,8 @@ button.member-main {
   animation: fade 0.15s ease-out;
 }
 .toast.error {
-  border-color: rgba(255, 93, 93, 0.5);
-  color: #ffb3b3;
+  border-color: color-mix(in srgb, var(--bad) 50%, transparent);
+  color: var(--bad-text);
 }
 
 ::-webkit-scrollbar {
@@ -1610,7 +1678,7 @@ button.member-main {
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2c3240;
+  background: var(--scrollbar);
   border-radius: 10px;
   border: 2px solid transparent;
   background-clip: padding-box;
@@ -1657,7 +1725,7 @@ button.member-main {
   flex: 1;
   min-height: 0;
   display: flex;
-  background: #07080a;
+  background: var(--stage);
 }
 .stage-grid {
   flex: 1;
@@ -1831,12 +1899,12 @@ button.member-main {
   font-size: 26px;
 }
 .person-tile-action {
-  background: rgba(15, 17, 21, 0.85);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
 }
 .btn.person-tile-action:hover:not(:disabled) {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 .person-tile-name {
   position: absolute;
@@ -1952,7 +2020,7 @@ button.member-main {
 .menu button:hover:not(:disabled),
 .menu button:focus-visible {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   outline: none;
 }
 .menu button:disabled {
@@ -1992,12 +2060,12 @@ button.member-main {
   display: inline-flex;
 }
 .split-button .btn {
-  border-color: rgba(255, 93, 93, 0.45);
-  background: rgba(255, 93, 93, 0.14);
+  border-color: color-mix(in srgb, var(--bad) 45%, transparent);
+  background: color-mix(in srgb, var(--bad) 14%, transparent);
 }
 .split-button .btn:hover:not(:disabled),
 .split-button .split-arrow.active {
-  background: rgba(255, 93, 93, 0.26);
+  background: color-mix(in srgb, var(--bad) 26%, transparent);
 }
 .split-button.paused .btn {
   border-color: var(--border);
@@ -2076,7 +2144,7 @@ button.member-main {
   color: #fff;
 }
 .btn.hang-up:hover {
-  background: #ff7676;
+  background: color-mix(in srgb, var(--bad) 85%, #fff);
 }
 .stats-quality {
   display: flex;
@@ -2150,4 +2218,47 @@ button.member-main {
 }
 .screen-placeholder .placeholder-content {
   position: relative;
+}
+
+/* theme picker (Settings → Appearance) */
+.theme-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+.theme-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev);
+  text-align: left;
+  cursor: pointer;
+}
+.theme-option:hover {
+  background: var(--bg-hover);
+}
+.theme-option.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.theme-preview {
+  display: flex;
+  width: 100%;
+  height: 28px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+.theme-preview span {
+  flex: 1;
+}
+.theme-preview span:nth-child(1) {
+  flex: 2;
+}
+.theme-label {
+  font-weight: 600;
 }

@@ -156,6 +156,7 @@ Abra as configurações pelo ícone de engrenagem embaixo da coluna de salas.
 |---|---|---|---|
 | Profile | Profile picture | nenhuma | Aparece no lugar das suas iniciais. |
 | Profile | Display name | seu usuário do computador | Até 32 caracteres. |
+| Appearance | Theme | Classic | As cores do app: **Classic** (azul sobre cinza-azulado), **Graphite** (cinzas neutros e índigo, para as transmissões manterem as cores reais), **Midnight** (preto-azulado e verde-água) ou **Charcoal** (cinzas quentes e violeta). Vale na hora. |
 | Streaming quality | Maximum quality | 1080p @ 60 fps | O máximo que você envia ao compartilhar. Vale na hora. |
 | Streaming quality | Adaptive quality | ligado | Reduz resolução/taxa de quadros por espectador quando a rede dele sofre. |
 | Streaming quality | Video codec | Automatic | O automático prefere H.264 em hardware. Dá para forçar H.264, H.265, VP9 ou AV1 se os dois lados suportarem. A tabela abaixo mostra o que o seu computador suporta. |

@@ -5,6 +5,7 @@ import { DEFAULT_PORT, NAME_MAX_LENGTH } from '../shared/constants'
 import { isAvatar } from '../shared/images'
 import { QUALITY_PRESETS } from '../shared/quality'
 import { RECENT_ROOMS_MAX } from '../shared/roomList'
+import { DEFAULT_THEME, isThemeId } from '../shared/themes'
 import type { RoomEndpoint, Settings } from '../shared/types'
 import { randomId } from '../utils/crypto'
 
@@ -52,7 +53,8 @@ function defaults(): Settings {
     appAudioOnly: true,
     settingsVersion: SETTINGS_VERSION,
     uploadBudgetMbps: 100,
-    avatar: null
+    avatar: null,
+    theme: DEFAULT_THEME
   }
 }
 
@@ -112,6 +114,7 @@ function sanitize(s: Settings, fallback: Settings): Settings {
   const budget = Number(s.uploadBudgetMbps)
   out.uploadBudgetMbps = Number.isInteger(budget) && budget >= 0 && budget <= 10_000 ? budget : fallback.uploadBudgetMbps
   out.avatar = s.avatar === null || isAvatar(s.avatar) ? s.avatar : fallback.avatar
+  out.theme = isThemeId(s.theme) ? s.theme : fallback.theme
   for (const key of ['adaptiveQuality', 'forceTcp', 'useTls', 'autoRejoin', 'notifications', 'pauseOnMinimize', 'showStatsOverlay', 'shareAudio', 'excludeDiscordAudio', 'appAudioOnly'] as const) {
     out[key] = typeof s[key] === 'boolean' ? s[key] : fallback[key]
   }

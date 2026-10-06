@@ -98,7 +98,7 @@ Siga [protocolo → alterando o protocolo](protocol.md#alterando-o-protocolo): t
 ### Mudar a interface
 
 1. Os componentes assinam os eventos dos objetos da sessão e guardam cópias no estado do React; cancele a assinatura na limpeza do effect.
-2. Reaproveite as classes que já existem no `styles.css` (`btn`, `icon-btn`, `toggle-row`, `modal`, `avatar`…).
+2. Reaproveite as classes que já existem no `styles.css` (`btn`, `icon-btn`, `toggle-row`, `modal`, `avatar`…). Use as variáveis de cor (`--bg`, `--accent`, `--bad`…), nunca uma cor escrita direto: cada tema em **Settings → Appearance** as redefine (`:root[data-theme]` no `styles.css`, a lista em `src/shared/themes.ts`). Para um tom mais claro ou transparente, use `color-mix()` sobre uma variável. Confira a mudança em todos os temas.
 3. Confira no tamanho mínimo da janela (640×480), e com 1100 e 760 px de largura, onde o chat e depois a coluna de salas deixam de ocupar espaço.
 4. Dê um `title` ou `aria-label` aos botões.
 

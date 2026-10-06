@@ -154,6 +154,7 @@ Open Settings with the gear icon at the bottom of the rooms column.
 |---|---|---|---|
 | Profile | Profile picture | none | Shown instead of your initials. |
 | Profile | Display name | your computer user name | Up to 32 characters. |
+| Appearance | Theme | Classic | The app's colours: **Classic** (blue on blue-grey), **Graphite** (neutral greys and indigo, so streams look true to colour), **Midnight** (blue-black and teal) or **Charcoal** (warm greys and violet). Applies immediately. |
 | Streaming quality | Maximum quality | 1080p @ 60 fps | The most you send when sharing. Applies immediately. |
 | Streaming quality | Adaptive quality | on | Lowers resolution/frame rate per viewer when their network struggles. |
 | Streaming quality | Video codec | Automatic | Automatic prefers hardware H.264. You can force H.264, H.265, VP9 or AV1 if both sides support it. The table below shows what your computer supports. |
