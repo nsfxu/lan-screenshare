@@ -5,6 +5,7 @@ import { CreateRoomDialog, SettingsPanel, type CreateRoomResult } from './compon
 import { RoomMembers } from './components/RoomMembers'
 import { RoomsSidebar, type CurrentRoom } from './components/RoomsSidebar'
 import { RoomView } from './components/RoomView'
+import { TitleBar } from './components/TitleBar'
 import { Welcome } from './components/Welcome'
 import { detectDecoders, detectEncoders } from './lib/codecs'
 import { captureAudioWarning, errorMessage } from './lib/format'
@@ -228,6 +229,7 @@ export function App() {
 
   return (
     <>
+      <TitleBar />
       <div className="shell">
         {roomsFloatingNow && (
           <>
