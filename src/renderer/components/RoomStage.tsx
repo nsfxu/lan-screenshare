@@ -114,7 +114,7 @@ export function useClickToFocus(onFocus: () => void, busy?: () => boolean): (e: 
       timer.current = null
       const target = e.target as Element
       if (e.button !== 0 || e.detail > 1 || busy?.()) return
-      if (target.closest('button, input, select, a, .screen-controls, .tile-bar')) return
+      if (target.closest('button, input, select, a')) return
       timer.current = window.setTimeout(() => {
         timer.current = null
         focus.current()

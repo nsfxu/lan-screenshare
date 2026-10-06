@@ -40,8 +40,8 @@ test('the Sharing button and right-click menus hold the sharing and watching opt
   await expect(theirs.getByRole('menuitem', { name: 'Full screen' })).toBeVisible()
   if (shots) await bob.win.screenshot({ path: `${shots}/2-stream-menu.png` })
   await theirs.getByRole('menuitemradio', { name: '480p · 30 fps' }).click()
-  await expect(bob.win.getByLabel("Quality you receive from Alice")).toHaveValue('480p30')
   await bob.win.locator('.tile', { has: bob.win.locator('video') }).click({ button: 'right' })
+  await expect(theirs.getByRole('menuitemradio', { name: '480p · 30 fps' })).toHaveAttribute('aria-checked', 'true')
   await theirs.getByRole('menuitem', { name: 'Stop watching' }).click()
   await expect(bob.win.locator('.tile video')).toHaveCount(0)
 

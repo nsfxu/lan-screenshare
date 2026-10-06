@@ -22,6 +22,7 @@ import {
 } from '../lib/format'
 import { useAppVersion } from '../lib/appVersion'
 import { CHAT_DOCKED_MIN_WIDTH, PANEL_STATES, useElementSize, useRemembered, useWindowWidth } from '../lib/layout'
+import { getLevel, isSilent, setVolume, toggleMute, useLevel } from '../lib/volume'
 import { useAutoContentHint } from '../lib/autoContentHint'
 import { useGameCursor } from '../lib/gameCursor'
 import { audioDefaults, type SharingState } from '../lib/publisher'
@@ -36,7 +37,10 @@ import { Menu, menuAbove, type MenuAt, type MenuItem } from './Menu'
 import { Icon } from './Icon'
 import { RoomInfo } from './RoomInfo'
 import { InviteTile, PersonTile, useClickToFocus } from './RoomStage'
-import { ScreenViewer, type ScreenViewerHandle } from './ScreenViewer'
+import { ScreenViewer } from './ScreenViewer'
+
+/** In full screen, the strip and controls (and the cursor) hide after this long without mouse movement. */
+const FULLSCREEN_IDLE_MS = 2500
 
 interface Props {
   session: Session
@@ -95,6 +99,10 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const [seen, setSeen] = useState<ReadonlySet<string>>(() => new Set(client.messages.map((m) => m.id)))
   const stageRef = useRef<HTMLDivElement>(null)
   const stageSize = useElementSize(stageRef)
+  // Full screen is the stage: the focused stream with everyone else and its controls below.
+  const [stageFullscreen, setStageFullscreen] = useState(false)
+  const [idle, setIdle] = useState(false)
+  const idleTimer = useRef<number | null>(null)
   const closeInfo = useCallback(() => setInfoOpen(false), [])
   const [, setNow] = useState(Date.now())
   const gameCursor = useGameCursor(publisher, sharing.sharing ? publisher.chosenSourceId : null)
@@ -149,7 +157,36 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     if (!ownStream) setShowSelf(false)
   }, [ownStream])
 
-  // Keep the focus on someone who is still here; Esc leaves it.
+  useEffect(() => {
+    const onChange = (): void => setStageFullscreen(!!stageRef.current && document.fullscreenElement === stageRef.current)
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
+  // In full screen the strip and controls (and the cursor) fade after a moment without moving the mouse.
+  const wake = (): void => {
+    if (!stageFullscreen) return
+    setIdle(false)
+    if (idleTimer.current) clearTimeout(idleTimer.current)
+    idleTimer.current = window.setTimeout(() => setIdle(true), FULLSCREEN_IDLE_MS)
+  }
+  useEffect(() => {
+    setIdle(false)
+    if (stageFullscreen) idleTimer.current = window.setTimeout(() => setIdle(true), FULLSCREEN_IDLE_MS)
+    return () => {
+      if (idleTimer.current) clearTimeout(idleTimer.current)
+    }
+  }, [stageFullscreen])
+  /** Focus `id` and fill the screen with the stage, or leave full screen. */
+  const toggleFullscreen = (id: string): void => {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen()
+      return
+    }
+    setFocus(id)
+    void stageRef.current?.requestFullscreen()
+  }
+
+  // Keep the focus on someone who is still here; Esc leaves it (after leaving full screen).
   useEffect(() => {
     if (focus !== null && !participants.some((p) => p.id === focus)) setFocus(null)
   }, [focus, participants])
@@ -349,7 +386,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
             focused={focused}
             small={small}
             onFocus={onFocus}
-            onHide={() => setShowSelf(false)}
+            onFullscreen={() => toggleFullscreen(p.id)}
             onContextMenu={onSelfMenu}
           />
         )
@@ -394,7 +431,8 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           focused={focused}
           small={small}
           onFocus={onFocus}
-          onStop={() => watches.unwatch(p.id)}
+          onFullscreen={() => toggleFullscreen(p.id)}
+          fullscreen={stageFullscreen}
           collapsed={collapsed}
           menuItems={personItems(p)}
           moderation={moderationItems(p)}
@@ -437,15 +475,31 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     focused && people.length > 1 ? (
       <div className={`stage-spotlight ${strip === 'closed' ? 'strip-closed' : ''}`}>
         <div className="spotlight-main">{renderTile(focused, false)}</div>
-        <button
-          className="strip-toggle"
-          aria-expanded={strip === 'open'}
-          title={strip === 'open' ? 'Hide the others (their video pauses)' : 'Show the others'}
-          onClick={() => setStrip(strip === 'open' ? 'closed' : 'open')}
-        >
-          <Icon name={strip === 'open' ? 'chevronDown' : 'chevronUp'} size={14} />
-          {strip === 'open' ? 'Hide others' : `Show others (${people.length - 1})`}
-        </button>
+        <div className="focus-bar">
+          <span className="focus-bar-side" />
+          <button
+            className="strip-toggle"
+            aria-expanded={strip === 'open'}
+            title={strip === 'open' ? 'Hide the others (their video pauses)' : 'Show the others'}
+            onClick={() => setStrip(strip === 'open' ? 'closed' : 'open')}
+          >
+            <Icon name={strip === 'open' ? 'chevronDown' : 'chevronUp'} size={14} />
+            {strip === 'open' ? 'Hide others' : `Show others (${people.length - 1})`}
+          </button>
+          <span className="focus-bar-side focus-bar-controls">
+            {subs.has(focused.id) && focused.stream?.audio && <VolumeControl name={focused.name} />}
+            {(subs.has(focused.id) || (focused.id === client.selfId && ownStream && showSelf)) && (
+              <button
+                className="icon-btn"
+                title={stageFullscreen ? 'Leave full screen (Esc)' : 'Full screen'}
+                aria-label={stageFullscreen ? 'Exit full screen' : 'Full screen'}
+                onClick={() => toggleFullscreen(focused.id)}
+              >
+                <Icon name={stageFullscreen ? 'exitFullscreen' : 'fullscreen'} size={18} />
+              </button>
+            )}
+          </span>
+        </div>
         <div className="spotlight-strip" hidden={strip === 'closed'}>
           {people.filter((p) => p !== focused).map((p) => renderTile(p, true, strip === 'closed'))}
         </div>
@@ -519,7 +573,11 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
 
       <div className="room-body">
         <main className="stage">
-          <div className="stage-area" ref={stageRef}>
+          <div
+            className={`stage-area ${stageFullscreen ? 'fullscreen' : ''} ${idle ? 'idle' : ''}`}
+            ref={stageRef}
+            onMouseMove={wake}
+          >
             {stage}
           </div>
           {showStats && sharing.sharing && (
@@ -696,6 +754,16 @@ interface TileChrome {
   small: boolean
   showOverlay: boolean
   onFocus(): void
+  /** Double-click: focus this tile and fill the screen with the stage. */
+  onFullscreen(): void
+}
+
+/** A tile's own double-click: full screen (a single click focuses, see useClickToFocus). */
+function onDoubleClickOf(onFullscreen: () => void) {
+  return (e: ReactMouseEvent): void => {
+    if ((e.target as Element).closest('button, input, select, a')) return
+    onFullscreen()
+  }
 }
 
 function SelfTile({
@@ -706,11 +774,10 @@ function SelfTile({
   focused,
   small,
   onFocus,
-  onHide,
+  onFullscreen,
   onContextMenu
-}: TileChrome & { stream: MediaStream | null; sharing: SharingState; stats: HostStats | null; onHide(): void }) {
-  const viewer = useRef<ScreenViewerHandle>(null)
-  const clickToFocus = useClickToFocus(onFocus, () => viewer.current?.isZoomed() ?? false)
+}: TileChrome & { stream: MediaStream | null; sharing: SharingState; stats: HostStats | null }) {
+  const clickToFocus = useClickToFocus(onFocus)
   const overlay =
     showOverlay && stats && !small ? (
       <div className="stat-badges">
@@ -727,21 +794,12 @@ function SelfTile({
     ) : null
   return (
     <div
-      className={`tile ${focused ? 'focused' : ''} ${small ? 'small' : ''}`}
+      className={`tile stream-tile ${focused ? 'focused' : ''} ${small ? 'small' : ''}`}
       onClick={clickToFocus}
+      onDoubleClick={onDoubleClickOf(onFullscreen)}
       onContextMenu={onContextMenu}
     >
-      <div className="tile-bar">
-        <span className="tile-name">
-          <Icon name="screen" size={13} /> Your screen
-        </span>
-        <TileButton focused={focused} onFocus={onFocus} />
-        <button className="icon-btn" title="Hide your stream (you keep sharing)" onClick={onHide}>
-          <Icon name="x" size={14} />
-        </button>
-      </div>
       <ScreenViewer
-        ref={viewer}
         stream={stream}
         local
         overlay={overlay}
@@ -754,6 +812,11 @@ function SelfTile({
           ) : null
         }
       />
+      <div className="tile-bar">
+        <span className="tile-name">
+          <Icon name="screen" size={13} /> Your screen
+        </span>
+      </div>
     </div>
   )
 }
@@ -765,9 +828,10 @@ function RemoteTile({
   focused,
   small,
   onFocus,
+  onFullscreen,
+  fullscreen,
   avatar,
   snapshot,
-  onStop,
   collapsed,
   menuItems,
   moderation,
@@ -777,7 +841,8 @@ function RemoteTile({
   participant: Participant | undefined
   avatar: string | null
   snapshot: string | null
-  onStop(): void
+  /** The stage is full screen (the menu then offers to leave it). */
+  fullscreen: boolean
   /** In the put-away strip of the focus view: not visible, so the streamer pauses our video. */
   collapsed: boolean
   /** The start of the right-click menu (stop watching, focus) and the host's actions at its end. */
@@ -785,9 +850,8 @@ function RemoteTile({
   moderation: MenuItem[]
   onMenu(at: MenuAt, groups: MenuItem[][]): void
 }) {
-  const viewer = useRef<ScreenViewerHandle>(null)
-  const clickToFocus = useClickToFocus(onFocus, () => viewer.current?.isZoomed() ?? false)
-  // Hidden behind another full-screen tile, or put away with the strip.
+  const clickToFocus = useClickToFocus(onFocus)
+  // Hidden behind something else full screen, or put away with the strip.
   const [behindFullscreen, setBehindFullscreen] = useState(false)
   useEffect(() => sub.setTileHidden(behindFullscreen || collapsed), [sub, behindFullscreen, collapsed])
   const [stream, setStream] = useState<MediaStream | null>(sub.stream)
@@ -848,25 +912,36 @@ function RemoteTile({
 
   return (
     <div
-      className={`tile ${focused ? 'focused' : ''} ${small ? 'small' : ''}`}
+      className={`tile stream-tile ${focused ? 'focused' : ''} ${small ? 'small' : ''}`}
       onClick={clickToFocus}
+      onDoubleClick={onDoubleClickOf(onFullscreen)}
       onContextMenu={(e) => {
         e.preventDefault()
-        const v = viewer.current
+        const key = participant?.name ?? ''
+        const sound: MenuItem[] = participant?.stream?.audio
+          ? [
+              {
+                kind: 'slider',
+                label: `Volume of ${name}`,
+                icon: 'volume',
+                value: isSilent(getLevel(key)) ? 0 : getLevel(key).volume,
+                onChange: (v) => setVolume(key, v)
+              },
+              {
+                label: isSilent(getLevel(key)) ? 'Unmute' : 'Mute',
+                icon: isSilent(getLevel(key)) ? 'volume' : 'volumeOff',
+                onSelect: () => toggleMute(key)
+              }
+            ]
+          : []
         const view: MenuItem[] = [
+          ...menuItems,
           {
-            label: v?.isFullscreen() ? 'Exit full screen' : 'Full screen',
-            icon: v?.isFullscreen() ? 'exitFullscreen' : 'fullscreen',
-            onSelect: () => v?.toggleFullscreen()
+            label: fullscreen ? 'Exit full screen' : 'Full screen',
+            icon: fullscreen ? 'exitFullscreen' : 'fullscreen',
+            onSelect: onFullscreen
           }
         ]
-        if (participant?.stream?.audio) {
-          view.push({
-            label: v?.isMuted() ? 'Unmute' : 'Mute',
-            icon: v?.isMuted() ? 'volume' : 'volumeOff',
-            onSelect: () => v?.toggleMute()
-          })
-        }
         const qualities: MenuItem[] = [
           { kind: 'heading', label: 'Quality you receive' },
           ...WATCH_QUALITIES.map(
@@ -880,53 +955,23 @@ function RemoteTile({
         if (sub.transport === 'tcp') {
           qualities.push({ label: 'Try the faster connection again', icon: 'refresh', onSelect: () => sub.retry('webrtc') })
         }
-        onMenu({ x: e.clientX, y: e.clientY }, [[...menuItems, ...view], qualities, moderation])
+        onMenu({ x: e.clientX, y: e.clientY }, [sound, view, qualities, moderation])
       }}
     >
+      <ScreenViewer
+        stream={stream}
+        placeholder={placeholder}
+        overlay={overlay}
+        volumeKey={participant?.name}
+        onViewHeight={(px) => sub.setViewHeight(px)}
+        onHiddenChange={setBehindFullscreen}
+      />
       <div className="tile-bar">
         <span className="tile-name">
           <Avatar name={name} color={participant?.color} image={avatar} size="tiny" />
           {name}
         </span>
-        {!small && (
-          <select
-            className="tile-quality"
-            aria-label={`Quality you receive from ${name}`}
-            title={
-              sub.transport === 'tcp'
-                ? 'Quality you receive (on the TCP fallback the stream is shared with other TCP viewers, so you may get more)'
-                : 'Quality you receive. Auto follows the size you watch at.'
-            }
-            value={quality}
-            onChange={(e) => chooseQuality(e.target.value as WatchQualityId)}
-          >
-            {WATCH_QUALITIES.map((q) => (
-              <option key={q.id} value={q.id}>
-                {q.label}
-              </option>
-            ))}
-          </select>
-        )}
-        {!small && sub.transport === 'tcp' && (
-          <button className="icon-btn" title="Try the low-latency WebRTC transport again" onClick={() => sub.retry('webrtc')}>
-            <Icon name="refresh" size={14} />
-          </button>
-        )}
-        <TileButton focused={focused} onFocus={onFocus} />
-        <button className="icon-btn" title={`Stop watching ${name}`} onClick={onStop}>
-          <Icon name="x" size={14} />
-        </button>
       </div>
-      <ScreenViewer
-        ref={viewer}
-        stream={stream}
-        placeholder={placeholder}
-        overlay={overlay}
-        audioAvailable={!!participant?.stream?.audio && state === 'streaming'}
-        volumeKey={participant?.name}
-        onViewHeight={(px) => sub.setViewHeight(px)}
-        onHiddenChange={setBehindFullscreen}
-      />
     </div>
   )
 }
@@ -949,10 +994,35 @@ function saveWatchQuality(name: string | undefined, id: WatchQualityId): void {
   }
 }
 
-function TileButton({ focused, onFocus }: { focused: boolean; onFocus(): void }) {
+/**
+ * The speaker below a focused stream: a click mutes, or unmutes back to the
+ * last volume; pointing at it shows the volume slider.
+ */
+function VolumeControl({ name }: { name: string }) {
+  const level = useLevel(name)
+  const silent = isSilent(level)
   return (
-    <button className="icon-btn" title={focused ? 'Back to grid' : 'Focus this stream'} onClick={onFocus}>
-      <Icon name={focused ? 'exitFullscreen' : 'fit'} size={14} />
-    </button>
+    <div className="volume-control">
+      <button
+        className="icon-btn"
+        title={silent ? 'Unmute' : 'Mute'}
+        aria-label={silent ? `Unmute ${name}` : `Mute ${name}`}
+        onClick={() => toggleMute(name)}
+      >
+        <Icon name={silent ? 'volumeOff' : 'volume'} size={18} />
+      </button>
+      <div className="volume-pop">
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.02}
+          value={silent ? 0 : level.volume}
+          aria-label={`Volume of ${name}`}
+          onChange={(e) => setVolume(name, Number(e.target.value))}
+        />
+        <span>{silent ? 0 : Math.round(level.volume * 100)}%</span>
+      </div>
+    </div>
   )
 }
