@@ -904,7 +904,13 @@ export class Publisher extends Emitter<Events> {
       this.tcpPrev = { ts: now, bytes: this.tcp.sentBytes, audioBytes }
     } else this.tcpPrev = null
 
-    const system = await window.api.system.stats().catch(() => ({ cpuPercent: 0, memoryMB: 0 }))
+    const system = await window.api.system.stats().catch(() => ({
+      cpuPercent: 0,
+      memoryMB: 0,
+      computerCpuPercent: null,
+      computerMemoryMB: 0,
+      computerMemoryTotalMB: 0
+    }))
     const trackSettings = this.track?.getSettings()
     const rtts = samples.map((s) => s.rttMs).filter((r): r is number => r !== null)
     const encodes = samples.map((s) => s.encodeMs).filter((e): e is number => e !== null)
@@ -925,6 +931,9 @@ export class Publisher extends Emitter<Events> {
       codec: main?.codec || this.tcp?.codecName || '',
       cpuPercent: system.cpuPercent,
       memoryMB: system.memoryMB,
+      computerCpuPercent: system.computerCpuPercent,
+      computerMemoryMB: system.computerMemoryMB,
+      computerMemoryTotalMB: system.computerMemoryTotalMB,
       viewers: this.peers.size + this.tcpViewers.size,
       qualityLimitation: worst?.limitation ?? 'none',
       contentHint: this.contentHint,

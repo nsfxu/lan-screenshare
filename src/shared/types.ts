@@ -122,6 +122,10 @@ export interface HostStats {
   codec: string
   cpuPercent: number
   memoryMB: number
+  /** The whole computer, games and other apps included (see SystemStats). */
+  computerCpuPercent: number | null
+  computerMemoryMB: number
+  computerMemoryTotalMB: number
   viewers: number
   qualityLimitation: string
   /** Sent audio bitrate summed over viewers; null when not sharing audio. */
@@ -328,8 +332,14 @@ export interface CaptureSource {
 }
 
 export interface SystemStats {
+  /** This app (all its processes), as a share of the whole computer. */
   cpuPercent: number
   memoryMB: number
+  /** The whole computer since the previous call; null on the first one. */
+  computerCpuPercent: number | null
+  /** Memory in use on the whole computer, and how much it has. */
+  computerMemoryMB: number
+  computerMemoryTotalMB: number
 }
 
 export interface AppInfo {
