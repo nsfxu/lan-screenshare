@@ -54,7 +54,8 @@ function defaults(): Settings {
     settingsVersion: SETTINGS_VERSION,
     uploadBudgetMbps: 100,
     avatar: null,
-    theme: DEFAULT_THEME
+    theme: DEFAULT_THEME,
+    autoUpdate: true
   }
 }
 
@@ -115,7 +116,7 @@ function sanitize(s: Settings, fallback: Settings): Settings {
   out.uploadBudgetMbps = Number.isInteger(budget) && budget >= 0 && budget <= 10_000 ? budget : fallback.uploadBudgetMbps
   out.avatar = s.avatar === null || isAvatar(s.avatar) ? s.avatar : fallback.avatar
   out.theme = isThemeId(s.theme) ? s.theme : fallback.theme
-  for (const key of ['adaptiveQuality', 'forceTcp', 'useTls', 'autoRejoin', 'notifications', 'pauseOnMinimize', 'showStatsOverlay', 'shareAudio', 'excludeDiscordAudio', 'appAudioOnly'] as const) {
+  for (const key of ['adaptiveQuality', 'forceTcp', 'useTls', 'autoRejoin', 'notifications', 'pauseOnMinimize', 'showStatsOverlay', 'shareAudio', 'excludeDiscordAudio', 'appAudioOnly', 'autoUpdate'] as const) {
     out[key] = typeof s[key] === 'boolean' ? s[key] : fallback[key]
   }
   return out

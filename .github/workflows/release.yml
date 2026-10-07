@@ -95,7 +95,10 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows-installer
-          path: release/*/ScreenShare-Setup-*.exe
+          # latest.yml tells installed apps about this version (both installers, with their SHA-512).
+          path: |
+            release/*/ScreenShare-Setup-*.exe
+            release/*/latest.yml
           if-no-files-found: error
 
   macos:
@@ -140,9 +143,14 @@ jobs:
       - name: Collect the installers
         # Artifacts keep their folders (for example 1.0.0/…), so look for the files.
         run: |
-          find installers -type f \( -name '*.exe' -o -name '*.dmg' \) | sort > files.txt
+          find installers -type f \( -name '*.exe' -o -name '*.dmg' -o -name 'latest.yml' \) | sort > files.txt
           if [ ! -s files.txt ]; then
             echo "::error::No installers found"
+            exit 1
+          fi
+          # Without it, installed apps would never hear about this version.
+          if ! grep -q '/latest.yml$' files.txt; then
+            echo "::error::No latest.yml: the Windows apps couldn't update to this version"
             exit 1
           fi
           while read -r f; do ls -l "$f"; done < files.txt

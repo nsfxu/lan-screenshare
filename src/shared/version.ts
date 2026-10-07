@@ -59,3 +59,14 @@ export function newerVersionInRoom(
   }
   return best
 }
+
+/**
+ * The version a release offers to someone running `current`, from its tag
+ * ("v2.2.0"), or null when it isn't newer (or isn't a version at all).
+ */
+export function newerRelease(tag: unknown, current: string): string | null {
+  if (typeof tag !== 'string') return null
+  const version = tag.replace(/^v/, '')
+  if (!isAppVersion(version) || !isAppVersion(current)) return null
+  return compareAppVersions(version, current) > 0 ? version : null
+}

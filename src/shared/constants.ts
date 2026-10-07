@@ -1,5 +1,11 @@
 export const APP_NAME = 'ScreenShare'
 
+/** Where releases are published: the only place the app contacts on the internet (update checks). */
+export const RELEASES_REPO = 'nsfxu/lan-screenshare'
+export const RELEASES_URL = `https://github.com/${RELEASES_REPO}/releases`
+/** How often the app looks for an update while it runs (also once shortly after starting). */
+export const UPDATE_CHECK_INTERVAL_MS = 4 * 60 * 60_000
+
 /** Height of the app's own title bar (the system's window buttons are drawn over its right or left end). */
 export const TITLE_BAR_HEIGHT = 32
 

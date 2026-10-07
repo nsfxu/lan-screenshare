@@ -55,6 +55,15 @@ describe('settings', () => {
     expect(store.update({ theme: 'neon' as never }).theme).toBe('graphite')
   })
 
+  it('checks for updates by default, also for settings files from before the switch', () => {
+    const dir = tempDir()
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ settingsVersion: SETTINGS_VERSION, displayName: 'Ana' }))
+    const store = new SettingsStore(dir)
+    expect(store.get().autoUpdate).toBe(true)
+    expect(store.update({ autoUpdate: false }).autoUpdate).toBe(false)
+    expect(store.update({ autoUpdate: 'no' as never }).autoUpdate).toBe(false)
+  })
+
   it('rejects unknown content hints', () => {
     const store = new SettingsStore(tempDir())
     expect(store.update({ contentHint: 'fast' as never }).contentHint).toBe('auto')
