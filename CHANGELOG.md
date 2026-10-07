@@ -10,9 +10,14 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Changed
+
+- **Join by IP** is now **Join Remote**: one place for rooms outside your network, with two tabs, **Direct** (an address, as before) and **Remote invite**.
+
 ### Added
 
-- **VPN rooms**: when you create a room you can turn on **Open a VPN for this room**. It opens a small WireGuard VPN for as long as the room lasts; you copy an invite from the room's **ⓘ** and send it to friends outside your network, who paste it under **Join by IP → VPN invite** and join like anyone else. Nothing to install: the VPN comes inside ScreenShare, and asks for administrator permission once. The host needs the room's port forwarded (TCP and UDP) on the router. See [VPN rooms](docs/en-US/vpn-rooms.md). Windows, macOS and Linux (not yet tried on real machines).
+- **Remote access to a room, with an address found for you**: turning on Remote access looks up the address your friends use and, when your router allows it (UPnP), opens the room's port while the room lasts and closes it after. It says so when your internet provider shares its address (CGNAT), because then nobody outside your network can reach you. Finding the address asks api.ipify.org once, only when you turn Remote access on.
+- **VPN rooms**: when you create a room you can turn on **Open Remote access for this room**. It opens a small WireGuard VPN for as long as the room lasts; you copy an invite from the room's **ⓘ** and send it to friends outside your network, who paste it under **Join Remote → Remote invite** and join like anyone else. Nothing to install: the VPN comes inside ScreenShare, and asks for administrator permission once. The host needs the room's port forwarded (TCP and UDP) on the router. See [VPN rooms](docs/en-US/vpn-rooms.md). Windows, macOS and Linux (not yet tried on real machines).
 - On Windows the installer now installs for all users (it needs administrator rights), because VPN rooms start a helper with those rights.
 
 ## [2.0.0] - 2026-10-06

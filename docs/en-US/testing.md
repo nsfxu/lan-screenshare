@@ -37,6 +37,7 @@ Tests run in Node (`vitest.config.ts`, environment `node`, 15 s timeout). They s
 | `tests/network.test.ts` | Address parsing and ranking, URLs with IPv6, TLS probe with fingerprint, codec ordering, Opus and bitrate SDP tweaks. |
 | `tests/crypto.test.ts` | PIN generation and validation, constant-time comparison, `PinGuard` lockout and reset. |
 | `tests/vpn.test.ts`, `tests/wireguard.test.ts`, `tests/vpnHelper.test.ts` (and `go test` in `native/ssvpn`) | VPN rooms, pure parts: key and IPv4 validation, picking a free network, guest addresses, invites (round trip, every kind of damage), enrolment messages; the requests `wireguard-go` understands (keys in hex, against a fake control socket); finding the helper, checking it against checksums before elevating, its arguments and status file, quoting for the permission prompts; in Go, the helper's strict argument validation. |
+| `tests/upnp.test.ts` (with `tests/fakeRouter.ts`, a router on loopback that answers SSDP and SOAP) | Finding the router and refusing answers that point elsewhere, its public address, opening and closing TCP and UDP, permanent-only routers, refusals; the public address service; detection of CGNAT and fallbacks; ports closed with the room. |
 | `tests/vpnRoom.test.ts` | VPN rooms against a real room server and a recording tunnel: `POST /vpn/enroll` (address and peer added, the same guest keeps its address, key theft, wrong secret and lockout, full room, tunnel failure, bad and oversized bodies, 404 without a VPN), and a guest joining from an invite (what its tunnel is told, every error message, network clash, missing wireguard-go, one VPN at a time). |
 | `tests/crop.test.ts` | Profile picture crop: centring, clamping, zoom around a point, zoom limits. |
 | `tests/renderer/gameCursor.test.ts` | Games that hide the cursor: switching to a fullscreen game's window and back after alt-tab, ignoring brief flashes and other displays, suggesting windowed games, keeping the screen when asked, no retry loop on failure. |
@@ -89,7 +90,7 @@ Keep decision logic out of React and out of WebRTC callbacks, in `src/shared/*.t
 
 | Test | Covers |
 |---|---|
-| Public room (`room.spec.ts`) | Alice creates a room and shares; Bob joins with **Join by IP**; nothing plays until he chooses her stream; frames arrive and have the colour of her screen; chat both ways; when she stops sharing (Sharing menu), his stream goes away. |
+| Public room (`room.spec.ts`) | Alice creates a room and shares; Bob joins with **Join Remote**; nothing plays until he chooses her stream; frames arrive and have the colour of her screen; chat both ways; when she stops sharing (Sharing menu), his stream goes away. |
 | Private room (`room.spec.ts`) | A wrong PIN is refused (error under the room, still outside); the right PIN lets Bob in. |
 | Automatic quality (`quality.spec.ts`) | Alice shares; the test reports what's in front as the Windows helper would. The Stats panel shows smooth motion before anything is known, sharp text for a normal window, smooth motion for a fullscreen app on the shared screen, sharp text for one on another screen; Automatic is the default and a fixed choice in Settings wins. |
 | Hidden viewers (`hidden.spec.ts`) | Alice and Carol share, Bob watches both. Bob minimized: no frames from either, and Alice sees "not looking (video paused)"; restored: both play again. Alice's tile full screen (simulated): Carol's stream pauses, Alice's keeps playing. |
@@ -101,7 +102,7 @@ Keep decision logic out of React and out of WebRTC callbacks, in `src/shared/*.t
 | Chat (`chat.spec.ts`) | The room-named message box, the unread count while hidden, grouping. |
 | Menus (`menus.spec.ts`) | The Sharing button's menu (quality, stop), right-click on your own tile and on a stream (quality you receive, stop watching), the host's actions. |
 | Focus and volume (`focus.spec.ts`) | Alice shares with a test tone: click to focus and back, the speaker mutes and unmutes, its slider and the menu's change the played volume, double-click full screen, hiding the strip pauses its stream. |
-| VPN rooms (`vpn.spec.ts`) | The tunnel is faked (`SCREENSHARE_FAKE_VPN=1`: no interface, no permission prompt); the invite, the enrolment over TLS pinned to the host's certificate and joining the room are real. Alice opens a VPN room and copies the invite; Bob pastes it under **Join by IP → VPN invite**, the room opens by itself, **Disconnect** ends it. Bad invites are refused with a reason (not an invite, wrong secret). **Two guests watch the same stream**: Bob and Carol get different addresses in the host's network and both decode real frames of Alice's screen. **Private VPN room**: the VPN comes up but the PIN is still asked (wrong, then right). **Rejoining** keeps the guest's address and one seat on the host, and the room leaves the list on disconnect. **One VPN at a time**: a guest can't join a second, a host can't join one. **Lockout**: three wrong invites lock the guest out, even for the right invite. **Ending the room** takes the host's VPN down and the invite stops working. **Create room**: the VPN needs an address, and a computer without the helper sees the switch off with the reason. Creating a real interface needs administrator rights: [check it by hand](#checking-vpn-rooms). |
+| VPN rooms (`vpn.spec.ts`) | The tunnel is faked (`SCREENSHARE_FAKE_VPN=1`: no interface, no permission prompt); the invite, the enrolment over TLS pinned to the host's certificate and joining the room are real. Alice opens a VPN room and copies the invite; Bob pastes it under **Join Remote → Remote invite**, the room opens by itself, **Disconnect** ends it. Bad invites are refused with a reason (not an invite, wrong secret). **Two guests watch the same stream**: Bob and Carol get different addresses in the host's network and both decode real frames of Alice's screen. **Private VPN room**: the VPN comes up but the PIN is still asked (wrong, then right). **Rejoining** keeps the guest's address and one seat on the host, and the room leaves the list on disconnect. **One VPN at a time**: a guest can't join a second, a host can't join one. **Lockout**: three wrong invites lock the guest out, even for the right invite. **Ending the room** takes the host's VPN down and the invite stops working. **Create room**: the VPN needs an address, and a computer without the helper sees the switch off with the reason. Creating a real interface needs administrator rights: [check it by hand](#checking-vpn-rooms). |
 | Themes (`theme.spec.ts`) | Each theme changes the page colours; the choice survives a reload. |
 | Settings (`settings.spec.ts`) | The section list jumps to a section and follows the scrolling. |
 
@@ -208,7 +209,7 @@ NODE_PATH=$(npm root -g) xvfb-run -a -s "-screen 0 1600x1000x24" node drive.cjs
 
 Tips:
 
-- **Two people**: launch a second instance with another `--profile`, click **Join by IP**, type `127.0.0.1:47800`, press Enter, wait a moment for the probe, then click **Join**.
+- **Two people**: launch a second instance with another `--profile`, click **Join Remote**, type `127.0.0.1:47800`, press Enter, wait a moment for the probe, then click **Join**.
 - **Real screen capture** under Xvfb needs the `Composite` and `DAMAGE` extensions (`-s "-screen 0 1600x1000x24 +extension Composite +extension DAMAGE"`) and can still be flaky; the fake canvas above is more reliable.
 - **Read what the user would see**: stats badges (`.tile .stat-badge`), computed styles (`getComputedStyle(...).opacity`), or pixels of an image (draw it on a canvas and read `getImageData`).
 - **Pretend to be another OS** for platform-only UI: override the `system:app-info` IPC handler to return `platform: 'win32'`.
@@ -219,9 +220,9 @@ Tips:
 
 The automated tests stop at the tunnel (a fake or a recording one). On Windows, macOS or Linux, with two computers (or a computer and a VM) that can reach each other:
 
-1. On the host, **Create room** with **Open a VPN** and the address the guest reaches the host at (on one LAN, its LAN address). Enter the administrator password.
+1. On the host, **Create room** with **Open Remote access** and the address the guest reaches the host at (on one LAN, its LAN address). Enter the administrator password.
 2. `ifconfig` / `ip addr` / `ipconfig` shows a `utunN`, `ssvpn0` or Wintun adapter with `10.77.N.1` (on Windows, the adapter is in the Private profile: `Get-NetConnectionProfile`).
-3. On the guest, paste the invite under **Join by IP → VPN invite**. `ping 10.77.N.1` works, and the room opens.
+3. On the guest, paste the invite under **Join Remote → Remote invite**. `ping 10.77.N.1` works, and the room opens.
 4. Share on the host, watch on the guest. With a third computer, watch between the two guests and confirm the host relays (its forwarding switch is on, and back off after).
 5. Close the room: the interface disappears within seconds on both sides, with no second password prompt. Kill the app instead (`kill -9`): the interface still goes away.
 
@@ -249,7 +250,7 @@ On other systems, check that the helpers still compile as C# 5 with Mono (`mcs -
 
 Run through this on real machines (ideally one Windows and one macOS) on a real network:
 
-- [ ] A room appears on another computer by itself (mDNS), and **Join by IP** works.
+- [ ] A room appears on another computer by itself (mDNS), and **Join Remote** works.
 - [ ] Private room: wrong PIN shows attempts left, 3 wrong PINs lock for 5 minutes, the right PIN works.
 - [ ] Share a screen and a single window, with and without system audio.
 - [ ] Windows: in a Discord call with **Leave out Discord** on, the others don't hear themselves.

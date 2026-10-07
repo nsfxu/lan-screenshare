@@ -20,16 +20,16 @@ A **VPN room** lets people who are *not* on your network join your room. When yo
 | System | Windows 10/11, macOS or Linux | Windows 10/11, macOS or Linux |
 | Software | Nothing to install: the VPN helper (WireGuard and, on Windows, the Wintun driver library) comes inside ScreenShare. On Linux, polkit (`pkexec`) asks for the password | the same |
 | Permission | The administrator permission (UAC on Windows, your password on macOS and Linux), once when the room opens | The same, once when joining |
-| Network | A way in from outside: a public IP or name, with the room's port (47800 unless you changed it) forwarded on your router to this computer, **for both TCP and UDP** | Nothing: the guest only makes outgoing connections |
+| Network | A way in from outside: a public address (not behind CGNAT) and the room's port (47800 unless you changed it) reaching this computer, **for both TCP and UDP**. ScreenShare finds the address and, if your router has UPnP on, opens the port for you | Nothing: the guest only makes outgoing connections |
 
 If the helper is missing (a build made without Go, see [development](development.md#the-vpn-helper)), **Create room** says so and the VPN switch stays off.
 
 ## Hosting a VPN room
 
 1. Click **Create room** and set it up as usual.
-2. Turn on **Open a VPN for this room**, and type the address your friends connect to: your public IP, or a name that points to it.
+2. Turn on **Open Remote access for this room**, and type the address your friends connect to: your public IP, or a name that points to it.
 3. Click **Start sharing** and enter your administrator password when asked.
-4. Click the **ⓘ** next to the room's name and press **Copy VPN invite**. Send that line to the people you invite.
+4. Click the **ⓘ** next to the room's name and press **Copy Remote invite**. Send that line to the people you invite.
 
 The panel shows how many guests have joined. Closing the room takes the VPN down.
 
@@ -37,11 +37,21 @@ The panel shows how many guests have joined. Closing the room takes the VPN down
 
 ## Joining a VPN room
 
-1. Click **Join by IP**, choose **VPN invite**, paste the invite and click **Connect**.
+1. Click **Join Remote**, choose **Remote invite**, paste the invite and click **Connect**.
 2. Enter your administrator password when asked.
 3. The room opens by itself. If it is private, the PIN is asked right under it.
 
-While you are connected the rooms column shows **VPN connected** with a **Disconnect** button. Leaving the room doesn't disconnect the VPN: do that yourself, or quit the app (it also goes down if the app crashes).
+While you are connected the rooms column shows **Remote connected** with a **Disconnect** button. Leaving the room doesn't disconnect the VPN: do that yourself, or quit the app (it also goes down if the app crashes).
+
+## The address and the router's port, found for you
+
+Turning on **Open Remote access for this room** looks around so you don't have to:
+
+- **Your address.** It asks `api.ipify.org` which address the internet sees (this is the only outside service ScreenShare uses, and only at this moment), and falls back to your router's own address when that fails. The field is filled in; change it if you use a name.
+- **The router's port.** It looks for a router that speaks UPnP and, if one answers, opens the room's port for TCP and UDP while the room lasts. The opening is leased for an hour and renewed, and closed when the room ends, so a crash leaves nothing open for long. Untick **Open the port on my router** to do it yourself.
+- **CGNAT.** If your provider shares one public address between customers, no port can be opened for you and nobody outside your network can reach this computer; the dialog says so. Friends on your own network can still join, and moving to a connection with its own address fixes it.
+
+If the router doesn't answer (UPnP is often off), forward the port yourself; the room's details say so.
 
 ## How it works
 

@@ -20,16 +20,16 @@ Uma **sala com VPN** deixa entrar na sua sala quem *não* está na sua rede. Ao 
 | Sistema | Windows 10/11, macOS ou Linux | Windows 10/11, macOS ou Linux |
 | Software | Nada a instalar: o auxiliar de VPN (WireGuard e, no Windows, a biblioteca do driver Wintun) vem dentro do ScreenShare. No Linux, o polkit (`pkexec`) pede a senha | o mesmo |
 | Permissão | A permissão de administrador (UAC no Windows, sua senha no macOS e no Linux), uma vez ao abrir a sala | A mesma, uma vez ao entrar |
-| Rede | Um caminho de fora: IP público ou nome, com a porta da sala (47800, se você não mudou) encaminhada no roteador para este computador, **em TCP e em UDP** | Nada: o convidado só faz conexões de saída |
+| Rede | Um caminho de fora: um endereço público (sem CGNAT) e a porta da sala (47800, se você não mudou) chegando a este computador, **em TCP e em UDP**. O ScreenShare descobre o endereço e, se o UPnP do roteador estiver ligado, abre a porta para você | Nada: o convidado só faz conexões de saída |
 
 Se o auxiliar não estiver presente (uma versão compilada sem Go, veja o [desenvolvimento](development.md#o-auxiliar-de-vpn)), **Create room** avisa e a opção de VPN fica desligada.
 
 ## Hospedar uma sala com VPN
 
 1. Clique em **Create room** e configure como de costume.
-2. Ligue **Open a VPN for this room** e digite o endereço que seus amigos vão usar: seu IP público, ou um nome que aponte para ele.
+2. Ligue **Open Remote access for this room** e digite o endereço que seus amigos vão usar: seu IP público, ou um nome que aponte para ele.
 3. Clique em **Start sharing** e digite a senha de administrador quando pedir.
-4. Clique no **ⓘ** ao lado do nome da sala e em **Copy VPN invite**. Envie essa linha às pessoas que você convidar.
+4. Clique no **ⓘ** ao lado do nome da sala e em **Copy Remote invite**. Envie essa linha às pessoas que você convidar.
 
 O painel mostra quantos convidados já entraram. Fechar a sala derruba a VPN.
 
@@ -37,11 +37,21 @@ O painel mostra quantos convidados já entraram. Fechar a sala derruba a VPN.
 
 ## Entrar numa sala com VPN
 
-1. Clique em **Join by IP**, escolha **VPN invite**, cole o convite e clique em **Connect**.
+1. Clique em **Join Remote**, escolha **Remote invite**, cole o convite e clique em **Connect**.
 2. Digite a senha de administrador quando pedir.
 3. A sala abre sozinha. Se for privada, o PIN é pedido logo abaixo dela.
 
-Enquanto você está conectado, a coluna de salas mostra **VPN connected** com um botão **Disconnect**. Sair da sala não desconecta a VPN: faça isso você mesmo, ou feche o app (ela também cai se o app travar).
+Enquanto você está conectado, a coluna de salas mostra **Remote connected** com um botão **Disconnect**. Sair da sala não desconecta a VPN: faça isso você mesmo, ou feche o app (ela também cai se o app travar).
+
+## O endereço e a porta do roteador, descobertos para você
+
+Ao ligar **Open Remote access for this room**, o app procura por você:
+
+- **Seu endereço.** Pergunta ao `api.ipify.org` qual endereço a internet enxerga (é o único serviço externo que o ScreenShare usa, e só nesse momento) e, se falhar, usa o endereço do próprio roteador. O campo vem preenchido; mude se você usa um nome.
+- **A porta do roteador.** Procura um roteador que fale UPnP e, se algum responder, abre a porta da sala em TCP e UDP enquanto a sala durar. A abertura tem validade de uma hora e é renovada, e é fechada quando a sala acaba, então uma queda não deixa nada aberto por muito tempo. Desmarque **Open the port on my router** para fazer isso você mesmo.
+- **CGNAT.** Se sua operadora divide um endereço público entre clientes, nenhuma porta pode ser aberta para você e ninguém de fora da sua rede alcança este computador; o diálogo avisa. Amigos na sua própria rede ainda entram, e passar para uma conexão com endereço próprio resolve.
+
+Se o roteador não responder (o UPnP costuma vir desligado), encaminhe a porta você mesmo; os detalhes da sala avisam.
 
 ## Como funciona
 

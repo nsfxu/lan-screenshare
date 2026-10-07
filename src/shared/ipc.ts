@@ -12,6 +12,7 @@ import type {
   SystemStats,
   UpdateRoomRequest,
   VpnAvailability,
+  VpnDetection,
   VpnStatus
 } from './types'
 
@@ -33,6 +34,7 @@ export const IPC = {
   vpnJoin: 'vpn:join',
   vpnLeave: 'vpn:leave',
   vpnStatus: 'vpn:status',
+  vpnDetect: 'vpn:detect',
   vpnChanged: 'vpn:changed',
   listSources: 'capture:list',
   selectSource: 'capture:select',
@@ -90,6 +92,8 @@ export interface ScreenShareApi {
     /** Disconnect from the VPN we joined (a hosted VPN ends with its room). */
     leave(): Promise<void>
     status(): Promise<VpnStatus>
+    /** Find the address guests would use (and whether the router can open the port): fills in the invite's address. */
+    detect(): Promise<VpnDetection>
     onChanged(cb: (status: VpnStatus) => void): () => void
   }
   capture: {

@@ -25,7 +25,7 @@ export interface Elevated {
   exited: Promise<number | null>
 }
 
-const DENIED = 'Administrator permission was not given, so the VPN could not be created'
+const DENIED = 'Administrator permission was not given, so the Remote connection could not be created'
 
 /**
  * Starts `exe` with administrator rights, asking for the user's permission with the

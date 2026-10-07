@@ -49,7 +49,7 @@ sequenceDiagram
   V->>V: guarda o fp para o endereço desse host
   V->>H: GET /info via TLS
   V->>V: o certificado apresentado precisa bater com o fp anunciado
-  Note over V: Join by IP: sem anúncio, então o fp visto na primeira consulta é guardado
+  Note over V: Join Remote: sem anúncio, então o fp visto na primeira consulta é guardado
   C->>H: conexão wss://
   C->>V: verificação do certificado (setCertificateVerifyProc)
   V-->>C: aceita só se a impressão digital é confiável para esse host
@@ -57,7 +57,7 @@ sequenceDiagram
 
 Qualquer certificado que não seja confiável para aquele nome de host exato é recusado, mesmo que o sistema fosse aceitá-lo.
 
-**Concessão:** com **Join by IP**, a primeira consulta é do tipo *confiar no primeiro uso*. Quem conseguisse interceptar exatamente essa primeira conexão poderia apresentar o próprio certificado. As salas encontradas por mDNS não têm essa brecha, porque a impressão digital chega no anúncio.
+**Concessão:** com **Join Remote**, a primeira consulta é do tipo *confiar no primeiro uso*. Quem conseguisse interceptar exatamente essa primeira conexão poderia apresentar o próprio certificado. As salas encontradas por mDNS não têm essa brecha, porque a impressão digital chega no anúncio.
 
 ## Endurecimento do Electron
 
@@ -76,6 +76,7 @@ Seja transparente sobre isso em revisões e issues:
 - **Os client ids são informados pelo próprio cliente.** O banimento é pelo client id, então alguém determinado pode voltar trocando o id (por exemplo, com um novo `--profile`). O PIN continua valendo nas salas privadas. Trocar o PIN depois de remover alguém impede a volta.
 - **O bloqueio de PIN é por endereço IP.** Várias máquinas atrás de um mesmo endereço dividem o contador, e um atacante com muitos endereços tem 3 tentativas por endereço.
 - **O anfitrião é confiável.** Ele repassa a sinalização e o chat, então poderia lê-los ou alterá-los. No caminho WebRTC a mídia vai direto entre quem transmite e quem assiste, cifrada, mas é o anfitrião que repassa a sinalização que configura essa cifragem, então um anfitrião malicioso poderia interferir. No fallback TCP, a mídia passa pelo anfitrião, que consegue lê-la (o WebSocket com TLS só a protege na rede).
+- **O acesso remoto consulta um serviço externo e pode abrir uma porta no seu roteador.** Ligá-lo envia uma requisição ao `api.ipify.org` (ele fica sabendo seu endereço, nada mais; se falhar, usa-se o do roteador). Com UPnP, a porta da sala é aberta para a internet enquanto a sala durar, com validade de uma hora que é renovada e apagada no fim. Só a porta da sala fica exposta, e entrar ainda exige o segredo do convite (3 erros bloqueiam um endereço por 5 minutos) e, nas salas privadas, o PIN. A resposta do roteador só é aceita do aparelho que respondeu na sua própria rede, então um estranho não consegue apontar o app para outro servidor.
 - **O convite da VPN é um segredo ao portador.** Quem o tiver entra na VPN até a sala acabar; envie-o só a quem você convida. O PIN da sala continua valendo nas salas privadas. O convite é mostrado ao anfitrião e copiado à mão; nunca é salvo.
 - **Numa sala com VPN, o anfitrião vê e repassa tudo entre os convidados.** Os pacotes entre dois convidados passam pelo computador do anfitrião; a mídia WebRTC continua cifrada (DTLS-SRTP) de ponta a ponta, mas o anfitrião vê quem fala com quem e poderia descartar ou atrasar o tráfego.
 - **No macOS o repasse não é isolado.** Para repassar entre convidados, o anfitrião liga o encaminhamento de IP enquanto a sala está aberta (e o devolve ao estado anterior). No Linux uma regra do `iptables` limita isso ao tráfego entre pontos da VPN; no macOS nada limita, então um convidado poderia enviar pacotes (de mão única: sem NAT, não há respostas) para as outras redes do anfitrião. Não abra uma sala com VPN num computador em uma rede da qual você quer manter os convidados longe sem um firewall no meio.

@@ -9,6 +9,7 @@ import type {
   DiscoveredRoom,
   HostedRoom,
   HostedVpn,
+  PortMappingStatus,
   RoomEndpoint,
   UpdateRoomRequest
 } from '../shared/types'
@@ -37,7 +38,7 @@ interface Hosting {
   pinLength: number
   fingerprint: string | null
   /** The VPN this room opened, if any. */
-  vpn: { invite: string; endpoint: string } | null
+  vpn: { invite: string; endpoint: string; portMapping: PortMappingStatus } | null
 }
 
 export interface RoomManagerEvents {
@@ -221,7 +222,9 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
     try {
       port = await server.start()
       if (vpnHost && req.vpn) {
-        const endpoint = (req.vpn.endpoint || '').trim() || getLocalAddresses()[0] || ''
+        // No address typed: use what the internet sees, or else our own on the local network.
+        const detected = req.vpn.endpoint?.trim() ? null : await this.vpn.detect()
+        const endpoint = req.vpn.endpoint?.trim() || detected?.publicAddress || detected?.localAddress || getLocalAddresses()[0] || ''
         if (!isValidEndpointHost(endpoint)) throw new Error('Enter the address your guests will connect to, like 203.0.113.7 or home.example.org')
         const { invite, interface: iface } = await vpnHost.start({
           endpoint,
@@ -230,7 +233,8 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
           fingerprint: tls ? fingerprintFromPem(tls.cert) : null
         })
         this.vpn.hostReady(iface)
-        vpnInfo = { invite, endpoint }
+        const portMapping = req.vpn.openPort ? (await this.vpn.openPort(port)).status : 'off'
+        vpnInfo = { invite, endpoint, portMapping }
       }
     } catch (err) {
       await server.stop().catch(() => undefined)
@@ -407,7 +411,7 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
       }
     }
     throw new Error(
-      `The VPN is up, but the room does not answer through it (${(lastError as Error | undefined)?.message ?? 'no answer'}). ` +
+      `Remote is connected, but the room does not answer through it (${(lastError as Error | undefined)?.message ?? 'no answer'}). ` +
         `Check that UDP port ${port} reaches the host.`
     )
   }

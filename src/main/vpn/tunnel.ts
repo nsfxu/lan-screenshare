@@ -48,7 +48,7 @@ export class SystemTunnel implements VpnTunnel {
   ) {}
 
   async up(config: TunnelConfig): Promise<{ interface: string }> {
-    if (this.socket) throw new Error('The VPN is already up')
+    if (this.socket) throw new Error('Remote is already connected')
     verifyHelper(this.helper, this.checksums)
     const dir = (this.dir = fs.mkdtempSync(path.join(os.tmpdir(), 'screenshare-vpn-')))
     const aliveFile = path.join(dir, 'alive')
@@ -72,10 +72,10 @@ export class SystemTunnel implements VpnTunnel {
       const status = await Promise.race([
         waitForStatus(statusFile),
         elevated.exited.then((code): never => {
-          throw new Error(`The VPN helper stopped (exit ${code ?? 'unknown'})`)
+          throw new Error(`The Remote helper stopped (exit ${code ?? 'unknown'})`)
         })
       ])
-      if (status.error || !status.socket || !status.interface) throw new Error(status.error ?? 'The VPN helper did not start')
+      if (status.error || !status.socket || !status.interface) throw new Error(status.error ?? 'The Remote helper did not start')
       this.socket = status.socket
       await uapiRequest(status.socket, uapiSetDevice({ privateKey: config.privateKey, listenPort: config.listenPort }, config.peers))
       return { interface: status.interface }
@@ -105,7 +105,7 @@ export class SystemTunnel implements VpnTunnel {
   }
 
   private control(): string {
-    if (!this.socket) throw new Error('The VPN is not up')
+    if (!this.socket) throw new Error('Remote is not connected')
     return this.socket
   }
 }
@@ -121,7 +121,7 @@ async function waitForStatus(file: string): Promise<HelperStatus> {
     }
     await new Promise((r) => setTimeout(r, 100))
   }
-  throw new Error('The VPN helper did not report back in time')
+  throw new Error('The Remote helper did not report back in time')
 }
 
 /** Who gets the control socket: our user id, or on Windows our SID (the elevated helper may be another account). */

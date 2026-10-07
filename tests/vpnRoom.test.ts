@@ -31,6 +31,11 @@ class RecordingTunnel implements VpnTunnel {
 
 function environment(tunnels: RecordingTunnel[], opts: Partial<VpnEnvironment> = {}): VpnEnvironment {
   return {
+    network: {
+      detect: async () => ({ localAddress: '192.168.1.4', publicAddress: '203.0.113.9', upnp: true, behindCgnat: false }),
+      openPort: async () => ({ status: 'opened' as const }),
+      closePorts: async () => undefined
+    },
     availability: async () => ({ ok: true, reason: null }),
     createTunnel: () => {
       const tunnel = new RecordingTunnel()
@@ -238,7 +243,7 @@ describe('joining with an invite', () => {
     const { port, invite } = await startHost([])
     const guest = new VpnManager(environment([]), quiet)
 
-    await expect(guest.join('hello', 'c')).rejects.toThrow(/not a ScreenShare VPN invite/)
+    await expect(guest.join('hello', 'c')).rejects.toThrow(/not a ScreenShare Remote invite/)
 
     const forged = invite.replace(/.$/, (c) => (c === 'A' ? 'B' : 'A'))
     await expect(guest.join(forged, 'c')).rejects.toThrow()

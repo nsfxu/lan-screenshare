@@ -51,7 +51,7 @@ flowchart LR
 - **Network conditions**: the adaptive quality logic is unit-tested, but real packet loss hasn't been simulated.
 - **TCP fallback**: one encode is shared by all TCP viewers of a streamer, sized for the most demanding one.
 - **Latency figures** on WebRTC are estimates (see [media pipeline](media-pipeline.md#statistics-and-latency)).
-- **Discovery** needs multicast; on VPNs use **Join by IP**.
+- **Discovery** needs multicast; on VPNs use **Join Remote**.
 - **VPN rooms** need a forwarded port on the host. The helper that makes the tunnel comes inside the app (Windows, macOS, Linux). The room logic is covered by tests with a fake tunnel; creating a real interface hasn't been run on real machines yet, on any system (see [VPN rooms](vpn-rooms.md#limits)).
 - **Version**: everyone in a room must run the same protocol version (currently 4).
 - **Out of scope** for now: remote control, microphone audio, several monitors in one stream, recording, Linux as a supported platform.

@@ -49,7 +49,7 @@ sequenceDiagram
   V->>V: remember fp for this host address
   V->>H: GET /info over TLS
   V->>V: presented certificate must match the advertised fp
-  Note over V: Join by IP: no advert, so the fp seen on the first probe is remembered
+  Note over V: Join Remote: no advert, so the fp seen on the first probe is remembered
   C->>H: wss:// connection
   C->>V: certificate check (setCertificateVerifyProc)
   V-->>C: accept only if the fingerprint is trusted for that host
@@ -57,7 +57,7 @@ sequenceDiagram
 
 Any certificate that is not trusted for that exact host name is rejected, even if the system would otherwise accept it.
 
-**Trade-off:** with **Join by IP**, the first probe is *trust on first use*. Someone who can intercept that very first connection could present their own certificate. Rooms found over mDNS don't have this gap because the fingerprint arrives in the advert.
+**Trade-off:** with **Join Remote**, the first probe is *trust on first use*. Someone who can intercept that very first connection could present their own certificate. Rooms found over mDNS don't have this gap because the fingerprint arrives in the advert.
 
 ## Electron hardening
 
@@ -76,7 +76,8 @@ Be honest about these in reviews and issues:
 - **Client ids are self-reported.** The kick ban is by client id, so a determined user can rejoin by changing their id (for example with a new `--profile`). The PIN still applies to private rooms. Changing the PIN after a kick locks them out.
 - **The PIN lockout is per IP address.** Several machines behind one address share a counter, and an attacker with many addresses gets 3 tries per address.
 - **The host is trusted.** It relays signaling and chat, so it could read or alter them. Media on the WebRTC path flows directly between streamer and watcher and is encrypted, but the host relays the signaling that sets up that encryption, so a malicious host could interfere with it. On the TCP fallback, media passes through the host, readable by it (the TLS WebSocket only protects it on the network).
-- **A VPN invite is a bearer secret.** Anyone who has it can join the VPN until the room ends, so send it only to the people you invite. The room's PIN still applies to private rooms. The invite is shown to the host and copied by hand; it is never saved.
+- **Remote access asks an outside service, and may open a port on your router.** Turning it on sends one request to `api.ipify.org` (it learns your address, nothing else; if it fails, the router's address is used). With UPnP the room's port is opened to the internet for as long as the room lasts, with a one-hour lease that is renewed and deleted at the end. Only the room's port is exposed, and entering still needs the invite's secret (3 wrong tries lock an address for 5 minutes) and, for private rooms, the PIN. The router's answer is only trusted from the device that replied on your own network, so a stranger can't point the app at another server.
+- **A Remote invite is a bearer secret.** Anyone who has it can join the VPN until the room ends, so send it only to the people you invite. The room's PIN still applies to private rooms. The invite is shown to the host and copied by hand; it is never saved.
 - **In a VPN room the host sees and relays everything between guests.** Packets between two guests pass through the host's computer; WebRTC media is still DTLS-SRTP encrypted end to end, but the host can see who talks to whom, and could drop or delay traffic.
 - **Forwarding is not walled off on macOS.** To relay between guests the host turns on IP forwarding while the room is open (and puts it back). On Linux an `iptables` rule limits it to VPN-to-VPN traffic; on macOS nothing does, so a guest could send packets (one-way: no NAT, so no replies) towards the host's other networks. Don't open a VPN room on a computer on a network you don't want guests near without a firewall in between.
 - **The control socket belongs to your user.** After the administrator step, any program running as you can reconfigure that tunnel's peers, as it can anything else you own. The administrator step itself can't be driven that way: it runs once, from a fixed script.

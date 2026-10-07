@@ -61,7 +61,7 @@ const helperAt: HelperLocation = {
 const vpn = new VpnManager(
   process.env.SCREENSHARE_FAKE_VPN === '1'
     ? fakeVpnEnvironment()
-    : systemVpnEnvironment(findHelper(helperAt), readHelperChecksums(helperAt)),
+    : systemVpnEnvironment(findHelper(helperAt), readHelperChecksums(helperAt), log),
   log
 )
 const rooms = new RoomManager(settings, app.getPath('userData'), log, app.getVersion(), vpn)
@@ -193,7 +193,10 @@ function registerIpc(): void {
   ipcMain.handle(IPC.removeManual, (_e, key: string) => rooms.removeManual(String(key)))
 
   ipcMain.handle(IPC.createRoom, (_e, req: CreateRoomRequest) =>
-    rooms.createRoom({ ...req, vpn: req.vpn ? { endpoint: String(req.vpn.endpoint ?? '') } : null })
+    rooms.createRoom({
+      ...req,
+      vpn: req.vpn ? { endpoint: String(req.vpn.endpoint ?? ''), openPort: req.vpn.openPort === true } : null
+    })
   )
   ipcMain.handle(IPC.updateRoom, (_e, req: UpdateRoomRequest) => rooms.updateRoom(req))
   ipcMain.handle(IPC.closeRoom, () => rooms.closeRoom())
@@ -203,6 +206,7 @@ function registerIpc(): void {
   ipcMain.handle(IPC.vpnJoin, (_e, invite: string) => rooms.joinVpn(String(invite)))
   ipcMain.handle(IPC.vpnLeave, () => rooms.leaveVpn())
   ipcMain.handle(IPC.vpnStatus, () => vpn.status())
+  ipcMain.handle(IPC.vpnDetect, () => vpn.detect())
 
   ipcMain.handle(IPC.listSources, () => capture.listSources())
   ipcMain.handle(IPC.selectSource, (_e, id: string, audio: boolean) => capture.select(String(id), !!audio))

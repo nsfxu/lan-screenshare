@@ -31,7 +31,7 @@ test('a room on a newer, incompatible version says to update', async ({ people }
     const { version } = await alice.win.evaluate(() => window.api.system.info())
     const { port } = future.address() as AddressInfo
 
-    await alice.win.getByRole('button', { name: 'Join by IP' }).click()
+    await alice.win.getByRole('button', { name: 'Join Remote' }).click()
     await alice.win.getByPlaceholder(/^Host address/).fill(`127.0.0.1:${port}`)
     await alice.win.getByPlaceholder(/^Host address/).press('Enter')
     await expect(alice.win.locator('.manual-connect .error-text')).toHaveText(

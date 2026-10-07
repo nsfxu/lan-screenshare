@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func good() []string {
 	return []string{"--address", "10.77.5.1", "--owner", "501", "--parent", "42", "--alive", "/tmp/a", "--status", "/tmp/s"}
@@ -41,6 +44,18 @@ func TestParseOptionsRefusesAnythingElse(t *testing.T) {
 	for name, extra := range bad {
 		if _, err := parseOptions(append(good(), extra...)); err == nil {
 			t.Errorf("%s: accepted", name)
+		}
+	}
+}
+
+func TestControlSDDLNamesNoOwner(t *testing.T) {
+	sddl := controlSDDL("S-1-5-21-1004336348-1177238915-682003330-1001")
+	if strings.Contains(sddl, "O:") {
+		t.Fatalf("an owner in the SDDL makes Windows refuse the pipe for an administrator: %s", sddl)
+	}
+	for _, want := range []string{"D:P", "(A;;GA;;;SY)", "(A;;GA;;;BA)", "(A;;GA;;;S-1-5-21-1004336348-1177238915-682003330-1001)"} {
+		if !strings.Contains(sddl, want) {
+			t.Errorf("missing %s in %s", want, sddl)
 		}
 	}
 }

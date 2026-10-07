@@ -33,6 +33,7 @@ const api: ScreenShareApi = {
     join: (invite) => ipcRenderer.invoke(IPC.vpnJoin, invite),
     leave: () => ipcRenderer.invoke(IPC.vpnLeave),
     status: () => ipcRenderer.invoke(IPC.vpnStatus),
+    detect: () => ipcRenderer.invoke(IPC.vpnDetect),
     onChanged: (cb) => subscribe<VpnStatus>(IPC.vpnChanged, cb)
   },
   capture: {

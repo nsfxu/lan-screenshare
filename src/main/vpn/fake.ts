@@ -1,3 +1,4 @@
+import type { VpnNetwork } from '../portMapping'
 import type { VpnEnvironment } from './manager'
 import type { TunnelConfig, VpnTunnel } from './tunnel'
 import { getLocalAddresses } from '../../utils/network'
@@ -17,7 +18,7 @@ class FakeTunnel implements VpnTunnel {
   }
 
   async setPeer(): Promise<void> {
-    if (!this.up_) throw new Error('The VPN is not up')
+    if (!this.up_) throw new Error('Remote is not connected')
   }
 
   async removePeer(): Promise<void> {}
@@ -27,8 +28,16 @@ class FakeTunnel implements VpnTunnel {
   }
 }
 
+/** No router to ask: everything is "found" at the machine's own address, and the port "opens". */
+const fakeNetwork: VpnNetwork = {
+  detect: async () => ({ localAddress: '127.0.0.1', publicAddress: '127.0.0.1', upnp: true, behindCgnat: false }),
+  openPort: async () => ({ status: 'opened' }),
+  closePorts: async () => undefined
+}
+
 export function fakeVpnEnvironment(): VpnEnvironment {
   return {
+    network: fakeNetwork,
     availability: async () => ({ ok: true, reason: null }),
     createTunnel: () => new FakeTunnel(),
     localAddresses: getLocalAddresses,

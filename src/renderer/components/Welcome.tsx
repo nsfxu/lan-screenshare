@@ -11,7 +11,7 @@ export function Welcome({ hasRooms, onCreate }: { hasRooms: boolean; onCreate():
       <p className="muted">
         {hasRooms
           ? 'Pick a room on the left to join it, or create your own.'
-          : 'No rooms on your network yet. Create one, or use Join by IP for rooms on a VPN.'}
+          : 'No rooms on your network yet. Create one, or use Join Remote for rooms outside your network.'}
       </p>
       <button className="btn primary" onClick={onCreate}>
         <Icon name="plus" /> Create room

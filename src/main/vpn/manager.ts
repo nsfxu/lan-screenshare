@@ -2,16 +2,19 @@ import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
 import path from 'node:path'
 import { MAX_USERS, VPN_KEEPALIVE_SECONDS, VPN_PREFIX_LENGTH } from '../../shared/constants'
-import type { VpnAvailability, VpnInvite, VpnStatus } from '../../shared/types'
+import type { VpnAvailability, VpnDetection, VpnInvite, VpnStatus } from '../../shared/types'
 import { decodeInvite, networkOf, overlapsNetwork, parseEnrollResponse, pickNetwork } from '../../shared/vpn'
 import { getLocalAddresses, hostForUrl, postJson } from '../../utils/network'
 import { generateKeyPair } from '../../utils/wireguard'
 import type { Logger } from '../server'
 import { VpnHost } from './host'
+import { RouterNetwork, type PortMapping, type VpnNetwork } from '../portMapping'
 import { SystemTunnel, type VpnTunnel } from './tunnel'
 
 /** What the manager needs from the computer; tests and the end-to-end suite swap it for a fake. */
 export interface VpnEnvironment {
+  /** The host's address as guests would see it, and the router's port. */
+  network: VpnNetwork
   availability(): Promise<VpnAvailability>
   createTunnel(): VpnTunnel
   localAddresses(): string[]
@@ -26,26 +29,27 @@ export interface VpnEnvironment {
  * The computer's real VPN support: the helper bundled with the app (see helper.ts)
  * and, on Linux, polkit to ask for the administrator password.
  */
-export function systemVpnEnvironment(helperPath: string | null, checksums: Record<string, string> | null): VpnEnvironment {
+export function systemVpnEnvironment(helperPath: string | null, checksums: Record<string, string> | null, log: Logger): VpnEnvironment {
   const platform = process.platform
   return {
+    network: new RouterNetwork(log),
     async availability() {
       if (platform !== 'darwin' && platform !== 'linux' && platform !== 'win32') {
-        return { ok: false, reason: 'VPN rooms are not available on this system.' }
+        return { ok: false, reason: 'Remote rooms are not available on this system.' }
       }
       if (!helperPath) {
         return {
           ok: false,
-          reason: 'This build of ScreenShare has no VPN helper. Install the official release, or build it with: npm run build:vpn (needs Go).'
+          reason: 'This build of ScreenShare has no Remote helper. Install the official release, or build it with: npm run build:vpn (needs Go).'
         }
       }
       if (platform === 'linux' && !onPath('pkexec')) {
-        return { ok: false, reason: 'VPN rooms need polkit to ask for your administrator password (install the "polkit" package).' }
+        return { ok: false, reason: 'Remote rooms need polkit to ask for your administrator password (install the "polkit" package).' }
       }
       return { ok: true, reason: null }
     },
     createTunnel() {
-      if (!helperPath) throw new Error('VPN rooms are not available here')
+      if (!helperPath) throw new Error('Remote rooms are not available here')
       return new SystemTunnel(platform, helperPath, checksums)
     },
     localAddresses: getLocalAddresses,
@@ -82,6 +86,14 @@ export class VpnManager extends EventEmitter<VpnManagerEvents> {
     return { ...this.current, peers: this.host?.peers ?? 0 }
   }
 
+  detect(): Promise<VpnDetection> {
+    return this.env.network.detect()
+  }
+
+  openPort(port: number): Promise<PortMapping> {
+    return this.env.network.openPort(port)
+  }
+
   availability(): Promise<VpnAvailability> {
     return this.env.availability()
   }
@@ -109,6 +121,7 @@ export class VpnManager extends EventEmitter<VpnManagerEvents> {
     if (!host) return
     this.host = this.tunnel = null
     this.current = OFF
+    await this.env.network.closePorts()
     await host.stop()
     this.emitStatus()
   }
@@ -123,10 +136,10 @@ export class VpnManager extends EventEmitter<VpnManagerEvents> {
     clientId: string
   ): Promise<{ address: string; port: number; tls: boolean; fingerprint: string | null }> {
     const invite = decodeInvite(inviteText)
-    if (!invite) throw new Error('That is not a ScreenShare VPN invite. Paste the whole line the host sent you.')
+    if (!invite) throw new Error('That is not a ScreenShare Remote invite. Paste the whole line the host sent you.')
     await this.assertFree()
     if (overlapsNetwork(networkOf(invite.hostAddress), this.env.localAddresses())) {
-      throw new Error(`Your network already uses ${networkOf(invite.hostAddress)}.x, the same range as this VPN. Ask the host to reopen the room.`)
+      throw new Error(`Your network already uses ${networkOf(invite.hostAddress)}.x, the same range as this Remote room. Ask the host to reopen the room.`)
     }
 
     const keys = generateKeyPair()
@@ -190,10 +203,10 @@ export class VpnManager extends EventEmitter<VpnManagerEvents> {
 
   private async assertFree(): Promise<void> {
     if (this.tunnel) {
-      throw new Error(this.host ? 'You are already hosting a VPN room' : 'You are already connected to a VPN room. Disconnect it first.')
+      throw new Error(this.host ? 'You are already hosting a Remote room' : 'You are already connected to a Remote room. Disconnect it first.')
     }
     const availability = await this.env.availability()
-    if (!availability.ok) throw new Error(availability.reason ?? 'VPN rooms are not available here')
+    if (!availability.ok) throw new Error(availability.reason ?? 'Remote rooms are not available here')
   }
 
   private emitStatus(): void {
@@ -207,7 +220,7 @@ function enrollError(status: number, body: unknown): string {
   const error = (body as { error?: string } | null)?.error
   if (status === 401) return 'The host did not accept this invite. Ask for a new one.'
   if (status === 429) return 'Too many wrong tries. Wait a few minutes and try again.'
-  if (status === 409) return 'The VPN room is full.'
-  if (status === 503) return 'The host is still starting the VPN. Try again in a moment.'
+  if (status === 409) return 'The Remote room is full.'
+  if (status === 503) return 'The host is still starting the Remote room. Try again in a moment.'
   return `The host refused the invite (${error ?? status})`
 }

@@ -22,15 +22,15 @@ Common problems and how to fix them. If yours isn't here, open **Settings → Op
 ```mermaid
 flowchart TD
   A["Room missing from the list"] --> B{"Same network<br/>and subnet?"}
-  B -->|"No (VPN, other subnet)"| C["Use Join by IP<br/>with the host's address"]
+  B -->|"No (VPN, other subnet)"| C["Use Join Remote<br/>with the host's address"]
   B -->|Yes| D{"Firewall allows<br/>ScreenShare?"}
   D -->|No| E["Allow ScreenShare on private networks<br/>(TCP port 47800+, mDNS UDP 5353)"]
   D -->|Yes| F{"Guest Wi-Fi or<br/>client isolation?"}
-  F -->|Yes| G["Use a normal network,<br/>or Join by IP"]
+  F -->|Yes| G["Use a normal network,<br/>or Join Remote"]
   F -->|No| C
 ```
 
-- Discovery uses **multicast (mDNS)**, which many VPNs, guest Wi-Fi networks and some routers block. **Join by IP** always works if the host can be reached: the host sees its addresses behind the **ⓘ** next to the room's name.
+- Discovery uses **multicast (mDNS)**, which many VPNs, guest Wi-Fi networks and some routers block. **Join Remote** always works if the host can be reached: the host sees its addresses behind the **ⓘ** next to the room's name.
 - The default port is **47800**. If it was busy, the host picked the next free one; the **ⓘ** shows the right one.
 - **Windows firewall**: the first time you host, Windows asks whether to allow ScreenShare. Allow it on **private** networks. If you clicked Cancel, allow it later in *Windows Security → Firewall → Allow an app*.
 - A room that stops answering for 10 seconds is removed from the list. It comes back as soon as it answers again.

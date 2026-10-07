@@ -38,7 +38,7 @@ flowchart LR
   A -. "fallback TCP: mídia repassada pelo WebSocket" .-> HM
 ```
 
-- **Descoberta**: as salas se anunciam por mDNS (`_lanshare._tcp`). Os outros apps procuram por elas e também consultam o `GET /info` de cada sala a cada 3 s para ter dados atualizados. Quem está em VPN ou em outra sub-rede pode digitar o endereço (**Join by IP**).
+- **Descoberta**: as salas se anunciam por mDNS (`_lanshare._tcp`). Os outros apps procuram por elas e também consultam o `GET /info` de cada sala a cada 3 s para ter dados atualizados. Quem está em VPN ou em outra sub-rede pode digitar o endereço (**Join Remote**).
 - **Sinalização**: ofertas, respostas e candidatos ICE do WebRTC passam pelo WebSocket da sala, mas só entre quem transmite e um dos seus espectadores atuais.
 - **Mídia**: um `RTCPeerConnection` por par transmissor→espectador. Quando o UDP está bloqueado, só aquele par passa para o **caminho TCP**: quem transmite codifica com WebCodecs e o servidor repassa os pedaços codificados.
 
@@ -268,7 +268,7 @@ classDiagram
 ```mermaid
 flowchart TB
   App["App.tsx<br/>configurações, avisos, entrar/hospedar"]
-  App --> Rooms["RoomsSidebar (esquerda)<br/>salas recentes e da rede, PIN, Join by IP, nome, configurações"]
+  App --> Rooms["RoomsSidebar (esquerda)<br/>salas recentes e da rede, PIN, Join Remote, nome, configurações"]
   Rooms --> Members["RoomMembers<br/>pessoas da sua sala: ao vivo, assistir, prévia, menu do anfitrião"]
   App --> Welcome["Welcome<br/>centro fora de uma sala"]
   App --> Room["RoomView<br/>centro e direita, uma por sessão"]
@@ -328,7 +328,7 @@ sequenceDiagram
   participant V as App do espectador
   participant M as Processo principal do espectador
   participant S as RoomServer
-  M->>M: a busca mDNS encontra a sala (ou Join by IP)
+  M->>M: a busca mDNS encontra a sala (ou Join Remote)
   M->>S: GET /info (confere a impressão digital do certificado)
   S-->>M: nome, privacidade, pessoas, transmissões ao vivo
   V->>M: rooms.resolve (consulta nova, confia no certificado)

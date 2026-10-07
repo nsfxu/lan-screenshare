@@ -127,11 +127,11 @@ export function RoomsSidebar(props: Props) {
         </button>
         <button
           className={`btn small ${manualOpen ? 'active' : ''}`}
-          title="Join a room by its address, e.g. over a VPN"
+          title="Join a room outside your network, with an invite or its address"
           aria-expanded={manualOpen}
           onClick={() => setManualOpen((v) => !v)}
         >
-          <Icon name="network" size={14} /> Join by IP
+          <Icon name="network" size={14} /> Join Remote
         </button>
         <button className="icon-btn" title="Hide rooms" aria-label="Hide rooms" onClick={onToggle}>
           <Icon name="panelLeft" />
@@ -192,7 +192,7 @@ export function RoomsSidebar(props: Props) {
           {network.length === 0 ? (
             <p className="muted small rooms-empty">
               {rooms.length === 0
-                ? 'Rooms on this network show up here by themselves. On a VPN, use Join by IP.'
+                ? 'Rooms on this network show up here by themselves. For rooms outside your network, use Join Remote.'
                 : 'No other rooms right now.'}
             </p>
           ) : (
@@ -411,12 +411,12 @@ function ManualConnect({ onClose, onVpnRoom }: { onClose(): void; onVpnRoom(room
           Direct
         </button>
         <button type="button" className={mode === 'vpn' ? 'active' : ''} onClick={() => (setMode('vpn'), setError(null))}>
-          VPN invite
+          Remote invite
         </button>
       </div>
       <input
         autoFocus
-        aria-label={mode === 'vpn' ? 'VPN invite' : 'Host address'}
+        aria-label={mode === 'vpn' ? 'Remote invite' : 'Host address'}
         placeholder={mode === 'vpn' ? 'Paste the invite the host sent you' : 'Host address, e.g. 10.8.0.5 or 192.168.1.20:47800'}
         value={value}
         onChange={(e) => setValue(e.target.value)}
@@ -441,7 +441,7 @@ function VpnStatusBar() {
     <div className="vpn-status">
       <Icon name="network" size={14} />
       <span title={`Interface ${status.interface ?? ''}`}>
-        VPN connected · <span className="mono">{status.address}</span>
+        Remote connected · <span className="mono">{status.address}</span>
       </span>
       <button className="btn small" onClick={() => void window.api.vpn.leave()}>
         Disconnect

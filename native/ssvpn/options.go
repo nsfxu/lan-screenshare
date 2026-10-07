@@ -69,3 +69,11 @@ func parseOptions(args []string) (options, error) {
 	}
 	return o, nil
 }
+
+// controlSDDL is who may open the control pipe on Windows: SYSTEM, the administrators and
+// the user who started the app (a SID). It deliberately names no owner ("O:"): we run as
+// an elevated administrator, and Windows refuses to let one make SYSTEM the owner of an
+// object it creates, so the pipe takes the owner of our own token.
+func controlSDDL(ownerSID string) string {
+	return "D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GA;;;" + ownerSID + ")"
+}

@@ -30,7 +30,7 @@ Everything you can do in ScreenShare, from finding a room to fine-tuning quality
 flowchart LR
   A["Open ScreenShare"] --> B{"Is there a room?"}
   B -->|"Yes, in the list"| C["Join it"]
-  B -->|"On a VPN or another subnet"| D["Join by IP"] --> C
+  B -->|"On a VPN or another subnet"| D["Join Remote"] --> C
   B -->|"No"| E["Create room"] --> F["Pick a screen or window"]
   C --> G["Watch streams, chat, share your own screen"]
   F --> G
@@ -59,9 +59,9 @@ Each row shows a lock for private rooms, how many streams are live, and how many
 
 The button at the top of each side column hides it (the rooms column shrinks to a strip of room initials; the chat button is in the room's header). The app remembers which columns you hid. In a small window (for example snapped next to a game) the columns make room for the tiles by themselves: below 1100 px wide the chat is closed, and below 760 px the rooms column is a strip. Their buttons then open them over the room, and clicking next to them puts them away.
 
-**Join by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click **Join by IP** (next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses behind the **ⓘ** next to the room's name. The default port is 47800.
+**Join Remote**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click **Join Remote** (next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses behind the **ⓘ** next to the room's name. The default port is 47800.
 
-**Friends outside your network** can join with a **VPN invite**: in **Join by IP**, choose **VPN invite** and paste what the host sent. See [VPN rooms](vpn-rooms.md).
+**Friends outside your network** can join with a **Remote invite**: in **Join Remote**, choose **Remote invite** and paste what the host sent. See [VPN rooms](vpn-rooms.md).
 
 **Private rooms** ask for a PIN (4 to 6 digits) right under the room in the list. After 3 wrong PINs, your computer has to wait 5 minutes before trying again.
 
@@ -71,7 +71,7 @@ The button at the top of each side column hides it (the rooms column shrinks to 
 2. Give it a name and choose **Public** (anyone on the network can join) or **Private** (people need a PIN, which is generated for you; pick 4, 5 or 6 digits).
 3. Choose what to share: a whole **screen** or a single **window**.
 4. **Share system audio** sends everything playing on your computer. On Windows, **Leave out Discord** (on by default) keeps your Discord call out of it, so people in the same call don't hear themselves through your stream. When you share a single **window** on Windows, **Only this app's sound** (on by default) sends just that app's sound, for example only your game, without Discord, music or notifications.
-5. Optional: **Open a VPN for this room** lets people outside your network join; see [VPN rooms](vpn-rooms.md).
+5. Optional: **Open Remote access for this room** lets people outside your network join; see [VPN rooms](vpn-rooms.md).
 6. Click **Start sharing**.
 
 For a private room, the PIN is copied to your clipboard so you can paste it to your friends.
@@ -142,8 +142,8 @@ The **ⓘ** next to the room's name shows the room's details: privacy, how long 
 
 - switch between **Public** and **Private** at any time; people already inside stay connected;
 - show or hide the **PIN**, **copy** it, **generate a new one**, or **set your own**;
-- see the addresses people can use with **Join by IP**;
-- in a VPN room, **copy the VPN invite** and see how many guests joined.
+- see the addresses people can use with **Join Remote**;
+- in a VPN room, **copy the Remote invite** and see how many guests joined.
 
 Right-clicking a person (their tile, or their name in the rooms column, where a **⋯** button also appears on hover) lets you **stop their stream** or **remove** them from the room (they can't come back to this room session). In the chat you can **delete messages** and **mute the chat** (people still see the history).
 

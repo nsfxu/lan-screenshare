@@ -14,7 +14,7 @@ import (
 // listenControl serves WireGuard's control protocol on a named pipe that only
 // SYSTEM, the administrators and the user who started the app (owner is a SID) can open.
 func listenControl(iface, owner string) (net.Listener, string, error) {
-	sd, err := windows.SecurityDescriptorFromString("O:SYD:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GA;;;" + owner + ")")
+	sd, err := windows.SecurityDescriptorFromString(controlSDDL(owner))
 	if err != nil {
 		return nil, "", err
 	}

@@ -14,7 +14,7 @@ import {
 } from '../../shared/crop'
 import { QUALITY_PRESETS } from '../../shared/quality'
 import { THEMES } from '../../shared/themes'
-import type { AppInfo, AudioChoice, CodecSupport, DiscoveredRoom, Privacy, Settings, VpnAvailability } from '../../shared/types'
+import type { AppInfo, AudioChoice, CodecSupport, DiscoveredRoom, Privacy, Settings, VpnAvailability, VpnDetection } from '../../shared/types'
 import { shortCodecName } from '../lib/codecs'
 import { errorMessage } from '../lib/format'
 import { loadPicture, renderAvatar } from '../lib/images'
@@ -56,7 +56,7 @@ export interface CreateRoomResult {
   privacy: Privacy
   pinLength: number
   /** Open a VPN for the room; `endpoint` is how guests reach this computer from outside. */
-  vpn: { endpoint: string } | null
+  vpn: { endpoint: string; openPort: boolean } | null
   sourceId: string
   audio: AudioChoice
 }
@@ -164,9 +164,21 @@ export function CreateRoomDialog({
   const [vpnOn, setVpnOn] = useState(false)
   const [vpnEndpoint, setVpnEndpoint] = useState('')
   const [vpnAvailability, setVpnAvailability] = useState<VpnAvailability | null>(null)
+  const [detection, setDetection] = useState<VpnDetection | null>(null)
+  const [openPort, setOpenPort] = useState(true)
+  const endpointTyped = useRef(false)
   useEffect(() => {
     void window.api.vpn.available().then(setVpnAvailability)
   }, [])
+  // Turning the VPN on looks up the address guests would use, so nobody has to copy it by hand.
+  useEffect(() => {
+    if (!vpnOn || detection) return
+    void window.api.vpn.detect().then((found) => {
+      setDetection(found)
+      setOpenPort(found.upnp)
+      if (!endpointTyped.current) setVpnEndpoint(found.publicAddress ?? found.localAddress ?? '')
+    })
+  }, [vpnOn, detection])
 
   const submit = (e: FormEvent): void => {
     e.preventDefault()
@@ -175,7 +187,7 @@ export function CreateRoomDialog({
       name: name.trim() || defaultName,
       privacy,
       pinLength,
-      vpn: vpnOn ? { endpoint: vpnEndpoint.trim() } : null,
+      vpn: vpnOn ? { endpoint: vpnEndpoint.trim(), openPort: openPort && !!detection?.upnp } : null,
       sourceId,
       audio
     })
@@ -230,7 +242,7 @@ export function CreateRoomDialog({
         <AudioToggle value={audio} onChange={setAudio} sourceId={sourceId} />
         <label className={`toggle-row ${vpnAvailability?.ok ? '' : 'disabled'}`}>
           <div>
-            <div>Open a VPN for this room</div>
+            <div>Open Remote access for this room</div>
             <div className="muted small">
               {vpnAvailability && !vpnAvailability.ok
                 ? vpnAvailability.reason
@@ -249,14 +261,41 @@ export function CreateRoomDialog({
             <label htmlFor="vpn-endpoint">Address your friends connect to</label>
             <input
               id="vpn-endpoint"
-              placeholder="203.0.113.7 or home.example.org"
+              placeholder={detection ? '203.0.113.7 or home.example.org' : 'Looking for your address…'}
               value={vpnEndpoint}
-              onChange={(e) => setVpnEndpoint(e.target.value)}
+              onChange={(e) => ((endpointTyped.current = true), setVpnEndpoint(e.target.value))}
             />
             <span className="muted small">
-              Your public IP or name. On your router, forward the room's port (47800 unless you changed it) to this computer for both TCP
-              and UDP.
+              {detection?.publicAddress
+                ? 'Found automatically: the address the internet sees. Change it if you use a name instead.'
+                : detection
+                  ? 'Could not find your public address (offline?). Type it, or use the one on your local network for people next to you.'
+                  : ' '}
             </span>
+            {detection?.behindCgnat && (
+              <div className="notice warn">
+                Your internet provider shares one address between many customers (CGNAT), so people outside your network can't reach
+                this computer. Friends on the same network can still join.
+              </div>
+            )}
+            <label className={`toggle-row ${detection?.upnp ? '' : 'disabled'}`}>
+              <div>
+                <div>Open the port on my router</div>
+                <div className="muted small">
+                  {!detection
+                    ? ' '
+                    : detection.upnp
+                      ? 'Your router answered, so ScreenShare opens the room\'s port (TCP and UDP) while the room lasts and closes it after.'
+                      : 'Your router did not answer UPnP (it may be off). On the router, forward the room\'s port (47800 unless you changed it) to this computer, for TCP and UDP.'}
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={openPort && !!detection?.upnp}
+                disabled={!detection?.upnp}
+                onChange={(e) => setOpenPort(e.target.checked)}
+              />
+            </label>
           </div>
         )}
         {error && <div className="notice error">{error}</div>}

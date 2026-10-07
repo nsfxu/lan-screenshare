@@ -37,7 +37,7 @@ export function verifyHelper(file: string, expected: Record<string, string> | nu
   for (const name of [path.basename(file), ...(process.platform === 'win32' ? ['wintun.dll'] : [])]) {
     const want = expected[name]
     const have = createHash('sha256').update(fs.readFileSync(path.join(path.dirname(file), name))).digest('hex')
-    if (!want || want !== have) throw new Error(`The VPN helper (${name}) is not the one that came with ScreenShare, so it was not started`)
+    if (!want || want !== have) throw new Error(`The Remote helper (${name}) is not the one that came with ScreenShare, so it was not started`)
   }
 }
 

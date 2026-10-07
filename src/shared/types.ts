@@ -299,7 +299,7 @@ export interface CreateRoomRequest {
   privacy: Privacy
   pinLength: number
   /** Open a VPN for the room; `endpoint` is the host name or IP that guests reach this computer at. */
-  vpn?: { endpoint: string } | null
+  vpn?: { endpoint: string; /** Ask the router (UPnP) to open the room's port. */ openPort?: boolean } | null
 }
 
 export interface HostedRoom {
@@ -322,6 +322,26 @@ export interface HostedVpn {
   address: string
   /** Guests that have enrolled so far. */
   peers: number
+  /** What happened when the router was asked to open the room's port (UPnP). */
+  portMapping: PortMappingStatus
+}
+
+/** `off`: not asked; `opened`: the router did it; `unavailable`: no UPnP router answered; `failed`: it refused. */
+export type PortMappingStatus = 'off' | 'opened' | 'unavailable' | 'failed'
+
+/** What this computer can tell about how guests would reach it. */
+export interface VpnDetection {
+  /** This computer's address on the local network. */
+  localAddress: string | null
+  /** The address the internet sees, for the invite. */
+  publicAddress: string | null
+  /** A router answered UPnP, so the room's port can be opened for you. */
+  upnp: boolean
+  /**
+   * The provider shares one public address between customers (CGNAT): nobody from outside can
+   * connect. Null when it couldn't be told.
+   */
+  behindCgnat: boolean | null
 }
 
 /** Everything a guest needs to enrol in a VPN room (decoded from the invite string, see shared/vpn.ts). */

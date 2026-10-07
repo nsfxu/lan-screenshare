@@ -37,6 +37,7 @@ Os testes rodam no Node (`vitest.config.ts`, ambiente `node`, tempo limite de 15
 | `tests/network.test.ts` | Leitura e ordenação de endereços, URLs com IPv6, consulta TLS com impressão digital, ordem de codecs, ajustes de Opus e bitrate no SDP. |
 | `tests/crypto.test.ts` | Geração e validação de PIN, comparação em tempo constante, bloqueio e reinício do `PinGuard`. |
 | `tests/vpn.test.ts`, `tests/wireguard.test.ts`, `tests/vpnHelper.test.ts` (e `go test` em `native/ssvpn`) | Salas com VPN, partes puras: validação de chaves e de IPv4, escolha de uma rede livre, endereços dos convidados, convites (ida e volta, todo tipo de dano), mensagens de inscrição; as requisições que o `wireguard-go` entende (chaves em hexadecimal, contra um socket de controle falso); achar o auxiliar, conferi-lo com somas de verificação antes de elevar, argumentos e arquivo de status, aspas para os pedidos de permissão; em Go, a validação rigorosa dos argumentos do auxiliar. |
+| `tests/upnp.test.ts` (com `tests/fakeRouter.ts`, um roteador em loopback que responde SSDP e SOAP) | Achar o roteador e recusar respostas que apontam para outro lugar, o endereço público dele, abrir e fechar TCP e UDP, roteadores só com mapeamento permanente, recusas; o serviço do endereço público; detecção de CGNAT e alternativas; portas fechadas junto com a sala. |
 | `tests/vpnRoom.test.ts` | Salas com VPN contra um servidor de sala de verdade e um túnel que só registra: `POST /vpn/enroll` (endereço e par adicionados, o mesmo convidado mantém o endereço, roubo de chave, segredo errado e bloqueio, sala cheia, falha do túnel, corpos inválidos e grandes, 404 sem VPN) e um convidado entrando por um convite (o que o túnel dele recebe, cada mensagem de erro, colisão de rede, `wireguard-go` ausente, uma VPN por vez). |
 | `tests/crop.test.ts` | Recorte da foto de perfil: centralização, limites, zoom em torno de um ponto, limites de zoom. |
 | `tests/renderer/gameCursor.test.ts` | Jogos que escondem o cursor: troca para a janela de um jogo em tela cheia e volta depois do alt-tab, ignora piscadas rápidas e outros monitores, sugere jogos em janela, mantém a tela quando pedido, não fica tentando de novo quando falha. |
@@ -89,7 +90,7 @@ A pasta `e2e/` roda o app de verdade: duas instâncias (Alice e Bob, o build de 
 
 | Teste | Cobre |
 |---|---|
-| Sala pública (`room.spec.ts`) | A Alice cria uma sala e compartilha; o Bob entra com **Join by IP**; nada toca até ele escolher a transmissão dela; os quadros chegam com a cor da tela dela; chat nos dois sentidos; quando ela para de compartilhar (menu Sharing), a transmissão some para ele. |
+| Sala pública (`room.spec.ts`) | A Alice cria uma sala e compartilha; o Bob entra com **Join Remote**; nada toca até ele escolher a transmissão dela; os quadros chegam com a cor da tela dela; chat nos dois sentidos; quando ela para de compartilhar (menu Sharing), a transmissão some para ele. |
 | Sala privada (`room.spec.ts`) | Um PIN errado é recusado (erro embaixo da sala, continua do lado de fora); o PIN certo deixa o Bob entrar. |
 | Qualidade automática (`quality.spec.ts`) | A Alice compartilha; o teste informa o que está na frente como o auxiliar do Windows faria. O painel Stats mostra movimento suave antes de saber qualquer coisa, texto nítido para uma janela normal, movimento suave para um app em tela cheia na tela compartilhada, texto nítido para um em outra tela; Automatic é o padrão e uma escolha fixa em Settings tem prioridade. |
 | Espectadores que não veem (`hidden.spec.ts`) | Alice e Carol compartilham, Bob assiste as duas. Bob minimizado: nenhum quadro das duas, e a Alice vê "not looking (video paused)"; restaurado: as duas voltam a tocar. Quadro da Alice em tela cheia (simulado): a transmissão da Carol pausa, a da Alice continua. |
@@ -101,7 +102,7 @@ A pasta `e2e/` roda o app de verdade: duas instâncias (Alice e Bob, o build de 
 | Chat (`chat.spec.ts`) | A caixa de mensagem com o nome da sala, a contagem de não lidas com o chat escondido, o agrupamento. |
 | Menus (`menus.spec.ts`) | O menu do botão Sharing (qualidade, parar), o botão direito no próprio quadro e numa transmissão (qualidade recebida, parar de assistir), as ações do anfitrião. |
 | Destaque e volume (`focus.spec.ts`) | A Alice compartilha com um tom de teste: clicar para destacar e voltar, o alto-falante silencia e volta, o controle dele e o do menu mudam o volume tocado, dois cliques para tela cheia, esconder a faixa pausa a transmissão dela. |
-| Salas com VPN (`vpn.spec.ts`) | O túnel é falso (`SCREENSHARE_FAKE_VPN=1`: sem interface, sem pedido de permissão); o convite, a inscrição por TLS fixado no certificado do anfitrião e a entrada na sala são de verdade. A Alice abre uma sala com VPN e copia o convite; o Bob o cola em **Join by IP → VPN invite**, a sala abre sozinha, **Disconnect** encerra. Convites ruins são recusados com um motivo (não é convite, segredo errado). **Dois convidados assistem à mesma transmissão**: Bob e Carol recebem endereços diferentes na rede do anfitrião e ambos decodificam quadros reais da tela da Alice. **Sala privada com VPN**: a VPN sobe mas o PIN ainda é pedido (errado, depois certo). **Entrar de novo** mantém o endereço do convidado e um só lugar no anfitrião, e a sala sai da lista ao desconectar. **Uma VPN por vez**: um convidado não entra numa segunda, um anfitrião não entra em uma. **Bloqueio**: três convites errados bloqueiam o convidado, até com o convite certo. **Encerrar a sala** derruba a VPN do anfitrião e o convite deixa de funcionar. **Create room**: a VPN exige um endereço, e um computador sem o auxiliar vê a opção desligada com o motivo. Criar uma interface de verdade exige direitos de administrador: [confira à mão](#conferindo-salas-com-vpn). |
+| Salas com VPN (`vpn.spec.ts`) | O túnel é falso (`SCREENSHARE_FAKE_VPN=1`: sem interface, sem pedido de permissão); o convite, a inscrição por TLS fixado no certificado do anfitrião e a entrada na sala são de verdade. A Alice abre uma sala com VPN e copia o convite; o Bob o cola em **Join Remote → Remote invite**, a sala abre sozinha, **Disconnect** encerra. Convites ruins são recusados com um motivo (não é convite, segredo errado). **Dois convidados assistem à mesma transmissão**: Bob e Carol recebem endereços diferentes na rede do anfitrião e ambos decodificam quadros reais da tela da Alice. **Sala privada com VPN**: a VPN sobe mas o PIN ainda é pedido (errado, depois certo). **Entrar de novo** mantém o endereço do convidado e um só lugar no anfitrião, e a sala sai da lista ao desconectar. **Uma VPN por vez**: um convidado não entra numa segunda, um anfitrião não entra em uma. **Bloqueio**: três convites errados bloqueiam o convidado, até com o convite certo. **Encerrar a sala** derruba a VPN do anfitrião e o convite deixa de funcionar. **Create room**: a VPN exige um endereço, e um computador sem o auxiliar vê a opção desligada com o motivo. Criar uma interface de verdade exige direitos de administrador: [confira à mão](#conferindo-salas-com-vpn). |
 | Temas (`theme.spec.ts`) | Cada tema muda as cores da página; a escolha sobrevive a um recarregamento. |
 | Configurações (`settings.spec.ts`) | A lista de seções pula para uma seção e acompanha a rolagem. |
 
@@ -208,7 +209,7 @@ NODE_PATH=$(npm root -g) xvfb-run -a -s "-screen 0 1600x1000x24" node drive.cjs
 
 Dicas:
 
-- **Duas pessoas**: abra uma segunda instância com outro `--profile`, clique em **Join by IP**, digite `127.0.0.1:47800`, aperte Enter, espere um instante pela consulta e clique em **Join**.
+- **Duas pessoas**: abra uma segunda instância com outro `--profile`, clique em **Join Remote**, digite `127.0.0.1:47800`, aperte Enter, espere um instante pela consulta e clique em **Join**.
 - **Captura de tela real** no Xvfb precisa das extensões `Composite` e `DAMAGE` (`-s "-screen 0 1600x1000x24 +extension Composite +extension DAMAGE"`) e ainda pode falhar às vezes; o canvas falso acima é mais confiável.
 - **Leia o que o usuário veria**: selos de estatística (`.tile .stat-badge`), estilos calculados (`getComputedStyle(...).opacity`) ou pixels de uma imagem (desenhe-a num canvas e leia com `getImageData`).
 - **Finja ser outro sistema** para interfaces exclusivas de uma plataforma: substitua o handler de IPC `system:app-info` para devolver `platform: 'win32'`.
@@ -219,9 +220,9 @@ Dicas:
 
 Os testes automáticos param no túnel (um falso ou um que só registra). No Windows, no macOS ou no Linux, com dois computadores (ou um computador e uma VM) que se alcancem:
 
-1. No anfitrião, **Create room** com **Open a VPN** e o endereço pelo qual o convidado alcança o anfitrião (numa mesma LAN, o endereço da LAN). Digite a senha de administrador.
+1. No anfitrião, **Create room** com **Open Remote access** e o endereço pelo qual o convidado alcança o anfitrião (numa mesma LAN, o endereço da LAN). Digite a senha de administrador.
 2. `ifconfig` / `ip addr` / `ipconfig` mostra um adaptador `utunN`, `ssvpn0` ou Wintun com `10.77.N.1` (no Windows, o adaptador fica no perfil Privado: `Get-NetConnectionProfile`).
-3. No convidado, cole o convite em **Join by IP → VPN invite**. `ping 10.77.N.1` funciona e a sala abre.
+3. No convidado, cole o convite em **Join Remote → Remote invite**. `ping 10.77.N.1` funciona e a sala abre.
 4. Compartilhe no anfitrião e assista no convidado. Com um terceiro computador, assista entre os dois convidados e confirme que o anfitrião repassa (o encaminhamento dele está ligado e volta a desligado depois).
 5. Feche a sala: a interface some em segundos dos dois lados, sem um segundo pedido de senha. Mate o app (`kill -9`): a interface some do mesmo jeito.
 
@@ -249,7 +250,7 @@ Em outros sistemas, confira se os auxiliares ainda compilam como C# 5 com o Mono
 
 Faça isto em máquinas reais (de preferência um Windows e um macOS) numa rede real:
 
-- [ ] Uma sala aparece sozinha em outro computador (mDNS), e o **Join by IP** funciona.
+- [ ] Uma sala aparece sozinha em outro computador (mDNS), e o **Join Remote** funciona.
 - [ ] Sala privada: PIN errado mostra as tentativas restantes, 3 PINs errados bloqueiam por 5 minutos, o PIN certo funciona.
 - [ ] Compartilhar uma tela e uma janela, com e sem áudio do sistema.
 - [ ] Windows: numa chamada do Discord com **Leave out Discord** ligado, os outros não ouvem a própria voz.

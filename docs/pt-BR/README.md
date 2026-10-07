@@ -51,7 +51,7 @@ flowchart LR
 - **Condições de rede**: a lógica de qualidade adaptativa tem testes unitários, mas perda de pacotes real ainda não foi simulada.
 - **Fallback TCP**: uma única codificação é dividida entre todos os espectadores TCP de quem transmite, dimensionada para o mais exigente.
 - **Os números de latência** no WebRTC são estimativas (veja [pipeline de mídia](media-pipeline.md#estatísticas-e-latência)).
-- **A descoberta** precisa de multicast; em VPNs use **Join by IP**.
+- **A descoberta** precisa de multicast; em VPNs use **Join Remote**.
 - **Salas com VPN** precisam de uma porta encaminhada no anfitrião. O auxiliar que cria o túnel vem dentro do app (Windows, macOS, Linux). A lógica da sala é coberta por testes com um túnel falso; criar uma interface de verdade ainda não foi executado em máquinas reais, em nenhum sistema (veja [Salas com VPN](vpn-rooms.md#limites)).
 - **Versão**: todos na sala precisam da mesma versão do protocolo (hoje, a 4).
 - **Fora do escopo** por enquanto: controle remoto, áudio do microfone, vários monitores numa transmissão, gravação, Linux como plataforma suportada.

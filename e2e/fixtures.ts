@@ -193,7 +193,7 @@ export async function createRoom(
   await dialog.locator('.source', { hasText: 'Fake screen' }).click()
   if (options.audio) await dialog.getByRole('checkbox', { name: /Share system audio/ }).check()
   if (options.vpn) {
-    await dialog.getByRole('checkbox', { name: /Open a VPN for this room/ }).check()
+    await dialog.getByRole('checkbox', { name: /Open Remote access for this room/ }).check()
     await dialog.getByLabel('Address your friends connect to').fill(options.vpn)
   }
   await dialog.getByRole('button', { name: 'Start sharing' }).click()
@@ -203,13 +203,13 @@ export async function createRoom(
   return port
 }
 
-/** Adds the room at 127.0.0.1:port with Join by IP and clicks it in the room list. */
+/** Adds the room at 127.0.0.1:port with Join Remote and clicks it in the room list. */
 export async function joinByIp(guest: Person, port: number): Promise<void> {
   const { win } = guest
   // A small window shows the rooms as a strip: open them first.
   const showRooms = win.getByRole('button', { name: 'Show rooms' })
   if (await showRooms.isVisible()) await showRooms.click()
-  await win.getByRole('button', { name: 'Join by IP' }).click()
+  await win.getByRole('button', { name: 'Join Remote' }).click()
   await win.getByPlaceholder(/^Host address/).fill(`127.0.0.1:${port}`)
   await win.getByPlaceholder(/^Host address/).press('Enter')
   await win.locator(`.room-row-main[title*="127.0.0.1:${port}"]`).click()
@@ -304,14 +304,14 @@ export function inviteOf(host: Person): Promise<string> {
   return host.win.evaluate(() => window.api.host.get().then((h) => h?.vpn?.invite ?? ''))
 }
 
-/** Opens Join by IP → VPN invite and pastes the invite (without pressing Connect). */
+/** Opens Join Remote → Remote invite and pastes the invite (without pressing Connect). */
 export async function pasteInvite(guest: Person, invite: string): Promise<void> {
   const { win } = guest
   const showRooms = win.getByRole('button', { name: 'Show rooms' })
   if (await showRooms.isVisible()) await showRooms.click()
   if (!(await win.getByPlaceholder(/^Paste the invite/).isVisible())) {
-    await win.getByRole('button', { name: 'Join by IP' }).click()
-    await win.getByRole('button', { name: 'VPN invite', exact: true }).click()
+    await win.getByRole('button', { name: 'Join Remote' }).click()
+    await win.getByRole('button', { name: 'Remote invite', exact: true }).click()
   }
   await win.getByPlaceholder(/^Paste the invite/).fill(invite)
 }

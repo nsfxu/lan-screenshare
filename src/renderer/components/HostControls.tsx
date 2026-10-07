@@ -4,6 +4,13 @@ import type { HostedRoom, HostStats, Privacy } from '../../shared/types'
 import { errorMessage, formatBitrate, latencyClass } from '../lib/format'
 import { Icon } from './Icon'
 
+const PORT_MAPPING_TEXT = {
+  opened: 'Port {port} was opened on your router (TCP and UDP) and closes with the room.',
+  off: 'Make sure port {port} reaches this computer for TCP and UDP (forward it on your router).',
+  unavailable: 'Your router did not answer UPnP. Forward port {port} to this computer for TCP and UDP, or guests outside your network can\'t join.',
+  failed: 'Your router refused to open port {port}. Forward it to this computer for TCP and UDP, or guests outside your network can\'t join.'
+} as const
+
 /** Privacy, PIN and "how to reach me" panel for the host. */
 export function AccessPanel({ hosted, onToast }: { hosted: HostedRoom; onToast(msg: string, tone?: 'error' | 'info'): void }) {
   const [editing, setEditing] = useState(false)
@@ -97,23 +104,26 @@ export function AccessPanel({ hosted, onToast }: { hosted: HostedRoom; onToast(m
         <div className="vpn-box">
           <div className="panel-header">
             <h3>
-              <Icon name="network" size={14} /> VPN
+              <Icon name="network" size={14} /> Remote
             </h3>
             <span className="muted small">
               {hosted.vpn.peers} guest{hosted.vpn.peers === 1 ? '' : 's'}
             </span>
           </div>
-          <button className="btn small full" onClick={() => copy(hosted.vpn!.invite, 'VPN invite')}>
-            <Icon name="copy" size={13} /> Copy VPN invite
+          <p className={`small ${hosted.vpn.portMapping === 'opened' || hosted.vpn.portMapping === 'off' ? 'muted' : 'error-text'}`}>
+            {PORT_MAPPING_TEXT[hosted.vpn.portMapping].replace('{port}', String(hosted.port))}
+          </p>
+          <button className="btn small full" onClick={() => copy(hosted.vpn!.invite, 'Remote invite')}>
+            <Icon name="copy" size={13} /> Copy Remote invite
           </button>
           <p className="muted small">
-            Anyone with this invite can join the VPN, so send it only to the people you invite. It stops working when you end the room.
-            Your address in the VPN is <span className="mono">{hosted.vpn.address}</span>.
+            Anyone with this invite can join the Remote room, so send it only to the people you invite. It stops working when you end the room.
+            Your address in the Remote network is <span className="mono">{hosted.vpn.address}</span>.
           </p>
         </div>
       )}
       <div className="address-row">
-        <span className="muted small">VPN / manual address</span>
+        <span className="muted small">Remote / manual address</span>
         <button
           className="link mono small"
           title={`Copy address\nAll addresses:\n${hosted.addresses.map((a) => `${a}:${hosted.port}`).join('\n')}`}

@@ -75,7 +75,7 @@ npx electron . --profile=alice
 npx electron . --profile=bob
 ```
 
-`--profile=alice` stores everything in a separate user data folder (`ScreenShare-alice`). One instance creates a room; the other finds it in the list (mDNS on the same machine), or you can use **Join by IP** with `127.0.0.1:47800`.
+`--profile=alice` stores everything in a separate user data folder (`ScreenShare-alice`). One instance creates a room; the other finds it in the list (mDNS on the same machine), or you can use **Join Remote** with `127.0.0.1:47800`.
 
 To keep them off the screen you're using, add `--display=<n>` (the screen, numbered like the source picker: "Screen 3") and `--tile=<i>/<count>` (side-by-side slots on it). A window placed this way opens without taking focus:
 

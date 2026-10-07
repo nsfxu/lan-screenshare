@@ -22,18 +22,18 @@ test('a VPN room: the host copies the invite, a guest joins with it and can disc
   expect(invite).toMatch(/^ssvpn1\./)
 
   await alice.win.getByRole('button', { name: 'Room details' }).click()
-  await expect(alice.win.getByRole('button', { name: 'Copy VPN invite' })).toBeVisible()
+  await expect(alice.win.getByRole('button', { name: 'Copy Remote invite' })).toBeVisible()
   await expect(alice.win.locator('.vpn-box')).toContainText('0 guests')
 
-  await bob.win.getByRole('button', { name: 'Join by IP' }).click()
-  await bob.win.getByRole('button', { name: 'VPN invite', exact: true }).click()
+  await bob.win.getByRole('button', { name: 'Join Remote' }).click()
+  await bob.win.getByRole('button', { name: 'Remote invite', exact: true }).click()
   await bob.win.getByPlaceholder(/^Paste the invite/).fill(invite)
   await bob.win.getByRole('button', { name: 'Connect', exact: true }).click()
 
   // The room opens by itself once the tunnel is up.
   await expect(bob.win.locator('.room')).toBeVisible({ timeout: 30_000 })
   await expect(bob.win.locator('.room-members')).toContainText('Alice')
-  await expect(bob.win.locator('.vpn-status')).toContainText('VPN connected')
+  await expect(bob.win.locator('.vpn-status')).toContainText('Remote connected')
   await expect(alice.win.locator('.vpn-box')).toContainText('1 guest')
 
   await bob.win.getByRole('button', { name: 'Disconnect' }).click()
@@ -45,13 +45,13 @@ test('a VPN invite that is not one, or not the host\'s, is refused with a reason
   await createRoom(alice, 'public', { vpn: '127.0.0.1' })
   const invite = await alice.win.evaluate(() => window.api.host.get().then((h) => h?.vpn?.invite ?? ''))
 
-  await bob.win.getByRole('button', { name: 'Join by IP' }).click()
-  await bob.win.getByRole('button', { name: 'VPN invite', exact: true }).click()
+  await bob.win.getByRole('button', { name: 'Join Remote' }).click()
+  await bob.win.getByRole('button', { name: 'Remote invite', exact: true }).click()
   const box = bob.win.getByPlaceholder(/^Paste the invite/)
 
   await box.fill('hello there')
   await box.press('Enter')
-  await expect(bob.win.locator('.manual-connect .error-text')).toContainText('not a ScreenShare VPN invite')
+  await expect(bob.win.locator('.manual-connect .error-text')).toContainText('not a ScreenShare Remote invite')
 
   // Right host, wrong secret: the last characters of the invite are inside its JSON.
   const forged = Buffer.from(invite.slice('ssvpn1.'.length), 'base64url').toString().replace(/"secret":"[^"]+"/, `"secret":"${'z'.repeat(32)}"`)
@@ -112,7 +112,7 @@ test('a private VPN room: the invite gets you to the door, the PIN still opens i
 
   await joinWithInvite(bob, await inviteOf(alice))
   // The VPN is up, but the room still asks for its PIN.
-  await expect(bob.win.locator('.vpn-status')).toContainText('VPN connected', { timeout: 30_000 })
+  await expect(bob.win.locator('.vpn-status')).toContainText('Remote connected', { timeout: 30_000 })
   await expect(bob.win.locator('.room')).toHaveCount(0)
   const form = bob.win.locator('.pin-form')
   await form.getByLabel('Room PIN').fill(wrong)
@@ -131,7 +131,7 @@ test('disconnecting and joining again keeps the same address, and the room leave
   const invite = await inviteOf(alice)
 
   await joinWithInvite(bob, invite)
-  await expect(bob.win.locator('.vpn-status')).toContainText('VPN connected', { timeout: 30_000 })
+  await expect(bob.win.locator('.vpn-status')).toContainText('Remote connected', { timeout: 30_000 })
   const first = (await vpnStatus(bob)).address
   expect(first).toMatch(/^10\.77\.\d+\.2$/)
   // Not just any entry on that port: the same machine also shows up on the LAN through mDNS.
@@ -147,7 +147,7 @@ test('disconnecting and joining again keeps the same address, and the room leave
   expect(await inList()).toBe(false)
 
   await joinWithInvite(bob, invite)
-  await expect(bob.win.locator('.vpn-status')).toContainText('VPN connected', { timeout: 30_000 })
+  await expect(bob.win.locator('.vpn-status')).toContainText('Remote connected', { timeout: 30_000 })
   expect((await vpnStatus(bob)).address).toBe(first)
   // Still one guest on the host: the same install, the same seat in the VPN.
   expect((await vpnStatus(alice)).peers).toBe(1)
@@ -161,14 +161,14 @@ test('one VPN at a time: a guest can\'t join another, a host can\'t join one', a
   const carolInvite = await inviteOf(carol)
 
   await joinWithInvite(bob, aliceInvite)
-  await expect(bob.win.locator('.vpn-status')).toContainText('VPN connected', { timeout: 30_000 })
+  await expect(bob.win.locator('.vpn-status')).toContainText('Remote connected', { timeout: 30_000 })
   await pasteInvite(bob, carolInvite)
   await bob.win.getByRole('button', { name: 'Connect', exact: true }).click()
-  await expect(bob.win.locator('.manual-connect .error-text')).toContainText('already connected to a VPN room')
+  await expect(bob.win.locator('.manual-connect .error-text')).toContainText('already connected to a Remote room')
 
   // Carol hosts a VPN room herself, so Alice's invite is no use to her.
   await joinWithInvite(carol, aliceInvite)
-  await expect(carol.win.locator('.manual-connect .error-text')).toContainText('already hosting a VPN room')
+  await expect(carol.win.locator('.manual-connect .error-text')).toContainText('already hosting a Remote room')
 })
 
 test('three wrong invites lock the guest out for a while', async ({ people }) => {
@@ -217,28 +217,89 @@ test('creating a room: the VPN needs an address, and a computer without the help
   const dialog = win.locator('.modal')
   await dialog.locator('.source', { hasText: 'Fake screen' }).click()
   const start = dialog.getByRole('button', { name: 'Start sharing' })
-  const toggle = dialog.getByRole('checkbox', { name: /Open a VPN for this room/ })
+  const toggle = dialog.getByRole('checkbox', { name: /Open Remote access for this room/ })
 
   await expect(start).toBeEnabled()
   await toggle.check()
-  await expect(start).toBeDisabled() // no address to put in the invite yet
-  await dialog.getByLabel('Address your friends connect to').fill('203.0.113.7')
+  // The address is found for you, so there is nothing to copy by hand.
+  const address = dialog.getByLabel('Address your friends connect to')
+  await expect(address).toHaveValue('127.0.0.1')
+  await expect(dialog).toContainText('Found automatically')
+  await expect(start).toBeEnabled()
+  await address.fill('') // …but a room can't be opened without one
+  await expect(start).toBeDisabled()
+  await address.fill('203.0.113.7')
   await expect(start).toBeEnabled()
   await toggle.uncheck()
-  await expect(dialog.getByLabel('Address your friends connect to')).toHaveCount(0)
+  await expect(address).toHaveCount(0)
   await dialog.getByRole('button', { name: 'Cancel' }).click()
 
   // A computer with no VPN helper: the switch is off and says why; the room still works without it.
   await alice.app.evaluate(({ ipcMain }, channel) => {
     ipcMain.removeHandler(channel)
-    ipcMain.handle(channel, () => ({ ok: false, reason: 'This build of ScreenShare has no VPN helper.' }))
+    ipcMain.handle(channel, () => ({ ok: false, reason: 'This build of ScreenShare has no Remote helper.' }))
   }, 'vpn:available')
   await win.getByRole('button', { name: /^Create( a)? room$/ }).first().click()
   const again = win.locator('.modal')
-  await expect(again.getByRole('checkbox', { name: /Open a VPN for this room/ })).toBeDisabled()
-  await expect(again).toContainText('This build of ScreenShare has no VPN helper.')
+  await expect(again.getByRole('checkbox', { name: /Open Remote access for this room/ })).toBeDisabled()
+  await expect(again).toContainText('This build of ScreenShare has no Remote helper.')
   await again.locator('.source', { hasText: 'Fake screen' }).click()
   await again.getByRole('button', { name: 'Start sharing' }).click()
   await win.waitForSelector('.room')
   expect(await win.evaluate(() => window.api.host.get().then((h) => h?.vpn ?? null))).toBeNull()
+})
+
+test('the address is found by itself and the router opens the port: nothing to type or forward', async ({ people }) => {
+  const [alice, bob] = await people(2)
+  const { win } = alice
+
+  await win.getByRole('button', { name: /^Create( a)? room$/ }).first().click()
+  const dialog = win.locator('.modal')
+  await dialog.locator('.source', { hasText: 'Fake screen' }).click()
+  await dialog.getByRole('checkbox', { name: /Open Remote access for this room/ }).check()
+  await expect(dialog.getByLabel('Address your friends connect to')).toHaveValue('127.0.0.1')
+  const port = dialog.getByRole('checkbox', { name: /Open the port on my router/ })
+  await expect(port).toBeChecked()
+  await expect(dialog).toContainText('Your router answered')
+  await expect(dialog.locator('.notice.warn')).toHaveCount(0)
+  await dialog.getByRole('button', { name: 'Start sharing' }).click()
+  await win.waitForSelector('.room')
+
+  const hosted = await win.evaluate(() => window.api.host.get())
+  expect(hosted?.vpn).toMatchObject({ endpoint: '127.0.0.1', portMapping: 'opened' })
+  await win.getByRole('button', { name: 'Room details' }).click()
+  await expect(win.locator('.vpn-box')).toContainText(`Port ${hosted!.port} was opened on your router`)
+
+  // The invite carries the address that was found, and works.
+  await joinWithInvite(bob, hosted!.vpn!.invite)
+  await expect(bob.win.locator('.room')).toBeVisible({ timeout: 30_000 })
+})
+
+test('a provider that shares its address (CGNAT) and a router without UPnP are explained, not hidden', async ({ people }) => {
+  const [alice] = await people(1)
+  const { win } = alice
+  await alice.app.evaluate(({ ipcMain }, channel) => {
+    ipcMain.removeHandler(channel)
+    ipcMain.handle(channel, () => ({ localAddress: '192.168.1.4', publicAddress: null, upnp: false, behindCgnat: true }))
+  }, 'vpn:detect')
+
+  await win.getByRole('button', { name: /^Create( a)? room$/ }).first().click()
+  const dialog = win.locator('.modal')
+  await dialog.locator('.source', { hasText: 'Fake screen' }).click()
+  await dialog.getByRole('checkbox', { name: /Open Remote access for this room/ }).check()
+
+  // Falls back to the address on the local network, and says why outsiders can't join.
+  await expect(dialog.getByLabel('Address your friends connect to')).toHaveValue('192.168.1.4')
+  await expect(dialog).toContainText('Could not find your public address')
+  await expect(dialog.locator('.notice.warn')).toContainText('CGNAT')
+  const port = dialog.getByRole('checkbox', { name: /Open the port on my router/ })
+  await expect(port).toBeDisabled()
+  await expect(port).not.toBeChecked()
+  await expect(dialog).toContainText('did not answer UPnP')
+
+  await dialog.getByRole('button', { name: 'Start sharing' }).click()
+  await win.waitForSelector('.room')
+  expect(await win.evaluate(() => window.api.host.get().then((h) => h?.vpn?.portMapping))).toBe('off')
+  await win.getByRole('button', { name: 'Room details' }).click()
+  await expect(win.locator('.vpn-box')).toContainText('forward it on your router')
 })
