@@ -50,13 +50,32 @@ test('click to focus, double-click for full screen; volume below a focused strea
   if (shots) await win.screenshot({ path: `${shots}/2-menu-volume.png` })
   await win.keyboard.press('Escape')
 
-  // Double-click: the stage fills the screen, with the strip and the controls; the button brings it back.
+  // Double-click: the stream fills the whole screen with no frame, the strip and the controls float over it...
   await win.locator('.spotlight-main .stream-tile').dblclick()
   await expect.poll(() => win.evaluate(() => document.fullscreenElement?.className ?? '')).toContain('stage-area')
   await expect(win.locator('.spotlight-main video')).toHaveCount(1)
   await expect(win.locator('.spotlight-strip .person-tile', { hasText: 'Bob' })).toBeVisible()
+  const main = win.locator('.spotlight-main .stream-tile')
+  await expect
+    .poll(() =>
+      main.evaluate((el) => {
+        const box = el.getBoundingClientRect()
+        const style = getComputedStyle(el)
+        return { fills: box.width === innerWidth && box.height === innerHeight, border: style.borderTopWidth }
+      })
+    )
+    .toEqual({ fills: true, border: '0px' })
   if (shots) await win.screenshot({ path: `${shots}/3-fullscreen.png` })
+
+  // ...and everything but the picture hides after a moment without the mouse moving.
+  const opacity = (selector: string) => win.locator(selector).first().evaluate((el) => getComputedStyle(el).opacity)
+  for (const part of ['.focus-bar', '.spotlight-strip', '.spotlight-main .tile-bar']) {
+    await expect.poll(() => opacity(part), { timeout: 6_000 }).toBe('0')
+  }
+  if (shots) await win.screenshot({ path: `${shots}/4-fullscreen-idle.png` })
   await win.mouse.move(10, 10)
+  await expect.poll(() => opacity('.focus-bar')).toBe('1')
+  await expect.poll(() => opacity('.spotlight-main .tile-bar')).toBe('1')
   await win.getByRole('button', { name: 'Exit full screen' }).click()
   await expect.poll(() => win.evaluate(() => !!document.fullscreenElement)).toBe(false)
 

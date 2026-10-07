@@ -1839,17 +1839,63 @@ button.member-main {
   min-width: 34px;
   text-align: right;
 }
-/* Full screen: the stage fills the screen; after a moment without the mouse moving,
-   everything but the focused stream fades, and so does the cursor. */
+/* Full screen, like a video player: the focused stream fills the whole screen with no
+   frame, and the controls and the strip float over its bottom. After a moment without the
+   mouse moving, everything but the picture fades (names and stats badges too), and so does
+   the cursor; moving the mouse brings them back. */
 .stage-area.fullscreen {
-  background: var(--stage);
+  background: #000;
+}
+.stage-area.fullscreen .stage-spotlight {
+  position: relative;
+  justify-content: flex-end;
+  padding: 0 12px 12px;
+}
+.stage-area.fullscreen .spotlight-main {
+  position: absolute;
+  inset: 0;
+}
+.stage-area.fullscreen .spotlight-main > .tile {
+  border: none;
+  border-radius: 0;
+}
+/* a shade behind the floating controls, so they stay readable on a bright picture */
+.stage-area.fullscreen .stage-spotlight::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 240px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.stage-area.fullscreen .stage-spotlight.strip-closed::after {
+  height: 90px;
+}
+.stage-area.fullscreen .focus-bar,
+.stage-area.fullscreen .spotlight-strip {
+  position: relative;
+  z-index: 1;
+}
+.stage-area.fullscreen .focus-bar {
+  color: #fff;
+}
+.stage-area.fullscreen .tile-bar,
+.stage-area.fullscreen .screen-overlay {
+  transition: opacity 0.2s;
 }
 .stage-area.idle {
   cursor: none;
 }
 .stage-area.idle .focus-bar,
-.stage-area.idle .spotlight-strip {
+.stage-area.idle .spotlight-strip,
+.stage-area.idle .stage-spotlight::after,
+.stage-area.idle .tile-bar,
+.stage-area.idle .screen-overlay {
   opacity: 0;
+  pointer-events: none;
 }
 .spotlight-strip {
   transition: opacity 0.2s;
