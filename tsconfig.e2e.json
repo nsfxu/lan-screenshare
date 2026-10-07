@@ -11,5 +11,5 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["e2e/**/*", "playwright.config.ts", "src/renderer/global.d.ts"]
+  "include": ["e2e/**/*", "playwright.config.ts", "scripts/perf/**/*.ts", "src/renderer/global.d.ts"]
 }

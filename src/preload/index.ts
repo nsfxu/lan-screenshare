@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import { IPC, type ScreenShareApi, type WindowState } from '../shared/ipc'
+import type { PerfRendererOptions } from '../shared/perf'
 import type { DiscoveredRoom, CursorWatchState, HostedRoom, UpdateStatus } from '../shared/types'
 
 function subscribe<T>(channel: string, cb: (value: T) => void): () => void {
@@ -72,6 +73,11 @@ const api: ScreenShareApi = {
     setTitleBarColors: (color, symbolColor) => ipcRenderer.invoke(IPC.setTitleBarColors, color, symbolColor),
     onWindowState: (cb) => subscribe<WindowState>(IPC.windowState, cb),
     log: (level, message) => ipcRenderer.send(IPC.log, level, message)
+  },
+  perf: {
+    // Read once, synchronously: subscriptions need the forced view height from their first message.
+    options: ipcRenderer.sendSync(IPC.perfOptions) as PerfRendererOptions,
+    log: (sample) => ipcRenderer.send(IPC.perfSample, sample)
   }
 }
 

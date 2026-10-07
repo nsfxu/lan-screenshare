@@ -12,6 +12,7 @@ Como o projeto é testado hoje, como adicionar testes e como conferir uma mudan�
 - [Testando lógica pura](#testando-lógica-pura)
 - [Testes de ponta a ponta](#testes-de-ponta-a-ponta)
 - [Controlando o app de verdade](#controlando-o-app-de-verdade)
+- [Medindo o desempenho](#medindo-o-desempenho)
 - [Conferindo o auxiliar de áudio do Windows](#conferindo-o-auxiliar-de-áudio-do-windows)
 - [Checklist manual antes de uma versão](#checklist-manual-antes-de-uma-versão)
 
@@ -37,6 +38,7 @@ Os testes rodam no Node (`vitest.config.ts`, ambiente `node`, tempo limite de 15
 | `tests/network.test.ts` | Leitura e ordenação de endereços, URLs com IPv6, consulta TLS com impressão digital, ordem de codecs, ajustes de Opus e bitrate no SDP. |
 | `tests/crypto.test.ts` | Geração e validação de PIN, comparação em tempo constante, bloqueio e reinício do `PinGuard`. |
 | `tests/crop.test.ts` | Recorte da foto de perfil: centralização, limites, zoom em torno de um ponto, limites de zoom. |
+| `tests/perf.test.ts` | Ferramenta de medição: suas chaves, percentis, juntar o que cada streamer enviou com o que cada espectador recebeu, travadas entre reconexões, o aquecimento deixado de fora, a tabela do resumo. |
 | `tests/renderer/gameCursor.test.ts` | Jogos que escondem o cursor: troca para a janela de um jogo em tela cheia e volta depois do alt-tab, ignora piscadas rápidas e outros monitores, sugere jogos em janela, mantém a tela quando pedido, não fica tentando de novo quando falha. |
 
 Os testes unitários e de integração não cobrem o que precisa de um navegador de verdade (WebRTC, WebCodecs, captura, a interface React): os [testes de ponta a ponta](#testes-de-ponta-a-ponta) cobrem os fluxos principais no app de verdade, e [controlar o app de verdade](#controlando-o-app-de-verdade) à mão cobre o resto. Os auxiliares do Windows precisam de uma máquina Windows.
@@ -212,6 +214,46 @@ Dicas:
 - **Finja ser outro sistema** para interfaces exclusivas de uma plataforma: substitua o handler de IPC `system:app-info` para devolver `platform: 'win32'`.
 - **Logs** de cada perfil ficam na pasta de dados dele (por exemplo `~/.config/ScreenShare-alice/logs/` no Linux).
 - Apague as pastas dos perfis de teste depois, se quiser começar do zero.
+
+## Medindo o desempenho
+
+O `npm run perf` abre um streamer e alguns espectadores num computador, deixa rodar e grava o que eles mediram. Serve para perguntas como "quantos espectadores até a placa de vídeo ficar sem codificadores de hardware?" (o plano está em [`plans/performance.md`](../../plans/performance.md)). Ele compila o app antes, então rode num clone com o `npm install` feito.
+
+```bash
+npm run perf -- --viewers=4                     # 1 streamer + 4 espectadores, 60 s depois de 15 s de aquecimento
+npm run perf -- --viewers=8 --view-height=1080 --seconds=90
+npm run perf -- --viewers=2 --source=fake       # o canvas animado dos testes e2e (Linux: com xvfb-run)
+```
+
+| Opção | Significado |
+|---|---|
+| `--viewers=<n>` | Quantos espectadores (padrão 1). Cada um é uma instância do app com seu próprio `--profile`, assistindo ao streamer. |
+| `--seconds=<s>` | Quanto tempo medir (padrão 60), depois de `--warmup=<s>` (padrão 15). |
+| `--source=screen\|fake` | Compartilhar a primeira tela de verdade (padrão no Windows e no macOS) ou um canvas animado (padrão no Linux). |
+| `--quality=<preset>` | A qualidade máxima do streamer: `native60`, `1080p60`, `720p60`, `720p30` ou `480p30`. |
+| `--view-height=<px>` | Os espectadores pedem essa altura em vez da do bloco deles, para que uma dúzia de janelas pequenas num computador ainda peça 1080p. |
+| `--host-only` | Só o streamer: mostra o endereço e espera (até 10 minutos) um espectador de outro computador. |
+| `--join=<endereço:porta>` | Só espectadores, entrando numa sala hospedada em outro computador. |
+| qualquer outra | Repassada a todas as instâncias do app (para chaves do Chromium em teste). |
+
+**Dois computadores** (o jeito limpo: espectadores no mesmo computador também usam a placa de vídeo dele para decodificar): no PC que transmite rode `npm run perf -- --host-only --seconds=90`, e no outro `npm run perf -- --join=<endereço>:47800 --viewers=4 --seconds=90` com um endereço que o primeiro mostrou. Comece o segundo até mais ou menos um minuto depois do primeiro, para os períodos medidos coincidirem.
+
+Cada execução grava `perf-results/<data-hora>/` (ignorado pelo git):
+
+- `summary.md`: uma linha por espectador (o codificador que o streamer usou para ele, fps p50/p5, latência p50/p95, jitter buffer, travadas, quadros descartados) e uma por streamer (CPU do app e do computador, tempo de codificação, fps enviado). Só conta o período medido, não o aquecimento.
+- `streamer.jsonl`, `viewer-<n>.jsonl`: uma amostra JSON por segundo por stream, como grava o `--perf-log`.
+- `run.json`: o comando, a versão do app, o sistema, a CPU e a placa de vídeo.
+
+Para mandar os resultados, anexe a pasta (ou pelo menos `summary.md` e `run.json`) ao pull request que pediu.
+
+**Por dentro.** O `scripts/perf/run.cjs` transforma as opções em `PERF_OPTIONS` para o `scripts/perf/perf.spec.ts`, que controla as instâncias com o Playwright como os testes de ponta a ponta. Duas chaves do app fazem a medição, e não fazem nada se não forem passadas:
+
+- `--perf-log=<arquivo>`: a cada segundo, o streamer grava o que envia a cada espectador (codificador, se é de hardware, fps, tamanho, taxa de bits, tempo de codificação, limitação, RTT) com a CPU e a memória do app e do computador; o espectador grava o que recebe (fps, tamanho, latência estimada, atraso do jitter buffer naquele segundo, travadas, quadros descartados, decodificador).
+- `--perf-view-height=<px>`: a altura forçada acima.
+
+O resumo é calculado por funções puras em `src/shared/perfSummary.ts` (testadas em `tests/perf.test.ts`).
+
+Numa máquina Linux sem placa de vídeo tudo é codificado em software, e o Chromium pode deixar em branco os nomes do codificador e do decodificador (o resumo diz então "without a known encoder"): use essas execuções para conferir a ferramenta, não para medir.
 
 ## Conferindo o auxiliar de áudio do Windows
 
