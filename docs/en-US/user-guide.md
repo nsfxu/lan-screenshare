@@ -23,7 +23,7 @@ Everything you can do in ScreenShare, from finding a room to fine-tuning quality
 
 - **Computers**: Windows 10/11 or macOS. System audio on macOS needs macOS 13 or newer. Leaving Discord out of the audio needs Windows 10 version 2004 or newer.
 - **Network**: everyone must be on the same local network or VPN. Nothing goes over the internet and there are no accounts.
-- **Compatible versions**: apps with the same major version (1.x) can share a room. A new major version (2.0.0) needs everyone to update; the room list then says who has to, e.g. "This room runs ScreenShare 2.0.0, you have 1.2.0: update to join". When someone in your room runs a newer version, you get a one-time suggestion to update.
+- **Compatible versions**: 1.x and 2.x apps can share a room (2.0.0 changed the look, not how apps talk to each other). Only a version that changes the room protocol, such as a future 3.0.0, needs everyone to update; the room list then says who has to, e.g. "This room runs ScreenShare 3.0.0, you have 2.0.0: update to join". When someone in your room runs a newer version, you get a one-time suggestion to update.
 - **macOS**: the first time you share, macOS asks for **Screen Recording** permission, and it may ask for **Local Network** access. Allow both, then restart the app if asked.
 
 ```mermaid
@@ -199,6 +199,6 @@ Open Settings with the gear icon at the bottom of the rooms column. The list on 
 | Settings (`settings.json`) and host identity (`host-identity.json`) | `%APPDATA%\ScreenShare\` | `~/Library/Application Support/ScreenShare/` |
 | Logs (`screenshare.log`) | `%APPDATA%\ScreenShare\logs\` | `~/Library/Logs/ScreenShare/` |
 
-**Settings → Open logs** opens the log folder. Logs rotate at 5 MB (the previous one is kept as `screenshare.old.log`). Deleting `host-identity.json` gives your computer a new certificate the next time you host; people who connected before may need to rediscover your room.
+**Settings → About → Open logs** opens the log folder. Logs rotate at 5 MB (the previous one is kept as `screenshare.old.log`). Deleting `host-identity.json` gives your computer a new certificate the next time you host; people who connected before may need to rediscover your room.
 
 Something not working? See [troubleshooting](troubleshooting.md).

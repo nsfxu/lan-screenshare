@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Common problems and how to fix them. If yours isn't here, open **Settings → Open logs** and look at `screenshare.log`; the lines around the problem usually say what went wrong.
+Common problems and how to fix them. If yours isn't here, open **Settings → About → Open logs** and look at `screenshare.log`; the lines around the problem usually say what went wrong.
 
 > **Language:** English · [Português (Brasil)](../pt-BR/troubleshooting.md)
 
@@ -38,22 +38,22 @@ flowchart TD
 
 | Message | What it means | What to do |
 |---|---|---|
-| *This room runs ScreenShare 2.0.0, you have 1.2.0: update to join* | The host runs a newer major version, which older apps can't join | Update ScreenShare. |
-| *…: the host needs to update* | The host runs an older major version | The host updates (or someone on your version hosts). |
-| *This room runs a different app version* | Same as above, from a host older than 1.2.0 | Everyone updates to the same major version. |
+| *This room runs ScreenShare 3.0.0, you have 2.0.0: update to join* | The host runs a newer version with a different room protocol, which older apps can't join | Update ScreenShare. |
+| *…: the host needs to update* | The host runs an older version with a different room protocol | The host updates (or someone on your version hosts). |
+| *This room runs a different app version* | Same as above, from a host older than 1.2.0 | Everyone updates to the latest version. |
 | *Wrong PIN* (attempts left) | The PIN doesn't match | Ask the host again: the PIN can change during a session. |
 | *Too many wrong PINs. Try again later.* | 3 wrong PINs from your computer | Wait 5 minutes. |
 | *Room is full* | 10 people already inside | Wait for someone to leave. |
 | *You were removed from this room* | The host removed you | Only the host can help; a new room session clears it. |
-| The room list says *Update to join* or *Older version* | The room runs an incompatible major version (hover over it to see who has to update) | As above. |
+| The room list says *Update to join* or *Older version* | The room runs an incompatible version (hover over it to see who has to update) | As above. |
 | The room is grey / *Unreachable* | The app can't reach the host | Check the network and firewall, or that the host is still running. |
 | Certificate error in the log (`rejected certificate`) | The host's certificate doesn't match the one your app saw before | Restart ScreenShare on your side so it learns the host again. If the host deleted `host-identity.json`, that's expected. |
 
 ## The video doesn't start or stays black
 
-- **"Connecting…" for a few seconds, then it plays**: normal when your network blocks WebRTC (UDP). After 8 seconds the app switches to the TCP connection by itself. The ↻ button in the tile tries the faster connection again.
-- **It never connects**: make sure both computers allow ScreenShare through the firewall. As a last resort, enable **Settings → Network → Always use TCP transport** on the viewer.
-- **The streamer sees their own stream is fine but you see black**: the streamer may have paused (the tile says so), or shared a window that is minimized. Ask them to use **Change source**.
+- **"Connecting…" for a few seconds, then it plays**: normal when your network blocks WebRTC (UDP). After 8 seconds the app switches to the TCP connection by itself. **Try the faster connection again** in the stream's right-click menu goes back to WebRTC.
+- **It never connects**: make sure both computers allow ScreenShare through the firewall. As a last resort, enable **Settings → Connection → Always use TCP transport** on the viewer.
+- **The streamer sees their own stream is fine but you see black**: the streamer may have minimized their app with **Pause sharing while minimized** on (the tile says *Sharing paused*), or shared a window that is minimized. Ask them to use **Change source**.
 - **Your own stream isn't visible to you**: that's on purpose. Click **Show my stream** on your own tile.
 - **Screenshots of the app are black while watching**: also on purpose; recording streams is blocked.
 
@@ -80,19 +80,19 @@ On Windows 10 (and 11 before 24H2), sharing a whole screen shows the cursor even
 
 | Problem | Fix |
 |---|---|
-| No audio at all | The streamer must enable **Share system audio** (via **Change source** while sharing). The mute button says **No audio** when nothing is captured. |
+| No audio at all | The streamer must enable **Share system audio** (via **Change source** while sharing). The **Sharing** menu says **No audio** when nothing is captured. |
 | No sound when sharing a window (Windows) | **Only this app's sound** follows the app that owns the window. Some apps play their sound from another process (some games started by a launcher, Store apps), so nothing is captured. Turn the option off in **Change source**: viewers then hear all your system sound. |
 | No audio with a 5.1/7.1 headset on Windows | The app switches to its own audio helper automatically. If it still fails, set the device to stereo: *Sound settings → device → Properties → Advanced → 2 channel*, then **Change source**. |
 | People in my Discord call hear themselves | Share the game's **window** with **Only this app's sound**, or turn on **Leave out Discord** when you share (Windows, both on by default). If a message says it couldn't be done, your Windows is older than 10 version 2004: use **Mute audio**, or mute Discord's output. |
 | Other streams echo in my stream | Your computer plays the streams you watch, and sharing system audio captures that too. With **Leave out Discord** on and Discord closed, the app leaves itself out and this doesn't happen; otherwise (only one app can be left out) lower the volume of the streams you watch, or mute your shared audio. |
 | No audio on macOS | Needs macOS 13+ and Screen Recording permission. It is still untested on macOS. |
-| Viewer hears nothing but the streamer has audio | Check the tile's volume slider (each stream has its own volume and mute). |
+| Viewer hears nothing but the streamer has audio | Check the stream's volume in its right-click menu, or the speaker under a focused stream (each stream has its own volume and mute). |
 
 ## High CPU or a hot laptop
 
-- Open **Settings → Streaming quality**: the codec table shows **Hardware** or **Software** for each codec. Software encoding uses much more CPU. **Automatic** already prefers hardware H.264.
+- Open **Settings → Advanced**: the codec table shows **Hardware** or **Software** for each codec. Software encoding uses much more CPU. **Automatic** already prefers hardware H.264.
 - Lower the **maximum quality** in the **Sharing** button's menu (for example 720p @ 30 fps).
-- Close tiles you're not watching; each watched stream costs decoding.
+- Stop watching streams you don't need (**Stop watching** in their right-click menu); each watched stream costs decoding.
 - Keep your own stream hidden (don't **Show my stream**) while sharing.
 
 ## macOS permissions
@@ -106,5 +106,5 @@ Please include:
 
 1. App version (**Settings → About**) and operating system on each computer involved.
 2. What you did, what you expected, what happened.
-3. The relevant part of `screenshare.log` from each computer (**Settings → Open logs**). Remove anything private first.
+3. The relevant part of `screenshare.log` from each computer (**Settings → About → Open logs**). Remove anything private first.
 4. For quality problems: a screenshot of the tile's stats badges and of the streamer's **Stats** panel.

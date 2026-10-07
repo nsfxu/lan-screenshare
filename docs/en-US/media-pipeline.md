@@ -106,7 +106,7 @@ Four independent limits decide what each watcher receives. They are combined in 
 
 ```mermaid
 flowchart LR
-  A["Streamer's maximum quality<br/>(Live button menu, Stats, or Settings)"] --> L["Quality ladder"]
+  A["Streamer's maximum quality<br/>(Sharing button menu, Stats, or Settings)"] --> L["Quality ladder"]
   L --> B["Adaptive controller<br/>per watcher: loss, RTT, limitation"]
   B --> C["View limit<br/>tile size x DPI,<br/>or the watcher's own choice"]
   C --> D["Upload budget<br/>max-min fair share"]
@@ -157,7 +157,7 @@ The watcher can also pick a **quality** in the tile menu (`WATCH_QUALITIES`): Au
 
 On the streamer side, `limitPreset()` lowers the preset to that height and fps and scales the bitrate with the pixel count and frame rate. Example: a 1080p60 preset shown in a 360p tile costs about 15 Mbps / 9 ≈ 1.7 Mbps.
 
-**Streams nobody can see get no video.** When a watcher can't see a stream (its window is minimized, or another tile is full screen), `Subscription` sends `HIDDEN_VIEW` instead: 90 px at 1 fps, the smallest view the server accepts. No real tile reports it (the smallest step is 360), so the streamer recognises it (`isHiddenView`) and sets that watcher's video encoding to `active: false`: nothing is encoded or sent, and the watcher needs no share of the upload budget. Audio is a separate sender and keeps playing. When the watcher can see the stream again, it reports its real view and video resumes within a second. The streamer's People list says "not looking (video paused)". A streamer on an older version, which doesn't know the convention, sends a tiny 160×90 picture at 1 fps instead, so no protocol change was needed.
+**Streams nobody can see get no video.** When a watcher can't see a stream (its window is minimized, or the stream is in the spotlight strip and they put the strip away), `Subscription` sends `HIDDEN_VIEW` instead: 90 px at 1 fps, the smallest view the server accepts. No real tile reports it (the smallest step is 360), so the streamer recognises it (`isHiddenView`) and sets that watcher's video encoding to `active: false`: nothing is encoded or sent, and the watcher needs no share of the upload budget. Audio is a separate sender and keeps playing. When the watcher can see the stream again, it reports its real view and video resumes within a second. The streamer's People list says "not looking (video paused)". A streamer on an older version, which doesn't know the convention, sends a tiny 160×90 picture at 1 fps instead, so no protocol change was needed.
 
 Minimizing is reported by the main process (`window:state`); the page itself can't tell, because the app disables background throttling so capture and encoding keep running in the background. A window that is only *covered* (for example by a fullscreen game on the same screen) isn't detected yet.
 
@@ -180,7 +180,7 @@ stateDiagram-v2
   Negotiating --> TcpNegotiating: 8 s timeout, ICE failed or negotiation failed
   Streaming --> TcpNegotiating: connection failed
   TcpNegotiating --> TcpStreaming: first keyframe decoded
-  TcpStreaming --> Negotiating: user clicks "Try WebRTC again"
+  TcpStreaming --> Negotiating: user clicks "Try the faster connection again"
   Streaming --> Ended: streamer stopped
   TcpStreaming --> Ended: streamer stopped
   Ended --> [*]

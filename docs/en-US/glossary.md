@@ -28,7 +28,7 @@ Words used in the code and in these docs.
 | **Seat** | The server's record for one participant: connection, stream, watchers, preview, picture. |
 | **Signaling** | The WebRTC offer/answer/ICE messages that set up a connection. Relayed by the server. |
 | **Slot** | A small number (0–255) per participant. The server prefixes TCP-fallback packets with the streamer's slot so watchers can route them. |
-| **Spotlight** | The layout where one watched stream is big and the others are in a strip. |
+| **Spotlight** | The layout where one tile (a stream or a person) is big and everyone else is in a strip below it, which can be put away. |
 | **Streamer** | A participant who is sharing their screen. |
 | **Subscription** | The renderer object for watching one streamer (`src/renderer/lib/subscription.ts`). |
 | **TCP fallback** | The backup transport when WebRTC can't connect: WebCodecs encoding, packets relayed over the room's WebSocket. |
