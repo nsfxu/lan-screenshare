@@ -89,7 +89,7 @@ Keep decision logic out of React and out of WebRTC callbacks, in `src/shared/*.t
 |---|---|
 | Public room (`room.spec.ts`) | Alice creates a room and shares; Bob joins with **Join by IP**; nothing plays until he chooses her stream; frames arrive and have the colour of her screen; chat both ways; when she stops sharing (Sharing menu), his stream goes away. |
 | Private room (`room.spec.ts`) | A wrong PIN is refused (error under the room, still outside); the right PIN lets Bob in. |
-| Automatic quality (`quality.spec.ts`) | Alice shares; the test reports what's in front as the Windows helper would. The Stats panel shows smooth motion before anything is known, sharp text for a normal window, smooth motion for a fullscreen app on the shared screen, sharp text for one on another screen; Automatic is the default and a fixed choice in Settings wins. |
+| Automatic quality (`quality.spec.ts`) | Alice shares; the test reports what's in front as the Windows helper would. The Stats panel shows smooth motion before anything is known, sharp text for a normal window, smooth motion for a fullscreen app on the shared screen, sharp text for one on another screen; Automatic is the default and a fixed choice in Settings wins. The panel also shows the whole computer's CPU and memory. |
 | Hidden viewers (`hidden.spec.ts`) | Alice and Carol share, Bob watches both. Bob minimized: no frames from either, and Alice sees "not looking (video paused)"; restored: both play again. Alice's tile full screen (simulated): Carol's stream pauses, Alice's keeps playing. |
 | Versions (`version.spec.ts`) | A room on a newer protocol says who has to update (by IP, and on its row); someone on a newer version gets the others a one-time notice. |
 | Struggle warnings (`struggle.spec.ts`) | Faked `qualityLimitationReason`: a short spike says nothing, a lasting one shows the notice, it clears with the problem, and "Lower to" lowers the quality. |
@@ -98,7 +98,7 @@ Keep decision logic out of React and out of WebRTC callbacks, in `src/shared/*.t
 | Tiles (`stage.spec.ts`) | The invite tile, a tile per person, watching from a tile, focus and Esc, the ⓘ details for a guest and the host. |
 | Chat (`chat.spec.ts`) | The room-named message box, the unread count while hidden, grouping. |
 | Menus (`menus.spec.ts`) | The Sharing button's menu (quality, stop), right-click on your own tile and on a stream (quality you receive, stop watching), the host's actions. |
-| Focus and volume (`focus.spec.ts`) | Alice shares with a test tone: click to focus and back, the speaker mutes and unmutes, its slider and the menu's change the played volume, double-click full screen, hiding the strip pauses its stream. |
+| Focus and volume (`focus.spec.ts`) | Alice shares with a test tone: click to focus and back, the speaker mutes and unmutes, its slider and the menu's change the played volume, double-click full screen (the stream fills the screen with no frame; the strip, controls and name hide after a moment without the mouse and come back when it moves), hiding the strip pauses its stream. |
 | Themes (`theme.spec.ts`) | Each theme changes the page colours; the choice survives a reload. |
 | Settings (`settings.spec.ts`) | The section list jumps to a section and follows the scrolling. |
 

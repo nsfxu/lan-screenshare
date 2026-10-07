@@ -90,7 +90,7 @@ While you share, the button becomes a green **Sharing** button. Click it (or rig
 | **Quality you send** | The maximum quality you send (Native, 1080p, 720p at 60 or 30 fps, 480p). It applies immediately; each viewer may still get less, for example if their window is small or their network is slow. |
 | **Stop sharing** | Ends your stream. |
 
-**Stats** (the sliders button next to it) shows your stream's resolution, frame rate, upload, encode time, codec, encoder, CPU, memory and what is limiting quality, and also lets you change the quality you send.
+**Stats** (the sliders button next to it) shows your stream's resolution, frame rate, upload, encode time, codec, encoder, CPU and memory (the app's and the whole computer's, games included) and what is limiting quality, and also lets you change the quality you send.
 
 The red button left of it leaves the room (for the host, it ends the room for everyone, after asking).
 
@@ -106,7 +106,7 @@ Everyone in the room has a **tile** in the middle: their picture and name. Tiles
 
 - Click **Watch stream** on their tile, click them in the rooms column (hover first to see their preview), or **Watch all** in the control bar. Their tile then plays their stream, with their name over its top. Click them in the rooms column again, or **Stop watching** in the stream's right-click menu, to stop; an eye marks the streams you watch.
 - **Click a tile** to put it in the **spotlight**, with everyone else in a strip below (clicking one of them focuses it instead). Click the focused tile again, the grid button under it (left), or press **Esc** to go back to the grid. The room's header shows who's in the room as pictures (hover for their names) and how many streams are live.
-- **Double-click a stream** to fill the screen with it: the stream, everyone else in the strip and the controls under it. The strip, the controls and the pointer fade after 2.5 s without moving the mouse. **Esc** or the button under the stream brings the window back.
+- **Double-click a stream** to fill the screen with it, like a video player: the stream takes the whole screen, and the strip and the controls float over its bottom. After 2.5 s without moving the mouse everything but the picture hides (the strip, the controls, the name, the stats badges and the pointer); move the mouse to bring them back. **Esc** or the button at the bottom right brings the window back.
 - In the spotlight, **Hide others** puts the strip away so the focused tile gets the whole height; the streams in it stop sending you video until you show them again (you still hear them).
 - When you're alone in your room, an **Invite people** tile shows the address to give people on a VPN.
 
