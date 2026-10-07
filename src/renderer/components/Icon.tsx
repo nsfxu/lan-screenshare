@@ -1,5 +1,6 @@
 const PATHS: Record<string, string> = {
   screen: 'M3 4h18v12H3z M8 20h8 M12 16v4',
+  download: 'M12 4v11 M7 10l5 5 5-5 M5 20h14',
   lock: 'M6 11h12v9H6z M8 11V8a4 4 0 0 1 8 0v3',
   unlock: 'M6 11h12v9H6z M8 11V8a4 4 0 0 1 7.5-2',
   users: 'M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M2.5 20a6.5 6.5 0 0 1 13 0 M16 4.2a3.5 3.5 0 0 1 0 6.6 M18 14a6.5 6.5 0 0 1 3.5 6',
