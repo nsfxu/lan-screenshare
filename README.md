@@ -6,7 +6,7 @@
 
 ScreenShare is a desktop app for Windows and macOS. One person opens a **room**; everyone else on the same network sees it appear and joins with a click (or a PIN, if the room is private). **Anyone in the room can share their screen**, several people at once, and everyone picks which streams they want to watch. Streams run at up to 1080p60 using the graphics card's hardware encoder, with the computer's sound if you want it. There is a chat, a list of who is watching whom, and simple moderation for the host.
 
-Everything stays on your network. There is no server to sign up for and nothing is sent over the internet.
+Everything stays on your network. There is no server to sign up for, and the only thing the app does on the internet is check this project's releases for updates (you can turn that off).
 
 ```mermaid
 flowchart LR
@@ -23,6 +23,7 @@ flowchart LR
 - 🎚️ **Quality your way**: the streamer sets the maximum, each viewer picks what they receive, and small windows automatically cost less bandwidth.
 - 🔊 **Computer sound**, including 5.1/7.1 headsets, and an option to **leave your Discord call out** so friends don't hear themselves (Windows).
 - 💬 **Chat, profile pictures, and host controls**: remove people, stop streams, mute the chat.
+- ⬆️ **Updates itself** on Windows: a new version downloads in the background and installs when you restart.
 - 🔁 **Recovers by itself** after short network drops, and falls back to TCP when a network blocks WebRTC.
 
 ## How to run it

@@ -16,7 +16,7 @@ Obrigado por ajudar! Esta página é para todo mundo que altera o projeto: pesso
 
 ## Regras básicas
 
-1. **Só rede local.** Nada de contas, serviços em nuvem, telemetria, STUN/TURN ou qualquer coisa que precise de internet.
+1. **Só rede local.** Nada de contas, serviços em nuvem, telemetria, STUN/TURN ou qualquer coisa que precise de internet. A única exceção é a busca por atualizações, que lê as versões publicadas deste projeto no GitHub e pode ser desligada.
 2. **O servidor continua enxuto e rígido.** Ele autentica, repassa e aplica regras; não processa mídia. Toda regra que importa (quem pode fazer o quê, tamanhos, taxas) é garantida no servidor.
 3. **Assistir é explícito, só enviar o que aparece.** Não adicione nada que toque ou envie mídia que ninguém pediu.
 4. **Compatibilidade de protocolo é tudo ou nada.** Todos na sala usam o mesmo `PROTOCOL_VERSION`. Se uma mudança quebra a compatibilidade, aumente a versão (veja [protocolo → alterando o protocolo](protocol.md#alterando-o-protocolo)).

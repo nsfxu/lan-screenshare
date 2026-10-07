@@ -16,7 +16,7 @@ Thanks for helping! This page is for everyone who changes the project: people an
 
 ## Ground rules
 
-1. **LAN only.** No accounts, cloud services, telemetry, STUN/TURN or anything that needs the internet.
+1. **LAN only.** No accounts, cloud services, telemetry, STUN/TURN or anything that needs the internet. The only exception is the update check, which reads this project's GitHub releases and can be turned off.
 2. **The server stays thin and strict.** It authenticates, relays and enforces rules; it does not process media. Every rule that matters (who may do what, sizes, rates) is enforced on the server.
 3. **Explicit watching, only send what is shown.** Don't add anything that plays or sends media nobody asked for.
 4. **Protocol compatibility is all or nothing.** Everyone in a room runs the same `PROTOCOL_VERSION`. If a change breaks compatibility, bump it (see [protocol → changing the protocol](protocol.md#changing-the-protocol)).

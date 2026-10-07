@@ -45,7 +45,7 @@ flowchart LR
 
 Essas escolhas explicam a maior parte do código. Mantenha-as, a não ser que haja um motivo forte.
 
-1. **Só rede local, sem serviços externos.** Sem contas, sem nuvem, sem servidores STUN/TURN. Tudo funciona numa rede isolada.
+1. **Só rede local, sem serviços externos.** Sem contas, sem nuvem, sem servidores STUN/TURN. Tudo funciona numa rede isolada. O único uso da internet é a busca opcional por atualizações nas versões publicadas deste projeto no GitHub (`Updater`).
 2. **O servidor é enxuto.** Ele autentica, repassa e aplica regras. Não codifica, não decodifica e não mistura mídia.
 3. **Nada toca sem você pedir.** Assistir é explícito. Nem a sua própria transmissão é exibida para você até clicar em **Show my stream**. Isso economiza banda e GPU.
 4. **Uma conexão por espectador.** Cada espectador tem seu próprio controle de congestionamento, qualidade adaptativa e limite de resolução, então um espectador lento nunca piora os outros.
@@ -102,6 +102,7 @@ src/
     nativeAudio.ts   roda o auxiliar de áudio do Windows e repassa o PCM para o renderer
     cursorWatch.ts   roda o auxiliar de cursor do Windows (jogos que escondem o cursor)
     settings.ts      carrega/valida/salva o settings.json
+    updater.ts       atualizações pelas versões do GitHub (Windows: baixa e instala ao reiniciar; macOS: um link)
     logger.ts        logger em arquivo com rotação
   preload/
     index.ts         contextBridge: window.api

@@ -31,6 +31,7 @@ Ele **não** tenta proteger contra um anfitrião malicioso (o anfitrião roda o 
 | Voltar depois de ser removido | O client id removido fica banido pelo resto daquela sessão da sala | conjunto `banned` |
 | Dados grandes demais ou malformados | Nomes limpos e limitados; limites de tamanho e de taxa no chat; imagens precisam seguir padrões rígidos de data URL e limites de tamanho; tamanhos de exibição e fps verificados; mensagem máxima de 16 MB; 10 s para enviar o hello | `server.ts`, `shared/images.ts` |
 | Gravar o que se assiste | Enquanto você assiste qualquer transmissão, a janela fica oculta para captura e capturas de tela (`setContentProtection`). O app não tem gravação nem exportação do chat | `RoomView.tsx`, IPC `setViewerProtection` |
+| Uma atualização adulterada | As atualizações só vêm das versões publicadas deste projeto no GitHub, por HTTPS. No Windows, o instalador baixado precisa bater com o SHA-512 do `latest.yml` da versão; nada é instalado até a pessoa clicar em **Restart to update**. O link aberto no macOS precisa ser da página de versões | `src/main/updater.ts` |
 
 ## Fixação de certificado
 
@@ -74,6 +75,7 @@ Seja transparente sobre isso em revisões e issues:
 - **O anfitrião é confiável.** Ele repassa a sinalização e o chat, então poderia lê-los ou alterá-los. No caminho WebRTC a mídia vai direto entre quem transmite e quem assiste, cifrada, mas é o anfitrião que repassa a sinalização que configura essa cifragem, então um anfitrião malicioso poderia interferir. No fallback TCP, a mídia passa pelo anfitrião, que consegue lê-la (o WebSocket com TLS só a protege na rede).
 - **O TLS pode ser desligado** nas configurações (para depuração). Nesse caso, chat, sinalização e mídia TCP trafegam sem cifragem na rede.
 - **A proteção de conteúdo é a melhor possível, não absoluta.** Ela impede capturas e gravadores de tela no computador do espectador, não a câmera de um celular.
+- **As atualizações confiam no repositório do GitHub.** Os instaladores ainda não são assinados, então a verificação do SHA-512 prova que o arquivo é o da versão publicada, não quem o gerou: alguém que conseguisse publicar uma versão no repositório poderia distribuir uma atualização. Assinar (e definir o `publisherName`) fecharia isso.
 - **Fotos de perfil e prévias são imagens de outras pessoas.** Elas só são exibidas como `<img>` com data URLs do tipo JPEG/WebP/PNG, nunca como HTML ou SVG.
 
 ## Checklist para mudanças

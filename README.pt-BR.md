@@ -6,7 +6,7 @@
 
 O ScreenShare é um aplicativo de desktop para Windows e macOS. Uma pessoa abre uma **sala**; todo mundo na mesma rede vê a sala aparecer e entra com um clique (ou com um PIN, se a sala for privada). **Qualquer pessoa na sala pode compartilhar a tela**, várias ao mesmo tempo, e cada um escolhe quais transmissões quer assistir. As transmissões chegam a 1080p60 usando o codificador de hardware da placa de vídeo, com o som do computador se você quiser. Tem chat, uma lista de quem está assistindo quem e moderação simples para o anfitrião.
 
-Tudo fica na sua rede. Não existe servidor para se cadastrar e nada é enviado pela internet.
+Tudo fica na sua rede. Não existe servidor para se cadastrar, e a única coisa que o app faz na internet é procurar atualizações nas versões publicadas deste projeto (dá para desligar).
 
 ```mermaid
 flowchart LR
@@ -23,6 +23,7 @@ flowchart LR
 - 🎚️ **Qualidade do seu jeito**: quem transmite define o máximo, cada espectador escolhe o que recebe, e janelas pequenas gastam menos banda automaticamente.
 - 🔊 **Som do computador**, inclusive com headsets 5.1/7.1, e uma opção para **deixar a chamada do Discord de fora** para seus amigos não ouvirem a própria voz (Windows).
 - 💬 **Chat, fotos de perfil e controles do anfitrião**: remover pessoas, parar transmissões, silenciar o chat.
+- ⬆️ **Se atualiza sozinho** no Windows: a versão nova baixa em segundo plano e é instalada quando você reinicia.
 - 🔁 **Se recupera sozinho** depois de quedas curtas de rede e usa TCP quando a rede bloqueia o WebRTC.
 
 ## Como rodar

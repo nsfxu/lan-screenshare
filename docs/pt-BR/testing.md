@@ -101,6 +101,7 @@ A pasta `e2e/` roda o app de verdade: duas instâncias (Alice e Bob, o build de 
 | Destaque e volume (`focus.spec.ts`) | A Alice compartilha com um tom de teste: clicar para destacar e voltar, o alto-falante silencia e volta, o controle dele e o do menu mudam o volume tocado, dois cliques para tela cheia (a transmissão ocupa a tela sem moldura; a faixa, os controles e o nome somem depois de um tempo sem mexer o mouse e voltam quando ele se mexe), esconder a faixa pausa a transmissão dela. |
 | Temas (`theme.spec.ts`) | Cada tema muda as cores da página; a escolha sobrevive a um recarregamento. |
 | Configurações (`settings.spec.ts`) | A lista de seções pula para uma seção e acompanha a rolagem. |
+| Atualizações (`update.spec.ts`) | A situação da atualização é simulada como o processo principal enviaria: Settings → About (busca automática ligada por padrão, um build de desenvolvimento não se atualiza), baixando, depois **Restart to update** na barra de título, que reinicia direto fora de uma sala e pergunta antes quando você hospeda; no macOS **Update to …** abre a página. |
 
 ```bash
 npm run test:e2e                 # compila e roda a pasta e2e/ (uns 5 minutos)

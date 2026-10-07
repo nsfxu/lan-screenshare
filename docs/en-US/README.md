@@ -34,7 +34,7 @@ AI agents: read [`AGENTS.md`](../../AGENTS.md) at the repository root first.
 
 ## ScreenShare in one minute
 
-ScreenShare is a desktop app (Windows and macOS) for sharing screens with people on the same local network or VPN. One person creates a **room**; others find it automatically and join, with a **PIN** if the room is private. **Anyone** in the room can share their screen (with system audio), several people at once, and everyone chooses **which streams to watch**. There is chat, a people list and host moderation. Nothing leaves your network: no accounts, no cloud.
+ScreenShare is a desktop app (Windows and macOS) for sharing screens with people on the same local network or VPN. One person creates a **room**; others find it automatically and join, with a **PIN** if the room is private. **Anyone** in the room can share their screen (with system audio), several people at once, and everyone chooses **which streams to watch**. There is chat, a people list and host moderation. Nothing leaves your network (except an optional check for app updates): no accounts, no cloud.
 
 ```mermaid
 flowchart LR
@@ -52,6 +52,7 @@ flowchart LR
 - **TCP fallback**: one encode is shared by all TCP viewers of a streamer, sized for the most demanding one.
 - **Latency figures** on WebRTC are estimates (see [media pipeline](media-pipeline.md#statistics-and-latency)).
 - **Discovery** needs multicast; on VPNs use **Join by IP**.
+- **Updates**: Windows apps from 2.2.0 on update themselves. On macOS the app can only point to the download, because unsigned apps can't replace themselves.
 - **Version**: everyone in a room must run the same protocol version (currently 4: every app from 1.0.0 to 2.x).
 - **Out of scope** for now: remote control, microphone audio, several monitors in one stream, recording, Linux as a supported platform.
 

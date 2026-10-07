@@ -101,6 +101,7 @@ Keep decision logic out of React and out of WebRTC callbacks, in `src/shared/*.t
 | Focus and volume (`focus.spec.ts`) | Alice shares with a test tone: click to focus and back, the speaker mutes and unmutes, its slider and the menu's change the played volume, double-click full screen (the stream fills the screen with no frame; the strip, controls and name hide after a moment without the mouse and come back when it moves), hiding the strip pauses its stream. |
 | Themes (`theme.spec.ts`) | Each theme changes the page colours; the choice survives a reload. |
 | Settings (`settings.spec.ts`) | The section list jumps to a section and follows the scrolling. |
+| Updates (`update.spec.ts`) | The update status is faked as the main process would send it: Settings → About (automatic checks on by default, a development build doesn't update), downloading, then **Restart to update** in the title bar, which restarts straight away outside a room and asks first while hosting; on macOS **Update to …** opens the page. |
 
 ```bash
 npm run test:e2e                 # builds, then runs e2e/ (about 5 minutes)
