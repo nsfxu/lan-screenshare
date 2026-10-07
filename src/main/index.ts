@@ -9,6 +9,7 @@ import { parseHostPort } from '../utils/network'
 import { createFileLogger } from './logger'
 import { CursorWatch } from './cursorWatch'
 import { NativeLoopback } from './nativeAudio'
+import { Updater } from './updater'
 import { RoomManager } from './roomManager'
 import { ScreenCapture } from './screenCapture'
 import { SettingsStore } from './settings'
@@ -50,6 +51,7 @@ const log = createFileLogger(logDir, !app.isPackaged)
 const settings = new SettingsStore(app.getPath('userData'))
 const rooms = new RoomManager(settings, app.getPath('userData'), log, app.getVersion())
 const capture = new ScreenCapture(log)
+const updater = new Updater(log, app.getVersion(), app.isPackaged)
 const nativeAudio = new NativeLoopback(log)
 const cursorWatch = new CursorWatch(log)
 
@@ -162,7 +164,15 @@ function createWindow(): void {
 
 function registerIpc(): void {
   ipcMain.handle(IPC.getSettings, () => settings.get())
-  ipcMain.handle(IPC.updateSettings, (_e, patch: Partial<Settings>) => settings.update(patch))
+  ipcMain.handle(IPC.updateSettings, (_e, patch: Partial<Settings>) => {
+    const next = settings.update(patch)
+    if (patch && 'autoUpdate' in patch) updater.setAutomatic(next.autoUpdate)
+    return next
+  })
+  ipcMain.handle(IPC.updateGet, () => updater.status)
+  ipcMain.handle(IPC.updateCheck, () => updater.check(true))
+  ipcMain.handle(IPC.updateInstall, () => updater.install())
+  ipcMain.handle(IPC.updateOpenPage, () => updater.openPage())
 
   ipcMain.handle(IPC.listRooms, () => rooms.listRooms())
   ipcMain.handle(IPC.refreshRooms, () => rooms.refresh())
@@ -246,6 +256,7 @@ function registerIpc(): void {
 
   rooms.on('rooms', (list) => mainWindow?.webContents.send(IPC.roomsChanged, list))
   rooms.on('hosted', (hosted) => mainWindow?.webContents.send(IPC.hostedChanged, hosted))
+  updater.on('status', (status) => mainWindow?.webContents.send(IPC.updateStatus, status))
 }
 
 function configureSession(): void {
@@ -272,6 +283,7 @@ app.whenReady().then(() => {
   registerIpc()
   rooms.start()
   createWindow()
+  updater.setAutomatic(settings.get().autoUpdate)
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

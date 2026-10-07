@@ -296,7 +296,25 @@ export interface Settings {
   avatar: string | null
   /** Colour theme of the app (src/shared/themes.ts). */
   theme: ThemeId
+  /** Look for new versions on the releases page, and on Windows download them for a restart. */
+  autoUpdate: boolean
 }
+
+/**
+ * Where the app is with updates. On Windows a new version downloads by itself
+ * and waits for a restart (`ready`); on macOS, where unsigned apps can't
+ * replace themselves, the app only says one is `available` to download.
+ */
+export type UpdateStatus =
+  /** Up to date, or not checked yet (`checkedAt` is when it last looked). */
+  | { state: 'idle'; checkedAt: number | null }
+  | { state: 'checking' }
+  | { state: 'downloading'; version: string; percent: number }
+  | { state: 'ready'; version: string }
+  | { state: 'available'; version: string; url: string }
+  | { state: 'error'; message: string }
+  /** Development builds don't update themselves. */
+  | { state: 'unsupported' }
 
 export interface CreateRoomRequest {
   name: string

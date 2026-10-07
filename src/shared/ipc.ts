@@ -10,7 +10,8 @@ import type {
   ScreenPermission,
   Settings,
   SystemStats,
-  UpdateRoomRequest
+  UpdateRoomRequest,
+  UpdateStatus
 } from './types'
 
 export const IPC = {
@@ -48,6 +49,11 @@ export const IPC = {
   windowState: 'window:state',
   copyText: 'clipboard:write',
   openLogs: 'system:open-logs',
+  updateStatus: 'update:status',
+  updateGet: 'update:get',
+  updateCheck: 'update:check',
+  updateInstall: 'update:install',
+  updateOpenPage: 'update:open-page',
   log: 'system:log'
 } as const
 
@@ -107,6 +113,16 @@ export interface ScreenShareApi {
     }
     permission(): Promise<ScreenPermission>
     openPermissionSettings(): Promise<void>
+  }
+  update: {
+    get(): Promise<UpdateStatus>
+    /** Look now, even with automatic checks turned off. */
+    check(): Promise<UpdateStatus>
+    /** Restart into the downloaded version (Windows, when `ready`). */
+    install(): Promise<void>
+    /** Open the release page to download it by hand (macOS, when `available`). */
+    openPage(): Promise<void>
+    onChanged(cb: (status: UpdateStatus) => void): () => void
   }
   system: {
     stats(): Promise<SystemStats>

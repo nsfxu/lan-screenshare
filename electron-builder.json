@@ -3,6 +3,13 @@
   "appId": "com.screenshare.lan",
   "productName": "ScreenShare",
   "copyright": "ScreenShare",
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "nsfxu",
+      "repo": "lan-screenshare"
+    }
+  ],
   "directories": {
     "output": "release/${version}",
     "buildResources": "build"

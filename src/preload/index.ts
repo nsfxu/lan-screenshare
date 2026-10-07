@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import { IPC, type ScreenShareApi, type WindowState } from '../shared/ipc'
-import type { DiscoveredRoom, CursorWatchState, HostedRoom } from '../shared/types'
+import type { DiscoveredRoom, CursorWatchState, HostedRoom, UpdateStatus } from '../shared/types'
 
 function subscribe<T>(channel: string, cb: (value: T) => void): () => void {
   const listener = (_e: IpcRendererEvent, value: T): void => cb(value)
@@ -55,6 +55,13 @@ const api: ScreenShareApi = {
     },
     permission: () => ipcRenderer.invoke(IPC.screenPermission),
     openPermissionSettings: () => ipcRenderer.invoke(IPC.openPermissionSettings)
+  },
+  update: {
+    get: () => ipcRenderer.invoke(IPC.updateGet),
+    check: () => ipcRenderer.invoke(IPC.updateCheck),
+    install: () => ipcRenderer.invoke(IPC.updateInstall),
+    openPage: () => ipcRenderer.invoke(IPC.updateOpenPage),
+    onChanged: (cb) => subscribe<UpdateStatus>(IPC.updateStatus, cb)
   },
   system: {
     stats: () => ipcRenderer.invoke(IPC.systemStats),

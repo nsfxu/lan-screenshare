@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compareAppVersions, incompatibleRoomMessage, isAppVersion, newerVersionInRoom } from '../src/shared/version'
+import { compareAppVersions, incompatibleRoomMessage, isAppVersion, newerRelease, newerVersionInRoom } from '../src/shared/version'
 
 describe('app versions', () => {
   it('accepts SemVer releases and pre-releases only', () => {
@@ -43,5 +43,21 @@ describe('app versions', () => {
     ]
     expect(newerVersionInRoom('1.2.0', people)).toEqual({ name: 'Carol', appVersion: '1.4.1' })
     expect(newerVersionInRoom('1.5.0', people)).toBeNull()
+  })
+})
+
+describe('newerRelease', () => {
+  it('offers a release tag only when it is newer than the running app', () => {
+    expect(newerRelease('v2.2.0', '2.1.0')).toBe('2.2.0')
+    expect(newerRelease('2.1.1', '2.1.0')).toBe('2.1.1')
+    expect(newerRelease('v2.1.0', '2.1.0')).toBeNull()
+    expect(newerRelease('v2.0.0', '2.1.0')).toBeNull()
+    expect(newerRelease('v3.0.0-beta.1', '2.1.0')).toBe('3.0.0-beta.1')
+  })
+
+  it('ignores anything that is not a version', () => {
+    expect(newerRelease('nightly', '2.1.0')).toBeNull()
+    expect(newerRelease(undefined, '2.1.0')).toBeNull()
+    expect(newerRelease('v9.0.0', 'dev')).toBeNull()
   })
 })
