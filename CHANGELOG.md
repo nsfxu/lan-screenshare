@@ -10,6 +10,14 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Changed
+
+- **Full screen works like a video player**: the stream fills the whole screen with no frame around it, and the strip and the controls float over its bottom instead of taking space. After a moment without moving the mouse everything but the picture hides, the name and the stats badges included; moving the mouse brings it back.
+
+### Added
+
+- **Stats** also shows the whole computer's CPU and memory (games and other apps included), next to the app's, so you can tell when the computer itself is the bottleneck.
+
 ## [2.0.0] - 2026-10-06
 
 ### Added

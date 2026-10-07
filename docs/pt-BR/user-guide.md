@@ -90,7 +90,7 @@ Enquanto você compartilha, o botão vira um botão verde **Sharing**. Clique ne
 | **Quality you send** | A qualidade máxima que você envia (Native, 1080p, 720p a 60 ou 30 fps, 480p). Vale na hora; cada espectador ainda pode receber menos, por exemplo se a janela dele for pequena ou a rede estiver lenta. |
 | **Stop sharing** | Encerra a sua transmissão. |
 
-**Stats** (o botão de controles deslizantes ao lado) mostra a resolução, taxa de quadros, upload, tempo de codificação, codec, codificador, CPU, memória e o que está limitando a qualidade da sua transmissão, e também permite mudar a qualidade que você envia.
+**Stats** (o botão de controles deslizantes ao lado) mostra a resolução, taxa de quadros, upload, tempo de codificação, codec, codificador, CPU e memória (do app e do computador inteiro, jogos inclusive) e o que está limitando a qualidade da sua transmissão, e também permite mudar a qualidade que você envia.
 
 O botão vermelho à esquerda dele sai da sala (para o anfitrião, encerra a sala para todos, depois de perguntar).
 
@@ -106,7 +106,7 @@ Todos na sala têm um **quadro** no meio: a foto e o nome. Os quadros mantêm o 
 
 - Clique em **Watch stream** no quadro, clique na pessoa na coluna de salas (passe o mouse antes para ver a prévia), ou em **Watch all** na barra de controles. O quadro passa a exibir a transmissão, com o nome da pessoa por cima. Clique na pessoa de novo na coluna de salas, ou em **Stop watching** no menu do botão direito da transmissão, para parar; um olho marca as transmissões que você assiste.
 - **Clique num quadro** para colocá-lo em **destaque**, com todos os outros numa faixa embaixo (clicar num deles o coloca em destaque no lugar). Clique de novo no quadro em destaque, no botão de grade embaixo dele (à esquerda), ou aperte **Esc** para voltar à grade. O topo da sala mostra quem está nela em fotos (passe o mouse para ver os nomes) e quantas transmissões estão ao vivo.
-- **Dois cliques numa transmissão** a colocam em tela cheia: a transmissão, todos os outros na faixa e os controles embaixo dela. A faixa, os controles e o ponteiro somem depois de 2,5 s sem mexer o mouse. **Esc** ou o botão embaixo da transmissão volta à janela.
+- **Dois cliques numa transmissão** a colocam em tela cheia, como num player de vídeo: a transmissão ocupa a tela toda, e a faixa e os controles ficam por cima da parte de baixo dela. Depois de 2,5 s sem mexer o mouse, tudo menos a imagem some (a faixa, os controles, o nome, os selos de estatística e o ponteiro); mexa o mouse para trazê-los de volta. **Esc** ou o botão no canto de baixo à direita volta à janela.
 - No destaque, **Hide others** guarda a faixa para o quadro em destaque ocupar toda a altura; as transmissões nela param de te mandar vídeo até você mostrá-las de novo (o som continua).
 - Quando você está sozinho na sua sala, um quadro **Invite people** mostra o endereço para passar a quem está numa VPN.
 
