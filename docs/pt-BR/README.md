@@ -34,7 +34,7 @@ Agentes de IA: leiam primeiro o [`AGENTS.md`](../../AGENTS.md) na raiz do reposi
 
 ## O ScreenShare em um minuto
 
-O ScreenShare é um app de desktop (Windows e macOS) para compartilhar a tela com pessoas da mesma rede local ou VPN. Uma pessoa cria uma **sala**; as outras a encontram automaticamente e entram, com um **PIN** se a sala for privada. **Qualquer pessoa** na sala pode compartilhar a tela (com o áudio do sistema), várias ao mesmo tempo, e cada um escolhe **quais transmissões assistir**. Tem chat, lista de pessoas e moderação do anfitrião. Nada sai da sua rede: sem contas, sem nuvem.
+O ScreenShare é um app de desktop (Windows e macOS) para compartilhar a tela com pessoas da mesma rede local ou VPN. Uma pessoa cria uma **sala**; as outras a encontram automaticamente e entram, com um **PIN** se a sala for privada. **Qualquer pessoa** na sala pode compartilhar a tela (com o áudio do sistema), várias ao mesmo tempo, e cada um escolhe **quais transmissões assistir**. Tem chat, lista de pessoas e moderação do anfitrião. Nada sai da sua rede (fora uma busca opcional por atualizações do app): sem contas, sem nuvem.
 
 ```mermaid
 flowchart LR
@@ -52,6 +52,7 @@ flowchart LR
 - **Fallback TCP**: uma única codificação é dividida entre todos os espectadores TCP de quem transmite, dimensionada para o mais exigente.
 - **Os números de latência** no WebRTC são estimativas (veja [pipeline de mídia](media-pipeline.md#estatísticas-e-latência)).
 - **A descoberta** precisa de multicast; em VPNs use **Join by IP**.
+- **Atualizações**: no Windows, o app se atualiza sozinho a partir do 2.2.0. No macOS ele só consegue indicar o download, porque apps sem assinatura não podem se substituir.
 - **Versão**: todos na sala precisam da mesma versão do protocolo (hoje, a 4: todo app do 1.0.0 ao 2.x).
 - **Fora do escopo** por enquanto: controle remoto, áudio do microfone, vários monitores numa transmissão, gravação, Linux como plataforma suportada.
 

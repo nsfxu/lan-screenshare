@@ -4,7 +4,7 @@ Guidance for AI coding agents working on this repository. People are welcome to 
 
 ## What this project is
 
-ScreenShare is an Electron + React + TypeScript desktop app for screen sharing on a LAN or VPN. The host's app runs a small room server (auth, chat, presence, WebRTC signaling relay); video goes directly from each streamer to each watcher over WebRTC, with a WebCodecs-over-WebSocket fallback. No internet services are used, by design.
+ScreenShare is an Electron + React + TypeScript desktop app for screen sharing on a LAN or VPN. The host's app runs a small room server (auth, chat, presence, WebRTC signaling relay); video goes directly from each streamer to each watcher over WebRTC, with a WebCodecs-over-WebSocket fallback. No internet services are used, by design, apart from checking the project's GitHub releases for updates (which can be turned off).
 
 Read [`docs/en-US/architecture.md`](docs/en-US/architecture.md) before changing anything non-trivial.
 
@@ -27,6 +27,7 @@ npm run build        # production build into out/
 | Limits, timings, protocol version | `src/shared/constants.ts` |
 | Room server (auth, relay, moderation) | `src/main/server.ts` |
 | Hosting, discovery, TLS identity | `src/main/roomManager.ts`, `src/utils/` |
+| Updates (GitHub releases) | `src/main/updater.ts`, `publish` in `electron-builder.json`, `latest.yml` in `.github/workflows/release.yml` |
 | IPC surface (`window.api`) | `src/shared/ipc.ts`, `src/preload/index.ts`, `registerIpc()` in `src/main/index.ts` |
 | Sharing (capture, per-watcher connections, quality) | `src/renderer/lib/publisher.ts` |
 | Watching | `src/renderer/lib/subscription.ts`, `src/renderer/lib/watches.ts` |
@@ -38,7 +39,7 @@ npm run build        # production build into out/
 
 ## Rules
 
-1. **Stay LAN-only.** No accounts, cloud, telemetry, STUN/TURN or internet dependencies.
+1. **Stay LAN-only.** No accounts, cloud, telemetry, STUN/TURN or internet dependencies. The one exception is the update check (`src/main/updater.ts`): it only reads this project's GitHub releases, and Settings → About turns it off. Don't add other internet calls.
 2. **The server enforces the rules.** Validate every new message field on the server (type, range, size, and whether this sender may send it). Relay signaling only inside an existing streamer↔watcher pair. Never loosen validation to make a client work.
 3. **Protocol changes**: update `ClientMessage`/`ServerMessage`, handle them on both sides, add a server test, and bump `PROTOCOL_VERSION` if old and new apps can't interoperate. See [changing the protocol](docs/en-US/protocol.md#changing-the-protocol).
 4. **Pure logic goes in `src/shared/`** (no DOM, no Node APIs) with unit tests. `tsconfig.node.json` type-checks `tests/` without DOM types, so tests there must not import DOM-using modules. Tests of renderer logic go in `tests/renderer/`, which is type-checked with the web config; stub `window.api` with `vi.stubGlobal`.

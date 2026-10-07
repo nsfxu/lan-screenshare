@@ -31,6 +31,7 @@ It does **not** try to protect against a malicious host (the host runs the serve
 | Rejoining after a kick | The kicked client id is banned for the rest of that room session | `banned` set |
 | Oversized or malformed input | Names sanitized and capped; chat length and rate limits; images must match strict data-URL patterns and size caps; view sizes and fps range-checked; 16 MB max message; 10 s to say hello | `server.ts`, `shared/images.ts` |
 | Recording what you watch | While you watch any stream, the window is hidden from screen capture and screenshots (`setContentProtection`). The app has no recording or chat export | `RoomView.tsx`, `setViewerProtection` IPC |
+| A tampered update | Updates come only from this project's GitHub releases over HTTPS. On Windows the downloaded installer must match the SHA-512 in the release's `latest.yml`; nothing installs until the person clicks **Restart to update**. The release page link opened on macOS must be on the releases page | `src/main/updater.ts` |
 
 ## Certificate pinning
 
@@ -74,6 +75,7 @@ Be honest about these in reviews and issues:
 - **The host is trusted.** It relays signaling and chat, so it could read or alter them. Media on the WebRTC path flows directly between streamer and watcher and is encrypted, but the host relays the signaling that sets up that encryption, so a malicious host could interfere with it. On the TCP fallback, media passes through the host, readable by it (the TLS WebSocket only protects it on the network).
 - **TLS can be turned off** in Settings (for debugging). Then chat, signaling and TCP media are unencrypted on the network.
 - **Content protection is best effort.** It stops screenshots and screen recorders on the viewer's machine, not a phone camera.
+- **Updates trust the GitHub repository.** The installers aren't code-signed yet, so the SHA-512 check proves the file is the one in the release, not who built it: someone who could publish a release on the repository could ship an update. Signing (and setting `publisherName`) would close that.
 - **Profile pictures and previews are images from other people.** They are only rendered as `<img>` data URLs of JPEG/WebP/PNG type, never as HTML or SVG.
 
 ## Checklist for changes

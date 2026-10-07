@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Added
+
+- **Automatic updates on Windows**: the app looks for a new version every few hours, downloads it in the background, and shows **Restart to update** in the title bar when it's ready. You choose when to restart (it asks first if you're in a room); nothing installs by itself when you close the app. On macOS the title bar offers **Update to …**, which opens the download page. Turn it off in **Settings → About**, where **Check now** also is. This is the only thing the app does on the internet. From this version on, you won't need to download new versions by hand on Windows.
+
 ## [2.1.0] - 2026-10-07
 
 ### Changed

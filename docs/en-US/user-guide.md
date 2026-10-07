@@ -15,6 +15,7 @@ Everything you can do in ScreenShare, from finding a room to fine-tuning quality
 - [Chat and people](#chat-and-people)
 - [If you are the host](#if-you-are-the-host)
 - [Settings](#settings)
+- [Updates](#updates)
 - [Mouse and keyboard](#mouse-and-keyboard)
 - [Privacy](#privacy)
 - [Where your files are](#where-your-files-are)
@@ -22,7 +23,7 @@ Everything you can do in ScreenShare, from finding a room to fine-tuning quality
 ## Before you start
 
 - **Computers**: Windows 10/11 or macOS. System audio on macOS needs macOS 13 or newer. Leaving Discord out of the audio needs Windows 10 version 2004 or newer.
-- **Network**: everyone must be on the same local network or VPN. Nothing goes over the internet and there are no accounts.
+- **Network**: everyone must be on the same local network or VPN. Nothing goes over the internet (apart from the update check) and there are no accounts.
 - **Compatible versions**: 1.x and 2.x apps can share a room (2.0.0 changed the look, not how apps talk to each other). Only a version that changes the room protocol, such as a future 3.0.0, needs everyone to update; the room list then says who has to, e.g. "This room runs ScreenShare 3.0.0, you have 2.0.0: update to join". When someone in your room runs a newer version, you get a one-time suggestion to update.
 - **macOS**: the first time you share, macOS asks for **Screen Recording** permission, and it may ask for **Local Network** access. Allow both, then restart the app if asked.
 
@@ -171,8 +172,18 @@ Open Settings with the gear icon at the bottom of the rooms column. The list on 
 | Connection | Hosting port | 47800 | The first port tried when you host. |
 | Advanced | Video codec | Automatic | Automatic prefers hardware H.264. You can force H.264, H.265, VP9 or AV1 if both sides support it. The table below it shows what your computer supports. |
 | Advanced | Adaptive quality | on | Lowers resolution/frame rate per viewer when their network struggles. |
+| About | Check for updates automatically | on | See [updates](#updates). |
 
 **About** shows the app version and has **Open logs**.
+
+## Updates
+
+The app looks for a new version on the [releases page](https://github.com/nsfxu/lan-screenshare/releases) shortly after it starts and every few hours.
+
+- **Windows**: a new version downloads quietly in the background. When it's ready, a green **Restart to update** button appears in the title bar (and in **Settings → About**). Click it when it suits you: the app closes, installs the update and opens again. If you're in a room it asks first, because restarting leaves the room (or ends it, if you host). Nothing installs by itself when you close the app.
+- **macOS**: the title bar shows **Update to …**, which opens the download page. Apple only lets signed apps replace themselves, and ScreenShare isn't signed yet.
+
+**Settings → About** shows where things are and has **Check now**. Turn off **Check for updates automatically** if you don't want the app to contact GitHub; you can still check by hand. Versions before 2.2.0 don't update themselves: download 2.2.0 once, and later versions come by themselves.
 
 ## Mouse and keyboard
 
@@ -189,7 +200,7 @@ Open Settings with the gear icon at the bottom of the rooms column. The list on 
 
 ## Privacy
 
-- Everything stays on your network. There are no accounts, no cloud and no tracking.
+- Everything stays on your network. There are no accounts, no cloud and no tracking. The one thing the app does on the internet is check GitHub for updates, which sends nothing about you beyond what any download does, and can be turned off.
 - The PIN exists only in the host's memory and is never saved.
 - The app has no recording and no chat export. While you watch a stream, your ScreenShare window is hidden from screenshots and screen recorders on your computer.
 - Chat, previews and profile pictures disappear when the room ends.

@@ -193,7 +193,7 @@ flowchart LR
 2. Start the release in one of two ways:
    - On GitHub: **Actions → Release → Run workflow**, branch `main`, version `v1.2.0`. The workflow creates the tag itself.
    - Or push a tag from your computer: `git tag v1.2.0 && git push origin v1.2.0`. An annotated tag's message is used as the notes when there is no notes file.
-3. The workflow checks that the version matches `package.json`, that `CHANGELOG.md` has its section and that the notes have no `TODO` left, runs the checks, builds the installers, and publishes the release with them attached. The macOS job may fail without blocking a Windows-only release.
+3. The workflow checks that the version matches `package.json`, that `CHANGELOG.md` has its section and that the notes have no `TODO` left, runs the checks, builds the installers, and publishes the release with them attached, together with `latest.yml`: installed Windows apps read it to find the new version (the `publish` entry in `electron-builder.json` points them at this repository). The release fails without it. The macOS job may fail without blocking a Windows-only release.
 4. When the protocol changed, the notes say that everyone in a room needs the new version (the drafted notes already do).
 
 Running the workflow without a version is a dry run: it builds, lists what would be published, and keeps the installers as run artifacts.

@@ -14,6 +14,7 @@ Common problems and how to fix them. If yours isn't here, open **Settings → Ab
 - [Audio problems](#audio-problems)
 - [High CPU or a hot laptop](#high-cpu-or-a-hot-laptop)
 - [macOS permissions](#macos-permissions)
+- [Updates](#updates)
 - [Collecting information for a bug report](#collecting-information-for-a-bug-report)
 
 ## The room doesn't show up
@@ -99,6 +100,12 @@ On Windows 10 (and 11 before 24H2), sharing a whole screen shows the cursor even
 
 - **Screen Recording**: *System Settings → Privacy & Security → Screen Recording* → enable ScreenShare, then restart the app. The source picker shows a button that opens this page when permission is missing.
 - **Local Network**: allow it when asked, or rooms won't be found.
+
+## Updates
+
+- **"Couldn't check for updates"**: the computer can't reach GitHub (no internet, or a firewall or proxy blocks it). Download the new version from the [releases page](https://github.com/nsfxu/lan-screenshare/releases) instead; the installer updates the app in place and keeps your settings.
+- **No "Restart to update" button although a new version is out**: versions before 2.2.0 don't update themselves, and on macOS the app only shows **Update to …**. Also check that **Settings → About → Check for updates automatically** is on, or click **Check now**.
+- **The update downloads again after each restart**: the downloaded installer is kept in the app's update cache; something (a cleaner or antivirus) may be deleting it. The log (**Settings → About → Open logs**) has `updater:` lines.
 
 ## Collecting information for a bug report
 

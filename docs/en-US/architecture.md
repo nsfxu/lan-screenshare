@@ -45,7 +45,7 @@ flowchart LR
 
 These choices explain most of the code. Please keep them unless there is a strong reason not to.
 
-1. **LAN only, no external services.** No accounts, no cloud, no STUN/TURN servers. Everything works on an isolated network.
+1. **LAN only, no external services.** No accounts, no cloud, no STUN/TURN servers. Everything works on an isolated network. The only internet use is the optional update check against this project's GitHub releases (`Updater`).
 2. **The server is thin.** It authenticates, relays and enforces rules. It does not encode, decode or mix media.
 3. **Nothing plays unless you ask.** Watching is explicit. Your own stream is not played back either until you click **Show my stream**. This saves bandwidth and GPU time.
 4. **One connection per watcher.** Each watcher gets its own congestion control, adaptive quality and resolution cap, so one slow viewer never degrades the others.
@@ -102,6 +102,7 @@ src/
     nativeAudio.ts   runs the Windows audio helper and forwards PCM to the renderer
     cursorWatch.ts   runs the Windows cursor helper (games that hide the cursor)
     settings.ts      settings.json load/validate/save
+    updater.ts       updates from the GitHub releases (Windows: download, restart to install; macOS: a link)
     logger.ts        rotating file logger
   preload/
     index.ts         contextBridge: window.api

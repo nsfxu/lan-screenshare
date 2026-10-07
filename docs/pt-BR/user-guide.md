@@ -17,6 +17,7 @@ O app está em inglês, então os nomes dos botões aparecem aqui **como estão 
 - [Chat e pessoas](#chat-e-pessoas)
 - [Se você é o anfitrião](#se-você-é-o-anfitrião)
 - [Configurações](#configurações)
+- [Atualizações](#atualizações)
 - [Mouse e teclado](#mouse-e-teclado)
 - [Privacidade](#privacidade)
 - [Onde ficam seus arquivos](#onde-ficam-seus-arquivos)
@@ -24,7 +25,7 @@ O app está em inglês, então os nomes dos botões aparecem aqui **como estão 
 ## Antes de começar
 
 - **Computadores**: Windows 10/11 ou macOS. O áudio do sistema no macOS precisa do macOS 13 ou mais novo. Deixar o Discord fora do áudio precisa do Windows 10 versão 2004 ou mais novo.
-- **Rede**: todos precisam estar na mesma rede local ou VPN. Nada passa pela internet e não existem contas.
+- **Rede**: todos precisam estar na mesma rede local ou VPN. Nada passa pela internet (fora a busca por atualizações) e não existem contas.
 - **Versões compatíveis**: apps 1.x e 2.x podem estar na mesma sala (o 2.0.0 mudou a aparência, não a forma como os apps conversam). Só uma versão que muda o protocolo da sala, como um futuro 3.0.0, exige que todos atualizem; a lista de salas diz quem precisa, por exemplo "This room runs ScreenShare 3.0.0, you have 2.0.0: update to join". Quando alguém na sua sala usa uma versão mais nova, aparece uma sugestão (uma vez) para atualizar.
 - **macOS**: na primeira vez que você compartilhar, o macOS pede a permissão de **Gravação de Tela** e pode pedir acesso à **Rede Local**. Permita as duas e reinicie o app se ele pedir.
 
@@ -173,8 +174,18 @@ Abra as configurações pelo ícone de engrenagem embaixo da coluna de salas. A 
 | Connection | Hosting port | 47800 | A primeira porta tentada quando você hospeda. |
 | Advanced | Video codec | Automatic | O automático prefere H.264 em hardware. Dá para forçar H.264, H.265, VP9 ou AV1 se os dois lados suportarem. A tabela abaixo dele mostra o que o seu computador suporta. |
 | Advanced | Adaptive quality | ligado | Reduz resolução/taxa de quadros por espectador quando a rede dele sofre. |
+| About | Check for updates automatically | ligado | Veja [atualizações](#atualizações). |
 
 **About** mostra a versão do app e tem o botão **Open logs**.
+
+## Atualizações
+
+O app procura uma versão nova na [página de versões](https://github.com/nsfxu/lan-screenshare/releases) logo depois de abrir e a cada algumas horas.
+
+- **Windows**: a versão nova baixa em silêncio, em segundo plano. Quando ela está pronta, um botão verde **Restart to update** aparece na barra de título (e em **Settings → About**). Clique quando for melhor para você: o app fecha, instala a atualização e abre de novo. Se você está numa sala ele pergunta antes, porque reiniciar sai da sala (ou a encerra, se você é o anfitrião). Nada é instalado sozinho quando você fecha o app.
+- **macOS**: a barra de título mostra **Update to …**, que abre a página de download. A Apple só deixa apps assinados se substituírem, e o ScreenShare ainda não é assinado.
+
+O **Settings → About** mostra a situação e tem o botão **Check now**. Desligue **Check for updates automatically** se não quiser que o app fale com o GitHub; dá para procurar à mão do mesmo jeito. Versões anteriores ao 2.2.0 não se atualizam sozinhas: baixe o 2.2.0 uma vez, e as próximas chegam sozinhas.
 
 ## Mouse e teclado
 
@@ -191,7 +202,7 @@ Abra as configurações pelo ícone de engrenagem embaixo da coluna de salas. A 
 
 ## Privacidade
 
-- Tudo fica na sua rede. Não há contas, nuvem nem rastreamento.
+- Tudo fica na sua rede. Não há contas, nuvem nem rastreamento. A única coisa que o app faz na internet é procurar atualizações no GitHub, o que não envia nada sobre você além do que qualquer download envia, e pode ser desligado.
 - O PIN só existe na memória do anfitrião e nunca é salvo.
 - O app não tem gravação nem exportação do chat. Enquanto você assiste uma transmissão, a janela do ScreenShare fica oculta para capturas e gravadores de tela no seu computador.
 - Chat, prévias e fotos de perfil somem quando a sala termina.

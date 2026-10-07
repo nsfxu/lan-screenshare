@@ -14,6 +14,7 @@ Problemas comuns e como resolvê-los. Se o seu não estiver aqui, abra **Setting
 - [Problemas de áudio](#problemas-de-áudio)
 - [CPU alta ou notebook esquentando](#cpu-alta-ou-notebook-esquentando)
 - [Permissões do macOS](#permissões-do-macos)
+- [Atualizações](#atualizações)
 - [Reunindo informações para relatar um bug](#reunindo-informações-para-relatar-um-bug)
 
 ## A sala não aparece
@@ -99,6 +100,12 @@ No Windows 10 (e no 11 anterior ao 24H2), compartilhar uma tela inteira mostra o
 
 - **Gravação de Tela**: *Ajustes do Sistema → Privacidade e Segurança → Gravação de Tela* → ative o ScreenShare e reinicie o app. O seletor de fonte mostra um botão que abre essa página quando falta a permissão.
 - **Rede Local**: permita quando o sistema perguntar, senão as salas não são encontradas.
+
+## Atualizações
+
+- **"Couldn't check for updates"**: o computador não consegue chegar ao GitHub (sem internet, ou um firewall ou proxy bloqueia). Baixe a versão nova na [página de versões](https://github.com/nsfxu/lan-screenshare/releases); o instalador atualiza o app no lugar e mantém as suas configurações.
+- **Não aparece "Restart to update" mesmo com versão nova publicada**: versões anteriores ao 2.2.0 não se atualizam sozinhas, e no macOS o app só mostra **Update to …**. Confira também se **Settings → About → Check for updates automatically** está ligado, ou clique em **Check now**.
+- **A atualização baixa de novo a cada reinício**: o instalador baixado fica no cache de atualizações do app; algo (um limpador ou antivírus) pode estar apagando. O log (**Settings → About → Open logs**) tem linhas `updater:`.
 
 ## Reunindo informações para relatar um bug
 
