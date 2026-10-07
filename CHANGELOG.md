@@ -10,6 +10,8 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-10-07
+
 ### Changed
 
 - **No more blue border around the focused stream.**
@@ -18,6 +20,7 @@ Each change adds its line under **Unreleased** in the same pull request, written
 ### Added
 
 - **Stats** also shows the whole computer's CPU and memory (games and other apps included), next to the app's, so you can tell when the computer itself is the bottleneck.
+- A guide to [playing over ZeroTier](docs/en-US/zerotier.md) with friends on other networks: set up in a few minutes, and rooms show up in the list by themselves.
 
 ## [2.0.0] - 2026-10-06
 
@@ -88,7 +91,8 @@ The first release.
 - Reconnects after short network drops, and switches to TCP when a network blocks WebRTC.
 - Encrypted connections, the PIN kept only in memory, and the window hidden from screenshots while you watch.
 
-[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/nsfxu/lan-screenshare/compare/v1.2.0...v2.0.0
 [1.2.0]: https://github.com/nsfxu/lan-screenshare/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/nsfxu/lan-screenshare/compare/v1.0.0...v1.1.0
