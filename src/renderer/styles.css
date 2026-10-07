@@ -1940,9 +1940,6 @@ button.member-main {
   background: #000;
   border: 1px solid var(--border);
 }
-.tile.focused {
-  border-color: var(--accent);
-}
 .stage-grid > .tile,
 .spotlight-main > .tile,
 .spotlight-strip > .tile {

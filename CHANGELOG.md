@@ -12,6 +12,7 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ### Changed
 
+- **No more blue border around the focused stream.**
 - **Full screen works like a video player**: the stream fills the whole screen with no frame around it, and the strip and the controls float over its bottom instead of taking space. After a moment without moving the mouse everything but the picture hides, the name and the stats badges included; moving the mouse brings it back.
 
 ### Added
