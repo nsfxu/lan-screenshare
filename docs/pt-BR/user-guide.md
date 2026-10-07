@@ -63,6 +63,8 @@ O botão no topo de cada coluna lateral a esconde (a coluna de salas vira uma fa
 
 **Join by IP**: se você está numa VPN ou em outra sub-rede, as salas podem não aparecer sozinhas. Clique em **Join by IP** (ao lado de **Create room**) e digite o endereço do anfitrião, por exemplo `10.8.0.5` ou `192.168.1.20:47800`. O anfitrião vê os endereços dele no **ⓘ** ao lado do nome da sala. A porta padrão é 47800.
 
+**Amigos em outras redes**: coloque todos numa rede do [ZeroTier](zerotier.md). Leva poucos minutos, e as salas passam a aparecer na lista como se todos estivessem em casa.
+
 **Salas privadas** pedem um PIN (de 4 a 6 dígitos) logo abaixo da sala na lista. Depois de 3 PINs errados, seu computador precisa esperar 5 minutos para tentar de novo.
 
 ## Criar uma sala

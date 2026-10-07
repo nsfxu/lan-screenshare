@@ -17,7 +17,7 @@ flowchart LR
 
 ## Destaques
 
-- 🔎 **As salas aparecem sozinhas**: as salas da sua rede surgem automaticamente; numa VPN, digite o endereço do anfitrião.
+- 🔎 **As salas aparecem sozinhas**: as salas da sua rede surgem automaticamente, inclusive com amigos em outros lugares pelo [ZeroTier](docs/pt-BR/zerotier.md); em outras VPNs, digite o endereço do anfitrião.
 - 🔒 **Salas públicas ou privadas**, com um PIN que o anfitrião pode trocar a qualquer momento.
 - 🖥️ **Todo mundo pode compartilhar**, várias telas ao mesmo tempo, em grade ou em destaque. Nada toca até você escolher.
 - 🎚️ **Qualidade do seu jeito**: quem transmite define o máximo, cada espectador escolhe o que recebe, e janelas pequenas gastam menos banda automaticamente.
@@ -80,6 +80,7 @@ npm test
 A documentação completa, em inglês e português, está em [`docs/`](docs/README.md):
 
 - [Guia do usuário](docs/pt-BR/user-guide.md): todos os recursos e configurações.
+- [Jogando pelo ZeroTier](docs/pt-BR/zerotier.md): amigos em outras redes, configurado em minutos.
 - [Solução de problemas](docs/pt-BR/troubleshooting.md): quando algo não funciona.
 - [Guia de desenvolvimento](docs/pt-BR/development.md): scripts, depuração e instaladores.
 - [Arquitetura](docs/pt-BR/architecture.md), [protocolo](docs/pt-BR/protocol.md), [pipeline de mídia](docs/pt-BR/media-pipeline.md) e [segurança](docs/pt-BR/security.md): como funciona por dentro.

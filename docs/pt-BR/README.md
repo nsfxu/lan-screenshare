@@ -19,6 +19,7 @@ flowchart TD
 | Página | Para | O que tem |
 |---|---|---|
 | [Guia do usuário](user-guide.md) | Todos | Salas, compartilhar, assistir, qualidade, áudio, chat, controles do anfitrião, todas as configurações, privacidade, onde ficam os arquivos. |
+| [Jogando pelo ZeroTier](zerotier.md) | Todos | Usar o ScreenShare com amigos em outras redes: uma rede do ZeroTier em poucos minutos. |
 | [Solução de problemas](troubleshooting.md) | Todos | Salas que não aparecem, não consegue entrar, vídeo preto, qualidade baixa, áudio, CPU, permissões do macOS. |
 | [Guia de desenvolvimento](development.md) | Quem contribui | Requisitos, scripts, várias instâncias, build, depuração, instaladores, tecnologias. |
 | [Arquitetura](architecture.md) | Quem contribui | Processos, organização do código, classes principais, fluxos, onde fica cada estado. |

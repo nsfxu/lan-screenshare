@@ -61,6 +61,8 @@ The button at the top of each side column hides it (the rooms column shrinks to 
 
 **Join by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click **Join by IP** (next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses behind the **ⓘ** next to the room's name. The default port is 47800.
 
+**Friends on other networks**: put everyone on a [ZeroTier](zerotier.md) network. It takes a few minutes, and rooms then show up in the list as if you were all at home.
+
 **Private rooms** ask for a PIN (4 to 6 digits) right under the room in the list. After 3 wrong PINs, your computer has to wait 5 minutes before trying again.
 
 ## Creating a room
