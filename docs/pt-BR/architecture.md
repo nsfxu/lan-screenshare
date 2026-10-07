@@ -13,6 +13,7 @@ Esta página explica como o ScreenShare é montado: qual processo faz o quê, co
 - [Processo principal](#processo-principal)
 - [Renderer: os objetos da sessão](#renderer-os-objetos-da-sessão)
 - [Renderer: a interface](#renderer-a-interface)
+- [Salas com VPN](#salas-com-vpn)
 - [Fluxos principais](#fluxos-principais)
 - [Onde fica cada estado](#onde-fica-cada-estado)
 
@@ -101,6 +102,7 @@ src/
     screenCapture.ts lista de fontes, handler de display-media, permissão no macOS
     nativeAudio.ts   roda o auxiliar de áudio do Windows e repassa o PCM para o renderer
     cursorWatch.ts   roda o auxiliar de cursor do Windows (jogos que escondem o cursor)
+    vpn/             salas com VPN: manager (anfitrião ou convidado), host (inscrição), tunnel (conduz o auxiliar), helper + elevate (acham, conferem e iniciam o auxiliar com direitos de administrador), fake (testes)
     settings.ts      carrega/valida/salva o settings.json
     logger.ts        logger em arquivo com rotação
   preload/
@@ -116,6 +118,7 @@ src/
     types.ts         tipos do protocolo, das configurações e do IPC
     constants.ts     versão do protocolo, limites, tempos
     ipc.ts           nomes dos canais de IPC e a interface window.api
+    vpn.ts           contas da sala com VPN: redes, endereços dos convidados, convites, validação da inscrição
     quality.ts       escada de qualidade, controlador adaptativo, limites por espectador, divisão de banda
     codecs.ts        ordem dos codecs e ajustes no SDP
     crop.ts          cálculo do recorte da foto de perfil
@@ -124,6 +127,7 @@ src/
     mdns.ts          anúncio e busca DNS-SD (bonjour-service, JS puro)
     network.ts       endereços, URLs, consulta /info, impressões digitais de certificado
     crypto.ts        geração/comparação de PIN, bloqueio, ids aleatórios
+    wireguard.ts     pares de chaves WireGuard e as requisições que o socket de controle do auxiliar entende
 native/
   win-audio-capture/Program.cs   auxiliar de áudio do Windows (C#, compilado com o compilador que vem no Windows)
   win-cursor-watch/Program.cs    auxiliar do Windows que avisa quando um jogo esconde o cursor (C#)
@@ -281,6 +285,21 @@ flowchart TB
 ```
 
 Os componentes assinam os eventos dos objetos da sessão (`client.on('participants', …)`, `publisher.on('stats', …)`, …) e guardam cópias no estado do React. Os objetos da sessão nunca importam React.
+
+## Salas com VPN
+
+Uma sala pode abrir uma VPN para convidados de fora da rede (a visão do usuário está em [Salas com VPN](vpn-rooms.md)). As peças, todas no processo principal:
+
+| Peça | Arquivo | Função |
+|---|---|---|
+| `VpnManager` | `src/main/vpn/manager.ts` | Uma VPN por vez: cria o lado do anfitrião ou se inscreve como convidado a partir de um convite. Decide o que este computador consegue fazer (`VpnEnvironment`). |
+| `VpnHost` | `src/main/vpn/host.ts` | O túnel do anfitrião, o par de chaves, o segredo do convite e os endereços dos convidados. Responde ao `POST /vpn/enroll` (confere o segredo com bloqueio, uma inscrição por vez). |
+| `VpnTunnel` | `src/main/vpn/tunnel.ts` | `SystemTunnel`: inicia o auxiliar com direitos de administrador e depois define chaves e pares pelo socket de controle dele. |
+| helper, elevate | `src/main/vpn/helper.ts`, `elevate.ts` | Acham o auxiliar que vem no app, conferem com as somas de verificação da compilação e o iniciam pelo pedido de permissão do sistema (autorização do macOS, UAC, pkexec). |
+| `ssvpn` | `native/ssvpn/` (Go) | O único código que roda como administrador: cria a interface (Wintun, utun, TUN) com a biblioteca Go do WireGuard, define endereço, rota e encaminhamento, serve o socket de controle ao seu usuário e desfaz tudo quando o app some. Compilado por `scripts/build-vpn.cjs`. |
+| `fake.ts` | `src/main/vpn/fake.ts` | Um túnel que não carrega nada, para os testes de ponta a ponta (`SCREENSHARE_FAKE_VPN=1`). |
+
+O `RoomServer` só lê o `POST /vpn/enroll` e o entrega ao `VpnEnrollHandler` que recebeu. O `RoomManager.createRoom()` cria antes o `VpnHost`, inicia o servidor, sobe o túnel com a porta do servidor e coloca o convite em `HostedRoom.vpn`. O `RoomManager.joinVpn()` é o lado do convidado: inscreve-se, sobe o túnel, espera a sala responder no endereço do anfitrião dentro da VPN e a lista como uma sala adicionada à mão (sem salvar nas configurações).
 
 ## Fluxos principais
 

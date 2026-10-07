@@ -3,20 +3,23 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { generate as generateCert } from 'selfsigned'
-import { DEFAULT_PORT, PROBE_INTERVAL_MS, PROTOCOL_VERSION, ROOM_STALE_MS } from '../shared/constants'
+import { DEFAULT_PORT, PROBE_INTERVAL_MS, PROTOCOL_VERSION, ROOM_STALE_MS, VPN_CONNECT_TIMEOUT_MS } from '../shared/constants'
 import type {
   CreateRoomRequest,
   DiscoveredRoom,
   HostedRoom,
+  HostedVpn,
   RoomEndpoint,
   UpdateRoomRequest
 } from '../shared/types'
 import { incompatibleRoomMessage } from '../shared/version'
+import { isValidEndpointHost } from '../shared/vpn'
 import { clampPinLength, generatePin, isValidPin, randomId, randomToken } from '../utils/crypto'
 import { MdnsDiscovery, type MdnsRoomRecord } from '../utils/mdns'
 import { endpointKey, fingerprintFromPem, getLocalAddresses, probeRoom } from '../utils/network'
 import { RoomServer, type Logger } from './server'
 import type { SettingsStore } from './settings'
+import type { VpnManager } from './vpn/manager'
 
 interface Entry {
   room: DiscoveredRoom
@@ -33,6 +36,8 @@ interface Hosting {
   pin: string | null
   pinLength: number
   fingerprint: string | null
+  /** The VPN this room opened, if any. */
+  vpn: { invite: string; endpoint: string } | null
 }
 
 export interface RoomManagerEvents {
@@ -53,15 +58,22 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
   private hosting: Hosting | null = null
   private probeTimer: NodeJS.Timeout | null = null
   private certCache: { key: string; cert: string } | null = null
+  /** Key of the room list entry for the VPN room we joined, so it can be dropped when we disconnect. */
+  private vpnRoomKey: string | null = null
 
   constructor(
     private readonly settings: SettingsStore,
     private readonly userDataDir: string,
     private readonly log: Logger,
     /** Our app version, reported by the rooms we host and used in "update to join" messages. */
-    private readonly appVersion: string
+    private readonly appVersion: string,
+    private readonly vpn: VpnManager
   ) {
     super()
+    // A guest enrolling changes the peer count the host's panel shows.
+    vpn.on('status', () => {
+      if (this.hosting?.vpn) this.emit('hosted', this.describeHosted(this.hosting))
+    })
   }
 
   start(): void {
@@ -81,6 +93,7 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
   async stop(): Promise<void> {
     if (this.probeTimer) clearInterval(this.probeTimer)
     await this.closeRoom()
+    await this.vpn.stop()
     await this.mdns.stop()
   }
 
@@ -189,6 +202,7 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
     const roomId = randomId()
     const name = req.name.trim() || `${settings.displayName}'s room`
 
+    const vpnHost = req.vpn ? await this.vpn.createHost() : null
     const server = new RoomServer({
       roomId,
       name,
@@ -199,15 +213,36 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
       tls,
       port: settings.preferredPort || DEFAULT_PORT,
       appVersion: this.appVersion,
-      logger: this.log
+      logger: this.log,
+      vpn: vpnHost ?? undefined
     })
-    const port = await server.start()
+    let port: number
+    let vpnInfo: Hosting['vpn'] = null
+    try {
+      port = await server.start()
+      if (vpnHost && req.vpn) {
+        const endpoint = (req.vpn.endpoint || '').trim() || getLocalAddresses()[0] || ''
+        if (!isValidEndpointHost(endpoint)) throw new Error('Enter the address your guests will connect to, like 203.0.113.7 or home.example.org')
+        const { invite, interface: iface } = await vpnHost.start({
+          endpoint,
+          port,
+          tls: !!tls,
+          fingerprint: tls ? fingerprintFromPem(tls.cert) : null
+        })
+        this.vpn.hostReady(iface)
+        vpnInfo = { invite, endpoint }
+      }
+    } catch (err) {
+      await server.stop().catch(() => undefined)
+      await this.vpn.stopHost()
+      throw err
+    }
     const fingerprint = tls ? fingerprintFromPem(tls.cert) : null
     if (fingerprint) {
       this.trust('127.0.0.1', fingerprint)
       this.trust('localhost', fingerprint)
     }
-    const hosting: Hosting = { server, hostToken, pin, pinLength, fingerprint }
+    const hosting: Hosting = { server, hostToken, pin, pinLength, fingerprint, vpn: vpnInfo }
     this.hosting = hosting
     server.on('change', () => {
       if (this.hosting === hosting) this.emit('hosted', this.describeHosted(hosting))
@@ -216,6 +251,7 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
       if (this.hosting !== hosting) return
       this.hosting = null
       void this.mdns.unpublish()
+      void this.vpn.stopHost()
       this.emit('hosted', null)
     })
     try {
@@ -258,18 +294,23 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
     this.hosting = null
     await this.mdns.unpublish()
     await h.server.stop()
+    await this.vpn.stopHost()
     this.emit('hosted', null)
     this.log.info('room closed')
   }
 
   private describeHosted(h: Hosting): HostedRoom {
+    const vpn: HostedVpn | undefined = h.vpn
+      ? { ...h.vpn, address: this.vpn.status().address ?? '', peers: this.vpn.status().peers }
+      : undefined
     return {
       info: h.server.getInfo(),
       port: h.server.port,
       tls: h.server.tls,
       hostToken: h.hostToken,
       pin: h.pin,
-      addresses: getLocalAddresses()
+      addresses: getLocalAddresses(),
+      vpn
     }
   }
 
@@ -316,6 +357,59 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
       this.log.warn('could not persist host identity', err)
     }
     return this.certCache
+  }
+
+  // ---------------------------------------------------------------------------
+  // VPN rooms (guest side)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Enrols with the host the invite came from, brings the tunnel up, and waits for
+   * the room to answer through it. The room then shows in the list like any other,
+   * until the VPN is disconnected.
+   */
+  async joinVpn(invite: string): Promise<DiscoveredRoom> {
+    const target = await this.vpn.join(invite, this.settings.get().clientId)
+    try {
+      if (target.fingerprint) this.trust(target.address, target.fingerprint)
+      const room = await this.resolveWhenUp(target.address, target.port, target.tls)
+      const entry = this.upsertManual({ address: room.address, port: room.port, tls: room.tls })
+      entry.manual = true
+      entry.room = room
+      this.vpnRoomKey = room.key
+      this.emitRooms()
+      return room
+    } catch (err) {
+      await this.vpn.leave()
+      throw err
+    }
+  }
+
+  async leaveVpn(): Promise<void> {
+    await this.vpn.leave()
+    if (this.vpnRoomKey) {
+      this.entries.delete(this.vpnRoomKey)
+      this.vpnRoomKey = null
+      this.emitRooms()
+    }
+  }
+
+  /** The first packets of a new tunnel take a moment (handshake), so keep asking for a while. */
+  private async resolveWhenUp(address: string, port: number, tls: boolean): Promise<DiscoveredRoom> {
+    const deadline = Date.now() + VPN_CONNECT_TIMEOUT_MS
+    let lastError: unknown
+    while (Date.now() < deadline) {
+      try {
+        return await this.resolve(address, port, tls)
+      } catch (err) {
+        lastError = err
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+      }
+    }
+    throw new Error(
+      `The VPN is up, but the room does not answer through it (${(lastError as Error | undefined)?.message ?? 'no answer'}). ` +
+        `Check that UDP port ${port} reaches the host.`
+    )
   }
 
   // ---------------------------------------------------------------------------

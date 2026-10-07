@@ -63,6 +63,8 @@ O botão no topo de cada coluna lateral a esconde (a coluna de salas vira uma fa
 
 **Join by IP**: se você está numa VPN ou em outra sub-rede, as salas podem não aparecer sozinhas. Clique em **Join by IP** (ao lado de **Create room**) e digite o endereço do anfitrião, por exemplo `10.8.0.5` ou `192.168.1.20:47800`. O anfitrião vê os endereços dele no **ⓘ** ao lado do nome da sala. A porta padrão é 47800.
 
+**Amigos de fora da sua rede** entram com um **convite de VPN**: em **Join by IP**, escolha **VPN invite** e cole o que o anfitrião mandou. Veja [Salas com VPN](vpn-rooms.md).
+
 **Salas privadas** pedem um PIN (de 4 a 6 dígitos) logo abaixo da sala na lista. Depois de 3 PINs errados, seu computador precisa esperar 5 minutos para tentar de novo.
 
 ## Criar uma sala
@@ -71,7 +73,8 @@ O botão no topo de cada coluna lateral a esconde (a coluna de salas vira uma fa
 2. Dê um nome e escolha **Public** (qualquer pessoa da rede pode entrar) ou **Private** (as pessoas precisam de um PIN, que é gerado para você; escolha 4, 5 ou 6 dígitos).
 3. Escolha o que compartilhar: uma **tela** inteira ou uma única **janela**.
 4. **Share system audio** envia tudo que está tocando no seu computador. No Windows, **Leave out Discord** (ligado por padrão) deixa a sua chamada do Discord de fora, para quem está na mesma chamada não ouvir a própria voz pela sua transmissão. Quando você compartilha uma única **janela** no Windows, **Only this app's sound** (ligado por padrão) envia só o som daquele app, por exemplo só o seu jogo, sem Discord, música ou notificações.
-5. Clique em **Start sharing**.
+5. Opcional: **Open a VPN for this room** deixa entrar quem está fora da sua rede; veja [Salas com VPN](vpn-rooms.md).
+6. Clique em **Start sharing**.
 
 Numa sala privada, o PIN é copiado para a área de transferência para você colar para os seus amigos.
 
@@ -141,7 +144,8 @@ O **ⓘ** ao lado do nome da sala mostra os detalhes dela: privacidade, há quan
 
 - alternar entre **Public** e **Private** a qualquer momento; quem já está dentro continua conectado;
 - mostrar ou esconder o **PIN**, **copiar**, **gerar um novo** ou **definir o seu**;
-- ver os endereços que as pessoas podem usar no **Join by IP**.
+- ver os endereços que as pessoas podem usar no **Join by IP**;
+- numa sala com VPN, **copiar o convite de VPN** e ver quantos convidados entraram.
 
 Clicar com o botão direito numa pessoa (no quadro dela, ou no nome dela na coluna de salas, onde também aparece um botão **⋯** ao passar o mouse) permite **parar a transmissão** dela ou **removê-la** da sala (a pessoa não consegue voltar nesta sessão da sala). No chat você pode **apagar mensagens** e **silenciar o chat** (as pessoas continuam vendo o histórico).
 

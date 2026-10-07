@@ -19,6 +19,7 @@ flowchart TD
 | Page | For | What's inside |
 |---|---|---|
 | [User guide](user-guide.md) | Everyone | Rooms, sharing, watching, quality, audio, chat, host controls, every setting, privacy, file locations. |
+| [VPN rooms](vpn-rooms.md) | Everyone | Letting people outside your network join: what you need, hosting, joining, how it works, limits. |
 | [Troubleshooting](troubleshooting.md) | Everyone | Rooms not found, can't join, black video, low quality, audio, CPU, macOS permissions. |
 | [Development guide](development.md) | Contributors | Requirements, scripts, running several instances, build pipeline, debugging, installers, tech stack. |
 | [Architecture](architecture.md) | Contributors | Processes, source layout, main classes, key flows, where state lives. |
@@ -51,6 +52,7 @@ flowchart LR
 - **TCP fallback**: one encode is shared by all TCP viewers of a streamer, sized for the most demanding one.
 - **Latency figures** on WebRTC are estimates (see [media pipeline](media-pipeline.md#statistics-and-latency)).
 - **Discovery** needs multicast; on VPNs use **Join by IP**.
+- **VPN rooms** need a forwarded port on the host. The helper that makes the tunnel comes inside the app (Windows, macOS, Linux). The room logic is covered by tests with a fake tunnel; creating a real interface hasn't been run on real machines yet, on any system (see [VPN rooms](vpn-rooms.md#limits)).
 - **Version**: everyone in a room must run the same protocol version (currently 4).
 - **Out of scope** for now: remote control, microphone audio, several monitors in one stream, recording, Linux as a supported platform.
 

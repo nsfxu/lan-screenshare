@@ -8,6 +8,7 @@ Problemas comuns e como resolvê-los. Se o seu não estiver aqui, abra **Setting
 
 - [A sala não aparece](#a-sala-não-aparece)
 - [Não consigo entrar](#não-consigo-entrar)
+- [Salas com VPN](#salas-com-vpn)
 - [O vídeo não começa ou fica preto](#o-vídeo-não-começa-ou-fica-preto)
 - [A qualidade está baixa](#a-qualidade-está-baixa)
 - [Os espectadores veem o cursor do mouse num jogo](#os-espectadores-veem-o-cursor-do-mouse-num-jogo)
@@ -48,6 +49,10 @@ flowchart TD
 | A lista de salas diz *Update to join* ou *Older version* | A sala usa uma versão principal incompatível (passe o mouse por cima para ver quem precisa atualizar) | Como acima. |
 | A sala fica cinza / *Unreachable* | O app não consegue alcançar o anfitrião | Confira a rede e o firewall, ou se o anfitrião ainda está com o app aberto. |
 | Erro de certificado no log (`rejected certificate`) | O certificado do anfitrião não bate com o que o seu app viu antes | Reinicie o ScreenShare do seu lado para ele reconhecer o anfitrião de novo. Se o anfitrião apagou o `host-identity.json`, isso é esperado. |
+
+## Salas com VPN
+
+As mensagens e correções das salas com VPN estão em [Salas com VPN → solução de problemas](vpn-rooms.md#solução-de-problemas).
 
 ## O vídeo não começa ou fica preto
 

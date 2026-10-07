@@ -10,7 +10,9 @@ import type {
   ScreenPermission,
   Settings,
   SystemStats,
-  UpdateRoomRequest
+  UpdateRoomRequest,
+  VpnAvailability,
+  VpnStatus
 } from './types'
 
 export const IPC = {
@@ -27,6 +29,11 @@ export const IPC = {
   closeRoom: 'host:close',
   getHosted: 'host:get',
   hostedChanged: 'host:changed',
+  vpnAvailable: 'vpn:available',
+  vpnJoin: 'vpn:join',
+  vpnLeave: 'vpn:leave',
+  vpnStatus: 'vpn:status',
+  vpnChanged: 'vpn:changed',
   listSources: 'capture:list',
   selectSource: 'capture:select',
   audioSupported: 'capture:audio-supported',
@@ -74,6 +81,16 @@ export interface ScreenShareApi {
     close(): Promise<void>
     get(): Promise<HostedRoom | null>
     onChanged(cb: (room: HostedRoom | null) => void): () => void
+  }
+  vpn: {
+    /** Whether this computer can open or join a VPN, and what to install if not. */
+    available(): Promise<VpnAvailability>
+    /** Enrol with the host that made the invite, bring the tunnel up, and return the room found through it. */
+    join(invite: string): Promise<DiscoveredRoom>
+    /** Disconnect from the VPN we joined (a hosted VPN ends with its room). */
+    leave(): Promise<void>
+    status(): Promise<VpnStatus>
+    onChanged(cb: (status: VpnStatus) => void): () => void
   }
   capture: {
     listSources(): Promise<CaptureSource[]>

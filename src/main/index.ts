@@ -11,6 +11,9 @@ import { NativeLoopback } from './nativeAudio'
 import { RoomManager } from './roomManager'
 import { ScreenCapture } from './screenCapture'
 import { SettingsStore } from './settings'
+import { fakeVpnEnvironment } from './vpn/fake'
+import { findHelper, readHelperChecksums, type HelperLocation } from './vpn/helper'
+import { VpnManager, systemVpnEnvironment } from './vpn/manager'
 import { parsePlacement, tileBounds, type Placement, type Rect } from './windowPlacement'
 
 app.setName(APP_NAME)
@@ -47,7 +50,21 @@ const MIN_WINDOW_HEIGHT = 480
 
 const log = createFileLogger(logDir, !app.isPackaged)
 const settings = new SettingsStore(app.getPath('userData'))
-const rooms = new RoomManager(settings, app.getPath('userData'), log, app.getVersion())
+// The end-to-end tests can't create network interfaces: they run the VPN flow with a tunnel that carries nothing.
+const helperAt: HelperLocation = {
+  packaged: app.isPackaged,
+  resourcesPath: process.resourcesPath,
+  appPath: app.getAppPath(),
+  platform: process.platform,
+  arch: process.arch
+}
+const vpn = new VpnManager(
+  process.env.SCREENSHARE_FAKE_VPN === '1'
+    ? fakeVpnEnvironment()
+    : systemVpnEnvironment(findHelper(helperAt), readHelperChecksums(helperAt)),
+  log
+)
+const rooms = new RoomManager(settings, app.getPath('userData'), log, app.getVersion(), vpn)
 const capture = new ScreenCapture(log)
 const nativeAudio = new NativeLoopback(log)
 const cursorWatch = new CursorWatch(log)
@@ -175,10 +192,17 @@ function registerIpc(): void {
   })
   ipcMain.handle(IPC.removeManual, (_e, key: string) => rooms.removeManual(String(key)))
 
-  ipcMain.handle(IPC.createRoom, (_e, req: CreateRoomRequest) => rooms.createRoom(req))
+  ipcMain.handle(IPC.createRoom, (_e, req: CreateRoomRequest) =>
+    rooms.createRoom({ ...req, vpn: req.vpn ? { endpoint: String(req.vpn.endpoint ?? '') } : null })
+  )
   ipcMain.handle(IPC.updateRoom, (_e, req: UpdateRoomRequest) => rooms.updateRoom(req))
   ipcMain.handle(IPC.closeRoom, () => rooms.closeRoom())
   ipcMain.handle(IPC.getHosted, () => rooms.getHosted())
+
+  ipcMain.handle(IPC.vpnAvailable, () => vpn.availability())
+  ipcMain.handle(IPC.vpnJoin, (_e, invite: string) => rooms.joinVpn(String(invite)))
+  ipcMain.handle(IPC.vpnLeave, () => rooms.leaveVpn())
+  ipcMain.handle(IPC.vpnStatus, () => vpn.status())
 
   ipcMain.handle(IPC.listSources, () => capture.listSources())
   ipcMain.handle(IPC.selectSource, (_e, id: string, audio: boolean) => capture.select(String(id), !!audio))
@@ -232,6 +256,7 @@ function registerIpc(): void {
 
   rooms.on('rooms', (list) => mainWindow?.webContents.send(IPC.roomsChanged, list))
   rooms.on('hosted', (hosted) => mainWindow?.webContents.send(IPC.hostedChanged, hosted))
+  vpn.on('status', (status) => mainWindow?.webContents.send(IPC.vpnChanged, status))
 }
 
 function configureSession(): void {

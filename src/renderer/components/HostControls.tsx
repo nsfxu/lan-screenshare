@@ -93,6 +93,25 @@ export function AccessPanel({ hosted, onToast }: { hosted: HostedRoom; onToast(m
           ? 'New viewers need this PIN. People already in the room stay connected when it changes.'
           : 'Anyone on your network can join.'}
       </p>
+      {hosted.vpn && (
+        <div className="vpn-box">
+          <div className="panel-header">
+            <h3>
+              <Icon name="network" size={14} /> VPN
+            </h3>
+            <span className="muted small">
+              {hosted.vpn.peers} guest{hosted.vpn.peers === 1 ? '' : 's'}
+            </span>
+          </div>
+          <button className="btn small full" onClick={() => copy(hosted.vpn!.invite, 'VPN invite')}>
+            <Icon name="copy" size={13} /> Copy VPN invite
+          </button>
+          <p className="muted small">
+            Anyone with this invite can join the VPN, so send it only to the people you invite. It stops working when you end the room.
+            Your address in the VPN is <span className="mono">{hosted.vpn.address}</span>.
+          </p>
+        </div>
+      )}
       <div className="address-row">
         <span className="muted small">VPN / manual address</span>
         <button

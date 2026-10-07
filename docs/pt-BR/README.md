@@ -19,6 +19,7 @@ flowchart TD
 | Página | Para | O que tem |
 |---|---|---|
 | [Guia do usuário](user-guide.md) | Todos | Salas, compartilhar, assistir, qualidade, áudio, chat, controles do anfitrião, todas as configurações, privacidade, onde ficam os arquivos. |
+| [Salas com VPN](vpn-rooms.md) | Todos | Deixar entrar quem está fora da sua rede: o que precisa, hospedar, entrar, como funciona, limites. |
 | [Solução de problemas](troubleshooting.md) | Todos | Salas que não aparecem, não consegue entrar, vídeo preto, qualidade baixa, áudio, CPU, permissões do macOS. |
 | [Guia de desenvolvimento](development.md) | Quem contribui | Requisitos, scripts, várias instâncias, build, depuração, instaladores, tecnologias. |
 | [Arquitetura](architecture.md) | Quem contribui | Processos, organização do código, classes principais, fluxos, onde fica cada estado. |
@@ -51,6 +52,7 @@ flowchart LR
 - **Fallback TCP**: uma única codificação é dividida entre todos os espectadores TCP de quem transmite, dimensionada para o mais exigente.
 - **Os números de latência** no WebRTC são estimativas (veja [pipeline de mídia](media-pipeline.md#estatísticas-e-latência)).
 - **A descoberta** precisa de multicast; em VPNs use **Join by IP**.
+- **Salas com VPN** precisam de uma porta encaminhada no anfitrião. O auxiliar que cria o túnel vem dentro do app (Windows, macOS, Linux). A lógica da sala é coberta por testes com um túnel falso; criar uma interface de verdade ainda não foi executado em máquinas reais, em nenhum sistema (veja [Salas com VPN](vpn-rooms.md#limites)).
 - **Versão**: todos na sala precisam da mesma versão do protocolo (hoje, a 4).
 - **Fora do escopo** por enquanto: controle remoto, áudio do microfone, vários monitores numa transmissão, gravação, Linux como plataforma suportada.
 

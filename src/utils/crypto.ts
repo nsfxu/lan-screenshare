@@ -60,12 +60,20 @@ export class PinGuard {
     return remaining > 0 ? remaining : 0
   }
 
-  /** Validate `provided` against `expected` for the remote identified by `key`. */
-  check(key: string, expected: string, provided: string | undefined): PinCheckResult {
+  /**
+   * Validate `provided` against `expected` for the remote identified by `key`.
+   * `isWellFormed` is the PIN format unless the secret is something else (a VPN invite's).
+   */
+  check(
+    key: string,
+    expected: string,
+    provided: string | undefined,
+    isWellFormed: (value: string) => boolean = isValidPin
+  ): PinCheckResult {
     const lockedFor = this.lockRemaining(key)
     if (lockedFor > 0) return { ok: false, locked: true, attemptsLeft: 0, retryAfterMs: lockedFor }
 
-    if (typeof provided === 'string' && isValidPin(provided) && pinsEqual(expected, provided)) {
+    if (typeof provided === 'string' && isWellFormed(provided) && pinsEqual(expected, provided)) {
       this.failures.delete(key)
       return { ok: true, locked: false, attemptsLeft: this.maxAttempts, retryAfterMs: 0 }
     }

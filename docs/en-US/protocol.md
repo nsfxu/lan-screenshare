@@ -10,6 +10,7 @@ Everything that travels between apps in a room: discovery, the HTTP probe, the W
 - [Transports at a glance](#transports-at-a-glance)
 - [Discovery (mDNS)](#discovery-mdns)
 - [HTTP: GET /info](#http-get-info)
+- [HTTP: POST /vpn/enroll](#http-post-vpnenroll)
 - [WebSocket: connection lifecycle](#websocket-connection-lifecycle)
 - [Client → server messages](#client--server-messages)
 - [Server → client messages](#server--client-messages)
@@ -86,6 +87,36 @@ Returns `RoomInfo` as JSON, with no secrets:
 ```
 
 The probing side checks the certificate fingerprint against the one advertised over mDNS, if any (`probeRoom` in `src/utils/network.ts`). Any other path returns 404.
+
+## HTTP: POST /vpn/enroll
+
+Only rooms that opened a VPN answer it (others return 404). A guest sends it, over TLS pinned to the fingerprint in its invite, to get an address in the VPN. Additive: no `PROTOCOL_VERSION` change, and older apps never call it.
+
+Request (at most 2 KB):
+
+```json
+{ "secret": "<from the invite>", "publicKey": "<guest's WireGuard key, base64>", "clientId": "<install id>" }
+```
+
+Answer `200`:
+
+```json
+{ "address": "10.77.5.2", "hostAddress": "10.77.5.1", "prefix": 24, "hostKey": "<base64>", "port": 47800 }
+```
+
+The guest then sets up its tunnel with the host as the only peer (`AllowedIPs` = the whole network, endpoint = the invite's address and `port`, over UDP) and joins the room at `hostAddress`. It checks the answer against its invite (same host key and address, an address inside the network) before configuring anything.
+
+| Status | `error` | Meaning |
+|---|---|---|
+| 400 | `bad_request` | Malformed JSON or fields, a key already used by another client, or the host's own key. |
+| 401 | `bad_secret` | Wrong secret (`attemptsLeft` says how many tries remain). |
+| 409 | `full` | All 9 guest addresses are taken. |
+| 413 | `too_large` | Body over 2 KB. |
+| 429 | `locked` | 3 wrong secrets from this address: locked for 5 minutes (`retryAfterMs`). |
+| 500 | `tunnel` / `internal` | The host couldn't add the guest. |
+| 503 | `not_ready` | The tunnel is still coming up. |
+
+The same client id enrolling again keeps its address and replaces its earlier key.
 
 ## WebSocket: connection lifecycle
 

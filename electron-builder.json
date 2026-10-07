@@ -36,12 +36,24 @@
       {
         "from": "native/bin/win-cursor-watch.exe",
         "to": "win-cursor-watch.exe"
+      },
+      {
+        "from": "native/bin/win32-${arch}/ssvpn.exe",
+        "to": "ssvpn.exe"
+      },
+      {
+        "from": "native/bin/win32-${arch}/wintun.dll",
+        "to": "wintun.dll"
+      },
+      {
+        "from": "native/bin/win32-${arch}/vpn-helper.json",
+        "to": "vpn-helper.json"
       }
     ]
   },
   "nsis": {
     "oneClick": false,
-    "perMachine": false,
+    "perMachine": true,
     "allowToChangeInstallationDirectory": true,
     "createDesktopShortcut": true,
     "shortcutName": "ScreenShare",
@@ -73,7 +85,17 @@
         "_lanshare._tcp"
       ],
       "NSScreenCaptureUsageDescription": "ScreenShare needs to record your screen so you can share it with others."
-    }
+    },
+    "extraResources": [
+      {
+        "from": "native/bin/darwin-${arch}/ssvpn",
+        "to": "ssvpn"
+      },
+      {
+        "from": "native/bin/darwin-${arch}/vpn-helper.json",
+        "to": "vpn-helper.json"
+      }
+    ]
   },
   "dmg": {
     "title": "ScreenShare ${version}"

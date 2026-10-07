@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import { IPC, type ScreenShareApi, type WindowState } from '../shared/ipc'
-import type { DiscoveredRoom, CursorWatchState, HostedRoom } from '../shared/types'
+import type { DiscoveredRoom, CursorWatchState, HostedRoom, VpnStatus } from '../shared/types'
 
 function subscribe<T>(channel: string, cb: (value: T) => void): () => void {
   const listener = (_e: IpcRendererEvent, value: T): void => cb(value)
@@ -27,6 +27,13 @@ const api: ScreenShareApi = {
     close: () => ipcRenderer.invoke(IPC.closeRoom),
     get: () => ipcRenderer.invoke(IPC.getHosted),
     onChanged: (cb) => subscribe<HostedRoom | null>(IPC.hostedChanged, cb)
+  },
+  vpn: {
+    available: () => ipcRenderer.invoke(IPC.vpnAvailable),
+    join: (invite) => ipcRenderer.invoke(IPC.vpnJoin, invite),
+    leave: () => ipcRenderer.invoke(IPC.vpnLeave),
+    status: () => ipcRenderer.invoke(IPC.vpnStatus),
+    onChanged: (cb) => subscribe<VpnStatus>(IPC.vpnChanged, cb)
   },
   capture: {
     listSources: () => ipcRenderer.invoke(IPC.listSources),

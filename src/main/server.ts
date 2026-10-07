@@ -20,7 +20,8 @@ import {
   ROOM_NAME_MAX_LENGTH,
   SNAPSHOT_MIN_INTERVAL_MS,
   AVATAR_MIN_INTERVAL_MS,
-  TCP_MAX_BUFFERED_BYTES
+  TCP_MAX_BUFFERED_BYTES,
+  VPN_ENROLL_MAX_BYTES
 } from '../shared/constants'
 import type {
   ChatMessage,
@@ -48,6 +49,11 @@ export interface Logger {
 
 const noopLogger: Logger = { debug() {}, info() {}, warn() {}, error() {} }
 
+/** A VPN room's side of `POST /vpn/enroll`: the server only reads the request and relays the answer. */
+export interface VpnEnrollHandler {
+  enroll(body: unknown, remoteIp: string): Promise<{ status: number; body: unknown }>
+}
+
 export interface RoomServerOptions {
   roomId: string
   name: string
@@ -64,6 +70,8 @@ export interface RoomServerOptions {
   appVersion?: string
   logger?: Logger
   pinGuard?: PinGuard
+  /** Set when the room opened a VPN: guests enrol through `POST /vpn/enroll`. */
+  vpn?: VpnEnrollHandler
 }
 
 export interface RoomServerEvents {
@@ -250,8 +258,38 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       res.end(body)
       return
     }
+    if (req.method === 'POST' && req.url?.split('?')[0] === '/vpn/enroll' && this.opts.vpn) {
+      void this.handleVpnEnroll(this.opts.vpn, req, res)
+      return
+    }
     res.writeHead(404, { 'content-type': 'text/plain' })
     res.end('not found')
+  }
+
+  private async handleVpnEnroll(vpn: VpnEnrollHandler, req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+    const reply = (status: number, body: unknown): void => {
+      if (res.headersSent) return
+      res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' })
+      res.end(JSON.stringify(body))
+    }
+    try {
+      let text = ''
+      for await (const chunk of req) {
+        text += chunk.toString('utf8')
+        if (text.length > VPN_ENROLL_MAX_BYTES) return reply(413, { error: 'too_large' })
+      }
+      let body: unknown
+      try {
+        body = JSON.parse(text)
+      } catch {
+        return reply(400, { error: 'bad_request' })
+      }
+      const answer = await vpn.enroll(body, normalizeIp(req.socket.remoteAddress))
+      reply(answer.status, answer.body)
+    } catch (err) {
+      this.log.warn('vpn enrol failed', err)
+      reply(500, { error: 'internal' })
+    }
   }
 
   private handleConnection(ws: WebSocket, req: http.IncomingMessage): void {

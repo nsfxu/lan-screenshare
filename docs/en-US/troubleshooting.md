@@ -8,6 +8,7 @@ Common problems and how to fix them. If yours isn't here, open **Settings → Op
 
 - [The room doesn't show up](#the-room-doesnt-show-up)
 - [I can't join](#i-cant-join)
+- [VPN rooms](#vpn-rooms)
 - [The video doesn't start or stays black](#the-video-doesnt-start-or-stays-black)
 - [The quality is low](#the-quality-is-low)
 - [Viewers see my mouse cursor in a game](#viewers-see-my-mouse-cursor-in-a-game)
@@ -48,6 +49,10 @@ flowchart TD
 | The room list says *Update to join* or *Older version* | The room runs an incompatible major version (hover over it to see who has to update) | As above. |
 | The room is grey / *Unreachable* | The app can't reach the host | Check the network and firewall, or that the host is still running. |
 | Certificate error in the log (`rejected certificate`) | The host's certificate doesn't match the one your app saw before | Restart ScreenShare on your side so it learns the host again. If the host deleted `host-identity.json`, that's expected. |
+
+## VPN rooms
+
+Messages and fixes for VPN rooms are in [VPN rooms → troubleshooting](vpn-rooms.md#troubleshooting).
 
 ## The video doesn't start or stays black
 

@@ -11,6 +11,7 @@ Como preparar o projeto, rodar, depurar e gerar instaladores.
 - [Scripts](#scripts)
 - [Várias pessoas no mesmo computador](#várias-pessoas-no-mesmo-computador)
 - [Como o build funciona](#como-o-build-funciona)
+- [O auxiliar de VPN](#o-auxiliar-de-vpn)
 - [Depuração](#depuração)
 - [Gerando instaladores](#gerando-instaladores)
 - [Versões e o changelog](#versões-e-o-changelog)
@@ -58,6 +59,7 @@ npm test
 | `npm run test:e2e` | Compila e roda os testes de ponta a ponta: duas instâncias reais do app numa sala (veja [testes](testing.md#testes-de-ponta-a-ponta)). |
 | `npm run typecheck` | Verificação do TypeScript do lado Node (`tsconfig.node.json`, inclui `tests/`) e do lado web (`tsconfig.web.json`). |
 | `npm run build:native` | Compila os auxiliares do Windows em `native/bin/` (`win-audio-capture.exe`, `win-cursor-watch.exe`); não faz nada em outros sistemas ou se já estiverem atualizados. |
+| `npm run build:vpn` | Compila o auxiliar de VPN em `native/bin/<plataforma>-<arq>/` para este computador (precisa do [Go](https://go.dev/dl/); sem ele o app roda, com as salas com VPN desligadas). `--all` compila todas as plataformas, `--require` falha se faltar o Go; `dev` e `build` o chamam por você. |
 | `npm run dist:win` | Build + instalador do Windows (NSIS, x64 e arm64) em `release/<versão>/`. |
 | `npm run dist:mac` | Build + imagens de disco do macOS (Intel e Apple Silicon) em `release/<versão>/`. Precisa rodar num Mac. |
 | `npm run dist` | Build + instalador para a plataforma atual. |
@@ -126,6 +128,14 @@ mcs -langversion:5 -warn:4 -target:exe -out:/tmp/win-cursor-watch.exe native/win
 ```
 
 Mantenha o C# 5: nada de interpolação de strings (`$"..."`), `?.`, `nameof`, membros com corpo de expressão ou `out var`.
+
+## O auxiliar de VPN
+
+As [salas com VPN](vpn-rooms.md) rodam um pequeno programa em Go, `native/ssvpn`, que cria a interface WireGuard com direitos de administrador. O `scripts/build-vpn.cjs` o compila (Go puro, sem compilador C, com compilação cruzada para todas as plataformas a partir de qualquer computador) em `native/bin/<plataforma>-<arq>/`, grava o `vpn-helper.json` com o SHA-256 dos arquivos (o app os confere antes de pedir a permissão, nas versões empacotadas) e, para o Windows, baixa o Wintun 0.14.1 uma vez em `native/.cache/`, conferido com uma soma de verificação fixada no script. Os instaladores levam o `ssvpn` (e o `wintun.dll`) nos recursos do app; o instalador do Windows é por máquina, então só administradores podem alterá-los.
+
+- Instale o [Go](https://go.dev/dl/) para mexer nele: `cd native/ssvpn && go test ./... && go vet ./...`. Atualizar o WireGuard é `go get golang.zx2c4.com/wireguard@latest` lá.
+- Rodá-lo exige direitos de administrador e por isso não dá para automatizar aqui; veja [conferindo salas com VPN](testing.md#conferindo-salas-com-vpn).
+- O workflow de release instala o Go e compila com `--all --require`.
 
 ## Depuração
 

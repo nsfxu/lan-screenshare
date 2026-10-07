@@ -10,6 +10,11 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Added
+
+- **VPN rooms**: when you create a room you can turn on **Open a VPN for this room**. It opens a small WireGuard VPN for as long as the room lasts; you copy an invite from the room's **ⓘ** and send it to friends outside your network, who paste it under **Join by IP → VPN invite** and join like anyone else. Nothing to install: the VPN comes inside ScreenShare, and asks for administrator permission once. The host needs the room's port forwarded (TCP and UDP) on the router. See [VPN rooms](docs/en-US/vpn-rooms.md). Windows, macOS and Linux (not yet tried on real machines).
+- On Windows the installer now installs for all users (it needs administrator rights), because VPN rooms start a helper with those rights.
+
 ## [2.0.0] - 2026-10-06
 
 ### Added

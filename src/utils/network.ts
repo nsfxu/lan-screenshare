@@ -141,3 +141,57 @@ export function probeRoom(
     req.on('error', reject)
   })
 }
+
+export interface JsonResponse {
+  status: number
+  body: unknown
+}
+
+/**
+ * POST a small JSON body to a room server and read its JSON answer. With TLS the
+ * certificate must have exactly `expectedFingerprint` (an invite carries it), so
+ * the secret in the body only ever goes to the host that made the invite.
+ */
+export function postJson(
+  ep: Pick<RoomEndpoint, 'address' | 'port' | 'tls'>,
+  path: string,
+  payload: unknown,
+  expectedFingerprint: string | null,
+  timeoutMs = 8000
+): Promise<JsonResponse> {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(payload)
+    const options: https.RequestOptions = {
+      method: 'POST',
+      timeout: timeoutMs,
+      headers: { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data), accept: 'application/json' }
+    }
+    if (ep.tls) {
+      options.rejectUnauthorized = false
+      options.checkServerIdentity = (_host, cert) => {
+        const seen = cert?.raw ? fingerprintFromDer(cert.raw) : null
+        return seen && seen === expectedFingerprint
+          ? undefined
+          : new Error('This is not the computer that made the invite (its certificate does not match)')
+      }
+    }
+    const req = (ep.tls ? https : http).request(endpointUrl(ep, path), options, (res) => {
+      let body = ''
+      res.setEncoding('utf8')
+      res.on('data', (chunk: string) => {
+        body += chunk
+        if (body.length > 16 * 1024) req.destroy(new Error('response too large'))
+      })
+      res.on('end', () => {
+        try {
+          resolve({ status: res.statusCode ?? 0, body: body ? JSON.parse(body) : null })
+        } catch (err) {
+          reject(err instanceof Error ? err : new Error(String(err)))
+        }
+      })
+    })
+    req.on('timeout', () => req.destroy(new Error('timeout')))
+    req.on('error', reject)
+    req.end(data)
+  })
+}

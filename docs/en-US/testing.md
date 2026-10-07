@@ -36,6 +36,8 @@ Tests run in Node (`vitest.config.ts`, environment `node`, 15 s timeout). They s
 | `tests/quality.test.ts` | Quality ladder, adaptive controller (step down/up, back-off), view-height steps, per-watcher limits, budget split, watcher quality choices, TCP combined limit. |
 | `tests/network.test.ts` | Address parsing and ranking, URLs with IPv6, TLS probe with fingerprint, codec ordering, Opus and bitrate SDP tweaks. |
 | `tests/crypto.test.ts` | PIN generation and validation, constant-time comparison, `PinGuard` lockout and reset. |
+| `tests/vpn.test.ts`, `tests/wireguard.test.ts`, `tests/vpnHelper.test.ts` (and `go test` in `native/ssvpn`) | VPN rooms, pure parts: key and IPv4 validation, picking a free network, guest addresses, invites (round trip, every kind of damage), enrolment messages; the requests `wireguard-go` understands (keys in hex, against a fake control socket); finding the helper, checking it against checksums before elevating, its arguments and status file, quoting for the permission prompts; in Go, the helper's strict argument validation. |
+| `tests/vpnRoom.test.ts` | VPN rooms against a real room server and a recording tunnel: `POST /vpn/enroll` (address and peer added, the same guest keeps its address, key theft, wrong secret and lockout, full room, tunnel failure, bad and oversized bodies, 404 without a VPN), and a guest joining from an invite (what its tunnel is told, every error message, network clash, missing wireguard-go, one VPN at a time). |
 | `tests/crop.test.ts` | Profile picture crop: centring, clamping, zoom around a point, zoom limits. |
 | `tests/renderer/gameCursor.test.ts` | Games that hide the cursor: switching to a fullscreen game's window and back after alt-tab, ignoring brief flashes and other displays, suggesting windowed games, keeping the screen when asked, no retry loop on failure. |
 
@@ -99,6 +101,7 @@ Keep decision logic out of React and out of WebRTC callbacks, in `src/shared/*.t
 | Chat (`chat.spec.ts`) | The room-named message box, the unread count while hidden, grouping. |
 | Menus (`menus.spec.ts`) | The Sharing button's menu (quality, stop), right-click on your own tile and on a stream (quality you receive, stop watching), the host's actions. |
 | Focus and volume (`focus.spec.ts`) | Alice shares with a test tone: click to focus and back, the speaker mutes and unmutes, its slider and the menu's change the played volume, double-click full screen, hiding the strip pauses its stream. |
+| VPN rooms (`vpn.spec.ts`) | The tunnel is faked (`SCREENSHARE_FAKE_VPN=1`: no interface, no permission prompt); the invite, the enrolment over TLS pinned to the host's certificate and joining the room are real. Alice opens a VPN room and copies the invite; Bob pastes it under **Join by IP → VPN invite**, the room opens by itself, **Disconnect** ends it. Bad invites are refused with a reason (not an invite, wrong secret). **Two guests watch the same stream**: Bob and Carol get different addresses in the host's network and both decode real frames of Alice's screen. **Private VPN room**: the VPN comes up but the PIN is still asked (wrong, then right). **Rejoining** keeps the guest's address and one seat on the host, and the room leaves the list on disconnect. **One VPN at a time**: a guest can't join a second, a host can't join one. **Lockout**: three wrong invites lock the guest out, even for the right invite. **Ending the room** takes the host's VPN down and the invite stops working. **Create room**: the VPN needs an address, and a computer without the helper sees the switch off with the reason. Creating a real interface needs administrator rights: [check it by hand](#checking-vpn-rooms). |
 | Themes (`theme.spec.ts`) | Each theme changes the page colours; the choice survives a reload. |
 | Settings (`settings.spec.ts`) | The section list jumps to a section and follows the scrolling. |
 
@@ -211,6 +214,16 @@ Tips:
 - **Pretend to be another OS** for platform-only UI: override the `system:app-info` IPC handler to return `platform: 'win32'`.
 - **Logs** of each profile are in its user data folder (for example `~/.config/ScreenShare-alice/logs/` on Linux).
 - Delete the test profiles' folders afterwards if you want a clean state.
+
+## Checking VPN rooms
+
+The automated tests stop at the tunnel (a fake or a recording one). On Windows, macOS or Linux, with two computers (or a computer and a VM) that can reach each other:
+
+1. On the host, **Create room** with **Open a VPN** and the address the guest reaches the host at (on one LAN, its LAN address). Enter the administrator password.
+2. `ifconfig` / `ip addr` / `ipconfig` shows a `utunN`, `ssvpn0` or Wintun adapter with `10.77.N.1` (on Windows, the adapter is in the Private profile: `Get-NetConnectionProfile`).
+3. On the guest, paste the invite under **Join by IP → VPN invite**. `ping 10.77.N.1` works, and the room opens.
+4. Share on the host, watch on the guest. With a third computer, watch between the two guests and confirm the host relays (its forwarding switch is on, and back off after).
+5. Close the room: the interface disappears within seconds on both sides, with no second password prompt. Kill the app instead (`kill -9`): the interface still goes away.
 
 ## Checking the Windows audio helper
 

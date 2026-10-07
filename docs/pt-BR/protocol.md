@@ -10,6 +10,7 @@ Tudo o que trafega entre os apps de uma sala: descoberta, a consulta HTTP, as me
 - [Transportes num relance](#transportes-num-relance)
 - [Descoberta (mDNS)](#descoberta-mdns)
 - [HTTP: GET /info](#http-get-info)
+- [HTTP: POST /vpn/enroll](#http-post-vpnenroll)
 - [WebSocket: ciclo de vida da conexão](#websocket-ciclo-de-vida-da-conexão)
 - [Mensagens cliente → servidor](#mensagens-cliente--servidor)
 - [Mensagens servidor → cliente](#mensagens-servidor--cliente)
@@ -86,6 +87,36 @@ Devolve um `RoomInfo` em JSON, sem segredos:
 ```
 
 Quem consulta confere a impressão digital do certificado com a anunciada no mDNS, se houver (`probeRoom` em `src/utils/network.ts`). Qualquer outro caminho devolve 404.
+
+## HTTP: POST /vpn/enroll
+
+Só as salas que abriram uma VPN respondem (as outras devolvem 404). O convidado o envia, via TLS fixado na impressão digital do convite, para receber um endereço na VPN. É um acréscimo: sem mudar o `PROTOCOL_VERSION`, e apps antigos nunca o chamam.
+
+Requisição (no máximo 2 KB):
+
+```json
+{ "secret": "<do convite>", "publicKey": "<chave WireGuard do convidado, base64>", "clientId": "<id da instalação>" }
+```
+
+Resposta `200`:
+
+```json
+{ "address": "10.77.5.2", "hostAddress": "10.77.5.1", "prefix": 24, "hostKey": "<base64>", "port": 47800 }
+```
+
+O convidado então monta o túnel com o anfitrião como único par (`AllowedIPs` = a rede toda, endpoint = o endereço do convite e a `port`, em UDP) e entra na sala em `hostAddress`. Antes de configurar qualquer coisa, ele confere a resposta com o convite (mesma chave e endereço do anfitrião, um endereço dentro da rede).
+
+| Status | `error` | Significado |
+|---|---|---|
+| 400 | `bad_request` | JSON ou campos malformados, chave já usada por outro cliente, ou a chave do próprio anfitrião. |
+| 401 | `bad_secret` | Segredo errado (`attemptsLeft` diz quantas tentativas restam). |
+| 409 | `full` | Os 9 endereços de convidado estão ocupados. |
+| 413 | `too_large` | Corpo acima de 2 KB. |
+| 429 | `locked` | 3 segredos errados deste endereço: bloqueado por 5 minutos (`retryAfterMs`). |
+| 500 | `tunnel` / `internal` | O anfitrião não conseguiu adicionar o convidado. |
+| 503 | `not_ready` | O túnel ainda está subindo. |
+
+O mesmo id de cliente inscrevendo-se de novo mantém o endereço e substitui a chave anterior.
 
 ## WebSocket: ciclo de vida da conexão
 

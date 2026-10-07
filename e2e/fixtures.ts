@@ -50,7 +50,8 @@ async function launchPerson(
   if (display) args.push(`--display=${display}`, `--tile=${tile}/${tiles}`)
   // CI runners don't allow Chromium's sandbox (unprivileged user namespaces).
   if (process.platform === 'linux') args.push('--no-sandbox')
-  const app = await electron.launch({ args, cwd: repo })
+  // Network interfaces can't be created here: VPN rooms run with a tunnel that carries nothing (see main/vpn/fake.ts).
+  const app = await electron.launch({ args, cwd: repo, env: { ...process.env, SCREENSHARE_FAKE_VPN: '1' } as Record<string, string> })
   launched(app)
 
   // The app registers its IPC handlers before creating the window: replace
@@ -183,7 +184,7 @@ export { expect }
 export async function createRoom(
   host: Person,
   privacy: 'public' | 'private' = 'public',
-  options: { audio?: boolean } = {}
+  options: { audio?: boolean; vpn?: string } = {}
 ): Promise<number> {
   const { win } = host
   await win.getByRole('button', { name: /^Create( a)? room$/ }).first().click()
@@ -191,6 +192,10 @@ export async function createRoom(
   if (privacy === 'private') await dialog.locator('.privacy-option', { hasText: 'Private' }).click()
   await dialog.locator('.source', { hasText: 'Fake screen' }).click()
   if (options.audio) await dialog.getByRole('checkbox', { name: /Share system audio/ }).check()
+  if (options.vpn) {
+    await dialog.getByRole('checkbox', { name: /Open a VPN for this room/ }).check()
+    await dialog.getByLabel('Address your friends connect to').fill(options.vpn)
+  }
   await dialog.getByRole('button', { name: 'Start sharing' }).click()
   await win.waitForSelector('.room')
   const port = await win.evaluate(() => window.api.host.get().then((h) => h?.port ?? 0))
@@ -292,4 +297,32 @@ export async function setForeground(person: Person, state: CursorWatchState): Pr
     ({ BrowserWindow }, [channel, value]) => BrowserWindow.getAllWindows()[0].webContents.send(channel, value),
     [IPC.hiddenCursorChanged, state] as const
   )
+}
+
+/** The invite of the VPN room `host` is running. */
+export function inviteOf(host: Person): Promise<string> {
+  return host.win.evaluate(() => window.api.host.get().then((h) => h?.vpn?.invite ?? ''))
+}
+
+/** Opens Join by IP → VPN invite and pastes the invite (without pressing Connect). */
+export async function pasteInvite(guest: Person, invite: string): Promise<void> {
+  const { win } = guest
+  const showRooms = win.getByRole('button', { name: 'Show rooms' })
+  if (await showRooms.isVisible()) await showRooms.click()
+  if (!(await win.getByPlaceholder(/^Paste the invite/).isVisible())) {
+    await win.getByRole('button', { name: 'Join by IP' }).click()
+    await win.getByRole('button', { name: 'VPN invite', exact: true }).click()
+  }
+  await win.getByPlaceholder(/^Paste the invite/).fill(invite)
+}
+
+/** Joins a VPN room with its invite: the room opens by itself (a private room asks for its PIN first). */
+export async function joinWithInvite(guest: Person, invite: string): Promise<void> {
+  await pasteInvite(guest, invite)
+  await guest.win.getByRole('button', { name: 'Connect', exact: true }).click()
+}
+
+/** This app's VPN status, as the rooms column reads it. */
+export function vpnStatus(person: Person): Promise<{ mode: string; address: string | null; peers: number }> {
+  return person.win.evaluate(() => window.api.vpn.status())
 }

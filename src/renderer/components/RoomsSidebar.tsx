@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { PIN_MAX_LENGTH, PIN_MIN_LENGTH, PROTOCOL_VERSION } from '../../shared/constants'
 import { onePerRoom, sameEndpoint } from '../../shared/roomList'
-import type { DiscoveredRoom, RoomEndpoint, Settings } from '../../shared/types'
+import type { DiscoveredRoom, RoomEndpoint, Settings, VpnStatus } from '../../shared/types'
 import { incompatibleRoomMessage } from '../../shared/version'
 import { useAppVersion } from '../lib/appVersion'
 import { errorMessage, formatDuration } from '../lib/format'
@@ -137,7 +137,16 @@ export function RoomsSidebar(props: Props) {
           <Icon name="panelLeft" />
         </button>
       </div>
-      {manualOpen && <ManualConnect onClose={() => setManualOpen(false)} />}
+      {manualOpen && (
+        <ManualConnect
+          onClose={() => setManualOpen(false)}
+          onVpnRoom={(room) => {
+            setManualOpen(false)
+            props.onJoin(room)
+          }}
+        />
+      )}
+      <VpnStatusBar />
 
       <div className="rooms-scroll">
         {/* A room that asks for a PIN but isn't in the list (e.g. rejoining the last room at startup). */}
@@ -366,7 +375,8 @@ function RoomBadge({ name, active, live, onClick }: { name: string; active: bool
   )
 }
 
-function ManualConnect({ onClose }: { onClose(): void }) {
+function ManualConnect({ onClose, onVpnRoom }: { onClose(): void; onVpnRoom(room: DiscoveredRoom): void }) {
+  const [mode, setMode] = useState<'address' | 'vpn'>('address')
   const [value, setValue] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -377,9 +387,16 @@ function ManualConnect({ onClose }: { onClose(): void }) {
     setBusy(true)
     setError(null)
     try {
-      await window.api.rooms.addManual(value.trim())
-      setValue('')
-      onClose()
+      if (mode === 'vpn') {
+        // Enrols, brings the tunnel up (asks for the administrator password) and finds the room through it.
+        const room = await window.api.vpn.join(value.trim())
+        setValue('')
+        onVpnRoom(room)
+      } else {
+        await window.api.rooms.addManual(value.trim())
+        setValue('')
+        onClose()
+      }
     } catch (err) {
       setError(errorMessage(err))
     } finally {
@@ -389,17 +406,47 @@ function ManualConnect({ onClose }: { onClose(): void }) {
 
   return (
     <form className="manual-connect" onSubmit={submit}>
+      <div className="segmented full">
+        <button type="button" className={mode === 'address' ? 'active' : ''} onClick={() => (setMode('address'), setError(null))}>
+          Direct
+        </button>
+        <button type="button" className={mode === 'vpn' ? 'active' : ''} onClick={() => (setMode('vpn'), setError(null))}>
+          VPN invite
+        </button>
+      </div>
       <input
         autoFocus
-        placeholder="Host address, e.g. 10.8.0.5 or 192.168.1.20:47800"
+        aria-label={mode === 'vpn' ? 'VPN invite' : 'Host address'}
+        placeholder={mode === 'vpn' ? 'Paste the invite the host sent you' : 'Host address, e.g. 10.8.0.5 or 192.168.1.20:47800'}
         value={value}
         onChange={(e) => setValue(e.target.value)}
       />
       <button className="btn primary small" disabled={busy}>
-        {busy ? 'Checking…' : 'Add'}
+        {mode === 'vpn' ? (busy ? 'Connecting…' : 'Connect') : busy ? 'Checking…' : 'Add'}
       </button>
       {error && <p className="error-text">{error}</p>}
     </form>
+  )
+}
+
+/** Shown while this app is in a VPN room someone else opened, with a way out. */
+function VpnStatusBar() {
+  const [status, setStatus] = useState<VpnStatus | null>(null)
+  useEffect(() => {
+    void window.api.vpn.status().then(setStatus)
+    return window.api.vpn.onChanged(setStatus)
+  }, [])
+  if (status?.mode !== 'joined') return null
+  return (
+    <div className="vpn-status">
+      <Icon name="network" size={14} />
+      <span title={`Interface ${status.interface ?? ''}`}>
+        VPN connected · <span className="mono">{status.address}</span>
+      </span>
+      <button className="btn small" onClick={() => void window.api.vpn.leave()}>
+        Disconnect
+      </button>
+    </div>
   )
 }
 

@@ -13,6 +13,7 @@ This page explains how ScreenShare is put together: which process does what, how
 - [Main process](#main-process)
 - [Renderer: the session objects](#renderer-the-session-objects)
 - [Renderer: the UI](#renderer-the-ui)
+- [VPN rooms](#vpn-rooms)
 - [Key flows](#key-flows)
 - [Where state lives](#where-state-lives)
 
@@ -101,6 +102,7 @@ src/
     screenCapture.ts source list, display-media request handler, macOS permission
     nativeAudio.ts   runs the Windows audio helper and forwards PCM to the renderer
     cursorWatch.ts   runs the Windows cursor helper (games that hide the cursor)
+    vpn/             VPN rooms: manager (host or guest), host (enrolment), tunnel (drives the helper), helper + elevate (find, check and start it with administrator rights), fake (tests)
     settings.ts      settings.json load/validate/save
     logger.ts        rotating file logger
   preload/
@@ -116,6 +118,7 @@ src/
     types.ts         wire protocol + settings + IPC types
     constants.ts     protocol version, limits, timings
     ipc.ts           IPC channel names and the window.api interface
+    vpn.ts           VPN room maths: networks, guest addresses, invites, enrolment validation
     quality.ts       quality ladder, adaptive controller, per-watcher limits, budget split
     codecs.ts        codec ordering and SDP tweaks
     crop.ts          profile picture crop maths
@@ -124,6 +127,7 @@ src/
     mdns.ts          DNS-SD advert + browse (bonjour-service, pure JS)
     network.ts       addresses, URLs, /info probing, certificate fingerprints
     crypto.ts        PIN generation/comparison, lockout, random ids
+    wireguard.ts     WireGuard key pairs, and the requests the helper's control socket understands
 native/
   win-audio-capture/Program.cs   Windows audio helper (C#, built with the compiler that ships with Windows)
   win-cursor-watch/Program.cs    Windows helper that reports when a game hides the cursor (C#)
@@ -281,6 +285,21 @@ flowchart TB
 ```
 
 Components subscribe to the session objects' events (`client.on('participants', …)`, `publisher.on('stats', …)`, …) and keep React state as copies. Session objects never import React.
+
+## VPN rooms
+
+A room can open a VPN for guests outside the network (see [VPN rooms](vpn-rooms.md) for the user's view). The pieces, all in the main process:
+
+| Piece | File | Job |
+|---|---|---|
+| `VpnManager` | `src/main/vpn/manager.ts` | One VPN at a time: creates the host side, or enrols as a guest from an invite. Decides what this computer can do (`VpnEnvironment`). |
+| `VpnHost` | `src/main/vpn/host.ts` | The host's tunnel, key pair, invite secret and guest addresses. Answers `POST /vpn/enroll` (secret check with lockout, one enrolment at a time). |
+| `VpnTunnel` | `src/main/vpn/tunnel.ts` | `SystemTunnel`: starts the helper with administrator rights, then sets keys and peers over its control socket. |
+| helper, elevate | `src/main/vpn/helper.ts`, `elevate.ts` | Find the bundled helper, check it against build-time checksums, and start it through the system's permission prompt (macOS authorization, UAC, pkexec). |
+| `ssvpn` | `native/ssvpn/` (Go) | The only code that runs as administrator: creates the interface (Wintun, utun, TUN) with WireGuard's Go library, sets address, route and forwarding, serves the control socket to your user, undoes everything when the app is gone. Built by `scripts/build-vpn.cjs`. |
+| `fake.ts` | `src/main/vpn/fake.ts` | A tunnel that carries nothing, for end-to-end tests (`SCREENSHARE_FAKE_VPN=1`). |
+
+`RoomServer` only parses `POST /vpn/enroll` and hands it to the `VpnEnrollHandler` it was given. `RoomManager.createRoom()` creates the `VpnHost` first, starts the server, then brings the tunnel up with the server's port, and puts the invite in `HostedRoom.vpn`. `RoomManager.joinVpn()` is the guest's side: enrol, tunnel up, then wait for the room to answer at the host's VPN address, and list it like a manually added room (not saved to settings).
 
 ## Key flows
 

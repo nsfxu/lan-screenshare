@@ -86,3 +86,14 @@ export const MIN_VIEW_HEIGHT = 90
 
 /** Server-side send buffer limit per TCP-fallback viewer before frames are dropped. */
 export const TCP_MAX_BUFFERED_BYTES = 2 * 1024 * 1024
+
+/** VPN rooms: the network is 10.77.<random>.0/24, the host is .1 and guests get .2 and up. */
+export const VPN_NETWORK_PREFIX = '10.77'
+export const VPN_PREFIX_LENGTH = 24
+/** Below the usual 1500 so WireGuard's overhead fits without fragmenting (IPv6 underlay: 1420). */
+export const VPN_MTU = 1380
+export const VPN_KEEPALIVE_SECONDS = 25
+/** The enrolment request is a few hundred bytes; anything bigger is refused. */
+export const VPN_ENROLL_MAX_BYTES = 2048
+/** How long a guest waits for the room to answer through the new tunnel. */
+export const VPN_CONNECT_TIMEOUT_MS = 15_000

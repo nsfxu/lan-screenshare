@@ -14,7 +14,7 @@ import {
 } from '../../shared/crop'
 import { QUALITY_PRESETS } from '../../shared/quality'
 import { THEMES } from '../../shared/themes'
-import type { AppInfo, AudioChoice, CodecSupport, DiscoveredRoom, Privacy, Settings } from '../../shared/types'
+import type { AppInfo, AudioChoice, CodecSupport, DiscoveredRoom, Privacy, Settings, VpnAvailability } from '../../shared/types'
 import { shortCodecName } from '../lib/codecs'
 import { errorMessage } from '../lib/format'
 import { loadPicture, renderAvatar } from '../lib/images'
@@ -55,6 +55,8 @@ export interface CreateRoomResult {
   name: string
   privacy: Privacy
   pinLength: number
+  /** Open a VPN for the room; `endpoint` is how guests reach this computer from outside. */
+  vpn: { endpoint: string } | null
   sourceId: string
   audio: AudioChoice
 }
@@ -159,11 +161,24 @@ export function CreateRoomDialog({
   const [pinLength, setPinLength] = useState(DEFAULT_PIN_LENGTH)
   const [sourceId, setSourceId] = useState<string | null>(null)
   const [audio, setAudio] = useState(defaultAudio)
+  const [vpnOn, setVpnOn] = useState(false)
+  const [vpnEndpoint, setVpnEndpoint] = useState('')
+  const [vpnAvailability, setVpnAvailability] = useState<VpnAvailability | null>(null)
+  useEffect(() => {
+    void window.api.vpn.available().then(setVpnAvailability)
+  }, [])
 
   const submit = (e: FormEvent): void => {
     e.preventDefault()
     if (!sourceId) return
-    onCreate({ name: name.trim() || defaultName, privacy, pinLength, sourceId, audio })
+    onCreate({
+      name: name.trim() || defaultName,
+      privacy,
+      pinLength,
+      vpn: vpnOn ? { endpoint: vpnEndpoint.trim() } : null,
+      sourceId,
+      audio
+    })
   }
 
   return (
@@ -213,12 +228,43 @@ export function CreateRoomDialog({
           <SourcePicker selected={sourceId} onSelect={setSourceId} />
         </div>
         <AudioToggle value={audio} onChange={setAudio} sourceId={sourceId} />
+        <label className={`toggle-row ${vpnAvailability?.ok ? '' : 'disabled'}`}>
+          <div>
+            <div>Open a VPN for this room</div>
+            <div className="muted small">
+              {vpnAvailability && !vpnAvailability.ok
+                ? vpnAvailability.reason
+                : 'Friends outside your network join with an invite and connect to this computer. You will be asked for your administrator password.'}
+            </div>
+          </div>
+          <input
+            type="checkbox"
+            checked={vpnOn}
+            disabled={!vpnAvailability?.ok}
+            onChange={(e) => setVpnOn(e.target.checked)}
+          />
+        </label>
+        {vpnOn && (
+          <div className="form-row">
+            <label htmlFor="vpn-endpoint">Address your friends connect to</label>
+            <input
+              id="vpn-endpoint"
+              placeholder="203.0.113.7 or home.example.org"
+              value={vpnEndpoint}
+              onChange={(e) => setVpnEndpoint(e.target.value)}
+            />
+            <span className="muted small">
+              Your public IP or name. On your router, forward the room's port (47800 unless you changed it) to this computer for both TCP
+              and UDP.
+            </span>
+          </div>
+        )}
         {error && <div className="notice error">{error}</div>}
         <footer className="modal-footer">
           <button type="button" className="btn ghost" onClick={onCancel}>
             Cancel
           </button>
-          <button className="btn primary" disabled={!sourceId || busy}>
+          <button className="btn primary" disabled={!sourceId || busy || (vpnOn && !vpnEndpoint.trim())}>
             <Icon name="play" /> {busy ? 'Starting…' : 'Start sharing'}
           </button>
         </footer>

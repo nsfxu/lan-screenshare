@@ -11,3 +11,4 @@ native/bin/
 test-results/
 playwright-report/
 e2e.local.json
+native/.cache/

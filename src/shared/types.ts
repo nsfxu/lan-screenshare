@@ -298,6 +298,8 @@ export interface CreateRoomRequest {
   name: string
   privacy: Privacy
   pinLength: number
+  /** Open a VPN for the room; `endpoint` is the host name or IP that guests reach this computer at. */
+  vpn?: { endpoint: string } | null
 }
 
 export interface HostedRoom {
@@ -307,6 +309,70 @@ export interface HostedRoom {
   hostToken: string
   pin: string | null
   addresses: string[]
+  /** Present when the room opened a VPN: the invite to give to guests, and how it is doing. */
+  vpn?: HostedVpn
+}
+
+/** What the host of a VPN room shows: the invite (a secret, kept in memory only) and the tunnel's state. */
+export interface HostedVpn {
+  invite: string
+  /** Host name or IP guests connect to, as typed by the host. */
+  endpoint: string
+  /** The host's address inside the VPN. */
+  address: string
+  /** Guests that have enrolled so far. */
+  peers: number
+}
+
+/** Everything a guest needs to enrol in a VPN room (decoded from the invite string, see shared/vpn.ts). */
+export interface VpnInvite {
+  /** Host name or IP, reachable from outside the VPN. */
+  endpoint: string
+  /** TCP port of the room server (enrolment) and UDP port of the tunnel: the same number. */
+  port: number
+  tls: boolean
+  /** Certificate fingerprint of the room server (`sha256/...`), when it uses TLS. */
+  fingerprint: string | null
+  /** The host's WireGuard public key (base64). */
+  hostKey: string
+  /** The host's address inside the VPN; the network is its /24. */
+  hostAddress: string
+  /** Proves the guest was invited. */
+  secret: string
+}
+
+export interface VpnEnrollRequest {
+  secret: string
+  /** The guest's WireGuard public key (base64). */
+  publicKey: string
+  /** Same guest, same address: re-enrolling replaces the earlier key. */
+  clientId: string
+}
+
+export interface VpnEnrollResponse {
+  address: string
+  hostAddress: string
+  prefix: number
+  hostKey: string
+  port: number
+}
+
+export type VpnMode = 'off' | 'hosting' | 'joined'
+
+export interface VpnStatus {
+  mode: VpnMode
+  /** This computer's address inside the VPN. */
+  address: string | null
+  /** Name of the virtual network interface. */
+  interface: string | null
+  /** Hosting: guests enrolled. */
+  peers: number
+}
+
+/** Whether this computer can open or join a VPN, and if not, what to install or fix. */
+export interface VpnAvailability {
+  ok: boolean
+  reason: string | null
 }
 
 export interface UpdateRoomRequest {

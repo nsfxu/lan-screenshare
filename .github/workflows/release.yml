@@ -91,6 +91,12 @@ jobs:
       - run: npm ci
       # Also compiles the Windows helpers with the csc.exe that ships with Windows.
       - run: npm run build
+      # The VPN helper (Go) for every platform, plus Wintun's DLL for Windows; the build fails without them.
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: native/ssvpn/go.mod
+          cache-dependency-path: native/ssvpn/go.sum
+      - run: node scripts/build-vpn.cjs --all --require
       - run: npx electron-builder --win --config electron-builder.json --publish never
       - uses: actions/upload-artifact@v4
         with:
@@ -115,6 +121,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      # The VPN helper (Go) for every platform, plus Wintun's DLL for Windows; the build fails without them.
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: native/ssvpn/go.mod
+          cache-dependency-path: native/ssvpn/go.sum
+      - run: node scripts/build-vpn.cjs --all --require
       - run: npx electron-builder --mac --config electron-builder.json --publish never
       - uses: actions/upload-artifact@v4
         with:

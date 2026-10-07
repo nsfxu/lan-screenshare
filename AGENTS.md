@@ -31,8 +31,10 @@ npm run build        # production build into out/
 | Sharing (capture, per-watcher connections, quality) | `src/renderer/lib/publisher.ts` |
 | Watching | `src/renderer/lib/subscription.ts`, `src/renderer/lib/watches.ts` |
 | TCP fallback | `src/renderer/lib/tcpStream.ts` |
+| VPN rooms (tunnel, enrolment, the privileged step) | `src/main/vpn/`, `src/shared/vpn.ts`, `src/utils/wireguard.ts`, [`docs/en-US/vpn-rooms.md`](docs/en-US/vpn-rooms.md) |
 | Quality maths (pure, tested) | `src/shared/quality.ts` |
 | UI | `src/renderer/App.tsx` (three columns), `src/renderer/components/` (`RoomsSidebar`, `RoomMembers`, `RoomView`, `RoomStage`, `RoomInfo`, `ChatPanel`), `src/renderer/styles.css`, layout helpers in `src/renderer/lib/layout.ts` |
+| VPN helper (Go, runs as administrator) | `native/ssvpn/`, `scripts/build-vpn.cjs` |
 | Windows helpers (C#) | `native/win-audio-capture/Program.cs` (system audio), `native/win-cursor-watch/Program.cs` (games hiding the cursor) |
 | Tests | `tests/` (`TestClient` in `tests/helpers.ts`) |
 

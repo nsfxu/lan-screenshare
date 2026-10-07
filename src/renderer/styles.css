@@ -835,6 +835,33 @@ input[type='checkbox']:checked::after {
 .manual-connect .error-text {
   flex-basis: 100%;
 }
+.manual-connect .segmented {
+  flex-basis: 100%;
+}
+.vpn-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.vpn-status > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vpn-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
 .live-dot {
   width: 7px;
   height: 7px;

@@ -194,7 +194,7 @@ export function App() {
     setCreateError(null)
     let hostedCreated = false
     try {
-      const hosted = await window.api.host.create({ name: req.name, privacy: req.privacy, pinLength: req.pinLength })
+      const hosted = await window.api.host.create({ name: req.name, privacy: req.privacy, pinLength: req.pinLength, vpn: req.vpn })
       hostedCreated = true
       const s = await hostRoom(hosted, settings, codecs)
       try {
