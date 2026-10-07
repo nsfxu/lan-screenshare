@@ -107,6 +107,15 @@ export function AccessPanel({ hosted, onToast }: { hosted: HostedRoom; onToast(m
   )
 }
 
+function gigabytes(mb: number): string {
+  return (mb / 1024).toFixed(1)
+}
+
+/** Most of the memory in use is fine; nearly all of it means the computer is swapping. */
+function memoryTone(used: number): string {
+  return used < 0.8 ? 'good' : used < 0.92 ? 'ok' : 'bad'
+}
+
 /** Live encoder / network stats for the host. */
 export function HostStatsPanel({ stats }: { stats: HostStats | null }) {
   if (!stats) return null
@@ -119,7 +128,19 @@ export function HostStatsPanel({ stats }: { stats: HostStats | null }) {
     ['Codec', stats.codec || '–'],
     ['Encoder', stats.encoder || '–'],
     ['CPU (app)', `${stats.cpuPercent.toFixed(1)} %`, stats.cpuPercent < 20 ? 'good' : stats.cpuPercent < 35 ? 'ok' : 'bad'],
-    ['Memory', `${stats.memoryMB} MB`],
+    ['Memory (app)', `${stats.memoryMB} MB`],
+    [
+      'CPU (computer)',
+      stats.computerCpuPercent === null ? '–' : `${stats.computerCpuPercent.toFixed(0)} %`,
+      stats.computerCpuPercent === null ? undefined : stats.computerCpuPercent < 70 ? 'good' : stats.computerCpuPercent < 90 ? 'ok' : 'bad'
+    ],
+    [
+      'Memory (computer)',
+      stats.computerMemoryTotalMB ? `${gigabytes(stats.computerMemoryMB)} of ${gigabytes(stats.computerMemoryTotalMB)} GB` : '–',
+      stats.computerMemoryTotalMB
+        ? memoryTone(stats.computerMemoryMB / stats.computerMemoryTotalMB)
+        : undefined
+    ],
     ['Limited by', stats.qualityLimitation === 'none' ? 'nothing' : stats.qualityLimitation, stats.qualityLimitation === 'none' ? 'good' : 'ok'],
     ['Optimized for', `${stats.contentHint === 'motion' ? 'Smooth motion' : 'Sharp text'}${stats.contentHintAuto ? ' (automatic)' : ''}`]
   ]

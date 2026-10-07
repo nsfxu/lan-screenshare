@@ -11,6 +11,11 @@ test('automatic quality follows a fullscreen app in front of the shared screen',
   // Nothing reported yet: smooth motion, as before this setting existed.
   await expect(mode).toHaveText('Smooth motion (automatic)')
 
+  // The whole computer's CPU and memory sit next to the app's.
+  const row = (name: string) => alice.win.locator('.stats-panel div', { hasText: name }).locator('dd')
+  await expect(row('CPU (computer)')).toHaveText(/^\d+ %$/)
+  await expect(row('Memory (computer)')).toHaveText(/^\d+\.\d of \d+\.\d GB$/)
+
   await setForeground(alice, { hidden: false, windowId: 'window:1:0', fullscreen: false, displayId: 'fake' })
   await expect(mode).toHaveText('Sharp text (automatic)')
 

@@ -3,6 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { APP_NAME, DEFAULT_PORT, TITLE_BAR_HEIGHT } from '../shared/constants'
 import { IPC } from '../shared/ipc'
+import { cpuBusyPercent, type CpuTimes } from '../shared/systemStats'
 import type { AppInfo, CreateRoomRequest, NativeAudioOptions, Settings, SystemStats, UpdateRoomRequest } from '../shared/types'
 import { parseHostPort } from '../utils/network'
 import { createFileLogger } from './logger'
@@ -197,12 +198,25 @@ function registerIpc(): void {
   ipcMain.handle(IPC.screenPermission, () => capture.permission())
   ipcMain.handle(IPC.openPermissionSettings, () => capture.openPermissionSettings())
 
+  // The whole computer's CPU is measured between two calls (the streamer's stats ask every second).
+  let lastCpuTimes: CpuTimes[] = []
   ipcMain.handle(IPC.systemStats, (): SystemStats => {
     // percentCPUUsage is already relative to the whole machine (all cores).
     const metrics = app.getAppMetrics()
     const cpu = metrics.reduce((sum, m) => sum + m.cpu.percentCPUUsage, 0)
     const memKB = metrics.reduce((sum, m) => sum + m.memory.workingSetSize, 0)
-    return { cpuPercent: Math.round(cpu * 10) / 10, memoryMB: Math.round(memKB / 1024) }
+    const cpuTimes = os.cpus().map((c) => c.times)
+    const computerCpuPercent = cpuBusyPercent(lastCpuTimes, cpuTimes)
+    lastCpuTimes = cpuTimes
+    // In KB; "free" is what applications could still get, so in use is the rest.
+    const memory = process.getSystemMemoryInfo()
+    return {
+      cpuPercent: Math.round(cpu * 10) / 10,
+      memoryMB: Math.round(memKB / 1024),
+      computerCpuPercent,
+      computerMemoryMB: Math.round((memory.total - memory.free) / 1024),
+      computerMemoryTotalMB: Math.round(memory.total / 1024)
+    }
   })
   ipcMain.handle(
     IPC.appInfo,
