@@ -1,6 +1,6 @@
 # Solução de problemas
 
-Problemas comuns e como resolvê-los. Se o seu não estiver aqui, abra **Settings → Open logs** e veja o `screenshare.log`; as linhas perto do problema geralmente dizem o que deu errado.
+Problemas comuns e como resolvê-los. Se o seu não estiver aqui, abra **Settings → About → Open logs** e veja o `screenshare.log`; as linhas perto do problema geralmente dizem o que deu errado.
 
 > **Idioma:** [English](../en-US/troubleshooting.md) · Português (Brasil)
 
@@ -38,22 +38,22 @@ flowchart TD
 
 | Mensagem | O que significa | O que fazer |
 |---|---|---|
-| *This room runs ScreenShare 2.0.0, you have 1.2.0: update to join* | O anfitrião usa uma versão principal mais nova, em que apps antigos não entram | Atualize o ScreenShare. |
-| *…: the host needs to update* | O anfitrião usa uma versão principal mais antiga | O anfitrião atualiza (ou alguém com a sua versão hospeda). |
-| *This room runs a different app version* | O mesmo que acima, vindo de um anfitrião anterior ao 1.2.0 | Todos atualizam para a mesma versão principal. |
+| *This room runs ScreenShare 3.0.0, you have 2.0.0: update to join* | O anfitrião usa uma versão mais nova, com outro protocolo de sala, em que apps antigos não entram | Atualize o ScreenShare. |
+| *…: the host needs to update* | O anfitrião usa uma versão mais antiga, com outro protocolo de sala | O anfitrião atualiza (ou alguém com a sua versão hospeda). |
+| *This room runs a different app version* | O mesmo que acima, vindo de um anfitrião anterior ao 1.2.0 | Todos atualizam para a versão mais recente. |
 | *Wrong PIN* (tentativas restantes) | O PIN não confere | Pergunte de novo ao anfitrião: o PIN pode mudar durante a sessão. |
 | *Too many wrong PINs. Try again later.* | 3 PINs errados vindos do seu computador | Espere 5 minutos. |
 | *Room is full* | Já há 10 pessoas dentro | Espere alguém sair. |
 | *You were removed from this room* | O anfitrião removeu você | Só o anfitrião pode ajudar; uma nova sessão da sala limpa isso. |
-| A lista de salas diz *Update to join* ou *Older version* | A sala usa uma versão principal incompatível (passe o mouse por cima para ver quem precisa atualizar) | Como acima. |
+| A lista de salas diz *Update to join* ou *Older version* | A sala usa uma versão incompatível (passe o mouse por cima para ver quem precisa atualizar) | Como acima. |
 | A sala fica cinza / *Unreachable* | O app não consegue alcançar o anfitrião | Confira a rede e o firewall, ou se o anfitrião ainda está com o app aberto. |
 | Erro de certificado no log (`rejected certificate`) | O certificado do anfitrião não bate com o que o seu app viu antes | Reinicie o ScreenShare do seu lado para ele reconhecer o anfitrião de novo. Se o anfitrião apagou o `host-identity.json`, isso é esperado. |
 
 ## O vídeo não começa ou fica preto
 
-- **"Connecting…" por alguns segundos e depois toca**: normal quando a sua rede bloqueia o WebRTC (UDP). Depois de 8 segundos o app passa sozinho para a conexão TCP. O botão ↻ no quadro tenta a conexão mais rápida de novo.
-- **Nunca conecta**: confira se os dois computadores permitem o ScreenShare no firewall. Como último recurso, ligue **Settings → Network → Always use TCP transport** no espectador.
-- **Quem transmite vê a própria transmissão normal, mas você vê preto**: a pessoa pode ter pausado (o quadro avisa) ou compartilhado uma janela minimizada. Peça para ela usar **Change source**.
+- **"Connecting…" por alguns segundos e depois toca**: normal quando a sua rede bloqueia o WebRTC (UDP). Depois de 8 segundos o app passa sozinho para a conexão TCP. **Try the faster connection again** no menu do botão direito da transmissão volta para o WebRTC.
+- **Nunca conecta**: confira se os dois computadores permitem o ScreenShare no firewall. Como último recurso, ligue **Settings → Connection → Always use TCP transport** no espectador.
+- **Quem transmite vê a própria transmissão normal, mas você vê preto**: a pessoa pode ter minimizado o app com **Pause sharing while minimized** ligado (o quadro mostra *Sharing paused*) ou compartilhado uma janela minimizada. Peça para ela usar **Change source**.
 - **Você não vê a sua própria transmissão**: é de propósito. Clique em **Show my stream** no seu próprio quadro.
 - **Capturas de tela do app saem pretas enquanto você assiste**: também é de propósito; gravar transmissões é bloqueado.
 
@@ -80,19 +80,19 @@ No Windows 10 (e no 11 anterior ao 24H2), compartilhar uma tela inteira mostra o
 
 | Problema | Solução |
 |---|---|
-| Nenhum áudio | Quem transmite precisa ligar **Share system audio** (pelo **Change source** durante a transmissão). O botão de mudo mostra **No audio** quando nada está sendo capturado. |
+| Nenhum áudio | Quem transmite precisa ligar **Share system audio** (pelo **Change source** durante a transmissão). O menu do **Sharing** mostra **No audio** quando nada está sendo capturado. |
 | Sem som ao compartilhar uma janela (Windows) | **Only this app's sound** segue o app dono da janela. Alguns apps tocam o som por outro processo (alguns jogos abertos por um launcher, apps da Store), então nada é capturado. Desligue a opção em **Change source**: os espectadores passam a ouvir todo o som do sistema. |
 | Sem áudio com headset 5.1/7.1 no Windows | O app passa automaticamente para o próprio auxiliar de áudio. Se ainda falhar, deixe o dispositivo em estéreo: *Configurações de som → dispositivo → Propriedades → Avançado → 2 canais*, e depois **Change source**. |
 | Quem está na minha chamada do Discord ouve a própria voz | Compartilhe a **janela** do jogo com **Only this app's sound**, ou ligue **Leave out Discord** ao compartilhar (Windows, os dois ligados por padrão). Se aparecer um aviso dizendo que não foi possível, seu Windows é anterior ao 10 versão 2004: use **Mute audio** ou silencie a saída do Discord. |
 | Outras transmissões fazem eco na minha | Seu computador toca as transmissões que você assiste, e compartilhar o áudio do sistema captura isso também. Com **Leave out Discord** ligado e o Discord fechado, o app deixa a si mesmo de fora e isso não acontece; senão (só um app pode ficar de fora), abaixe o volume das transmissões que você assiste ou silencie o seu áudio compartilhado. |
 | Sem áudio no macOS | Precisa do macOS 13+ e da permissão de Gravação de Tela. Ainda não foi testado no macOS. |
-| O espectador não ouve nada, mas quem transmite tem áudio | Confira o volume do quadro (cada transmissão tem seu próprio volume e mudo). |
+| O espectador não ouve nada, mas quem transmite tem áudio | Confira o volume da transmissão no menu do botão direito, ou o alto-falante embaixo de uma transmissão em foco (cada transmissão tem seu próprio volume e mudo). |
 
 ## CPU alta ou notebook esquentando
 
-- Abra **Settings → Streaming quality**: a tabela de codecs mostra **Hardware** ou **Software** para cada codec. Codificar em software gasta muito mais CPU. O **Automatic** já prefere H.264 em hardware.
+- Abra **Settings → Advanced**: a tabela de codecs mostra **Hardware** ou **Software** para cada codec. Codificar em software gasta muito mais CPU. O **Automatic** já prefere H.264 em hardware.
 - Diminua a **qualidade máxima** no menu do botão **Sharing** (por exemplo 720p @ 30 fps).
-- Feche os quadros que você não está assistindo; cada transmissão assistida custa decodificação.
+- Pare de assistir as transmissões de que não precisa (**Stop watching** no menu do botão direito); cada transmissão assistida custa decodificação.
 - Deixe a sua própria transmissão escondida (não clique em **Show my stream**) enquanto compartilha.
 
 ## Permissões do macOS
@@ -106,5 +106,5 @@ Inclua, por favor:
 
 1. A versão do app (**Settings → About**) e o sistema operacional de cada computador envolvido.
 2. O que você fez, o que esperava e o que aconteceu.
-3. O trecho relevante do `screenshare.log` de cada computador (**Settings → Open logs**). Tire antes qualquer informação privada.
+3. O trecho relevante do `screenshare.log` de cada computador (**Settings → About → Open logs**). Tire antes qualquer informação privada.
 4. Para problemas de qualidade: uma captura dos selos de estatística do quadro e do painel **Stats** de quem transmite.

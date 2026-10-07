@@ -106,7 +106,7 @@ Quatro limites independentes decidem o que cada espectador recebe. Eles são com
 
 ```mermaid
 flowchart LR
-  A["Qualidade máxima de quem transmite<br/>(menu do botão Live, Stats, ou Settings)"] --> L["Escada de qualidade"]
+  A["Qualidade máxima de quem transmite<br/>(menu do botão Sharing, Stats, ou Settings)"] --> L["Escada de qualidade"]
   L --> B["Controlador adaptativo<br/>por espectador: perda, RTT, limitação"]
   B --> C["Limite de exibição<br/>tamanho do quadro x DPI,<br/>ou a escolha do espectador"]
   C --> D["Banda de upload<br/>divisão justa max-min"]
@@ -157,7 +157,7 @@ O espectador também pode escolher uma **qualidade** no menu do quadro (`WATCH_Q
 
 Do lado de quem transmite, `limitPreset()` reduz o preset para essa altura e fps e ajusta o bitrate pela quantidade de pixels e pela taxa de quadros. Exemplo: um preset 1080p60 exibido num quadro de 360p custa cerca de 15 Mbps / 9 ≈ 1,7 Mbps.
 
-**Transmissões que ninguém consegue ver não recebem vídeo.** Quando um espectador não consegue ver uma transmissão (a janela dele está minimizada, ou outro quadro está em tela cheia), a `Subscription` envia `HIDDEN_VIEW` no lugar: 90 px a 1 fps, a menor exibição que o servidor aceita. Nenhum quadro de verdade informa isso (o menor degrau é 360), então quem transmite reconhece o valor (`isHiddenView`) e deixa a codificação de vídeo daquele espectador com `active: false`: nada é codificado nem enviado, e o espectador não precisa de uma parte da banda de upload. O áudio é um envio separado e continua tocando. Quando o espectador volta a ver a transmissão, ele informa a exibição real e o vídeo volta em menos de um segundo. A lista de pessoas de quem transmite mostra "not looking (video paused)". Quem transmite com uma versão antiga, que não conhece essa convenção, envia uma imagem minúscula de 160×90 a 1 fps, então não foi preciso mudar o protocolo.
+**Transmissões que ninguém consegue ver não recebem vídeo.** Quando um espectador não consegue ver uma transmissão (a janela dele está minimizada, ou a transmissão está na faixa do destaque e ele escondeu a faixa), a `Subscription` envia `HIDDEN_VIEW` no lugar: 90 px a 1 fps, a menor exibição que o servidor aceita. Nenhum quadro de verdade informa isso (o menor degrau é 360), então quem transmite reconhece o valor (`isHiddenView`) e deixa a codificação de vídeo daquele espectador com `active: false`: nada é codificado nem enviado, e o espectador não precisa de uma parte da banda de upload. O áudio é um envio separado e continua tocando. Quando o espectador volta a ver a transmissão, ele informa a exibição real e o vídeo volta em menos de um segundo. A lista de pessoas de quem transmite mostra "not looking (video paused)". Quem transmite com uma versão antiga, que não conhece essa convenção, envia uma imagem minúscula de 160×90 a 1 fps, então não foi preciso mudar o protocolo.
 
 A minimização é informada pelo processo principal (`window:state`); a própria página não consegue saber, porque o app desliga a limitação em segundo plano para a captura e a codificação continuarem rodando. Uma janela que só está *coberta* (por exemplo por um jogo em tela cheia na mesma tela) ainda não é detectada.
 
@@ -180,7 +180,7 @@ stateDiagram-v2
   Negotiating --> TcpNegotiating: 8 s sem conectar, falha de ICE ou de negociação
   Streaming --> TcpNegotiating: conexão falhou
   TcpNegotiating --> TcpStreaming: primeiro quadro-chave decodificado
-  TcpStreaming --> Negotiating: usuário clica em tentar WebRTC de novo
+  TcpStreaming --> Negotiating: usuário clica em "Try the faster connection again"
   Streaming --> Ended: quem transmite parou
   TcpStreaming --> Ended: quem transmite parou
   Ended --> [*]

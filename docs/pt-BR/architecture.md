@@ -106,12 +106,12 @@ src/
   preload/
     index.ts         contextBridge: window.api
   renderer/
-    App.tsx          telas principais, entrar/hospedar, avisos, configurações
+    App.tsx          as três colunas, barra de título, entrar/hospedar, avisos, configurações, tema
     components/      componentes React (veja "Renderer: a interface")
     lib/             lógica da sessão: roomClient, publisher, subscription, watches, tcpStream,
                      nativeAudio, gameCursor, foregroundWatch, autoContentHint, codecs, images,
-                     session, format, emitter
-    styles.css       todos os estilos (tema escuro)
+                     session, format, emitter; ajudantes da interface: layout, volume, theme, appVersion, roomPeople
+    styles.css       todos os estilos; os temas são variáveis CSS em :root[data-theme]
   shared/            código usado pelos dois lados; os módulos puros não usam APIs de DOM/Node
     types.ts         tipos do protocolo, das configurações e do IPC
     constants.ts     versão do protocolo, limites, tempos
@@ -120,6 +120,12 @@ src/
     codecs.ts        ordem dos codecs e ajustes no SDP
     crop.ts          cálculo do recorte da foto de perfil
     images.ts        validadores de data URL para prévias e fotos de perfil
+    version.ts       versões do app: comparar, mensagens de "update to join"
+    struggle.ts      por que uma transmissão sofre (cpu, banda, codificadores)
+    roomList.ts      salas recentes, uma linha por sala
+    tileGrid.ts      a grade de quadros que ocupa mais área 16:9
+    chat.ts          agrupamento do chat e contagem de não lidas
+    themes.ts        a lista de temas
   utils/             utilitários do processo principal
     mdns.ts          anúncio e busca DNS-SD (bonjour-service, JS puro)
     network.ts       endereços, URLs, consulta /info, impressões digitais de certificado
@@ -128,8 +134,9 @@ native/
   win-audio-capture/Program.cs   auxiliar de áudio do Windows (C#, compilado com o compilador que vem no Windows)
   win-cursor-watch/Program.cs    auxiliar do Windows que avisa quando um jogo esconde o cursor (C#)
 scripts/build-native.cjs         compila os auxiliares antes do `dev`/`build` (não faz nada fora do Windows)
-tests/                           vitest: servidor, transmissões, qualidade, recorte, codecs/TLS, cripto;
-                                 renderer/ para a lógica do renderer (cursor em jogos)
+tests/                           vitest: servidor, transmissões, qualidade, recorte, codecs/TLS, cripto e os
+                                 módulos de src/shared; renderer/ para a lógica do renderer (cursor em jogos, áudio)
+e2e/                             Playwright: duas instâncias reais do app numa sala
 build/                           recursos de empacotamento (entitlements do macOS)
 ```
 
@@ -263,7 +270,8 @@ classDiagram
 
 ```mermaid
 flowchart TB
-  App["App.tsx<br/>configurações, avisos, entrar/hospedar"]
+  App["App.tsx<br/>configurações, avisos, entrar/hospedar, tema"]
+  App --> Title["TitleBar<br/>nome e ícone do app; o sistema desenha os botões da janela"]
   App --> Rooms["RoomsSidebar (esquerda)<br/>salas recentes e da rede, PIN, Join by IP, nome, configurações"]
   Rooms --> Members["RoomMembers<br/>pessoas da sua sala: ao vivo, assistir, prévia, menu do anfitrião"]
   App --> Welcome["Welcome<br/>centro fora de uma sala"]
@@ -276,7 +284,8 @@ flowchart TB
   Stage --> Remote["RemoteTile<br/>uma por transmissão assistida"]
   Self --> SV["ScreenViewer<br/>vídeo, selos de estatística, volume (lib/volume.ts)"]
   Remote --> SV
-  Room --> Bar["Barra de controles<br/>compartilhar, pausar, áudio, fonte, parar, estatísticas e qualidade, sair"]
+  Room --> Bar["Barra de controles<br/>sair, Watch all, Share screen / menu do Sharing (fonte, áudio, qualidade, parar), Stats"]
+  Room --> Menu["Menu<br/>todos os menus do botão direito e de botões; controles de volume"]
   Room --> Chat["ChatPanel (direita)"]
 ```
 

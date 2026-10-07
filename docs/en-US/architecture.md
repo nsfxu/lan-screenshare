@@ -106,12 +106,12 @@ src/
   preload/
     index.ts         contextBridge: window.api
   renderer/
-    App.tsx          top-level screens, joining/hosting, toasts, settings
+    App.tsx          the three columns, title bar, joining/hosting, toasts, settings, theme
     components/      React components (see "Renderer: the UI")
     lib/             session logic: roomClient, publisher, subscription, watches, tcpStream,
                      nativeAudio, gameCursor, foregroundWatch, autoContentHint, codecs, images,
-                     session, format, emitter
-    styles.css       all styles (dark theme)
+                     session, format, emitter; UI helpers: layout, volume, theme, appVersion, roomPeople
+    styles.css       all styles; the themes are CSS variables on :root[data-theme]
   shared/            code used by both sides; no DOM/Node APIs in the pure modules
     types.ts         wire protocol + settings + IPC types
     constants.ts     protocol version, limits, timings
@@ -120,6 +120,12 @@ src/
     codecs.ts        codec ordering and SDP tweaks
     crop.ts          profile picture crop maths
     images.ts        data-URL validators for previews and profile pictures
+    version.ts       app versions: compare, "update to join" messages
+    struggle.ts      why a stream struggles (cpu, bandwidth, encoders)
+    roomList.ts      recent rooms, one row per room
+    tileGrid.ts      the tile grid that fits the most 16:9 area
+    chat.ts          chat grouping and unread count
+    themes.ts        the theme list
   utils/             main-process helpers
     mdns.ts          DNS-SD advert + browse (bonjour-service, pure JS)
     network.ts       addresses, URLs, /info probing, certificate fingerprints
@@ -128,8 +134,9 @@ native/
   win-audio-capture/Program.cs   Windows audio helper (C#, built with the compiler that ships with Windows)
   win-cursor-watch/Program.cs    Windows helper that reports when a game hides the cursor (C#)
 scripts/build-native.cjs         builds the helpers before `dev`/`build` (no-op off Windows)
-tests/                           vitest: server, streams, quality, crop, codecs/TLS, crypto;
-                                 renderer/ for renderer logic (game cursor)
+tests/                           vitest: server, streams, quality, crop, codecs/TLS, crypto, and the
+                                 src/shared modules; renderer/ for renderer logic (game cursor, audio)
+e2e/                             Playwright: two real app instances in a room
 build/                           packaging resources (macOS entitlements)
 ```
 
@@ -263,7 +270,8 @@ classDiagram
 
 ```mermaid
 flowchart TB
-  App["App.tsx<br/>settings, toasts, join/host"]
+  App["App.tsx<br/>settings, toasts, join/host, theme"]
+  App --> Title["TitleBar<br/>app name and icon; the system draws the window buttons"]
   App --> Rooms["RoomsSidebar (left)<br/>recent and network rooms, PIN, Join by IP, name, settings"]
   Rooms --> Members["RoomMembers<br/>people in your room: live, watch, preview, host menu"]
   App --> Welcome["Welcome<br/>centre when not in a room"]
@@ -276,7 +284,8 @@ flowchart TB
   Stage --> Remote["RemoteTile<br/>one per watched stream"]
   Self --> SV["ScreenViewer<br/>video, stats badges, volume (lib/volume.ts)"]
   Remote --> SV
-  Room --> Bar["Control bar<br/>share, pause, audio, source, stop, stats and quality, leave"]
+  Room --> Bar["Control bar<br/>leave, Watch all, Share screen / Sharing menu (source, audio, quality, stop), Stats"]
+  Room --> Menu["Menu<br/>every right-click and button menu; volume sliders"]
   Room --> Chat["ChatPanel (right)"]
 ```
 

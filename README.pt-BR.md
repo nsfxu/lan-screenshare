@@ -41,7 +41,7 @@ npm install
 npm run dev
 ```
 
-A janela do app abre. Clique em **Create room** para criar uma sala, ou espere as salas da sua rede aparecerem e clique em **Join**.
+A janela do app abre. Clique em **Create room** para criar uma sala, ou espere as salas da sua rede aparecerem e clique numa para entrar.
 
 ### Testar com duas pessoas no mesmo computador
 
@@ -53,16 +53,20 @@ npx electron . --profile=bob
 
 Cada `--profile` tem suas próprias configurações, então as duas janelas se comportam como duas pessoas diferentes.
 
+### Baixar
+
+Os instaladores para Windows (`.exe`) e macOS (`.dmg`) estão na [página de releases](https://github.com/nsfxu/lan-screenshare/releases). Eles ainda não são assinados, então o SmartScreen do Windows pode avisar (**Mais informações → Executar assim mesmo**), e no macOS você abre com botão direito → **Abrir**.
+
 ### Gerar um instalador
 
-Ainda não há downloads prontos; gere o seu:
+Para gerar o seu:
 
 ```bash
 npm run dist:win   # instalador do Windows (.exe), rode no Windows
 npm run dist:mac   # imagem de disco do macOS (.dmg), rode num Mac
 ```
 
-O instalador é gravado em `release/<versão>/`. Todos na mesma sala precisam da mesma versão do app.
+O instalador é gravado em `release/<versão>/`. Apps podem estar na mesma sala desde que falem o mesmo protocolo de sala: todos os 1.x e 2.x falam.
 
 ### Conferir suas alterações
 

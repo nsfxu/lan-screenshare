@@ -41,7 +41,7 @@ npm install
 npm run dev
 ```
 
-The app window opens. Click **Create room** to host, or wait for rooms on your network to appear and click **Join**.
+The app window opens. Click **Create room** to host, or wait for rooms on your network to appear and click one to join.
 
 ### Try it with two people on one computer
 
@@ -53,16 +53,20 @@ npx electron . --profile=bob
 
 Each `--profile` has its own settings, so the two windows behave like two different people.
 
+### Download
+
+Installers for Windows (`.exe`) and macOS (`.dmg`) are on the [releases page](https://github.com/nsfxu/lan-screenshare/releases). They aren't signed yet, so Windows SmartScreen may warn you (**More info → Run anyway**), and on macOS you open it with right-click → **Open**.
+
 ### Build an installer
 
-There are no ready-made downloads yet; build one yourself:
+To build one yourself:
 
 ```bash
 npm run dist:win   # Windows installer (.exe), run on Windows
 npm run dist:mac   # macOS disk image (.dmg), run on a Mac
 ```
 
-The installer is written to `release/<version>/`. Everyone in a room needs the same app version.
+The installer is written to `release/<version>/`. Apps can share a room as long as they speak the same room protocol: 1.x and 2.x all do.
 
 ### Check your changes
 

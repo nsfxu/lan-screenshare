@@ -45,13 +45,13 @@ flowchart LR
 
 ## Status and known limitations
 
-- **Tested**: Windows 10 with an NVIDIA GPU, several instances on one machine, and the audio features on real Windows machines. Automated tests cover the server, routing, quality logic, crypto, codecs and crop maths.
-- **macOS**: the build has not been compiled or run yet. It needs a Mac to build, and signing plus notarisation to distribute. System audio relies on Chromium feature flags (macOS 13+) and is untested.
+- **Tested**: Windows 10 with an NVIDIA GPU, several instances on one machine, and the audio features on real Windows machines. Unit tests cover the server, routing, quality logic, crypto, codecs and crop maths, and end-to-end tests drive two real app instances in a room.
+- **macOS**: the release workflow builds the `.dmg` files, but they haven't been tested on a real Mac yet, and they aren't signed or notarised (open them with right-click → Open). System audio relies on Chromium feature flags (macOS 13+) and is untested.
 - **Network conditions**: the adaptive quality logic is unit-tested, but real packet loss hasn't been simulated.
 - **TCP fallback**: one encode is shared by all TCP viewers of a streamer, sized for the most demanding one.
 - **Latency figures** on WebRTC are estimates (see [media pipeline](media-pipeline.md#statistics-and-latency)).
 - **Discovery** needs multicast; on VPNs use **Join by IP**.
-- **Version**: everyone in a room must run the same protocol version (currently 4).
+- **Version**: everyone in a room must run the same protocol version (currently 4: every app from 1.0.0 to 2.x).
 - **Out of scope** for now: remote control, microphone audio, several monitors in one stream, recording, Linux as a supported platform.
 
 ## About these docs

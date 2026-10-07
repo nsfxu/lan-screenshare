@@ -12,7 +12,7 @@ Termos usados no código e nesta documentação. Os nomes em inglês são os que
 | **Avatar** (foto de perfil) | A foto de um participante: um data URL JPEG de 128 px, enviado com `set-avatar` e redistribuído como `avatar`. |
 | **Banda de upload** (*upload budget*) | O limite total de upload de quem transmite, dividido entre os espectadores de forma justa max-min (`splitBudget`). |
 | **clientId** | Um id aleatório criado na primeira execução e guardado nas configurações. Identifica uma instalação para as salas (usado na retomada e no banimento). |
-| **Destaque** (*spotlight*) | O layout em que uma transmissão assistida fica grande e as outras ficam numa faixa. |
+| **Destaque** (*spotlight*) | O layout em que um quadro (uma transmissão ou uma pessoa) fica grande e todos os outros ficam numa faixa embaixo, que pode ser escondida. |
 | **Escada / preset** (*ladder*) | A lista de níveis de qualidade (`QUALITY_PRESETS`): Native60, 1080p60, 720p60, 720p30, 480p30. |
 | **Espectador** (*watcher*) | Um participante que está assistindo a transmissão de alguém. |
 | **Fallback TCP** | O transporte de reserva quando o WebRTC não conecta: codificação com WebCodecs e pacotes repassados pelo WebSocket da sala. |

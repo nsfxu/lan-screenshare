@@ -45,13 +45,13 @@ flowchart LR
 
 ## Situação atual e limitações conhecidas
 
-- **Testado**: Windows 10 com GPU NVIDIA, várias instâncias no mesmo computador, e os recursos de áudio em máquinas Windows reais. Os testes automáticos cobrem o servidor, o roteamento, a lógica de qualidade, criptografia, codecs e o cálculo do recorte.
-- **macOS**: o build ainda não foi compilado nem executado. Precisa de um Mac para gerar, e de assinatura e notarização para distribuir. O áudio do sistema depende de flags do Chromium (macOS 13+) e não foi testado.
+- **Testado**: Windows 10 com GPU NVIDIA, várias instâncias no mesmo computador, e os recursos de áudio em máquinas Windows reais. Os testes unitários cobrem o servidor, o roteamento, a lógica de qualidade, criptografia, codecs e o cálculo do recorte, e os testes de ponta a ponta usam duas instâncias reais do app numa sala.
+- **macOS**: o fluxo de release gera os `.dmg`, mas eles ainda não foram testados num Mac de verdade, e não são assinados nem notarizados (abra com botão direito → Abrir). O áudio do sistema depende de flags do Chromium (macOS 13+) e não foi testado.
 - **Condições de rede**: a lógica de qualidade adaptativa tem testes unitários, mas perda de pacotes real ainda não foi simulada.
 - **Fallback TCP**: uma única codificação é dividida entre todos os espectadores TCP de quem transmite, dimensionada para o mais exigente.
 - **Os números de latência** no WebRTC são estimativas (veja [pipeline de mídia](media-pipeline.md#estatísticas-e-latência)).
 - **A descoberta** precisa de multicast; em VPNs use **Join by IP**.
-- **Versão**: todos na sala precisam da mesma versão do protocolo (hoje, a 4).
+- **Versão**: todos na sala precisam da mesma versão do protocolo (hoje, a 4: todo app do 1.0.0 ao 2.x).
 - **Fora do escopo** por enquanto: controle remoto, áudio do microfone, vários monitores numa transmissão, gravação, Linux como plataforma suportada.
 
 ## Sobre esta documentação
