@@ -227,9 +227,23 @@ export function App() {
     setCreating(true)
   }
 
+  /** Restarts into a downloaded update, after asking when that would end or leave a room. */
+  const restartToUpdate = (): void => {
+    const s = sessionRef.current
+    if (s) {
+      const name = s.client.room?.name ?? 'this room'
+      const question =
+        s.role === 'host'
+          ? `Restarting to update ends ${name} for everyone. Restart now?`
+          : `Restarting to update leaves ${name}. Restart now?`
+      if (!confirm(question)) return
+    }
+    void window.api.update.install()
+  }
+
   return (
     <>
-      <TitleBar />
+      <TitleBar onRestartToUpdate={restartToUpdate} />
       <div className="shell">
         {roomsFloatingNow && (
           <>
@@ -306,6 +320,7 @@ export function App() {
           encoders={codecs.encoders}
           decoders={codecs.decoders}
           onChange={(p) => void updateSettings(p)}
+          onRestartToUpdate={restartToUpdate}
           onClose={() => setSettingsOpen(false)}
         />
       )}

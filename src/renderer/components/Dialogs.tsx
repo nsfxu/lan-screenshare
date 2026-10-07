@@ -18,6 +18,7 @@ import type { AppInfo, AudioChoice, CodecSupport, DiscoveredRoom, Privacy, Setti
 import { shortCodecName } from '../lib/codecs'
 import { errorMessage } from '../lib/format'
 import { loadPicture, renderAvatar } from '../lib/images'
+import { useUpdateStatus } from '../lib/update'
 import { Avatar } from './Avatar'
 import { Icon } from './Icon'
 import { SourcePicker } from './SourcePicker'
@@ -282,12 +283,14 @@ export function SettingsPanel({
   encoders,
   decoders,
   onChange,
+  onRestartToUpdate,
   onClose
 }: {
   settings: Settings
   encoders: CodecSupport[]
   decoders: CodecSupport[]
   onChange(patch: Partial<Settings>): void
+  onRestartToUpdate(): void
   onClose(): void
 }) {
   const [info, setInfo] = useState<AppInfo | null>(null)
@@ -564,6 +567,14 @@ export function SettingsPanel({
                   <Icon name="folder" size={14} /> Open logs
                 </button>
               </div>
+              {toggle(
+                'autoUpdate',
+                'Check for updates automatically',
+                info?.platform === 'darwin'
+                  ? 'Looks at the ScreenShare releases on GitHub every few hours and tells you when there is a new version.'
+                  : 'Looks at the ScreenShare releases on GitHub every few hours. A new version downloads by itself and installs when you restart.'
+              )}
+              <UpdateRow onRestart={onRestartToUpdate} />
             </section>
           </div>
         </div>
@@ -745,5 +756,53 @@ function CodecTable({ encoders, decoders }: { encoders: CodecSupport[]; decoders
         ))}
       </tbody>
     </table>
+  )
+}
+
+/** The update status in Settings → About, with what can be done about it. */
+function UpdateRow({ onRestart }: { onRestart(): void }) {
+  const status = useUpdateStatus()
+  if (!status) return null
+  const text = (() => {
+    switch (status.state) {
+      case 'unsupported':
+        return 'Updates come with the installed app, not with development builds.'
+      case 'idle':
+        return status.checkedAt
+          ? `Up to date (checked at ${new Date(status.checkedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}).`
+          : 'Not checked yet.'
+      case 'checking':
+        return 'Checking for updates…'
+      case 'downloading':
+        return `Downloading ScreenShare ${status.version}… ${status.percent} %`
+      case 'ready':
+        return `ScreenShare ${status.version} is ready to install.`
+      case 'available':
+        return `ScreenShare ${status.version} is available.`
+      case 'error':
+        return status.message
+    }
+  })()
+  return (
+    <div className="form-row inline update-row" role="status">
+      <span className={`small ${status.state === 'error' ? 'bad-text' : 'muted'}`}>{text}</span>
+      {status.state === 'ready' ? (
+        <button className="btn primary small" onClick={onRestart}>
+          <Icon name="refresh" size={14} /> Restart to update
+        </button>
+      ) : status.state === 'available' ? (
+        <button className="btn primary small" onClick={() => void window.api.update.openPage()}>
+          <Icon name="download" size={14} /> Download
+        </button>
+      ) : (
+        <button
+          className="btn ghost small"
+          disabled={status.state === 'unsupported' || status.state === 'checking' || status.state === 'downloading'}
+          onClick={() => void window.api.update.check()}
+        >
+          Check now
+        </button>
+      )}
+    </div>
   )
 }

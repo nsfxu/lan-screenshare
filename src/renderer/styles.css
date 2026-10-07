@@ -592,6 +592,28 @@ input[type='checkbox']:checked::after {
   font-weight: 600;
   color: var(--text);
 }
+/* A downloaded (or, on macOS, available) update: clickable inside the draggable bar. */
+.title-bar-update {
+  -webkit-app-region: no-drag;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 6px;
+  padding: 1px 10px;
+  border: 1px solid color-mix(in srgb, var(--good) 55%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--good) 18%, transparent);
+  color: var(--good);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.title-bar-update:hover {
+  background: color-mix(in srgb, var(--good) 30%, transparent);
+}
+.update-row .bad-text {
+  color: var(--bad-text);
+}
 .shell {
   flex: 1;
   min-height: 0;
