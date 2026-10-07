@@ -10,6 +10,8 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-10-07
+
 ### Added
 
 - **Automatic updates on Windows**: the app looks for a new version every few hours, downloads it in the background, and shows **Restart to update** in the title bar when it's ready. You choose when to restart (it asks first if you're in a room); nothing installs by itself when you close the app. On macOS the title bar offers **Update to …**, which opens the download page. Turn it off in **Settings → About**, where **Check now** also is. This is the only thing the app does on the internet. From this version on, you won't need to download new versions by hand on Windows.
@@ -95,7 +97,8 @@ The first release.
 - Reconnects after short network drops, and switches to TCP when a network blocks WebRTC.
 - Encrypted connections, the PIN kept only in memory, and the window hidden from screenshots while you watch.
 
-[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/nsfxu/lan-screenshare/compare/v1.2.0...v2.0.0
 [1.2.0]: https://github.com/nsfxu/lan-screenshare/compare/v1.1.0...v1.2.0
