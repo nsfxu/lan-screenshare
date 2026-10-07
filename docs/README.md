@@ -7,6 +7,7 @@ Choose your language · Escolha o seu idioma
 | **Start here** · Comece aqui | [Index](en-US/README.md) | [Índice](pt-BR/README.md) |
 | Using the app · Usando o app | [User guide](en-US/user-guide.md) | [Guia do usuário](pt-BR/user-guide.md) |
 | Problems · Problemas | [Troubleshooting](en-US/troubleshooting.md) | [Solução de problemas](pt-BR/troubleshooting.md) |
+| Friends elsewhere · Amigos em outro lugar | [Playing over ZeroTier](en-US/zerotier.md) | [Jogando pelo ZeroTier](pt-BR/zerotier.md) |
 | Setup and scripts · Ambiente e scripts | [Development](en-US/development.md) | [Desenvolvimento](pt-BR/development.md) |
 | How it works · Como funciona | [Architecture](en-US/architecture.md) | [Arquitetura](pt-BR/architecture.md) |
 | Messages · Mensagens | [Protocol](en-US/protocol.md) | [Protocolo](pt-BR/protocol.md) |

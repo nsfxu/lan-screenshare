@@ -29,7 +29,7 @@ flowchart TD
   F -->|No| C
 ```
 
-- Discovery uses **multicast (mDNS)**, which many VPNs, guest Wi-Fi networks and some routers block. **Join by IP** always works if the host can be reached: the host sees its addresses behind the **ⓘ** next to the room's name.
+- Discovery uses **multicast (mDNS)**, which many VPNs, guest Wi-Fi networks and some routers block. **Join by IP** always works if the host can be reached: the host sees its addresses behind the **ⓘ** next to the room's name. Friends on other networks: see [playing over ZeroTier](zerotier.md).
 - The default port is **47800**. If it was busy, the host picked the next free one; the **ⓘ** shows the right one.
 - **Windows firewall**: the first time you host, Windows asks whether to allow ScreenShare. Allow it on **private** networks. If you clicked Cancel, allow it later in *Windows Security → Firewall → Allow an app*.
 - A room that stops answering for 10 seconds is removed from the list. It comes back as soon as it answers again.

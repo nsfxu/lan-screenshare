@@ -19,6 +19,7 @@ flowchart TD
 | Page | For | What's inside |
 |---|---|---|
 | [User guide](user-guide.md) | Everyone | Rooms, sharing, watching, quality, audio, chat, host controls, every setting, privacy, file locations. |
+| [Playing over ZeroTier](zerotier.md) | Everyone | Using ScreenShare with friends on other networks: a ZeroTier network in a few minutes. |
 | [Troubleshooting](troubleshooting.md) | Everyone | Rooms not found, can't join, black video, low quality, audio, CPU, macOS permissions. |
 | [Development guide](development.md) | Contributors | Requirements, scripts, running several instances, build pipeline, debugging, installers, tech stack. |
 | [Architecture](architecture.md) | Contributors | Processes, source layout, main classes, key flows, where state lives. |

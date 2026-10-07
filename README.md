@@ -17,7 +17,7 @@ flowchart LR
 
 ## Highlights
 
-- 🔎 **Rooms find you**: rooms on your network show up by themselves; on a VPN, type the host's address.
+- 🔎 **Rooms find you**: rooms on your network show up by themselves, also with friends elsewhere over [ZeroTier](docs/en-US/zerotier.md); on other VPNs, type the host's address.
 - 🔒 **Public or private rooms**, with a PIN that the host can change at any time.
 - 🖥️ **Everyone can share**, several screens at once, in a grid or a spotlight. Nothing plays until you choose it.
 - 🎚️ **Quality your way**: the streamer sets the maximum, each viewer picks what they receive, and small windows automatically cost less bandwidth.
@@ -80,6 +80,7 @@ npm test
 The full documentation, in English and Portuguese, is in [`docs/`](docs/README.md):
 
 - [User guide](docs/en-US/user-guide.md): every feature and setting.
+- [Playing over ZeroTier](docs/en-US/zerotier.md): friends on other networks, set up in minutes.
 - [Troubleshooting](docs/en-US/troubleshooting.md): when something doesn't work.
 - [Development guide](docs/en-US/development.md): scripts, debugging and installers.
 - [Architecture](docs/en-US/architecture.md), [protocol](docs/en-US/protocol.md), [media pipeline](docs/en-US/media-pipeline.md) and [security](docs/en-US/security.md): how it works inside.
