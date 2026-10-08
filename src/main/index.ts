@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, desktopCapturer, dialog, ipcMain, screen, session, shell } from 'electron'
+import { app, BrowserWindow, clipboard, desktopCapturer, ipcMain, screen, session, shell } from 'electron'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -76,6 +76,8 @@ let mainWindow: BrowserWindow | null = null
 let quitting = false
 /** Hide the app's windows from screen capture (while watching), see setViewerProtection. */
 let viewerProtection = false
+/** The theme's title bar colours (Windows, Linux), for the system buttons over our own title bars. */
+let titleBarColors = { color: '#0f1115', symbolColor: '#e7e9ee' }
 
 process.on('uncaughtException', (err) => log.error('uncaught exception', err))
 process.on('unhandledRejection', (err) => log.error('unhandled rejection', err))
@@ -147,9 +149,16 @@ function createWindow(): void {
             height: 760,
             minWidth: 320,
             minHeight: 200,
-            backgroundColor: '#000000',
+            backgroundColor: titleBarColors.color,
             autoHideMenuBar: true,
-            title: APP_NAME
+            title: APP_NAME,
+            // Like the room's window: our own title bar, with the system's buttons over it.
+            ...(process.platform === 'darwin'
+              ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 12, y: 9 } }
+              : {
+                  titleBarStyle: 'hidden' as const,
+                  titleBarOverlay: { ...titleBarColors, height: TITLE_BAR_HEIGHT }
+                })
           }
         }
       : { action: 'deny' }
@@ -180,22 +189,10 @@ function createWindow(): void {
   // viewers are told instead of timing out.
   win.on('close', (e) => {
     if (quitting || !rooms.getHosted()) return
-    const choice = dialog.showMessageBoxSync(win, {
-      type: 'question',
-      buttons: ['End room and quit', 'Cancel'],
-      defaultId: 1,
-      cancelId: 1,
-      title: 'End room?',
-      message: 'You are hosting a room.',
-      detail: 'Closing ScreenShare ends the room and disconnects all viewers.'
-    })
-    if (choice !== 0) {
-      e.preventDefault()
-      return
-    }
     e.preventDefault()
-    quitting = true
-    void rooms.closeRoom().finally(() => win.destroy())
+    // The page asks in its own dialog (closeConfirmed); a page that can't answer just closes.
+    if (win.webContents.isCrashed()) closeEndingRoom(win)
+    else win.webContents.send(IPC.confirmClose)
   })
   win.on('closed', () => {
     mainWindow = null
@@ -280,15 +277,24 @@ function registerIpc(): void {
   )
   ipcMain.handle(IPC.copyText, (_e, text: string) => clipboard.writeText(String(text)))
   ipcMain.handle(IPC.openLogs, () => shell.openPath(log.dir))
-  ipcMain.handle(IPC.setTitleBarColors, (e, color: unknown, symbolColor: unknown) => {
+  ipcMain.handle(IPC.setTitleBarColors, (_e, color: unknown, symbolColor: unknown) => {
     const hex = /^#[0-9a-f]{6}$/i
-    if (process.platform === 'darwin' || typeof color !== 'string' || typeof symbolColor !== 'string') return
+    if (typeof color !== 'string' || typeof symbolColor !== 'string') return
     if (!hex.test(color) || !hex.test(symbolColor)) return
-    try {
-      BrowserWindow.fromWebContents(e.sender)?.setTitleBarOverlay({ color, symbolColor, height: TITLE_BAR_HEIGHT })
-    } catch (err) {
-      log.debug('title bar colours not applied', err)
+    titleBarColors = { color, symbolColor }
+    if (process.platform === 'darwin') return
+    // Every window: the room's and any stream's own window.
+    for (const w of BrowserWindow.getAllWindows()) {
+      try {
+        w.setTitleBarOverlay({ color, symbolColor, height: TITLE_BAR_HEIGHT })
+      } catch (err) {
+        log.debug('title bar colours not applied', err)
+      }
     }
+  })
+  ipcMain.handle(IPC.closeConfirmed, (e) => {
+    const win = BrowserWindow.fromWebContents(e.sender)
+    if (win) closeEndingRoom(win)
   })
   // Viewers are not allowed to record the stream: hide the window from OS
   // screen capture/screenshots while watching.
@@ -322,6 +328,12 @@ function registerIpc(): void {
   rooms.on('rooms', (list) => mainWindow?.webContents.send(IPC.roomsChanged, list))
   rooms.on('hosted', (hosted) => mainWindow?.webContents.send(IPC.hostedChanged, hosted))
   updater.on('status', (status) => mainWindow?.webContents.send(IPC.updateStatus, status))
+}
+
+/** Ends the room we host (telling everyone), then closes the window. */
+function closeEndingRoom(win: BrowserWindow): void {
+  quitting = true
+  void rooms.closeRoom().finally(() => win.destroy())
 }
 
 function configureSession(): void {

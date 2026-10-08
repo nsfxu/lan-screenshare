@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { pushRecentRoom, sameEndpoint } from '../shared/roomList'
 import type { CodecSupport, DiscoveredRoom, RoomEndpoint, RoomState, Settings } from '../shared/types'
-import { CreateRoomDialog, SettingsPanel, type CreateRoomResult } from './components/Dialogs'
+import { ConfirmDialog, CreateRoomDialog, SettingsPanel, type CreateRoomResult } from './components/Dialogs'
+import { askConfirm } from './lib/confirm'
 import { RoomMembers } from './components/RoomMembers'
 import { RoomsSidebar, type CurrentRoom } from './components/RoomsSidebar'
 import { RoomView } from './components/RoomView'
@@ -151,30 +152,41 @@ export function App() {
   )
 
   /** Before going to another room: leave this one, asking first when that ends the room or a share. */
-  const leaveForAnother = (): boolean => {
+  const leaveForAnother = async (): Promise<boolean> => {
     const s = sessionRef.current
     if (!s) return true
     const name = s.client.room?.name ?? 'this room'
-    const question =
-      s.role === 'host'
-        ? `Switching rooms ends ${name} for everyone. Continue?`
-        : s.publisher.sharing
-          ? `Leave ${name}? This stops sharing your screen.`
-          : null
-    if (question && !confirm(question)) return false
-    leave()
+    if (s.role === 'host') {
+      const ok = await askConfirm({
+        title: `End ${name}?`,
+        message: `Switching rooms ends ${name} for everyone.`,
+        confirm: 'End room and switch',
+        danger: true
+      })
+      if (!ok) return false
+    } else if (s.publisher.sharing) {
+      const ok = await askConfirm({
+        title: `Leave ${name}?`,
+        message: 'This stops sharing your screen.',
+        confirm: 'Leave',
+        danger: true
+      })
+      if (!ok) return false
+    }
+    // The answer may come after the session already ended by itself.
+    if (sessionRef.current === s) leave()
     return true
   }
 
-  const switchTo = (room: DiscoveredRoom): void => {
+  const switchTo = async (room: DiscoveredRoom): Promise<void> => {
     if (busyKey || (current?.endpoint && sameEndpoint(current.endpoint, room))) return
-    if (leaveForAnother()) void join(room)
+    if (await leaveForAnother()) void join(room)
   }
 
   /** A remembered room that isn't in the list: ask it directly, it may be on a VPN. */
   const switchToEndpoint = async (ep: RoomEndpoint): Promise<void> => {
     if (busyKey || (current?.endpoint && sameEndpoint(current.endpoint, ep))) return
-    if (!leaveForAnother()) return
+    if (!(await leaveForAnother())) return
     const key = `${ep.address}:${ep.port}`
     setBusyKey(key)
     try {
@@ -189,7 +201,7 @@ export function App() {
 
   // --- hosting ---------------------------------------------------------------------
   const create = async (req: CreateRoomResult): Promise<void> => {
-    if (!settings || !leaveForAnother()) return
+    if (!settings || !(await leaveForAnother())) return
     setCreateBusy(true)
     setCreateError(null)
     let hostedCreated = false
@@ -218,6 +230,23 @@ export function App() {
     }
   }
 
+  // Closing the window while hosting: asked here, in the app's dialog (the main process waits for the answer).
+  useEffect(
+    () =>
+      window.api.system.onConfirmClose(() => {
+        const name = sessionRef.current?.client.room?.name ?? 'the room'
+        void askConfirm({
+          title: 'End the room and quit?',
+          message: `You're hosting ${name}. Closing ScreenShare ends it and disconnects everyone.`,
+          confirm: 'End room and quit',
+          danger: true
+        }).then((ok) => {
+          if (ok) void window.api.system.closeConfirmed()
+        })
+      }),
+    []
+  )
+
   if (!settings) return <div className="boot">Loading…</div>
 
   const roomsFloatingNow = !roomsDocked && (roomsFloating || !!pinPrompt)
@@ -228,18 +257,24 @@ export function App() {
   }
 
   /** Restarts into a downloaded update, after asking when that would end or leave a room. */
-  const restartToUpdate = (): void => {
+  const restartToUpdate = async (): Promise<void> => {
     const s = sessionRef.current
     if (s) {
       const name = s.client.room?.name ?? 'this room'
-      const question =
-        s.role === 'host'
-          ? `Restarting to update ends ${name} for everyone. Restart now?`
-          : `Restarting to update leaves ${name}. Restart now?`
-      if (!confirm(question)) return
+      const ok = await askConfirm({
+        title: 'Restart to update?',
+        message:
+          s.role === 'host'
+            ? `Restarting to update ends ${name} for everyone.`
+            : `Restarting to update leaves ${name}.`,
+        confirm: 'Restart now',
+        danger: s.role === 'host'
+      })
+      if (!ok) return
     }
     void window.api.update.install()
   }
+
 
   return (
     <>
@@ -324,6 +359,8 @@ export function App() {
           onClose={() => setSettingsOpen(false)}
         />
       )}
+
+      <ConfirmDialog />
 
       <div className="toasts" aria-live="polite">
         {toasts.map((t) => (

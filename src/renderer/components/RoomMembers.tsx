@@ -1,5 +1,6 @@
 import { useState, type MouseEvent } from 'react'
 import type { Participant } from '../../shared/types'
+import { askConfirm } from '../lib/confirm'
 import { latencyClass } from '../lib/format'
 import type { WatcherInfo } from '../lib/publisher'
 import { useRoomPeople } from '../lib/roomPeople'
@@ -61,7 +62,10 @@ export function RoomMembers({ session }: { session: Session }) {
           label: `Stop ${p.name}'s stream`,
           icon: 'stop',
           danger: true,
-          onSelect: () => confirm(`Stop ${p.name}'s stream?`) && client.send({ type: 'stop-stream', userId: p.id })
+          onSelect: () =>
+            void askConfirm({ title: `Stop ${p.name}'s stream?`, confirm: 'Stop stream', danger: true }).then(
+              (ok) => ok && client.send({ type: 'stop-stream', userId: p.id })
+            )
         })
       }
       if (p.role === 'viewer') {
@@ -69,7 +73,13 @@ export function RoomMembers({ session }: { session: Session }) {
           label: 'Remove from room',
           icon: 'kick',
           danger: true,
-          onSelect: () => confirm(`Remove ${p.name} from the room?`) && client.send({ type: 'kick', userId: p.id })
+          onSelect: () =>
+            void askConfirm({
+              title: `Remove ${p.name} from the room?`,
+              message: "They can't come back to this room.",
+              confirm: 'Remove',
+              danger: true
+            }).then((ok) => ok && client.send({ type: 'kick', userId: p.id }))
         })
       }
     }

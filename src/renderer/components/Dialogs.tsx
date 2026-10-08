@@ -18,6 +18,7 @@ import type { AppInfo, AudioChoice, CodecSupport, DiscoveredRoom, Privacy, Setti
 import { shortCodecName } from '../lib/codecs'
 import { errorMessage } from '../lib/format'
 import { loadPicture, renderAvatar } from '../lib/images'
+import { useConfirmRequest } from '../lib/confirm'
 import { useUpdateStatus } from '../lib/update'
 import { Avatar } from './Avatar'
 import { Icon } from './Icon'
@@ -804,5 +805,33 @@ function UpdateRow({ onRestart }: { onRestart(): void }) {
         </button>
       )}
     </div>
+  )
+}
+
+/**
+ * The app's own confirmation dialog (see askConfirm in lib/confirm.ts), so
+ * questions look like the rest of the app instead of the system's plain box.
+ */
+export function ConfirmDialog() {
+  const question = useConfirmRequest()
+  if (!question) return null
+  return (
+    <Modal title={question.title} onClose={() => question.answer(false)}>
+      <div className="modal-body confirm-body">
+        {question.message && <p className="confirm-message">{question.message}</p>}
+        <footer className="modal-footer">
+          <button className="btn ghost" autoFocus={question.danger} onClick={() => question.answer(false)}>
+            {question.cancel ?? 'Cancel'}
+          </button>
+          <button
+            className={`btn ${question.danger ? 'solid-danger' : 'primary'}`}
+            autoFocus={!question.danger}
+            onClick={() => question.answer(true)}
+          >
+            {question.confirm}
+          </button>
+        </footer>
+      </div>
+    </Modal>
   )
 }

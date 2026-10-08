@@ -26,6 +26,9 @@ import { CHAT_DOCKED_MIN_WIDTH, PANEL_STATES, useElementSize, useRemembered, use
 import { getLevel, isSilent, setVolume, toggleMute, useLevel } from '../lib/volume'
 import { useAutoContentHint } from '../lib/autoContentHint'
 import { useGameCursor } from '../lib/gameCursor'
+import { usePlatform } from '../lib/appVersion'
+import { askConfirm } from '../lib/confirm'
+import { useIdleControls } from '../lib/idleControls'
 import { openStreamWindow } from '../lib/streamWindow'
 import { audioDefaults, type SharingState } from '../lib/publisher'
 import type { ConnectionState } from '../lib/roomClient'
@@ -115,20 +118,12 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const stageSize = useElementSize(stageRef)
   // Full screen is the stage: the focused stream with everyone else and its controls below.
   const [stageFullscreen, setStageFullscreen] = useState(false)
-  /** The controls float over the stage and show while the mouse moves there (see wake). */
-  const [controlsAwake, setControlsAwake] = useState(true)
-  const controlsTimer = useRef<number | null>(null)
-  /** Where the pointer last was: Chromium also sends mouse moves when the page changes under a still pointer. */
-  const lastPointer = useRef<{ x: number; y: number } | null>(null)
-  const controlsRef = useRef<HTMLDivElement>(null)
-  const [controlsFocused, setControlsFocused] = useState(false)
+  /** The controls float over the stage and show while the mouse moves there (in full screen, so do the strip and the cursor). */
+  const idleControls = useIdleControls(CONTROLS_IDLE_MS)
   /** Streams playing in a window of their own, by streamer id. */
   const [streamWindows, setStreamWindows] = useState<ReadonlyMap<string, { win: Window; root: HTMLElement }>>(new Map())
   const streamWindowsRef = useRef(streamWindows)
   streamWindowsRef.current = streamWindows
-  /** Where the chat button goes: the title bar's right end (see TitleBar). */
-  const [titleSlot, setTitleSlot] = useState<HTMLElement | null>(null)
-  useEffect(() => setTitleSlot(document.getElementById('title-bar-actions')), [])
   const closeInfo = useCallback(() => setInfoOpen(false), [])
   const [, setNow] = useState(Date.now())
   const gameCursor = useGameCursor(publisher, sharing.sharing ? publisher.chosenSourceId : null)
@@ -195,28 +190,8 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     document.addEventListener('fullscreenchange', onChange)
     return () => document.removeEventListener('fullscreenchange', onChange)
   }, [])
-  // The controls show while the mouse moves over the stage, and hide after a moment
-  // without movement or when it leaves (in full screen, so do the strip and the cursor).
-  const wake = (): void => {
-    setControlsAwake(true)
-    if (controlsTimer.current) clearTimeout(controlsTimer.current)
-    controlsTimer.current = window.setTimeout(() => {
-      // Still pointing at them: they stay until the mouse moves off.
-      if (controlsRef.current?.matches(':hover')) wake()
-      else setControlsAwake(false)
-    }, CONTROLS_IDLE_MS)
-  }
-  const sleep = (): void => {
-    if (controlsTimer.current) clearTimeout(controlsTimer.current)
-    setControlsAwake(false)
-  }
-  useEffect(() => {
-    wake()
-    return () => {
-      if (controlsTimer.current) clearTimeout(controlsTimer.current)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stageFullscreen])
+  // Going in or out of full screen shows the controls again for a moment.
+  useEffect(() => idleControls.wake(), [stageFullscreen]) // eslint-disable-line react-hooks/exhaustive-deps
   /** Focus `id` and fill the screen with the stage, or leave full screen. */
   const toggleFullscreen = (id: string): void => {
     if (document.fullscreenElement) {
@@ -278,7 +253,10 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   useEffect(() => {
     if (focus === null) return
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape' && !document.fullscreenElement) setFocus(null)
+      // Esc first closes whatever is open on top (a dialog, a menu); only then does it leave the focus view.
+      if (e.key !== 'Escape' || document.fullscreenElement) return
+      if (document.querySelector('.modal-backdrop, [role="menu"]')) return
+      setFocus(null)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -338,8 +316,12 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   }
 
   const endRoom = (): void => {
-    if (!confirm('End the room for everyone?')) return
-    onLeave()
+    void askConfirm({
+      title: 'End the room for everyone?',
+      message: 'Everyone in the room is disconnected.',
+      confirm: 'End room',
+      danger: true
+    }).then((ok) => ok && onLeave())
   }
 
   /** Who watches `id`'s stream. */
@@ -446,7 +428,10 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
         label: `Stop ${p.name}'s stream`,
         icon: 'stop',
         danger: true,
-        onSelect: () => confirm(`Stop ${p.name}'s stream?`) && client.send({ type: 'stop-stream', userId: p.id })
+        onSelect: () =>
+          void askConfirm({ title: `Stop ${p.name}'s stream?`, confirm: 'Stop stream', danger: true }).then(
+            (ok) => ok && client.send({ type: 'stop-stream', userId: p.id })
+          )
       })
     }
     if (p.role === 'viewer') {
@@ -454,7 +439,13 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
         label: 'Remove from room',
         icon: 'kick',
         danger: true,
-        onSelect: () => confirm(`Remove ${p.name} from the room?`) && client.send({ type: 'kick', userId: p.id })
+        onSelect: () =>
+          void askConfirm({
+            title: `Remove ${p.name} from the room?`,
+            message: "They can't come back to this room.",
+            confirm: 'Remove',
+            danger: true
+          }).then((ok) => ok && client.send({ type: 'kick', userId: p.id }))
       })
     }
     return items
@@ -631,18 +622,9 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
 
   // The focused stream you watch: the volume and "new window" act on it.
   const focusedStream = focused && subs.has(focused.id) ? focused : null
-  const controlsShown = controlsAwake || controlsFocused || infoOpen || showStats || menu?.label === 'Sharing'
+  const controlsShown = idleControls.shown || infoOpen || showStats || menu?.label === 'Sharing'
   const controls = (
-    <div
-      className="stage-controls"
-      ref={controlsRef}
-      onMouseEnter={wake}
-      // Keyboard focus keeps them up; a button clicked with the mouse keeps focus too, and mustn't.
-      onFocus={(e) => setControlsFocused(e.target.matches(':focus-visible'))}
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setControlsFocused(false)
-      }}
-    >
+    <div className="stage-controls" {...idleControls.controls}>
       <div className="controls-side">
         {roomDetails}
         {focused && shown.length > 1 && (
@@ -675,12 +657,12 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
               menu?.label === 'Sharing' ? setMenu(null) : openMenu(menuAbove(e.currentTarget), 'Sharing', [sharingItems()])
             }
           >
-            <Icon name={sharing.paused ? 'pause' : 'shareScreen'} size={20} stroke={2.3} />
+            <Icon name={sharing.paused ? 'pause' : 'shareScreen'} size={22} stroke={2.3} />
             <Icon name="chevronUp" size={14} stroke={2.3} />
           </button>
         ) : (
           <button className="bar-btn share" data-tip="Share your screen or a window" onClick={() => setPickSource(true)}>
-            <Icon name="shareScreen" size={20} stroke={2.3} /> Share screen
+            <Icon name="shareScreen" size={22} stroke={2.3} /> Share screen
           </button>
         )}
         <button
@@ -689,7 +671,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           aria-label={isHost ? 'End room' : 'Leave'}
           onClick={isHost ? endRoom : () => onLeave()}
         >
-          <Icon name="hangUp" size={22} stroke={2.3} />
+          <Icon name="hangUp" size={24} stroke={2.3} />
         </button>
       </div>
       <div className="controls-side end">
@@ -718,35 +700,26 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
 
   return (
     <div className="room">
-      {titleSlot &&
-        createPortal(
-          <>
-            {connection === 'reconnecting' && <span className="status-pill warn">Reconnecting…</span>}
-            <button
-              className={`title-bar-btn chat-toggle ${chatOpen ? 'on' : ''}`}
-              data-tip={chatOpen ? 'Hide chat' : unread > 0 ? `Show chat (${unread} new)` : 'Show chat'}
-              aria-label={chatOpen ? 'Hide chat' : unread > 0 ? `Show chat (${unread} unread)` : 'Show chat'}
-              aria-expanded={chatOpen}
-              onClick={toggleChat}
-            >
-              <Icon name="chat" size={16} />
-              {unread > 0 && <span className="unread-badge">{unread > 99 ? '99+' : unread}</span>}
-            </button>
-          </>,
-          titleSlot
-        )}
+      {/* Floating at the top right, just under the window's own buttons. */}
+      <div className="room-corner">
+        {connection === 'reconnecting' && <span className="status-pill warn">Reconnecting…</span>}
+        <button
+          className={`bar-btn corner-btn chat-toggle ${chatOpen ? 'on' : ''}`}
+          data-tip={chatOpen ? 'Hide chat' : unread > 0 ? `Show chat (${unread} new)` : 'Show chat'}
+          aria-label={chatOpen ? 'Hide chat' : unread > 0 ? `Show chat (${unread} unread)` : 'Show chat'}
+          aria-expanded={chatOpen}
+          onClick={toggleChat}
+        >
+          <Icon name="chat" size={20} stroke={2.3} />
+          {unread > 0 && <span className="unread-badge">{unread > 99 ? '99+' : unread}</span>}
+        </button>
+      </div>
       <div className="room-body">
         <main className="stage">
           <div
             className={`stage-area ${stageFullscreen ? 'fullscreen' : ''} ${controlsShown ? '' : 'idle'}`}
             ref={stageRef}
-            onMouseMove={(e) => {
-              const last = lastPointer.current
-              if (last && last.x === e.screenX && last.y === e.screenY) return
-              lastPointer.current = { x: e.screenX, y: e.screenY }
-              wake()
-            }}
-            onMouseLeave={sleep}
+            {...idleControls.area}
           >
             {stage}
             {controls}
@@ -856,7 +829,13 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
         const p = participants.find((x) => x.id === id)
         return sub
           ? createPortal(
-              <StreamWindow sub={sub} participant={p} avatar={avatars.get(id) ?? null} win={win} />,
+              <StreamWindow
+                sub={sub}
+                participant={p}
+                avatar={avatars.get(id) ?? null}
+                win={win}
+                onBack={() => closeStreamWindow(id)}
+              />,
               root,
               id
             )
@@ -1199,52 +1178,102 @@ function saveWatchQuality(name: string | undefined, id: WatchQualityId): void {
 }
 
 /**
- * A stream in a window of its own (rendered there with a portal): the picture,
- * its name, double-click for full screen. It plays the subscription the room
- * already has, at the size of that window.
+ * A stream in a window of its own (rendered there with a portal): the app's
+ * title bar, the picture with its name, and the same floating controls as the
+ * room (volume, back to the room, full screen). It plays the subscription the
+ * room already has, at the size of that window.
  */
 function StreamWindow({
   sub,
   participant,
   avatar,
-  win
+  win,
+  onBack
 }: {
   sub: Subscription
   participant: Participant | undefined
   avatar: string | null
   win: Window
+  onBack(): void
 }) {
+  const platform = usePlatform()
   const [stream, setStream] = useState<MediaStream | null>(sub.stream)
   useEffect(() => {
     setStream(sub.stream)
     return sub.on('stream', setStream)
   }, [sub])
+  const stageRef = useRef<HTMLDivElement>(null)
+  const [fullscreen, setFullscreen] = useState(false)
+  const idleControls = useIdleControls(CONTROLS_IDLE_MS)
+  useEffect(() => {
+    const doc = win.document
+    const onChange = (): void => {
+      setFullscreen(!!doc.fullscreenElement)
+      idleControls.wake()
+    }
+    doc.addEventListener('fullscreenchange', onChange)
+    return () => doc.removeEventListener('fullscreenchange', onChange)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [win])
   const name = participant?.name ?? 'Someone'
   const toggleFullscreen = (): void => {
-    const doc = win.document
-    if (doc.fullscreenElement) void doc.exitFullscreen()
-    else void doc.documentElement.requestFullscreen()
+    if (win.document.fullscreenElement) void win.document.exitFullscreen()
+    else void stageRef.current?.requestFullscreen()
   }
   return (
-    <div className="stream-window-view" onDoubleClick={toggleFullscreen} title="Double-click for full screen">
-      <ScreenViewer
-        stream={stream}
-        volumeKey={participant?.name}
-        onViewHeight={(px) => sub.setViewHeight(px)}
-        placeholder={
-          stream ? null : (
-            <div className="placeholder-content">
-              <div className="spinner" />
-              <h3>Connecting to {name}…</h3>
-            </div>
-          )
-        }
-      />
-      <div className="tile-bar">
-        <span className="tile-name">
-          <Avatar name={name} color={participant?.color} image={avatar} size="tiny" />
-          {name}
+    <div className="stream-window-layout">
+      <header className={`title-bar ${platform === 'darwin' ? 'mac' : ''}`}>
+        <span className="title-bar-mark" aria-hidden="true">
+          <Icon name="screen" size={12} />
         </span>
+        <span className="title-bar-name">ScreenShare</span>
+        <span className="title-bar-room">· {name}&apos;s stream</span>
+      </header>
+      <div
+        ref={stageRef}
+        className={`stream-window-stage ${fullscreen ? 'fullscreen' : ''} ${idleControls.shown ? '' : 'idle'}`}
+        {...idleControls.area}
+        onDoubleClick={(e) => {
+          if (!(e.target as Element).closest('button, input')) toggleFullscreen()
+        }}
+      >
+        <ScreenViewer
+          stream={stream}
+          volumeKey={participant?.name}
+          onViewHeight={(px) => sub.setViewHeight(px)}
+          placeholder={
+            stream ? null : (
+              <div className="placeholder-content">
+                <div className="spinner" />
+                <h3>Connecting to {name}…</h3>
+              </div>
+            )
+          }
+        />
+        <div className="tile-bar">
+          <span className="tile-name">
+            <Avatar name={name} color={participant?.color} image={avatar} size="tiny" />
+            {name}
+          </span>
+        </div>
+        <div className="stage-controls" {...idleControls.controls}>
+          <div className="controls-side" />
+          <div className="controls-center" />
+          <div className="controls-side end">
+            {participant?.stream?.audio && <VolumeControl name={participant.name} />}
+            <button className="bar-btn" data-tip="Back to the room" aria-label="Back to the room" onClick={onBack}>
+              <Icon name="popIn" size={20} stroke={2.3} />
+            </button>
+            <button
+              className="bar-btn"
+              data-tip={fullscreen ? 'Leave full screen (Esc)' : 'Full screen'}
+              aria-label={fullscreen ? 'Exit full screen' : 'Full screen'}
+              onClick={toggleFullscreen}
+            >
+              <Icon name={fullscreen ? 'exitFullscreen' : 'fullscreen'} size={20} stroke={2.3} />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
