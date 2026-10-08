@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { QUALITY_PRESETS, WATCH_QUALITIES, getWatchQuality, lowerPreset, type WatchQualityId } from '../../shared/quality'
 import { countUnread } from '../../shared/chat'
 import { struggleMessage, type StruggleKind } from '../../shared/struggle'
@@ -39,8 +39,12 @@ import { RoomInfo } from './RoomInfo'
 import { InviteTile, PersonTile, useClickToFocus } from './RoomStage'
 import { ScreenViewer } from './ScreenViewer'
 
-/** How many pictures the room header shows before "+N". */
-const HEADER_FACES = 5
+/** Who the stage shows: everyone, or only the people sharing (remembered). */
+const STAGE_FILTERS = ['everyone', 'streams'] as const
+type StageFilter = (typeof STAGE_FILTERS)[number]
+
+/** How many viewers' pictures a stream's name bar shows next to the count. */
+const WATCHER_FACES = 3
 
 /** In full screen, the strip and controls (and the cursor) hide after this long without mouse movement. */
 const FULLSCREEN_IDLE_MS = 2500
@@ -80,6 +84,13 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const [ownStats, setOwnStats] = useState<HostStats | null>(null)
   const [subs, setSubs] = useState<ReadonlyMap<string, Subscription>>(new Map(watches.all))
   const [focus, setFocus] = useState<string | null>(null)
+  const focusRef = useRef(focus)
+  focusRef.current = focus
+  /** How many streams we watched at the last change: starting the first one focuses it. */
+  const watchedCount = useRef(watches.all.size)
+  /** Set while "Watch all" starts several streams at once, which keeps the grid. */
+  const watchingMany = useRef(false)
+  const [stageFilter, setStageFilter] = useRemembered<StageFilter>('stage-filter', 'everyone', STAGE_FILTERS)
   const [snapshots, setSnapshots] = useState<ReadonlyMap<string, string>>(new Map(client.snapshots))
   const [avatars, setAvatars] = useState<ReadonlyMap<string, string>>(new Map(client.avatars))
   const [hosted, setHosted] = useState<HostedRoom | null>(session.hosted)
@@ -101,6 +112,16 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   // Messages read while the chat was open; the rest count as unread while it's hidden.
   const [seen, setSeen] = useState<ReadonlySet<string>>(() => new Set(client.messages.map((m) => m.id)))
   const stageRef = useRef<HTMLDivElement>(null)
+  // A floating chat stops above the control bar, so its own button there stays reachable.
+  const controlBarRef = useRef<HTMLDivElement>(null)
+  const [controlBarHeight, setControlBarHeight] = useState(0)
+  useEffect(() => {
+    const bar = controlBarRef.current
+    if (!bar) return
+    const observer = new ResizeObserver(() => setControlBarHeight(bar.offsetHeight))
+    observer.observe(bar)
+    return () => observer.disconnect()
+  }, [])
   const stageSize = useElementSize(stageRef)
   // Full screen is the stage: the focused stream with everyone else and its controls below.
   const [stageFullscreen, setStageFullscreen] = useState(false)
@@ -149,7 +170,14 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
       publisher.on('stats', setOwnStats),
       publisher.on('stopped', (reason) => onToast(reason, 'info')),
       publisher.on('struggle', setStruggle),
-      watches.on('changed', (m) => setSubs(new Map(m)))
+      watches.on('changed', (m) => {
+        // Starting to watch a stream, with nothing else watched or focused, opens it focused.
+        if (watchedCount.current === 0 && m.size === 1 && !watchingMany.current && focusRef.current === null) {
+          setFocus([...m.keys()][0])
+        }
+        watchedCount.current = m.size
+        setSubs(new Map(m))
+      })
     ]
     if (session.role === 'host') offs.push(window.api.host.onChanged((h) => h && setHosted(h)))
     return () => offs.forEach((o) => o())
@@ -262,7 +290,8 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
 
   const liveOthers = participants.filter((p) => p.stream && p.id !== client.selfId)
   const unwatched = liveOthers.filter((p) => !subs.has(p.id))
-  const watcherCount = (id: string): number => participants.filter((p) => p.watching.includes(id)).length
+  /** Who watches `id`'s stream. */
+  const watchersOf = (id: string): Participant[] => participants.filter((p) => p.watching.includes(id))
   // The notice goes away by itself once the problem has gone (or sharing stopped).
   const struggleShown = struggle && sharing.sharing && ownStats?.struggling.includes(struggle) ? struggle : null
   const lower = lowerPreset(settings.maxQuality)
@@ -277,6 +306,20 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
       a.joinedAt - b.joinedAt
   )
   const alone = participants.length <= 1
+  // "Show only streams" leaves out people who aren't sharing, unless nobody is (the stage is never empty).
+  const anyoneSharing = people.some((p) => p.stream)
+  const canFilter = anyoneSharing && people.some((p) => !p.stream)
+  const shown = stageFilter === 'streams' && anyoneSharing ? people.filter((p) => p.stream) : people
+  const hiddenCount = people.length - shown.length
+  const toggleFilter = (): void => setStageFilter(stageFilter === 'streams' ? 'everyone' : 'streams')
+  const filterItems = (): MenuItem[] =>
+    canFilter
+      ? [
+          stageFilter === 'streams'
+            ? { label: 'Show everyone', icon: 'users', onSelect: toggleFilter }
+            : { label: 'Show only streams', icon: 'filter', onSelect: toggleFilter }
+        ]
+      : []
   const inviteAddress = hosted
     ? hosted.addresses[0]
       ? `${hosted.addresses[0]}:${hosted.port}`
@@ -327,14 +370,14 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           : { label: 'Watch stream', icon: 'eye', onSelect: () => watches.watch(p.id) }
       )
     }
-    if (people.length > 1) {
+    if (shown.length > 1) {
       items.push({
         label: focus === p.id ? 'Back to grid' : 'Focus',
         icon: focus === p.id ? 'exitFullscreen' : 'fit',
         onSelect: () => setFocus(focus === p.id ? null : p.id)
       })
     }
-    return items
+    return [...items, ...filterItems()]
   }
 
   /** The host's actions on someone, at the end of their tile's menu. */
@@ -376,7 +419,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const renderTile = (p: Participant, small: boolean, collapsed = false) => {
     const focused = focus === p.id
     const onFocus = (): void => setFocus(focused ? null : p.id)
-    const onSelfMenu = rightClick('Your stream', () => [selfItems()])
+    const onSelfMenu = rightClick('Your stream', () => [selfItems(), filterItems()])
     if (p.id === client.selfId) {
       if (ownStream && showSelf) {
         return (
@@ -391,6 +434,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
             onFocus={onFocus}
             onFullscreen={() => toggleFullscreen(p.id)}
             onContextMenu={onSelfMenu}
+            watchers={<Watchers people={watchersOf(p.id)} avatars={avatars} selfId={client.selfId} small={small} />}
           />
         )
       }
@@ -407,7 +451,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
               ? {
                   snapshot: ownSnapshot,
                   paused: sharing.paused,
-                  watchers: watcherCount(p.id),
+                  watchers: watchersOf(p.id).length,
                   action: 'Show my stream',
                   actionLabel: 'Show your own stream',
                   onAction: () => setShowSelf(true)
@@ -440,6 +484,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           menuItems={personItems(p)}
           moderation={moderationItems(p)}
           onMenu={(at, groups) => openMenu(at, `${p.name}'s stream`, groups)}
+          watchers={<Watchers people={watchersOf(p.id)} avatars={avatars} selfId={client.selfId} small={small} />}
         />
       )
     }
@@ -456,7 +501,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
             ? {
                 snapshot: snapshots.get(p.id) ?? null,
                 paused: p.stream.paused,
-                watchers: watcherCount(p.id),
+                watchers: watchersOf(p.id).length,
                 action: 'Watch stream',
                 actionLabel: `Watch ${p.name}'s stream`,
                 onAction: () => watches.watch(p.id)
@@ -471,11 +516,11 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     )
   }
 
-  const focused = focus ? people.find((p) => p.id === focus) : undefined
+  const focused = focus ? shown.find((p) => p.id === focus) : undefined
   // Tiles keep a 16:9 shape and grow as large as the stage allows (6 px padding and gaps).
-  const grid = bestTileGrid(people.length + (alone ? 1 : 0), stageSize.width - 12, stageSize.height - 12)
+  const grid = bestTileGrid(shown.length + (alone ? 1 : 0), stageSize.width - 12, stageSize.height - 12)
   const stage =
-    focused && people.length > 1 ? (
+    focused && shown.length > 1 ? (
       <div className={`stage-spotlight ${strip === 'closed' ? 'strip-closed' : ''}`}>
         <div className="spotlight-main">{renderTile(focused, false)}</div>
         <div className="focus-bar">
@@ -491,7 +536,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
             onClick={() => setStrip(strip === 'open' ? 'closed' : 'open')}
           >
             <Icon name={strip === 'open' ? 'chevronDown' : 'chevronUp'} size={14} />
-            {strip === 'open' ? 'Hide others' : `Show others (${people.length - 1})`}
+            {strip === 'open' ? 'Hide others' : `Show others (${shown.length - 1})`}
           </button>
           <span className="focus-bar-side focus-bar-controls">
             {subs.has(focused.id) && focused.stream?.audio && <VolumeControl name={focused.name} />}
@@ -508,7 +553,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           </span>
         </div>
         <div className="spotlight-strip" hidden={strip === 'closed'}>
-          {people.filter((p) => p !== focused).map((p) => renderTile(p, true, strip === 'closed'))}
+          {shown.filter((p) => p !== focused).map((p) => renderTile(p, true, strip === 'closed'))}
         </div>
       </div>
     ) : (
@@ -516,7 +561,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
         className="stage-grid"
         style={{ gridTemplateColumns: `repeat(${grid.columns}, ${grid.width}px)`, gridAutoRows: `${grid.height}px` }}
       >
-        {people.map((p) => renderTile(p, false))}
+        {shown.map((p) => renderTile(p, false))}
         {alone && (
           <InviteTile
             address={inviteAddress}
@@ -529,63 +574,33 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
       </div>
     )
 
-  const liveCount = room?.streams ?? 0
+  const roomDetails = (
+    <div className="room-info-anchor">
+      <button
+        className={`btn icon-only room-info-button ${infoOpen ? 'active' : ''}`}
+        title="Room details"
+        aria-label="Room details"
+        aria-expanded={infoOpen}
+        onClick={() => setInfoOpen((v) => !v)}
+      >
+        <Icon name="info" />
+      </button>
+      {infoOpen && (
+        <RoomInfo
+          room={room}
+          hosted={isHost ? hosted : null}
+          endpoint={session.endpoint}
+          rttMs={client.rttMs}
+          onToast={onToast}
+          onEndRoom={endRoom}
+          onClose={closeInfo}
+        />
+      )}
+    </div>
+  )
+
   return (
     <div className="room">
-      <header className="room-header">
-        <div className="room-title">
-          <h2 title={room?.name}>{room?.name ?? 'Room'}</h2>
-          <button
-            className={`icon-btn room-info-button ${infoOpen ? 'active' : ''}`}
-            title="Room details"
-            aria-label="Room details"
-            aria-expanded={infoOpen}
-            onClick={() => setInfoOpen((v) => !v)}
-          >
-            <Icon name="info" size={17} />
-          </button>
-          <span
-            className="room-people"
-            title={people.map((p) => (p.id === client.selfId ? `${p.name} (you)` : p.name)).join('\n')}
-            aria-label={`${participants.length} ${participants.length === 1 ? 'person' : 'people'}: ${people.map((p) => p.name).join(', ')}`}
-          >
-            {people.slice(0, HEADER_FACES).map((p) => (
-              <Avatar
-                key={p.id}
-                name={p.name}
-                color={p.color}
-                image={avatars.get(p.id) ?? (p.id === client.selfId ? settings.avatar : null)}
-                size="tiny"
-              />
-            ))}
-            {people.length > HEADER_FACES && <span className="room-people-more">+{people.length - HEADER_FACES}</span>}
-          </span>
-          {liveCount > 0 && <span className="room-count-live">{liveCount} live</span>}
-          {connection === 'reconnecting' && <span className="status-pill warn">Reconnecting…</span>}
-        </div>
-        <button
-          className={`icon-btn chat-toggle ${chatOpen ? 'active' : ''}`}
-          title={chatOpen ? 'Hide chat' : 'Show chat'}
-          aria-label={chatOpen ? 'Hide chat' : unread > 0 ? `Show chat (${unread} unread)` : 'Show chat'}
-          aria-expanded={chatOpen}
-          onClick={toggleChat}
-        >
-          <Icon name="chat" size={18} />
-          {unread > 0 && <span className="unread-badge">{unread > 99 ? '99+' : unread}</span>}
-        </button>
-        {infoOpen && (
-          <RoomInfo
-            room={room}
-            hosted={isHost ? hosted : null}
-            endpoint={session.endpoint}
-            rttMs={client.rttMs}
-            onToast={onToast}
-            onEndRoom={endRoom}
-            onClose={closeInfo}
-          />
-        )}
-      </header>
-
       <div className="room-body">
         <main className="stage">
           <div
@@ -676,13 +691,37 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
               </button>
             </div>
           )}
-          <div className="control-bar">
+          <div className="control-bar" ref={controlBarRef}>
+            <div className="control-side">
+              {connection === 'reconnecting' && <span className="status-pill warn">Reconnecting…</span>}
+              {canFilter && (
+                <button
+                  className={`btn ${stageFilter === 'streams' ? 'active' : ''}`}
+                  aria-label="Only streams"
+                  aria-pressed={stageFilter === 'streams'}
+                  title={
+                    stageFilter === 'streams'
+                      ? `Showing only people who share (${hiddenCount} hidden): click to show everyone`
+                      : 'Show only the people who share, so streams get all the space'
+                  }
+                  onClick={toggleFilter}
+                >
+                  <Icon name="filter" />
+                  <span className="btn-label">Only streams</span>
+                </button>
+              )}
+            </div>
+            <div className="control-center">
             {unwatched.length > 1 && (
               <button
                 className="btn"
                 aria-label="Watch all"
                 title="Watch everyone who is sharing"
-                onClick={() => unwatched.forEach((p) => watches.watch(p.id))}
+                onClick={() => {
+                  watchingMany.current = true
+                  unwatched.forEach((p) => watches.watch(p.id))
+                  watchingMany.current = false
+                }}
               >
                 <Icon name="eye" />
                 <span className="btn-label">Watch all</span>
@@ -729,10 +768,28 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
                 <Icon name="screen" /> Share screen
               </button>
             )}
+            {roomDetails}
+            </div>
+            <div className="control-side end">
+              <button
+                className={`btn icon-only chat-toggle ${chatOpen ? 'active' : ''}`}
+                title={chatOpen ? 'Hide chat' : 'Show chat'}
+                aria-label={chatOpen ? 'Hide chat' : unread > 0 ? `Show chat (${unread} unread)` : 'Show chat'}
+                aria-expanded={chatOpen}
+                onClick={toggleChat}
+              >
+                <Icon name="chat" />
+                {unread > 0 && <span className="unread-badge">{unread > 99 ? '99+' : unread}</span>}
+              </button>
+            </div>
           </div>
         </main>
 
-        <aside className={`sidebar ${chatDocked ? '' : 'floating'}`} hidden={!chatOpen}>
+        <aside
+          className={`sidebar ${chatDocked ? '' : 'floating'}`}
+          hidden={!chatOpen}
+          style={chatDocked ? undefined : { bottom: controlBarHeight }}
+        >
           <ChatPanel
             messages={messages}
             roomName={room?.name ?? 'the room'}
@@ -771,6 +828,8 @@ interface TileChrome {
   onFocus(): void
   /** Double-click: focus this tile and fill the screen with the stage. */
   onFullscreen(): void
+  /** Who watches this stream, at the right of its name bar. */
+  watchers: ReactNode
 }
 
 /** A tile's own double-click: full screen (a single click focuses, see useClickToFocus). */
@@ -790,7 +849,8 @@ function SelfTile({
   small,
   onFocus,
   onFullscreen,
-  onContextMenu
+  onContextMenu,
+  watchers
 }: TileChrome & { stream: MediaStream | null; sharing: SharingState; stats: HostStats | null }) {
   const clickToFocus = useClickToFocus(onFocus)
   const overlay =
@@ -831,6 +891,7 @@ function SelfTile({
         <span className="tile-name">
           <Icon name="screen" size={13} /> Your screen
         </span>
+        {watchers}
       </div>
     </div>
   )
@@ -850,7 +911,8 @@ function RemoteTile({
   collapsed,
   menuItems,
   moderation,
-  onMenu
+  onMenu,
+  watchers
 }: TileChrome & {
   sub: Subscription
   participant: Participant | undefined
@@ -887,6 +949,8 @@ function RemoteTile({
   }
 
   const name = participant?.name ?? 'Someone'
+  const level = useLevel(participant?.name ?? '')
+  const muted = !!participant?.stream?.audio && isSilent(level)
   const paused = !!participant?.stream?.paused
   let placeholder = null
   if (paused) {
@@ -985,9 +1049,51 @@ function RemoteTile({
         <span className="tile-name">
           <Avatar name={name} color={participant?.color} image={avatar} size="tiny" />
           {name}
+          {muted && (
+            <span className="tile-muted" title="You muted this stream" aria-label="Muted">
+              <Icon name="volumeOff" size={13} />
+            </span>
+          )}
         </span>
+        {watchers}
       </div>
     </div>
+  )
+}
+
+/**
+ * Who is watching a stream: an eye with the count and the first few viewers'
+ * pictures (only the count on a small tile); pointing at it lists them all.
+ */
+function Watchers({
+  people,
+  avatars,
+  selfId,
+  small
+}: {
+  people: Participant[]
+  avatars: ReadonlyMap<string, string>
+  selfId: string | null
+  small: boolean
+}) {
+  if (people.length === 0) return null
+  const names = people.map((p) => (p.id === selfId ? `${p.name} (you)` : p.name))
+  return (
+    <span
+      className="tile-watchers"
+      title={`Watching: ${names.join(', ')}`}
+      aria-label={`${people.length} watching: ${names.join(', ')}`}
+    >
+      <Icon name="eye" size={13} />
+      {people.length}
+      {!small && (
+        <span className="tile-watchers-faces">
+          {people.slice(0, WATCHER_FACES).map((p) => (
+            <Avatar key={p.id} name={p.name} color={p.color} image={avatars.get(p.id) ?? null} size="tiny" />
+          ))}
+        </span>
+      )}
+    </span>
   )
 }
 
