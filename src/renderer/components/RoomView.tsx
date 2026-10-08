@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { QUALITY_PRESETS, WATCH_QUALITIES, getWatchQuality, lowerPreset, type WatchQualityId } from '../../shared/quality'
 import { countUnread } from '../../shared/chat'
 import { struggleMessage, type StruggleKind } from '../../shared/struggle'
@@ -25,6 +26,7 @@ import { CHAT_DOCKED_MIN_WIDTH, PANEL_STATES, useElementSize, useRemembered, use
 import { getLevel, isSilent, setVolume, toggleMute, useLevel } from '../lib/volume'
 import { useAutoContentHint } from '../lib/autoContentHint'
 import { useGameCursor } from '../lib/gameCursor'
+import { openStreamWindow } from '../lib/streamWindow'
 import { audioDefaults, type SharingState } from '../lib/publisher'
 import type { ConnectionState } from '../lib/roomClient'
 import type { Session } from '../lib/session'
@@ -46,8 +48,8 @@ type StageFilter = (typeof STAGE_FILTERS)[number]
 /** How many viewers' pictures a stream's name bar shows next to the count. */
 const WATCHER_FACES = 3
 
-/** In full screen, the strip and controls (and the cursor) hide after this long without mouse movement. */
-const FULLSCREEN_IDLE_MS = 2500
+/** The controls over the stage hide after this long without the mouse moving there (in full screen, so do the strip and the cursor). */
+const CONTROLS_IDLE_MS = 2500
 
 interface Props {
   session: Session
@@ -88,8 +90,6 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   focusRef.current = focus
   /** How many streams we watched at the last change: starting the first one focuses it. */
   const watchedCount = useRef(watches.all.size)
-  /** Set while "Watch all" starts several streams at once, which keeps the grid. */
-  const watchingMany = useRef(false)
   const [stageFilter, setStageFilter] = useRemembered<StageFilter>('stage-filter', 'everyone', STAGE_FILTERS)
   const [snapshots, setSnapshots] = useState<ReadonlyMap<string, string>>(new Map(client.snapshots))
   const [avatars, setAvatars] = useState<ReadonlyMap<string, string>>(new Map(client.avatars))
@@ -112,21 +112,21 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   // Messages read while the chat was open; the rest count as unread while it's hidden.
   const [seen, setSeen] = useState<ReadonlySet<string>>(() => new Set(client.messages.map((m) => m.id)))
   const stageRef = useRef<HTMLDivElement>(null)
-  // A floating chat stops above the control bar, so its own button there stays reachable.
-  const controlBarRef = useRef<HTMLDivElement>(null)
-  const [controlBarHeight, setControlBarHeight] = useState(0)
-  useEffect(() => {
-    const bar = controlBarRef.current
-    if (!bar) return
-    const observer = new ResizeObserver(() => setControlBarHeight(bar.offsetHeight))
-    observer.observe(bar)
-    return () => observer.disconnect()
-  }, [])
   const stageSize = useElementSize(stageRef)
   // Full screen is the stage: the focused stream with everyone else and its controls below.
   const [stageFullscreen, setStageFullscreen] = useState(false)
-  const [idle, setIdle] = useState(false)
-  const idleTimer = useRef<number | null>(null)
+  /** The controls float over the stage and show while the mouse moves there (see wake). */
+  const [controlsAwake, setControlsAwake] = useState(true)
+  const controlsTimer = useRef<number | null>(null)
+  const [overControls, setOverControls] = useState(false)
+  const [controlsFocused, setControlsFocused] = useState(false)
+  /** Streams playing in a window of their own, by streamer id. */
+  const [streamWindows, setStreamWindows] = useState<ReadonlyMap<string, { win: Window; root: HTMLElement }>>(new Map())
+  const streamWindowsRef = useRef(streamWindows)
+  streamWindowsRef.current = streamWindows
+  /** Where the chat button goes: the title bar's right end (see TitleBar). */
+  const [titleSlot, setTitleSlot] = useState<HTMLElement | null>(null)
+  useEffect(() => setTitleSlot(document.getElementById('title-bar-actions')), [])
   const closeInfo = useCallback(() => setInfoOpen(false), [])
   const [, setNow] = useState(Date.now())
   const gameCursor = useGameCursor(publisher, sharing.sharing ? publisher.chosenSourceId : null)
@@ -172,7 +172,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
       publisher.on('struggle', setStruggle),
       watches.on('changed', (m) => {
         // Starting to watch a stream, with nothing else watched or focused, opens it focused.
-        if (watchedCount.current === 0 && m.size === 1 && !watchingMany.current && focusRef.current === null) {
+        if (watchedCount.current === 0 && m.size === 1 && focusRef.current === null) {
           setFocus([...m.keys()][0])
         }
         watchedCount.current = m.size
@@ -193,19 +193,23 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     document.addEventListener('fullscreenchange', onChange)
     return () => document.removeEventListener('fullscreenchange', onChange)
   }, [])
-  // In full screen the strip and controls (and the cursor) fade after a moment without moving the mouse.
+  // The controls show while the mouse moves over the stage, and hide after a moment
+  // without movement or when it leaves (in full screen, so do the strip and the cursor).
   const wake = (): void => {
-    if (!stageFullscreen) return
-    setIdle(false)
-    if (idleTimer.current) clearTimeout(idleTimer.current)
-    idleTimer.current = window.setTimeout(() => setIdle(true), FULLSCREEN_IDLE_MS)
+    setControlsAwake(true)
+    if (controlsTimer.current) clearTimeout(controlsTimer.current)
+    controlsTimer.current = window.setTimeout(() => setControlsAwake(false), CONTROLS_IDLE_MS)
+  }
+  const sleep = (): void => {
+    if (controlsTimer.current) clearTimeout(controlsTimer.current)
+    setControlsAwake(false)
   }
   useEffect(() => {
-    setIdle(false)
-    if (stageFullscreen) idleTimer.current = window.setTimeout(() => setIdle(true), FULLSCREEN_IDLE_MS)
+    wake()
     return () => {
-      if (idleTimer.current) clearTimeout(idleTimer.current)
+      if (controlsTimer.current) clearTimeout(controlsTimer.current)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stageFullscreen])
   /** Focus `id` and fill the screen with the stage, or leave full screen. */
   const toggleFullscreen = (id: string): void => {
@@ -216,6 +220,50 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     setFocus(id)
     void stageRef.current?.requestFullscreen()
   }
+  /** Fill the screen with the stage as it is (the grid, or the focused stream), or leave full screen. */
+  const toggleStageFullscreen = (): void => {
+    if (document.fullscreenElement) void document.exitFullscreen()
+    else void stageRef.current?.requestFullscreen()
+  }
+
+  // --- streams in a window of their own ----------------------------------------
+  const closeStreamWindow = (id: string): void => {
+    streamWindowsRef.current.get(id)?.win.close()
+    setStreamWindows((m) => {
+      if (!m.has(id)) return m
+      const next = new Map(m)
+      next.delete(id)
+      return next
+    })
+  }
+  const openInWindow = (p: Participant): void => {
+    const opened = openStreamWindow(p.id, `${p.name}'s stream · ScreenShare`)
+    if (!opened) {
+      onToast("Couldn't open a new window", 'error')
+      return
+    }
+    opened.win.addEventListener('pagehide', () => closeStreamWindow(p.id))
+    setStreamWindows((m) => new Map(m).set(p.id, opened))
+  }
+  const toggleWindow = (p: Participant): void =>
+    streamWindows.has(p.id) ? closeStreamWindow(p.id) : openInWindow(p)
+  // A stream in its own window can be seen whatever the room's window does; one we stop watching closes it.
+  useEffect(() => {
+    for (const [id, sub] of subs) sub.setDetached(streamWindows.has(id))
+    for (const id of streamWindows.keys()) if (!subs.has(id)) closeStreamWindow(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subs, streamWindows])
+  // Closing a window by hand (the system's ×) is noticed here too, in case pagehide didn't come.
+  useEffect(() => {
+    if (streamWindows.size === 0) return
+    const t = setInterval(() => {
+      for (const [id, w] of streamWindowsRef.current) if (w.win.closed) closeStreamWindow(id)
+    }, 1000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streamWindows.size])
+  // Leaving the room closes them.
+  useEffect(() => () => streamWindowsRef.current.forEach((w) => w.win.close()), [])
 
   // Keep the focus on someone who is still here; Esc leaves it (after leaving full screen).
   useEffect(() => {
@@ -288,8 +336,6 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     onLeave()
   }
 
-  const liveOthers = participants.filter((p) => p.stream && p.id !== client.selfId)
-  const unwatched = liveOthers.filter((p) => !subs.has(p.id))
   /** Who watches `id`'s stream. */
   const watchersOf = (id: string): Participant[] => participants.filter((p) => p.watching.includes(id))
   // The notice goes away by itself once the problem has gone (or sharing stopped).
@@ -310,7 +356,6 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const anyoneSharing = people.some((p) => p.stream)
   const canFilter = anyoneSharing && people.some((p) => !p.stream)
   const shown = stageFilter === 'streams' && anyoneSharing ? people.filter((p) => p.stream) : people
-  const hiddenCount = people.length - shown.length
   const toggleFilter = (): void => setStageFilter(stageFilter === 'streams' ? 'everyone' : 'streams')
   const filterItems = (): MenuItem[] =>
     canFilter
@@ -346,7 +391,13 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
       })
     ),
     { kind: 'separator' },
-    { label: 'Stop sharing', icon: 'stop', danger: true, onSelect: () => publisher.stopSharing() }
+    {
+      label: showStats ? 'Hide stream stats' : 'Stream stats',
+      icon: 'chart',
+      onSelect: () => setShowStats((v) => !v)
+    },
+    { kind: 'separator' },
+    { label: 'Stop sharing', icon: 'stopShare', danger: true, onSelect: () => publisher.stopSharing() }
   ]
 
   const selfItems = (): MenuItem[] =>
@@ -485,6 +536,8 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           moderation={moderationItems(p)}
           onMenu={(at, groups) => openMenu(at, `${p.name}'s stream`, groups)}
           watchers={<Watchers people={watchersOf(p.id)} avatars={avatars} selfId={client.selfId} small={small} />}
+          inWindow={streamWindows.has(p.id)}
+          onToggleWindow={() => toggleWindow(p)}
         />
       )
     }
@@ -523,35 +576,6 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     focused && shown.length > 1 ? (
       <div className={`stage-spotlight ${strip === 'closed' ? 'strip-closed' : ''}`}>
         <div className="spotlight-main">{renderTile(focused, false)}</div>
-        <div className="focus-bar">
-          <span className="focus-bar-side">
-            <button className="icon-btn" title="Back to the grid (Esc)" aria-label="Grid view" onClick={() => setFocus(null)}>
-              <Icon name="grid" size={18} />
-            </button>
-          </span>
-          <button
-            className="strip-toggle"
-            aria-expanded={strip === 'open'}
-            title={strip === 'open' ? 'Hide the others (their video pauses)' : 'Show the others'}
-            onClick={() => setStrip(strip === 'open' ? 'closed' : 'open')}
-          >
-            <Icon name={strip === 'open' ? 'chevronDown' : 'chevronUp'} size={14} />
-            {strip === 'open' ? 'Hide others' : `Show others (${shown.length - 1})`}
-          </button>
-          <span className="focus-bar-side focus-bar-controls">
-            {subs.has(focused.id) && focused.stream?.audio && <VolumeControl name={focused.name} />}
-            {(subs.has(focused.id) || (focused.id === client.selfId && ownStream && showSelf)) && (
-              <button
-                className="icon-btn"
-                title={stageFullscreen ? 'Leave full screen (Esc)' : 'Full screen'}
-                aria-label={stageFullscreen ? 'Exit full screen' : 'Full screen'}
-                onClick={() => toggleFullscreen(focused.id)}
-              >
-                <Icon name={stageFullscreen ? 'exitFullscreen' : 'fullscreen'} size={18} />
-              </button>
-            )}
-          </span>
-        </div>
         <div className="spotlight-strip" hidden={strip === 'closed'}>
           {shown.filter((p) => p !== focused).map((p) => renderTile(p, true, strip === 'closed'))}
         </div>
@@ -577,13 +601,13 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const roomDetails = (
     <div className="room-info-anchor">
       <button
-        className={`btn icon-only room-info-button ${infoOpen ? 'active' : ''}`}
+        className={`bar-btn room-info-button ${infoOpen ? 'on' : ''}`}
         title="Room details"
         aria-label="Room details"
         aria-expanded={infoOpen}
         onClick={() => setInfoOpen((v) => !v)}
       >
-        <Icon name="info" />
+        <Icon name="info" size={20} />
       </button>
       {infoOpen && (
         <RoomInfo
@@ -599,16 +623,122 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     </div>
   )
 
+  // The focused stream you watch: the volume and "new window" act on it.
+  const focusedStream = focused && subs.has(focused.id) ? focused : null
+  const controlsShown =
+    controlsAwake || overControls || controlsFocused || infoOpen || showStats || menu?.label === 'Sharing'
+  const controls = (
+    <div
+      className="stage-controls"
+      onMouseEnter={() => setOverControls(true)}
+      onMouseLeave={() => setOverControls(false)}
+      onFocus={() => setControlsFocused(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setControlsFocused(false)
+      }}
+    >
+      <div className="controls-side">
+        {focused && shown.length > 1 && (
+          <>
+            <button className="bar-btn" title="Back to the grid (Esc)" aria-label="Grid view" onClick={() => setFocus(null)}>
+              <Icon name="grid" size={20} />
+            </button>
+            <button
+              className={`bar-btn ${strip === 'closed' ? 'on' : ''}`}
+              aria-label={strip === 'open' ? 'Hide others' : `Show others (${shown.length - 1})`}
+              aria-pressed={strip === 'closed'}
+              title={strip === 'open' ? 'Hide the others (their video pauses)' : 'Show the others'}
+              onClick={() => setStrip(strip === 'open' ? 'closed' : 'open')}
+            >
+              <Icon name={strip === 'open' ? 'stripHide' : 'stripShow'} size={20} />
+            </button>
+          </>
+        )}
+      </div>
+      <div className="controls-center">
+        {sharing.sharing ? (
+          // Shows that we're sharing; its menu changes the source, mutes, sets the quality, shows the stats or stops.
+          <button
+            className={`bar-btn sharing ${menu?.label === 'Sharing' ? 'on' : ''}`}
+            title="You're sharing: change the source, mute, set the quality, see the stats or stop"
+            aria-label={sharing.paused ? 'Sharing (paused)' : 'Sharing'}
+            aria-haspopup="menu"
+            aria-expanded={menu?.label === 'Sharing'}
+            onClick={(e) =>
+              menu?.label === 'Sharing' ? setMenu(null) : openMenu(menuAbove(e.currentTarget), 'Sharing', [sharingItems()])
+            }
+          >
+            <Icon name={sharing.paused ? 'pause' : 'shareScreen'} size={20} />
+            <Icon name="chevronUp" size={14} />
+          </button>
+        ) : (
+          <button className="bar-btn share" title="Share your screen or a window" onClick={() => setPickSource(true)}>
+            <Icon name="shareScreen" size={20} /> Share screen
+          </button>
+        )}
+        {roomDetails}
+        <button
+          className="bar-btn hang-up"
+          title={isHost ? 'End the room for everyone' : 'Leave the room'}
+          aria-label={isHost ? 'End room' : 'Leave'}
+          onClick={isHost ? endRoom : () => onLeave()}
+        >
+          <Icon name="hangUp" size={22} />
+        </button>
+      </div>
+      <div className="controls-side end">
+        {focusedStream?.stream?.audio && <VolumeControl name={focusedStream.name} />}
+        {focusedStream && (
+          <button
+            className={`bar-btn ${streamWindows.has(focusedStream.id) ? 'on' : ''}`}
+            title={streamWindows.has(focusedStream.id) ? 'Bring the stream back to this window' : 'Open the stream in a new window'}
+            aria-label={streamWindows.has(focusedStream.id) ? 'Back to this window' : 'Open in a new window'}
+            onClick={() => toggleWindow(focusedStream)}
+          >
+            <Icon name={streamWindows.has(focusedStream.id) ? 'popIn' : 'popOut'} size={20} />
+          </button>
+        )}
+        <button
+          className="bar-btn"
+          title={stageFullscreen ? 'Leave full screen (Esc)' : 'Full screen'}
+          aria-label={stageFullscreen ? 'Exit full screen' : 'Full screen'}
+          onClick={toggleStageFullscreen}
+        >
+          <Icon name={stageFullscreen ? 'exitFullscreen' : 'fullscreen'} size={20} />
+        </button>
+      </div>
+    </div>
+  )
+
   return (
     <div className="room">
+      {titleSlot &&
+        createPortal(
+          <>
+            {connection === 'reconnecting' && <span className="status-pill warn">Reconnecting…</span>}
+            <button
+              className={`title-bar-btn chat-toggle ${chatOpen ? 'on' : ''}`}
+              title={chatOpen ? 'Hide chat' : 'Show chat'}
+              aria-label={chatOpen ? 'Hide chat' : unread > 0 ? `Show chat (${unread} unread)` : 'Show chat'}
+              aria-expanded={chatOpen}
+              onClick={toggleChat}
+            >
+              <Icon name="chat" size={16} />
+              {unread > 0 && <span className="unread-badge">{unread > 99 ? '99+' : unread}</span>}
+            </button>
+          </>,
+          titleSlot
+        )}
       <div className="room-body">
         <main className="stage">
           <div
-            className={`stage-area ${stageFullscreen ? 'fullscreen' : ''} ${idle ? 'idle' : ''}`}
+            className={`stage-area ${stageFullscreen ? 'fullscreen' : ''} ${controlsShown ? '' : 'idle'}`}
             ref={stageRef}
             onMouseMove={wake}
+            onMouseLeave={sleep}
           >
             {stage}
+            {controls}
           </div>
           {showStats && sharing.sharing && (
             <div className="stats-popover">
@@ -691,105 +821,9 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
               </button>
             </div>
           )}
-          <div className="control-bar" ref={controlBarRef}>
-            <div className="control-side">
-              {connection === 'reconnecting' && <span className="status-pill warn">Reconnecting…</span>}
-              {canFilter && (
-                <button
-                  className={`btn ${stageFilter === 'streams' ? 'active' : ''}`}
-                  aria-label="Only streams"
-                  aria-pressed={stageFilter === 'streams'}
-                  title={
-                    stageFilter === 'streams'
-                      ? `Showing only people who share (${hiddenCount} hidden): click to show everyone`
-                      : 'Show only the people who share, so streams get all the space'
-                  }
-                  onClick={toggleFilter}
-                >
-                  <Icon name="filter" />
-                  <span className="btn-label">Only streams</span>
-                </button>
-              )}
-            </div>
-            <div className="control-center">
-            {unwatched.length > 1 && (
-              <button
-                className="btn"
-                aria-label="Watch all"
-                title="Watch everyone who is sharing"
-                onClick={() => {
-                  watchingMany.current = true
-                  unwatched.forEach((p) => watches.watch(p.id))
-                  watchingMany.current = false
-                }}
-              >
-                <Icon name="eye" />
-                <span className="btn-label">Watch all</span>
-              </button>
-            )}
-            <button
-              className="btn hang-up"
-              title={isHost ? 'End the room for everyone' : 'Leave the room'}
-              aria-label={isHost ? 'End room' : 'Leave'}
-              onClick={isHost ? endRoom : () => onLeave()}
-            >
-              <Icon name="hangUp" size={20} />
-            </button>
-            {sharing.sharing ? (
-              <div className="control-group">
-                {/* Shows that we're sharing; its menu changes the source, mutes, sets the quality or stops. */}
-                <button
-                  className={`btn sharing-button ${menu?.label === 'Sharing' ? 'active' : ''}`}
-                  title="You're sharing: change the source, mute, set the quality or stop"
-                  aria-haspopup="menu"
-                  aria-expanded={menu?.label === 'Sharing'}
-                  onClick={(e) =>
-                    menu?.label === 'Sharing'
-                      ? setMenu(null)
-                      : openMenu(menuAbove(e.currentTarget), 'Sharing', [sharingItems()])
-                  }
-                >
-                  <Icon name="screen" />
-                  {sharing.paused ? 'Paused' : 'Sharing'}
-                  <Icon name="chevronUp" size={14} />
-                </button>
-                <button
-                  className={`btn icon-only ${showStats ? 'active' : ''}`}
-                  title="Quality and stats of your stream"
-                  aria-label="Stats"
-                  aria-expanded={showStats}
-                  onClick={() => setShowStats((v) => !v)}
-                >
-                  <Icon name="sliders" />
-                </button>
-              </div>
-            ) : (
-              <button className="btn primary" onClick={() => setPickSource(true)}>
-                <Icon name="screen" /> Share screen
-              </button>
-            )}
-            {roomDetails}
-            </div>
-            <div className="control-side end">
-              <button
-                className={`btn icon-only chat-toggle ${chatOpen ? 'active' : ''}`}
-                title={chatOpen ? 'Hide chat' : 'Show chat'}
-                aria-label={chatOpen ? 'Hide chat' : unread > 0 ? `Show chat (${unread} unread)` : 'Show chat'}
-                aria-expanded={chatOpen}
-                onClick={toggleChat}
-              >
-                <Icon name="chat" />
-                {unread > 0 && <span className="unread-badge">{unread > 99 ? '99+' : unread}</span>}
-              </button>
-            </div>
-          </div>
         </main>
 
-        <aside
-          className={`sidebar ${chatDocked ? '' : 'floating'}`}
-          hidden={!chatOpen}
-          style={chatDocked ? undefined : { bottom: controlBarHeight }}
-        >
+        <aside className={`sidebar ${chatDocked ? '' : 'floating'}`} hidden={!chatOpen}>
           <ChatPanel
             messages={messages}
             roomName={room?.name ?? 'the room'}
@@ -805,6 +839,18 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
       </div>
 
       {menu && <Menu items={menu.items} at={menu.at} label={menu.label} onClose={closeMenu} />}
+
+      {[...streamWindows].map(([id, { win, root }]) => {
+        const sub = subs.get(id)
+        const p = participants.find((x) => x.id === id)
+        return sub
+          ? createPortal(
+              <StreamWindow sub={sub} participant={p} avatar={avatars.get(id) ?? null} win={win} />,
+              root,
+              id
+            )
+          : null
+      })}
 
       {pickSource && (
         <ChangeSourceDialog
@@ -912,8 +958,13 @@ function RemoteTile({
   menuItems,
   moderation,
   onMenu,
-  watchers
+  watchers,
+  inWindow,
+  onToggleWindow
 }: TileChrome & {
+  /** Playing in its own window: the tile says so instead of playing it too. */
+  inWindow: boolean
+  onToggleWindow(): void
   sub: Subscription
   participant: Participant | undefined
   avatar: string | null
@@ -1019,6 +1070,11 @@ function RemoteTile({
             label: fullscreen ? 'Exit full screen' : 'Full screen',
             icon: fullscreen ? 'exitFullscreen' : 'fullscreen',
             onSelect: onFullscreen
+          },
+          {
+            label: inWindow ? 'Back to this window' : 'Open in a new window',
+            icon: inWindow ? 'popIn' : 'popOut',
+            onSelect: onToggleWindow
           }
         ]
         const qualities: MenuItem[] = [
@@ -1037,14 +1093,30 @@ function RemoteTile({
         onMenu({ x: e.clientX, y: e.clientY }, [sound, view, qualities, moderation])
       }}
     >
-      <ScreenViewer
-        stream={stream}
-        placeholder={placeholder}
-        overlay={overlay}
-        volumeKey={participant?.name}
-        onViewHeight={(px) => sub.setViewHeight(px)}
-        onHiddenChange={setBehindFullscreen}
-      />
+      {inWindow ? (
+        <div className="screen-viewer">
+          <div className="screen-placeholder">
+            <div className="placeholder-content">
+              <Icon name="popOut" size={26} />
+              <h3>Playing in another window</h3>
+              {!small && (
+                <button className="btn small" onClick={onToggleWindow}>
+                  <Icon name="popIn" size={14} /> Bring back
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <ScreenViewer
+          stream={stream}
+          placeholder={placeholder}
+          overlay={overlay}
+          volumeKey={participant?.name}
+          onViewHeight={(px) => sub.setViewHeight(px)}
+          onHiddenChange={setBehindFullscreen}
+        />
+      )}
       <div className="tile-bar">
         <span className="tile-name">
           <Avatar name={name} color={participant?.color} image={avatar} size="tiny" />
@@ -1116,8 +1188,60 @@ function saveWatchQuality(name: string | undefined, id: WatchQualityId): void {
 }
 
 /**
- * The speaker below a focused stream: a click mutes, or unmutes back to the
- * last volume; pointing at it shows the volume slider.
+ * A stream in a window of its own (rendered there with a portal): the picture,
+ * its name, double-click for full screen. It plays the subscription the room
+ * already has, at the size of that window.
+ */
+function StreamWindow({
+  sub,
+  participant,
+  avatar,
+  win
+}: {
+  sub: Subscription
+  participant: Participant | undefined
+  avatar: string | null
+  win: Window
+}) {
+  const [stream, setStream] = useState<MediaStream | null>(sub.stream)
+  useEffect(() => {
+    setStream(sub.stream)
+    return sub.on('stream', setStream)
+  }, [sub])
+  const name = participant?.name ?? 'Someone'
+  const toggleFullscreen = (): void => {
+    const doc = win.document
+    if (doc.fullscreenElement) void doc.exitFullscreen()
+    else void doc.documentElement.requestFullscreen()
+  }
+  return (
+    <div className="stream-window-view" onDoubleClick={toggleFullscreen} title="Double-click for full screen">
+      <ScreenViewer
+        stream={stream}
+        volumeKey={participant?.name}
+        onViewHeight={(px) => sub.setViewHeight(px)}
+        placeholder={
+          stream ? null : (
+            <div className="placeholder-content">
+              <div className="spinner" />
+              <h3>Connecting to {name}…</h3>
+            </div>
+          )
+        }
+      />
+      <div className="tile-bar">
+        <span className="tile-name">
+          <Avatar name={name} color={participant?.color} image={avatar} size="tiny" />
+          {name}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * The speaker in the controls under a focused stream: a click mutes, or
+ * unmutes back to the last volume; pointing at it shows the volume slider.
  */
 function VolumeControl({ name }: { name: string }) {
   const level = useLevel(name)
@@ -1125,12 +1249,12 @@ function VolumeControl({ name }: { name: string }) {
   return (
     <div className="volume-control">
       <button
-        className="icon-btn"
+        className={`bar-btn ${silent ? 'off' : ''}`}
         title={silent ? 'Unmute' : 'Mute'}
         aria-label={silent ? `Unmute ${name}` : `Mute ${name}`}
         onClick={() => toggleMute(name)}
       >
-        <Icon name={silent ? 'volumeOff' : 'volume'} size={18} />
+        <Icon name={silent ? 'volumeOff' : 'volume'} size={20} />
       </button>
       <div className="volume-pop">
         <input

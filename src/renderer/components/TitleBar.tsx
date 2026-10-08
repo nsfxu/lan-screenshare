@@ -35,6 +35,8 @@ export function TitleBar({ roomName, onRestartToUpdate }: { roomName: string | n
           <Icon name="download" size={12} /> Update to {update.version}
         </button>
       )}
+      {/* The room puts its chat button (and "Reconnecting…") here, at the top right. */}
+      <div className="title-bar-actions" id="title-bar-actions" />
     </header>
   )
 }

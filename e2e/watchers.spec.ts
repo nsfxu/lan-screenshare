@@ -32,7 +32,8 @@ test("streams show who's watching; only streams; a muted stream says so", async 
   // Only streams: Bob and Carol leave the stage (Alice's stream gets it all), and it's remembered.
   await win.keyboard.press('Escape')
   await expect(win.locator('.stage-grid > .tile')).toHaveCount(3)
-  await win.locator('.control-bar').getByRole('button', { name: 'Only streams' }).click()
+  await win.locator('.person-tile', { hasText: 'Bob (you)' }).click({ button: 'right' })
+  await win.getByRole('menuitem', { name: 'Show only streams' }).click()
   await expect(win.locator('.stage-grid > .tile')).toHaveCount(1)
   if (shots) await win.screenshot({ path: `${shots}/2-only-streams.png` })
   expect(await win.evaluate(() => localStorage.getItem('layout.stage-filter'))).toBe('streams')

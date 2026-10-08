@@ -7,13 +7,14 @@ test('the Sharing button and right-click menus hold the sharing and watching opt
   const port = await createRoom(alice)
   const { win } = alice
 
-  // The Sharing button (right of the hang-up button) opens the sharing menu; nothing pauses from it.
+  // The Sharing button opens the sharing menu (with the stats); nothing pauses from it. Leaving is last.
   const sharingButton = win.getByRole('button', { name: 'Sharing', exact: true })
   const hangUp = await win.locator('.hang-up').boundingBox()
-  expect((await sharingButton.boundingBox())!.x).toBeGreaterThan(hangUp!.x)
+  expect(hangUp!.x).toBeGreaterThan((await sharingButton.boundingBox())!.x)
   await sharingButton.click()
   const menu = win.getByRole('menu', { name: 'Sharing' })
   await expect(menu.getByRole('menuitem', { name: 'Stop sharing' })).toBeVisible()
+  await expect(menu.getByRole('menuitem', { name: 'Stream stats' })).toBeVisible()
   await expect(menu.getByRole('menuitem', { name: 'Change source…' })).toBeVisible()
   await expect(menu.getByRole('menuitem', { name: 'Pause' })).toHaveCount(0)
   if (shots) await win.screenshot({ path: `${shots}/1-sharing-menu.png` })

@@ -83,6 +83,8 @@ export class Subscription extends Emitter<Events> {
   private tileHidden = false
   /** The whole window can't be seen (minimized). */
   private windowHidden = false
+  /** Playing in its own window: it can be seen whatever happens to the room's window and tile. */
+  private detached = false
   private tick = 0
   private readonly log: (msg: string) => void
 
@@ -146,8 +148,15 @@ export class Subscription extends Emitter<Events> {
     this.sendViewHeight()
   }
 
+  /** Moved to (or back from) a window of its own. */
+  setDetached(detached: boolean): void {
+    if (detached === this.detached) return
+    this.detached = detached
+    this.sendViewHeight()
+  }
+
   get hidden(): boolean {
-    return this.tileHidden || this.windowHidden
+    return !this.detached && (this.tileHidden || this.windowHidden)
   }
 
   /** Receive at most this quality, whatever the tile size. */
