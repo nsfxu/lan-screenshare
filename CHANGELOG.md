@@ -10,9 +10,11 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-10-08
+
 ### Changed
 
-- **More room for the streams**: the bar at the top of the room is gone, and so is the strip of buttons under it. The controls now float over the bottom of the room, show when you move the mouse there and hide after a moment: the grid and strip buttons, **Share screen** (a green screen icon while you share, with **Stream stats** now in its menu), the room details (ⓘ), the red leave button last, and for a focused stream its volume, **New window** and **Full screen**. All with new icons.
+- **More room for the streams**: the bar at the top of the room is gone, and so is the strip of buttons under it. The controls now float over the bottom of the room, show when you move the mouse there and hide after a moment, each with a tooltip: on the left the room details (ⓘ) and, for a focused stream, the grid and strip buttons; in the middle **Share screen** (a green screen icon while you share, with **Stream stats** now in its menu) and the red leave button, both a little larger; on the right the focused stream's volume, **New window**, and **Full screen**. All with new, bolder icons.
 - The room's name is in the title bar, and the chat button floats at the top right of the room, under the window's own buttons. Notices appear above the controls instead of covering them.
 - Questions like "End the room for everyone?" or "Remove Bob?" now appear in the app's own dialog, in its colours, instead of a plain system box. **Esc** closes an open dialog or menu before it leaves the focused view.
 - **The first stream you watch opens focused**, with everyone else in the strip below.
@@ -118,7 +120,8 @@ The first release.
 - Reconnects after short network drops, and switches to TCP when a network blocks WebRTC.
 - Encrypted connections, the PIN kept only in memory, and the window hidden from screenshots while you watch.
 
-[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.2.1...HEAD
+[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.2.1...v2.3.0
 [2.2.1]: https://github.com/nsfxu/lan-screenshare/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.0.0...v2.1.0
