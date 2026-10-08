@@ -85,11 +85,12 @@ Everything else depends on it.
 
 **Owner runs**, on each PC available (NVIDIA; Intel integrated or AMD if possible), 1080p60, real screen:
 ```
-npm run perf -- --viewers=4  --view-height=1080 --seconds=90
-npm run perf -- --viewers=8  --view-height=1080 --seconds=90
-npm run perf -- --viewers=10 --view-height=1080 --seconds=90
-npm run perf -- --viewers=12 --view-height=1080 --seconds=90
+npm run perf -- --viewers=4 --view-height=1080 --seconds=90
+npm run perf -- --viewers=6 --view-height=1080 --seconds=90
+npm run perf -- --viewers=8 --view-height=1080 --seconds=90
+npm run perf -- --viewers=9 --view-height=1080 --seconds=90
 ```
+9 is the most there can be: a room holds `MAX_USERS` = 10 people (`src/shared/constants.ts`), the streamer included. Past 9 the question is moot for one streamer, unless the room limit changes.
 and sends the `perf-results` folders back.
 
 **Agent finishes:**
