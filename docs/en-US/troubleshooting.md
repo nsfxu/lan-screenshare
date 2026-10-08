@@ -30,7 +30,7 @@ flowchart TD
   F -->|No| C
 ```
 
-- Discovery uses **multicast (mDNS)**, which many VPNs, guest Wi-Fi networks and some routers block. **Join by IP** always works if the host can be reached: the host sees its addresses behind the **ⓘ** in the control bar. Friends on other networks: see [playing over ZeroTier](zerotier.md).
+- Discovery uses **multicast (mDNS)**, which many VPNs, guest Wi-Fi networks and some routers block. **Join by IP** always works if the host can be reached: the host sees its addresses behind the **ⓘ** in the controls at the bottom of the room. Friends on other networks: see [playing over ZeroTier](zerotier.md).
 - The default port is **47800**. If it was busy, the host picked the next free one; the **ⓘ** shows the right one.
 - **Windows firewall**: the first time you host, Windows asks whether to allow ScreenShare. Allow it on **private** networks. If you clicked Cancel, allow it later in *Windows Security → Firewall → Allow an app*.
 - A room that stops answering for 10 seconds is removed from the list. It comes back as soon as it answers again.
@@ -63,7 +63,7 @@ flowchart TD
 1. Look at the tile's **stats badges**: resolution, fps and connection type.
 2. Check **Quality you receive** in the stream's right-click menu: it should be **Auto** (or the quality you want).
 3. **Auto follows the tile size**: a small tile gets a small stream. Focus the stream (spotlight) or go full screen and the quality rises within a second.
-4. Ask the streamer to check their maximum quality (the **Sharing** button's menu, or **Stats**), and **Settings → Upload limit when sharing** (the default 100 Mbps is shared between everyone watching them; on Wi-Fi 30–60 Mbps is more realistic).
+4. Ask the streamer to check their maximum quality (the **Sharing** button's menu, or its **Stream stats**), and **Settings → Upload limit when sharing** (the default 100 Mbps is shared between everyone watching them; on Wi-Fi 30–60 Mbps is more realistic).
 5. The streamer's **Stats → Limited by** tells you why: *bandwidth* (network), *cpu* (computer too busy) or *none*. When it lasts, the streamer also gets a notice saying so, with a button to lower the quality.
 6. On the **TCP** connection, latency is a bit higher and one encode is shared by all TCP viewers.
 
@@ -87,7 +87,7 @@ On Windows 10 (and 11 before 24H2), sharing a whole screen shows the cursor even
 | People in my Discord call hear themselves | Share the game's **window** with **Only this app's sound**, or turn on **Leave out Discord** when you share (Windows, both on by default). If a message says it couldn't be done, your Windows is older than 10 version 2004: use **Mute audio**, or mute Discord's output. |
 | Other streams echo in my stream | Your computer plays the streams you watch, and sharing system audio captures that too. With **Leave out Discord** on and Discord closed, the app leaves itself out and this doesn't happen; otherwise (only one app can be left out) lower the volume of the streams you watch, or mute your shared audio. |
 | No audio on macOS | Needs macOS 13+ and Screen Recording permission. It is still untested on macOS. |
-| Viewer hears nothing but the streamer has audio | Check the stream's volume in its right-click menu, or the speaker under a focused stream (each stream has its own volume and mute). |
+| Viewer hears nothing but the streamer has audio | Check the stream's volume in its right-click menu, or the speaker in the controls while it's focused (each stream has its own volume and mute). |
 
 ## High CPU or a hot laptop
 
@@ -114,4 +114,4 @@ Please include:
 1. App version (**Settings → About**) and operating system on each computer involved.
 2. What you did, what you expected, what happened.
 3. The relevant part of `screenshare.log` from each computer (**Settings → About → Open logs**). Remove anything private first.
-4. For quality problems: a screenshot of the tile's stats badges and of the streamer's **Stats** panel.
+4. For quality problems: a screenshot of the tile's stats badges and of the streamer's **Stream stats**.

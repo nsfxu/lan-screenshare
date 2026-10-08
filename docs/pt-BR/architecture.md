@@ -285,7 +285,8 @@ flowchart TB
   Stage --> Remote["RemoteTile<br/>uma por transmissão assistida"]
   Self --> SV["ScreenViewer<br/>vídeo, selos de estatística, volume (lib/volume.ts)"]
   Remote --> SV
-  Room --> Bar["Barra de controles<br/>sair, Watch all, Share screen / menu do Sharing (fonte, áudio, qualidade, parar), Stats"]
+  Room --> Bar["Controles sobre o palco (somem parados)<br/>grade, faixa, Share screen / menu do Sharing (fonte, áudio, qualidade, estatísticas, parar), ⓘ, sair,<br/>volume, nova janela, tela cheia; botão do chat na barra de título"]
+  Room --> SW["StreamWindow<br/>uma transmissão numa janela própria (portal, lib/streamWindow.ts)"]
   Room --> Menu["Menu<br/>todos os menus do botão direito e de botões; controles de volume"]
   Room --> Chat["ChatPanel (direita)"]
 ```

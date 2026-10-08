@@ -135,7 +135,7 @@ Keep to C# 5: no string interpolation (`$"..."`), no `?.`, no `nameof`, no expre
   - `[watch <id>]`: one watched stream (transport, fallback, quality choice);
   - `[win-audio]`: the Windows audio helper (which process is left out, errors).
 - **Settings → Open logs** opens the folder.
-- **Stats**: the **Stats** button (streamer) and the badges on each tile (watcher) show fps, bitrate, codec, encoder, RTT and what limits quality.
+- **Stats**: **Stream stats** in the Sharing menu (streamer) and the badges on each tile (watcher) show fps, bitrate, codec, encoder, RTT and what limits quality.
 - **`chrome://webrtc-internals`** isn't reachable from the app window, but WebRTC stats are visible in DevTools through `RTCPeerConnection.getStats()`.
 
 ## Building installers

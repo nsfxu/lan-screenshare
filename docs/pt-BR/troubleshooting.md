@@ -30,7 +30,7 @@ flowchart TD
   F -->|Não| C
 ```
 
-- A descoberta usa **multicast (mDNS)**, que muitas VPNs, redes Wi-Fi de visitantes e alguns roteadores bloqueiam. O **Join by IP** sempre funciona se o anfitrião estiver alcançável: ele vê os próprios endereços no **ⓘ** da barra de controles. Amigos em outras redes: veja [jogando pelo ZeroTier](zerotier.md).
+- A descoberta usa **multicast (mDNS)**, que muitas VPNs, redes Wi-Fi de visitantes e alguns roteadores bloqueiam. O **Join by IP** sempre funciona se o anfitrião estiver alcançável: ele vê os próprios endereços no **ⓘ** dos controles na parte de baixo da sala. Amigos em outras redes: veja [jogando pelo ZeroTier](zerotier.md).
 - A porta padrão é **47800**. Se ela estava ocupada, o anfitrião escolheu a próxima livre; o **ⓘ** mostra a correta.
 - **Firewall do Windows**: na primeira vez que você hospeda, o Windows pergunta se deve permitir o ScreenShare. Permita em redes **privadas**. Se você clicou em Cancelar, permita depois em *Segurança do Windows → Firewall → Permitir um aplicativo*.
 - Uma sala que para de responder por 10 segundos sai da lista. Ela volta assim que responder de novo.
@@ -63,7 +63,7 @@ flowchart TD
 1. Olhe os **selos de estatística** do quadro: resolução, fps e tipo de conexão.
 2. Confira **Quality you receive** no menu do botão direito da transmissão: deve estar em **Auto** (ou na qualidade que você quer).
 3. **O Auto acompanha o tamanho do quadro**: um quadro pequeno recebe uma transmissão pequena. Coloque a transmissão em destaque ou vá para tela cheia e a qualidade sobe em menos de um segundo.
-4. Peça para quem transmite conferir a qualidade máxima (o menu do botão **Sharing**, ou **Stats**) e **Settings → Upload limit when sharing** (os 100 Mbps padrão são divididos entre todos que assistem; no Wi-Fi, 30–60 Mbps é mais realista).
+4. Peça para quem transmite conferir a qualidade máxima (o menu do botão **Sharing**, ou o **Stream stats** dele) e **Settings → Upload limit when sharing** (os 100 Mbps padrão são divididos entre todos que assistem; no Wi-Fi, 30–60 Mbps é mais realista).
 5. O **Stats → Limited by** de quem transmite diz o motivo: *bandwidth* (rede), *cpu* (computador ocupado demais) ou *none*. Quando isso dura, quem transmite também recebe um aviso dizendo isso, com um botão para baixar a qualidade.
 6. Na conexão **TCP** o atraso é um pouco maior e uma única codificação é dividida entre todos os espectadores TCP.
 
@@ -114,4 +114,4 @@ Inclua, por favor:
 1. A versão do app (**Settings → About**) e o sistema operacional de cada computador envolvido.
 2. O que você fez, o que esperava e o que aconteceu.
 3. O trecho relevante do `screenshare.log` de cada computador (**Settings → About → Open logs**). Tire antes qualquer informação privada.
-4. Para problemas de qualidade: uma captura dos selos de estatística do quadro e do painel **Stats** de quem transmite.
+4. Para problemas de qualidade: uma captura dos selos de estatística do quadro e do **Stream stats** de quem transmite.

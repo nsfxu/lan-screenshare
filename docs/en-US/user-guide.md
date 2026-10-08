@@ -58,9 +58,9 @@ The rooms column lists:
 
 Each row shows a lock for private rooms, how many streams are live, and how many people are inside; hover over it for who hosts it, for how long, and its address. A room on an incompatible version says *Update to join* or *Older version* (hover for who needs to update). Rooms you added by IP have a **×** to remove them from the list. Click a room to join it. If you're already in a room, you leave it first; the app asks before that ends a room you host or stops your share.
 
-The button at the top of each side column hides it (the rooms column shrinks to a strip of room initials; the chat button is at the right end of the control bar). The app remembers which columns you hid. In a small window (for example snapped next to a game) the columns make room for the tiles by themselves: below 1100 px wide the chat is closed, and below 760 px the rooms column is a strip. Their buttons then open them over the room, and clicking next to them puts them away.
+The button at the top of each side column hides it (the rooms column shrinks to a strip of room initials; the chat button is at the top right of the window, in the title bar). The app remembers which columns you hid. In a small window (for example snapped next to a game) the columns make room for the tiles by themselves: below 1100 px wide the chat is closed, and below 760 px the rooms column is a strip. Their buttons then open them over the room, and clicking next to them puts them away.
 
-**Join by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click **Join by IP** (next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses behind the **ⓘ** in the control bar. The default port is 47800.
+**Join by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click **Join by IP** (next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses behind the **ⓘ** in the controls at the bottom of the room. The default port is 47800.
 
 **Friends on other networks**: put everyone on a [ZeroTier](zerotier.md) network. It takes a few minutes, and rooms then show up in the list as if you were all at home.
 
@@ -80,20 +80,29 @@ Your computer now runs the room. If you close ScreenShare, the app asks first, b
 
 ## Sharing your screen
 
-Anyone in a room can share, not just the host, and several people can share at the same time. Click **Share screen** in the control bar under the tiles (right of the red leave button) and choose a screen or window.
+Anyone in a room can share, not just the host, and several people can share at the same time. Click **Share screen** in the controls at the bottom of the room and choose a screen or window.
 
-While you share, the button becomes a green **Sharing** button. Click it (or right-click your own tile) for the sharing menu:
+**The controls** float over the bottom of the room: they show when you move the mouse over it, and hide after 2.5 s without movement or when the mouse leaves it. From the left:
+
+| Where | Buttons |
+|---|---|
+| Left (when a stream is focused) | **Grid** (back to the grid) and **Hide others / Show others** (the strip) |
+| Middle | **Share screen** (or **Sharing** while you share), **ⓘ** room details, and the red **leave** button, last |
+| Right | **Volume** and **New window** (for the focused stream), and **Full screen** |
+
+While you share, the button becomes a green screen icon. Click it (or right-click your own tile) for the sharing menu:
 
 | Option | What it does |
 |---|---|
 | **Change source…** | Switch to another screen or window, or change the audio options, without anyone having to reconnect. |
 | **Mute audio / Unmute audio** | Stops sending system audio while the video keeps going. It says **No audio** if audio isn't being captured. |
 | **Quality you send** | The maximum quality you send (Native, 1080p, 720p at 60 or 30 fps, 480p). It applies immediately; each viewer may still get less, for example if their window is small or their network is slow. |
+| **Stream stats** | Opens the stats panel (see below). |
 | **Stop sharing** | Ends your stream. |
 
-**Stats** (the sliders button next to it) shows your stream's resolution, frame rate, upload, encode time, codec, encoder, CPU and memory (the app's and the whole computer's, games included) and what is limiting quality, and also lets you change the quality you send.
+**Stream stats** shows your stream's resolution, frame rate, upload, encode time, codec, encoder, CPU and memory (the app's and the whole computer's, games included) and what is limiting quality, and also lets you change the quality you send.
 
-The red button left of it leaves the room (for the host, it ends the room for everyone, after asking).
+The red button at the end leaves the room (for the host, it ends the room for everyone, after asking).
 
 **When your stream struggles**, the room tells you why: your computer can't encode fast enough, your upload can't keep up with everyone watching, or your graphics card ran out of hardware encoders (some viewers are then encoded by the CPU). The notice only appears when the problem lasts several seconds, goes away once it's solved, and won't come back for the same reason for 10 minutes. **Lower to …** lowers your maximum quality one step.
 
@@ -105,13 +114,14 @@ The red button left of it leaves the room (for the host, it ends the room for ev
 
 Everyone in the room has a **tile** in the middle: their picture and name. Tiles keep a 16:9 shape and grow as large as the window allows. Nothing plays until you choose: people who are sharing have a red **Live** badge, and their tile shows a preview of their stream, taken when they start and refreshed about once a minute.
 
-- Click **Watch stream** on their tile, click them in the rooms column (hover first to see their preview), or **Watch all** in the control bar. Their tile then plays their stream, with their name over its top. Click them in the rooms column again, or **Stop watching** in the stream's right-click menu, to stop; an eye marks the streams you watch.
-- **The first stream you watch opens in the spotlight**, with everyone else in a strip below. **Watch all**, or a second stream, keeps the grid.
-- **Click a tile** to put it in the **spotlight** (clicking one in the strip focuses it instead). Click the focused tile again, the grid button under it (left), or press **Esc** to go back to the grid.
-- **Only streams** (the funnel button at the left of the control bar, or the same option in any tile's right-click menu) leaves out the people who aren't sharing, so the streams get all the space. It's remembered; while nobody shares, everyone shows anyway.
+- Click **Watch stream** on their tile, or click them in the rooms column (hover first to see their preview). Their tile then plays their stream, with their name over its top. Click them in the rooms column again, or **Stop watching** in the stream's right-click menu, to stop; an eye marks the streams you watch.
+- **The first stream you watch opens in the spotlight**, with everyone else in a strip below. A second stream keeps the grid.
+- **Click a tile** to put it in the **spotlight** (clicking one in the strip focuses it instead). Click the focused tile again, the **Grid** button in the controls, or press **Esc** to go back to the grid.
+- **Show only streams** (in any tile's right-click menu) leaves out the people who aren't sharing, so the streams get all the space. It's remembered; while nobody shares, everyone shows anyway.
 - **Who's watching**: a stream's name bar shows an eye with how many people watch it and their pictures; point at it for their names. A stream you muted shows a crossed-out speaker next to the name.
 - The room's name is in the title bar, at the top of the window.
-- **Double-click a stream** to fill the screen with it, like a video player: the stream takes the whole screen, and the strip and the controls float over its bottom. After 2.5 s without moving the mouse everything but the picture hides (the strip, the controls, the name, the stats badges and the pointer); move the mouse to bring them back. **Esc** or the button at the bottom right brings the window back.
+- **Double-click a stream** to fill the screen with it, like a video player: the stream takes the whole screen, and the strip and the controls float over its bottom. After 2.5 s without moving the mouse everything but the picture hides (the strip, the controls, the name, the stats badges and the pointer); move the mouse to bring them back. **Esc** or the **Full screen** button brings the window back. The same button, in the grid, fills the screen with the grid.
+- **New window** (in the controls, or the stream's right-click menu) opens the focused stream in a window of its own, for example full size on a second monitor. It plays the same stream (no extra load on the person sharing), keeps playing when you minimize the room, and is hidden from screen recording like the room. Its tile says **Playing in another window**; **Bring back**, or closing the window, puts it back. Double-click the window for full screen.
 - In the spotlight, **Hide others** puts the strip away so the focused tile gets the whole height; the streams in it stop sending you video until you show them again (you still hear them).
 - When you're alone in your room, an **Invite people** tile shows the address to give people on a VPN.
 
@@ -120,12 +130,13 @@ Everyone in the room has a **tile** in the middle: their picture and name. Tiles
 | Option | What it does |
 |---|---|
 | **Volume** (slider) and **Mute** | Each stream has its own volume and mute, remembered per person. |
-| **Stop watching**, **Focus**, **Full screen** | As above. |
+| **Stop watching**, **Focus**, **Full screen**, **Open in a new window** | As above. |
+| **Show only streams / Show everyone** | Leaves out the people who aren't sharing (any tile's menu). |
 | **Quality you receive** | **Auto** follows the size you watch at, so a small tile uses little bandwidth. You can also cap it at 1080p, 720p, or 720p/480p/360p at 30 fps. Remembered per person. |
 | **Try the faster connection again** | Only when the stream fell back to the slower TCP connection. |
 | **Stop *name*'s stream**, **Remove from room** | Host only. |
 
-**Under a focused stream**, the speaker mutes it, or unmutes it back to the last volume; point at the speaker for its volume slider. The button next to it fills the screen.
+**In the controls**, while a stream is focused, the speaker mutes it, or unmutes it back to the last volume; point at the speaker for its volume slider.
 
 The **stats badges** on a stream show its frame rate, latency, resolution, codec and connection type; turn them off in **Settings → Appearance**.
 
@@ -135,14 +146,14 @@ While you **minimize** the app, or put one tile in full screen, the streams you 
 
 ## Chat and people
 
-- **Chat** is on the right: messages with time and picture, and an emoji picker. Messages someone sends within 5 minutes of each other share one name and picture (hover over one to see its time). Hide the chat with the chat button at the right end of the control bar; while it's hidden, that button counts the new messages. Messages are kept only while the room exists.
+- **Chat** is on the right: messages with time and picture, and an emoji picker. Messages someone sends within 5 minutes of each other share one name and picture (hover over one to see its time). Hide the chat with the chat button at the top right of the window; while it's hidden, that button counts the new messages. Messages are kept only while the room exists.
 - **People** are listed under the room you're in, in the rooms column: who hosts it, who is **Live** (or **Paused**), and who is reconnecting. While you share, the people watching you show how it's going under their name (*watching you · 60 fps · 20 ms*, or *not looking*).
 
 If your network drops for a moment, the app reconnects on its own and puts you back in your seat without asking for the PIN again, as long as you're back within 30 seconds. Streams you were watching reconnect automatically.
 
 ## If you are the host
 
-The **ⓘ** in the control bar, next to the share button, shows the room's details: privacy, how long it has been open, who hosts it and the round trip to it (and, for guests, the address to copy). For the host, it also lets you:
+The **ⓘ** in the controls, next to the share button, shows the room's details: privacy, how long it has been open, who hosts it and the round trip to it (and, for guests, the address to copy). For the host, it also lets you:
 
 - switch between **Public** and **Private** at any time; people already inside stay connected;
 - show or hide the **PIN**, **copy** it, **generate a new one**, or **set your own**;
@@ -150,7 +161,7 @@ The **ⓘ** in the control bar, next to the share button, shows the room's detai
 
 Right-clicking a person (their tile, or their name in the rooms column, where a **⋯** button also appears on hover) lets you **stop their stream** or **remove** them from the room (they can't come back to this room session). In the chat you can **delete messages** and **mute the chat** (people still see the history).
 
-**End room for everyone** (also behind the **ⓘ**, or the red button in the control bar) closes the room for everyone.
+**End room for everyone** (also behind the **ⓘ**, or the red button at the end of the controls) closes the room for everyone.
 
 ## Settings
 
