@@ -229,7 +229,8 @@ npm run perf -- --viewers=2 --source=fake       # the animated canvas of the e2e
 |---|---|
 | `--viewers=<n>` | How many viewers (default 1, at most 9: a room holds 10 people). Each is its own app instance with its own `--profile`, and watches the streamer. |
 | `--seconds=<s>` | How long to measure (default 60), after `--warmup=<s>` (default 15). |
-| `--source=screen\|fake` | Share the first real screen (default on Windows and macOS) or an animated canvas (default on Linux). |
+| `--source=screen\|fake\|fake-detailed` | Share the first real screen (default on Windows and macOS) or an animated 1080p60 canvas (default on Linux). `fake-detailed` covers the canvas with still text, like a desktop: big keyframes, small frames in between. |
+| `--hint=auto\|detail\|motion` | The streamer's **Optimize for**: `detail` (text, a desktop) is sent as screen content and `motion` (games) as video, which WebRTC paces differently. Default: the app's setting (Automatic). |
 | `--quality=<preset>` | The streamer's maximum quality: `native60`, `1080p60`, `720p60`, `720p30` or `480p30`. |
 | `--view-height=<px>` | Viewers ask for this height instead of their tile's, so a dozen small windows on one computer still ask for 1080p. |
 | `--host-only` | Only the streamer: it prints the address and waits (up to 10 minutes) for a viewer from another computer. |
@@ -240,7 +241,7 @@ npm run perf -- --viewers=2 --source=fake       # the animated canvas of the e2e
 
 Each run writes `perf-results/<date-time>/` (git-ignored):
 
-- `summary.md`: one row per viewer (the encoder the streamer used for it, fps p50/p5, latency p50/p95, jitter buffer, freezes, dropped frames) and one per streamer (the app's and the computer's CPU, encode time, sent fps). Only the measured window counts, not the warm-up.
+- `summary.md`: one row per viewer (the encoder the streamer used for it, fps p50/p5, latency p50/p95, jitter buffer, freezes, keyframes received, dropped frames) and one per streamer (the app's and the computer's CPU, encode time, sent fps). Only the measured window counts, not the warm-up.
 - `streamer.jsonl`, `viewer-<n>.jsonl`: one JSON sample per second per stream, as written by `--perf-log`.
 - `run.json`: the command, the app version, the OS, CPU and graphics card.
 
@@ -248,7 +249,7 @@ To report results, attach the folder (or at least `summary.md` and `run.json`) t
 
 **Under the hood.** `scripts/perf/run.cjs` turns the options into `PERF_OPTIONS` for `scripts/perf/perf.spec.ts`, which drives the instances with Playwright like the end-to-end tests. Two switches of the app do the measuring, and do nothing unless given:
 
-- `--perf-log=<file>`: every second, the streamer writes what it sends each watcher (encoder, hardware or not, fps, size, bitrate, encode time, limitation, RTT) with the app's and the computer's CPU and memory; a watcher writes what it receives (fps, size, latency estimate, jitter buffer delay of that second, freezes, dropped frames, decoder).
+- `--perf-log=<file>`: every second, the streamer writes what it sends each watcher (encoder, hardware or not, fps, size, bitrate, encode time, limitation, RTT, and raw counters: keyframes, huge frames, keyframe and resend requests, target and available bitrate) with the app's and the computer's CPU and memory; a watcher writes what it receives (fps, size, latency estimate, jitter buffer delay of that second, freezes, dropped frames, decoder, and raw counters: keyframes, keyframe and resend requests sent, jitter buffer target).
 - `--perf-view-height=<px>`: the forced view height above.
 
 The summary is computed by pure functions in `src/shared/perfSummary.ts` (tested in `tests/perf.test.ts`).

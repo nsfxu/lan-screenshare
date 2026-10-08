@@ -7,6 +7,7 @@ import {
   type WatchQuality,
   type WatchQualityId
 } from '../../shared/quality'
+import type { PerfReceiverCounters } from '../../shared/perf'
 import type { MediaState, ServerMessage, SignalData, Transport, ViewerStats } from '../../shared/types'
 import { shortCodecName } from './codecs'
 import { Emitter } from './emitter'
@@ -67,11 +68,13 @@ export class Subscription extends Emitter<Events> {
   } | null = null
   private publisherEncodeMs: number | null = null
   /** What only the perf log needs from the last WebRTC sample (see --perf-log). */
-  private perfExtra: { jitterBufferMs: number | null; freezeCount: number | null; freezeSeconds: number | null } = {
-    jitterBufferMs: null,
-    freezeCount: null,
-    freezeSeconds: null
-  }
+  private perfExtra: {
+    jitterBufferMs: number | null
+    freezeCount: number | null
+    freezeSeconds: number | null
+    counters?: PerfReceiverCounters
+  } = { jitterBufferMs: null, freezeCount: null, freezeSeconds: null }
+  private prevJbTarget: { delay: number; count: number } | null = null
   /** Our own quality choice for this stream ('auto' follows the tile size). */
   quality: WatchQuality = getWatchQuality('auto')
   /** Stepped pixel height we display the stream at (null = full quality). */
@@ -275,6 +278,26 @@ export class Subscription extends Emitter<Events> {
     }
   }
 
+  /** Raw counters for the --perf-log file. */
+  private receiverCounters(inb: Record<string, any>, emitted: number): PerfReceiverCounters | undefined {
+    if (!window.api.perf.options.logging) return undefined
+    const target = Number(inb.jitterBufferTargetDelay ?? NaN)
+    const prev = this.prevJbTarget
+    this.prevJbTarget = Number.isFinite(target) ? { delay: target, count: emitted } : null
+    const count = prev ? emitted - prev.count : 0
+    return {
+      keyFrames: Number(inb.keyFramesDecoded ?? 0),
+      pli: Number(inb.pliCount ?? 0),
+      fir: Number(inb.firCount ?? 0),
+      nack: Number(inb.nackCount ?? 0),
+      framesReceived: Number(inb.framesReceived ?? 0),
+      framesDecoded: Number(inb.framesDecoded ?? 0),
+      pauseCount: Number(inb.pauseCount ?? 0),
+      jitterBufferTargetMs:
+        prev && count > 0 && Number.isFinite(target) ? Math.round(((target - prev.delay) / count) * 10000) / 10 : null
+    }
+  }
+
   private teardown(): void {
     if (this.connectTimer) clearTimeout(this.connectTimer)
     this.connectTimer = null
@@ -336,7 +359,8 @@ export class Subscription extends Emitter<Events> {
       framesDropped: stats.framesDropped,
       decoder: stats.decoder,
       bitrateKbps: stats.bitrateKbps,
-      packetLossPct: Math.round(stats.packetLossPct * 100) / 100
+      packetLossPct: Math.round(stats.packetLossPct * 100) / 100,
+      counters: webrtc ? this.perfExtra.counters : undefined
     })
   }
 
@@ -417,7 +441,8 @@ export class Subscription extends Emitter<Events> {
     this.perfExtra = {
       jitterBufferMs: jbCount > 0 ? Math.round(jitterMs * 10) / 10 : null,
       freezeCount: typeof inb.freezeCount === 'number' ? inb.freezeCount : null,
-      freezeSeconds: typeof inb.totalFreezesDuration === 'number' ? inb.totalFreezesDuration : null
+      freezeSeconds: typeof inb.totalFreezesDuration === 'number' ? inb.totalFreezesDuration : null,
+      counters: this.receiverCounters(inb, cur.jbCount)
     }
 
     return {

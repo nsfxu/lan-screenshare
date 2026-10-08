@@ -98,7 +98,11 @@ A codec the watcher can't decode is never offered. The Settings panel shows the 
 4. Applies the codec order, creates the offer and sends it through the server.
 5. When the answer arrives, raises WebRTC's start/min bitrate hints (`mungeBitrates`) so a LAN stream reaches full quality in a second or two, and tunes Opus for music (`mungeOpus`: stereo, 128 kbps average, in-band FEC, no DTX).
 
-Chromium is started with switches that matter here (`src/main/index.ts`): real host ICE candidates instead of mDNS names (they don't resolve across VPNs), H.265 send/receive allowed, no background throttling of a minimized window.
+Chromium is started with switches that matter here (`src/main/index.ts`): real host ICE candidates instead of mDNS names (they don't resolve across VPNs), H.265 send/receive allowed, no background throttling of a minimized window, and **faster pacing of big frames**.
+
+### Keyframes without freezes
+
+WebRTC sends a keyframe every 3000 frames even when nobody asks (`keyFrameInterval`), about every 52 s at 58 fps. It paces packets at a multiple of its target bitrate: 1.0× for screen content (the "detail" hint, a desktop) and 1.1× for video ("motion", a game). A keyframe of a detailed 1080p desktop (100–700 KB) then took 0.2–0.9 s to arrive, and every watcher's picture froze meanwhile, once a minute. The app starts Chromium with `--force-fieldtrials=WebRTC-ProbingScreenshareBwe/10.0,2875,80,40,-60,3/WebRTC-Video-Pacing/factor:10.0/`, which paces both kinds at 10×: the same keyframes arrive without a freeze. Only short bursts go faster; the average bitrate doesn't change. A `--force-fieldtrials` on the command line replaces it (for experiments with `npm run perf`).
 
 ## Quality control
 
@@ -276,4 +280,9 @@ Windows 10 (19045), NVIDIA GeForce RTX 4070 (driver 32.0.16.1047), AMD Ryzen 9 7
 - The 9-viewer numbers come from two runs that stopped when a tenth viewer found the room full, so they include the warm-up (30–45 s per viewer).
 - Encode time per frame grows with the number of viewers, since every encoder shares the card, but the streamer kept sending 57–58 fps to everyone.
 - With everything on one computer, the viewers' decoding counts too: most of the computer's CPU, and most of the latency growth (the viewers' jitter buffer grew from ~8 ms to 30–60 ms). Two computers (`--host-only` and `--join`) would separate the streamer's cost from the viewers'.
-- At 1080p, each viewer froze for 0.4–0.9 s once or twice in 90 s, about 52 s into each connection and again 52 s later, while the streamer kept sending a steady 58 fps with no packet loss. So the cause is on the receiving side. To be looked at with latency (Task 2).
+- At 1080p, each viewer froze for 0.4–0.9 s once or twice in 90 s, about 52 s into each connection and again 52 s later, while the streamer kept sending a steady 58 fps with no packet loss. Each freeze was a keyframe being paced out slowly; fixed by [faster pacing](#keyframes-without-freezes). Same PC, 2 viewers at 1080p for 120 s, a desktop shared:
+
+  | Pacing | Keyframes per viewer | Freezes per viewer | Latency p50 / p95 |
+  |---|---|---|---|
+  | WebRTC's default | 2 | 2 (0.4 s in all) | 32 / 33–35 ms |
+  | 10× (the app's default since this change) | 2 | 0 | 31 / 32 ms |

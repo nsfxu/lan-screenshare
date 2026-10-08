@@ -33,6 +33,37 @@ export function parsePerfArgs(argv: readonly string[]): PerfOptions {
   return { logFile, viewHeight }
 }
 
+/** Cumulative counters from the sender's getStats, to see what happens around a freeze. */
+export interface PerfSenderCounters {
+  keyFrames: number
+  /** Frames at least 2.5 times the average size (big keyframes, mostly). */
+  hugeFrames: number
+  /** Keyframe requests and resend requests received from the watcher. */
+  pli: number
+  fir: number
+  nack: number
+  retransmittedBytes: number
+  /** How often the encoder changed resolution on its own (CPU or bandwidth). */
+  resolutionChanges: number
+  /** The encoder's target, and what congestion control thinks the path carries (not cumulative). */
+  targetKbps: number | null
+  availableKbps: number | null
+}
+
+/** Cumulative counters from the watcher's getStats. */
+export interface PerfReceiverCounters {
+  keyFrames: number
+  /** Keyframe and resend requests this watcher sent. */
+  pli: number
+  fir: number
+  nack: number
+  framesReceived: number
+  framesDecoded: number
+  pauseCount: number
+  /** What the jitter buffer aimed for in the last second (not cumulative). */
+  jitterBufferTargetMs: number | null
+}
+
 /** The streamer's side of one watcher's connection, in one second. */
 export interface PerfSenderRow {
   /** The watcher's display name (the perf script names them "Viewer 1", …). */
@@ -51,6 +82,8 @@ export interface PerfSenderRow {
   rttMs: number | null
   /** The watcher can't see the stream, so it gets no video (see HIDDEN_VIEW). */
   hidden: boolean
+  /** WebRTC only. */
+  counters?: PerfSenderCounters
 }
 
 export interface PerfStreamerSample {
@@ -81,6 +114,8 @@ export interface PerfWatcherSample {
   decoder: string
   bitrateKbps: number
   packetLossPct: number
+  /** WebRTC only. */
+  counters?: PerfReceiverCounters
 }
 
 export type PerfSample = PerfStreamerSample | PerfWatcherSample

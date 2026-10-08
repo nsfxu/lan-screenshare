@@ -55,6 +55,8 @@ export interface WatcherSummary {
   /** New freezes during the window, and their total length. */
   freezes: number | null
   freezeSeconds: number | null
+  /** Keyframes received during the window (WebRTC only). */
+  keyFrames: number | null
   framesDropped: number
   /** Seconds the watcher had samples for. */
   seconds: number
@@ -143,6 +145,7 @@ export function summarize(logs: readonly PerfLog[], from = -Infinity, to = Infin
       const encoder = mode(rows.map((r) => r.encoder).filter(Boolean))
       const freezeCounts = numbers(samples.map((s) => s.freezeCount))
       const freezeSeconds = numbers(samples.map((s) => s.freezeSeconds))
+      const keyFrames = numbers(samples.map((s) => s.counters?.keyFrames ?? null))
       watchers.push({
         watcher: log.instance,
         streamer,
@@ -154,6 +157,7 @@ export function summarize(logs: readonly PerfLog[], from = -Infinity, to = Infin
         jitterBufferMs: percentiles(numbers(samples.map((s) => s.jitterBufferMs))),
         freezes: freezeCounts.length ? growth(freezeCounts) : null,
         freezeSeconds: freezeSeconds.length ? Math.round(growth(freezeSeconds) * 10) / 10 : null,
+        keyFrames: keyFrames.length ? growth(keyFrames) : null,
         framesDropped: growth(samples.map((s) => s.framesDropped)),
         seconds: samples.length
       })
@@ -183,15 +187,15 @@ export function summaryMarkdown(summary: PerfSummary, title: string): string {
     ''
   )
   lines.push('## Watchers', '')
-  lines.push('| Watcher | Streamer | Transport | Encoder | fps p50 | fps p5 | Latency p50 | Latency p95 | Jitter buffer p50 | Freezes | Dropped |')
-  lines.push('|---|---|---|---|---|---|---|---|---|---|---|')
+  lines.push('| Watcher | Streamer | Transport | Encoder | fps p50 | fps p5 | Latency p50 | Latency p95 | Jitter buffer p50 | Freezes | Keyframes | Dropped |')
+  lines.push('|---|---|---|---|---|---|---|---|---|---|---|---|')
   for (const w of summary.watchers) {
     const encoder = w.encoder ? `${w.encoder} (${w.hardware ? 'hw' : 'sw'})` : '–'
     const freezes = w.freezes === null ? '–' : `${w.freezes} (${fmt(w.freezeSeconds ?? 0, 1)} s)`
     lines.push(
       `| ${w.watcher} | ${w.streamer} | ${w.transport} | ${encoder} | ${fmt(w.fps?.p50)} | ${fmt(w.fps?.p5)} | ` +
         `${fmt(w.latencyMs?.p50)} ms | ${fmt(w.latencyMs?.p95)} ms | ${fmt(w.jitterBufferMs?.p50)} ms | ` +
-        `${freezes} | ${w.framesDropped} |`
+        `${freezes} | ${w.keyFrames ?? '–'} | ${w.framesDropped} |`
     )
   }
   lines.push('', '## Streamers', '')

@@ -127,6 +127,25 @@ describe('summarize', () => {
     expect(v2.framesDropped).toBe(4)
   })
 
+  it('counts the keyframes received during the run', () => {
+    const counters = (keyFrames: number) => ({
+      keyFrames,
+      pli: 0,
+      fir: 0,
+      nack: 0,
+      framesReceived: 0,
+      framesDecoded: 0,
+      pauseCount: 0,
+      jitterBufferTargetMs: null
+    })
+    const log: PerfLog = {
+      instance: 'Viewer 1',
+      samples: [1, 1, 2, 2, 3].map((k, i) => watcherSample(1000 * i, { counters: counters(k) }))
+    }
+    expect(summarize([log]).watchers[0].keyFrames).toBe(2)
+    expect(summarize([viewer1]).watchers[0].keyFrames).toBeNull()
+  })
+
   it('leaves out samples outside the window (the warm-up)', () => {
     const summary = summarize([streamer, viewer1], 2000, 3000)
     const v1 = summary.watchers[0]
@@ -157,7 +176,7 @@ describe('summarize', () => {
     const md = summaryMarkdown(summarize([streamer, viewer1, viewer2]), '2 viewers')
     expect(md).toContain('# 2 viewers')
     expect(md).toContain('Hardware encoders: **1 of 2** watchers')
-    expect(md).toContain('| Viewer 1 | Streamer | webrtc | NvencH264 (hw) | 60 | 58 | 35 ms | 49 ms | 5 ms | 0 (0.0 s) | 0 |')
+    expect(md).toContain('| Viewer 1 | Streamer | webrtc | NvencH264 (hw) | 60 | 58 | 35 ms | 49 ms | 5 ms | 0 (0.0 s) | – | 0 |')
     expect(md).toContain('| Viewer 2 | Streamer | webrtc | libvpx (sw) |')
     expect(md).toContain('| Streamer | 12 % | 13 % | 40 % | 40 % |')
   })
