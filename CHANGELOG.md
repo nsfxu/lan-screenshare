@@ -10,6 +10,8 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-10-08
+
 ### Fixed
 
 - **No more short freeze about once a minute** when watching a shared desktop at full size. Every minute or so the stream sends a full picture, and it used to arrive slowly enough to stall the video for a moment (0.2–0.9 s); it now arrives without a pause.
@@ -101,7 +103,8 @@ The first release.
 - Reconnects after short network drops, and switches to TCP when a network blocks WebRTC.
 - Encrypted connections, the PIN kept only in memory, and the window hidden from screenshots while you watch.
 
-[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.2.1...HEAD
+[2.2.1]: https://github.com/nsfxu/lan-screenshare/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/nsfxu/lan-screenshare/compare/v1.2.0...v2.0.0
