@@ -66,7 +66,7 @@ Nothing to change in ScreenShare: it sees the ZeroTier network like your home ne
 - **Host**: click **Create room** as usual.
 - **Everyone else**: the room appears under **Rooms on your network** within a few seconds. Click it to join.
 
-If a room doesn't show up, use **Join by IP** with the host's ZeroTier address. The host sees it next to its name under **Members** on my.zerotier.com, or in the room details (**ⓘ** in the control bar): hover over the address to see all of them, the ZeroTier one is in the range set in step 1.
+If a room doesn't show up, use **Join by IP** with the host's ZeroTier address. The host sees it next to its name under **Members** on my.zerotier.com, or in the room details (**ⓘ** in the controls at the bottom of the room): hover over the address to see all of them, the ZeroTier one is in the range set in step 1.
 
 ## If something doesn't work
 

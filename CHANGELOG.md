@@ -12,13 +12,16 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ### Changed
 
-- **More room for the streams**: the bar at the top of the room is gone. The room's name is in the title bar, the room details (ⓘ) are in the control bar next to the share button, and the chat button is at the right end of the control bar.
-- **The first stream you watch opens focused**, with everyone else in the strip below. **Watch all** keeps the grid.
+- **More room for the streams**: the bar at the top of the room is gone, and so is the strip of buttons under it. The controls now float over the bottom of the room, show when you move the mouse there and hide after a moment: the grid and strip buttons, **Share screen** (a green screen icon while you share, with **Stream stats** now in its menu), the room details (ⓘ), the red leave button last, and for a focused stream its volume, **New window** and **Full screen**. All with new icons.
+- The room's name and the chat button are in the title bar, at the top of the window. Notices appear above the controls instead of covering them.
+- **The first stream you watch opens focused**, with everyone else in the strip below.
+- **Watch all** is gone; start streams from their tiles or the rooms column.
 
 ### Added
 
 - **Who's watching**: a stream shows how many people watch it, with their pictures; point at it for their names.
-- **Only streams**: a button in the control bar (and an option in the right-click menu) leaves out the people who aren't sharing, so the streams get all the space. It's remembered.
+- **New window**: open a stream in a window of its own, for example full size on a second monitor. It keeps playing when the room is minimized, and the tile says where it went.
+- **Show only streams** (in the right-click menu) leaves out the people who aren't sharing, so the streams get all the space. It's remembered.
 - A stream you muted shows a crossed-out speaker next to its name.
 
 ## [2.2.1] - 2026-10-08

@@ -285,7 +285,8 @@ flowchart TB
   Stage --> Remote["RemoteTile<br/>one per watched stream"]
   Self --> SV["ScreenViewer<br/>video, stats badges, volume (lib/volume.ts)"]
   Remote --> SV
-  Room --> Bar["Control bar<br/>leave, Watch all, Share screen / Sharing menu (source, audio, quality, stop), Stats"]
+  Room --> Bar["Controls over the stage (hide when idle)<br/>grid, strip, Share screen / Sharing menu (source, audio, quality, stats, stop), ⓘ, leave,<br/>volume, new window, full screen; chat button in the title bar"]
+  Room --> SW["StreamWindow<br/>a stream in its own window (portal, lib/streamWindow.ts)"]
   Room --> Menu["Menu<br/>every right-click and button menu; volume sliders"]
   Room --> Chat["ChatPanel (right)"]
 ```

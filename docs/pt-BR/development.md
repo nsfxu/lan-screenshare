@@ -135,7 +135,7 @@ Mantenha o C# 5: nada de interpolação de strings (`$"..."`), `?.`, `nameof`, m
   - `[watch <id>]`: uma transmissão assistida (transporte, fallback, qualidade escolhida);
   - `[win-audio]`: o auxiliar de áudio do Windows (qual processo fica de fora, erros).
 - **Settings → Open logs** abre a pasta.
-- **Estatísticas**: o botão **Stats** (quem transmite) e os selos em cada quadro (espectador) mostram fps, bitrate, codec, codificador, RTT e o que limita a qualidade.
+- **Estatísticas**: o **Stream stats** do menu Sharing (quem transmite) e os selos em cada quadro (espectador) mostram fps, bitrate, codec, codificador, RTT e o que limita a qualidade.
 - A página **`chrome://webrtc-internals`** não é acessível pela janela do app, mas as estatísticas do WebRTC aparecem no DevTools por `RTCPeerConnection.getStats()`.
 
 ## Gerando instaladores

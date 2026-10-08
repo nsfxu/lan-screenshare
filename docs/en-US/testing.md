@@ -97,8 +97,9 @@ Keep decision logic out of React and out of WebRTC callbacks, in `src/shared/*.t
 | Struggle warnings (`struggle.spec.ts`) | Faked `qualityLimitationReason`: a short spike says nothing, a lasting one shows the notice, it clears with the problem, and "Lower to" lowers the quality. |
 | Layout (`layout.spec.ts`) | Recent rooms, rejoining, the window title, hidden columns surviving a reload; in a 700 px window the chat and rooms open over the room. |
 | People in the sidebar (`members.spec.ts`) | Bob's list under the room, the hover preview, watching from it, the host removing someone. |
-| Tiles (`stage.spec.ts`) | The invite tile, a tile per person, no room header (the name in the title bar), the first stream watched opening focused, Esc and click to focus, the ⓘ details (in the control bar) for a guest and the host. |
-| Who's watching (`watchers.spec.ts`) | Three people: the stream's viewers (count, pictures, names) for a watcher and the streamer, the muted icon, Only streams from the control bar (remembered) and from the right-click menu. |
+| Tiles (`stage.spec.ts`) | The invite tile, a tile per person, no room header (the name in the title bar), the first stream watched opening focused, Esc and click to focus, the ⓘ details (in the floating controls) for a guest and the host. |
+| A stream's own window (`window.spec.ts`) | The focused stream opens in a window of its own and plays there; its tile says so; both windows are hidden from screen capture; minimizing the room doesn't pause it; closing it brings the stream back. |
+| Who's watching (`watchers.spec.ts`) | Three people: the stream's viewers (count, pictures, names) for a watcher and the streamer, the muted icon, Show only streams from the right-click menu (remembered). |
 | Chat (`chat.spec.ts`) | The room-named message box, the unread count while hidden, grouping. |
 | Menus (`menus.spec.ts`) | The Sharing button's menu (quality, stop), right-click on your own tile and on a stream (quality you receive, stop watching), the host's actions. |
 | Focus and volume (`focus.spec.ts`) | Alice shares with a test tone: click to focus and back, the speaker mutes and unmutes, its slider and the menu's change the played volume, double-click full screen (the stream fills the screen with no frame; the strip, controls and name hide after a moment without the mouse and come back when it moves), hiding the strip pauses its stream. |
@@ -286,7 +287,7 @@ Run through this on real machines (ideally one Windows and one macOS) on a real 
 - [ ] Share a screen and a single window, with and without system audio.
 - [ ] Windows: in a Discord call with **Leave out Discord** on, the others don't hear themselves.
 - [ ] Windows with a 5.1/7.1 headset: system audio still works.
-- [ ] Two people share at once; a third watches both; grid, spotlight, **Watch all**.
+- [ ] Two people share at once; a third watches both; grid, spotlight, **New window** (on a second monitor), the controls hiding.
 - [ ] Your own stream is hidden until **Show my stream**.
 - [ ] The streamer's maximum quality (the Sharing button's menu, or Stats) and the watcher's Quality you receive (the stream's right-click menu) both change what is received (see the stats badges).
 - [ ] Full screen: controls and cursor hide after 2.5 s, come back on mouse move.

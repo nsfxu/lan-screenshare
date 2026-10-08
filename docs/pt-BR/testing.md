@@ -97,8 +97,9 @@ A pasta `e2e/` roda o app de verdade: duas instâncias (Alice e Bob, o build de 
 | Avisos de dificuldade (`struggle.spec.ts`) | `qualityLimitationReason` simulado: um pico curto não diz nada, um longo mostra o aviso, ele some com o problema, e "Lower to" baixa a qualidade. |
 | Layout (`layout.spec.ts`) | Salas recentes, voltar a entrar, o título da janela, colunas escondidas sobrevivendo a um recarregamento; numa janela de 700 px o chat e as salas abrem por cima da sala. |
 | Pessoas na coluna (`members.spec.ts`) | A lista do Bob embaixo da sala, a prévia ao passar o mouse, assistir dali, o anfitrião removendo alguém. |
-| Quadros (`stage.spec.ts`) | O quadro de convite, um quadro por pessoa, sem topo de sala (o nome na barra de título), a primeira transmissão assistida abrindo em destaque, Esc e clique para destacar, os detalhes do ⓘ (na barra de controles) para convidado e anfitrião. |
-| Quem assiste (`watchers.spec.ts`) | Três pessoas: quem assiste a transmissão (número, fotos, nomes) para um espectador e para quem transmite, o ícone de silenciado, Only streams pela barra de controles (lembrado) e pelo menu do botão direito. |
+| Quadros (`stage.spec.ts`) | O quadro de convite, um quadro por pessoa, sem topo de sala (o nome na barra de título), a primeira transmissão assistida abrindo em destaque, Esc e clique para destacar, os detalhes do ⓘ (nos controles por cima do palco) para convidado e anfitrião. |
+| Janela própria da transmissão (`window.spec.ts`) | A transmissão em destaque abre numa janela só dela e toca ali; o quadro avisa; as duas janelas ficam ocultas para captura de tela; minimizar a sala não a pausa; fechá-la traz a transmissão de volta. |
+| Quem assiste (`watchers.spec.ts`) | Três pessoas: quem assiste a transmissão (número, fotos, nomes) para um espectador e para quem transmite, o ícone de silenciado, Show only streams pelo menu do botão direito (lembrado). |
 | Chat (`chat.spec.ts`) | A caixa de mensagem com o nome da sala, a contagem de não lidas com o chat escondido, o agrupamento. |
 | Menus (`menus.spec.ts`) | O menu do botão Sharing (qualidade, parar), o botão direito no próprio quadro e numa transmissão (qualidade recebida, parar de assistir), as ações do anfitrião. |
 | Destaque e volume (`focus.spec.ts`) | A Alice compartilha com um tom de teste: clicar para destacar e voltar, o alto-falante silencia e volta, o controle dele e o do menu mudam o volume tocado, dois cliques para tela cheia (a transmissão ocupa a tela sem moldura; a faixa, os controles e o nome somem depois de um tempo sem mexer o mouse e voltam quando ele se mexe), esconder a faixa pausa a transmissão dela. |
@@ -286,7 +287,7 @@ Faça isto em máquinas reais (de preferência um Windows e um macOS) numa rede 
 - [ ] Compartilhar uma tela e uma janela, com e sem áudio do sistema.
 - [ ] Windows: numa chamada do Discord com **Leave out Discord** ligado, os outros não ouvem a própria voz.
 - [ ] Windows com headset 5.1/7.1: o áudio do sistema continua funcionando.
-- [ ] Duas pessoas compartilham ao mesmo tempo; uma terceira assiste as duas; grade, destaque, **Watch all**.
+- [ ] Duas pessoas compartilham ao mesmo tempo; uma terceira assiste as duas; grade, destaque, **Nova janela** (num segundo monitor), os controles sumindo.
 - [ ] A sua transmissão fica escondida até o **Show my stream**.
 - [ ] A qualidade máxima de quem transmite (o menu do botão Sharing, ou Stats) e o Quality you receive de cada espectador (menu do botão direito da transmissão) mudam o que é recebido (veja os selos de estatística).
 - [ ] Tela cheia: controles e ponteiro somem depois de 2,5 s e voltam ao mexer o mouse.
