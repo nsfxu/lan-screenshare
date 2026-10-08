@@ -13,6 +13,7 @@ import type {
   UpdateRoomRequest,
   UpdateStatus
 } from './types'
+import type { PerfRendererOptions, PerfSample } from './perf'
 
 export const IPC = {
   getSettings: 'settings:get',
@@ -54,7 +55,9 @@ export const IPC = {
   updateCheck: 'update:check',
   updateInstall: 'update:install',
   updateOpenPage: 'update:open-page',
-  log: 'system:log'
+  log: 'system:log',
+  perfOptions: 'perf:options',
+  perfSample: 'perf:sample'
 } as const
 
 export type WindowState = 'minimized' | 'restored' | 'focused' | 'blurred'
@@ -134,5 +137,11 @@ export interface ScreenShareApi {
     setTitleBarColors(color: string, symbolColor: string): Promise<void>
     onWindowState(cb: (state: WindowState) => void): () => void
     log(level: 'info' | 'warn' | 'error', message: string): void
+  }
+  /** Measuring mode (`--perf-log`, `--perf-view-height`); does nothing without those switches. */
+  perf: {
+    readonly options: PerfRendererOptions
+    /** Appended to the --perf-log file as one JSON line. */
+    log(sample: PerfSample): void
   }
 }

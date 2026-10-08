@@ -66,6 +66,12 @@ export class Subscription extends Emitter<Events> {
     decoded: number
   } | null = null
   private publisherEncodeMs: number | null = null
+  /** What only the perf log needs from the last WebRTC sample (see --perf-log). */
+  private perfExtra: { jitterBufferMs: number | null; freezeCount: number | null; freezeSeconds: number | null } = {
+    jitterBufferMs: null,
+    freezeCount: null,
+    freezeSeconds: null
+  }
   /** Our own quality choice for this stream ('auto' follows the tile size). */
   quality: WatchQuality = getWatchQuality('auto')
   /** Stepped pixel height we display the stream at (null = full quality). */
@@ -113,6 +119,8 @@ export class Subscription extends Emitter<Events> {
    * doesn't cost a full 1080p60 stream. Only step changes are sent.
    */
   setViewHeight(pixels: number | null): void {
+    // Measuring: many small windows on one computer still ask for full-size streams.
+    pixels = window.api.perf.options.viewHeight ?? pixels
     const step = viewHeightStep(pixels)
     if (step === this.viewHeight) return
     this.viewHeight = step
@@ -308,6 +316,28 @@ export class Subscription extends Emitter<Events> {
     this.emit('stats', stats)
     const mediaState = this.state as MediaState
     if (this.tick % 2 === 0) this.client.send({ type: 'stats', streamer: this.streamerId, stats, mediaState })
+    if (window.api.perf.options.logging) this.logPerf(stats)
+  }
+
+  private logPerf(stats: ViewerStats): void {
+    const webrtc = stats.transport === 'webrtc'
+    window.api.perf.log({
+      kind: 'watcher',
+      t: Date.now(),
+      streamer: this.client.participants.find((p) => p.id === this.streamerId)?.name ?? this.streamerId,
+      transport: stats.transport ?? this.transport,
+      fps: stats.fps,
+      width: stats.width,
+      height: stats.height,
+      latencyMs: stats.latencyMs,
+      jitterBufferMs: webrtc ? this.perfExtra.jitterBufferMs : null,
+      freezeCount: webrtc ? this.perfExtra.freezeCount : null,
+      freezeSeconds: webrtc ? this.perfExtra.freezeSeconds : null,
+      framesDropped: stats.framesDropped,
+      decoder: stats.decoder,
+      bitrateKbps: stats.bitrateKbps,
+      packetLossPct: Math.round(stats.packetLossPct * 100) / 100
+    })
   }
 
   private tcpStats(): ViewerStats | null {
@@ -384,6 +414,11 @@ export class Subscription extends Emitter<Events> {
     const decodeMs = decoded > 0 ? ((cur.decodeTime - prev.decodeTime) / decoded) * 1000 : 0
     const frameMs = fps > 0 ? 1000 / fps : 16.7
     const latency = frameMs / 2 + (this.publisherEncodeMs ?? 5) + rttMs / 2 + jitterMs + decodeMs + 8
+    this.perfExtra = {
+      jitterBufferMs: jbCount > 0 ? Math.round(jitterMs * 10) / 10 : null,
+      freezeCount: typeof inb.freezeCount === 'number' ? inb.freezeCount : null,
+      freezeSeconds: typeof inb.totalFreezesDuration === 'number' ? inb.totalFreezesDuration : null
+    }
 
     return {
       fps: Math.round(fps),

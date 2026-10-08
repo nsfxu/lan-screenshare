@@ -100,7 +100,7 @@ async function launchPerson(
  * getDisplayMedia() returns an animated 1280×720 canvas (background
  * FAKE_SCREEN_RGB), with a 440 Hz tone when audio is asked for.
  */
-async function fakeScreenCapture(win: Page): Promise<void> {
+export async function fakeScreenCapture(win: Page): Promise<void> {
   await win.evaluate(([r, g, b]) => {
     navigator.mediaDevices.getDisplayMedia = async (constraints?: DisplayMediaStreamOptions) => {
       const canvas = document.createElement('canvas')

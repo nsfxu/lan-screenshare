@@ -260,3 +260,20 @@ Windows 10, NVIDIA GPU, all instances on one machine (loopback network), before 
 Automatic codec selection picked H.265 on that machine because the driver reported hardware HEVC encoding as power-efficient but not H.264, even though hardware H.264 encoding worked when forced.
 
 Real packet loss has not been simulated yet; the adaptive controller and the budget split are covered by unit tests.
+
+### Encoder capacity (`npm run perf`, 2.2.0)
+
+Windows 10 (19045), NVIDIA GeForce RTX 4070 (driver 32.0.16.1047), AMD Ryzen 9 7900X, the real screen shared at 1080p60, the streamer and every viewer on that one computer. Viewers asked for 1080p (`--view-height=1080`) except in the first row. Every viewer got a hardware encoder: H.265 through `MediaFoundationVideoEncodeAccelerator (NVIDIA HEVC Encoder MFT)`.
+
+| Viewers | Hardware encoders | Viewer fps p50 (p5) | Latency p50 / p95 | Encode p50 / p95 | App CPU | Computer CPU p50 / p95 |
+|---|---|---|---|---|---|---|
+| 4, tile-sized (640×360) | 4 of 4 | 58 (56) | 30–34 / 33–39 ms | 2.9 / 3.4 ms | 5 % | 25 / 31 % |
+| 4 | 4 of 4 | 57–58 (55–56) | 52–59 / 85–162 ms | 6.5 / 7.6 ms | 8 % | 23 / 27 % |
+| 8 | 8 of 8 | 57–58 (54–56) | 61–82 / 97–132 ms | 11.3 / 14.5 ms | 15 % | 52 / 58 % |
+| 9 | 9 of 9 | 57 (48–54) | 75–100 / 106–186 ms | 15 / 26–31 ms | 19 % | 76 / 83–89 % |
+
+- **This card never ran out of hardware encoders**, up to 9 viewers, which is the most a room can hold (`MAX_USERS` = 10 people, the streamer included). Moving extra viewers to the TCP path (Task 4 of `plans/performance.md`) isn't needed on it; Intel and AMD graphics are still to be measured.
+- The 9-viewer numbers come from two runs that stopped when a tenth viewer found the room full, so they include the warm-up (30–45 s per viewer).
+- Encode time per frame grows with the number of viewers, since every encoder shares the card, but the streamer kept sending 57–58 fps to everyone.
+- With everything on one computer, the viewers' decoding counts too: most of the computer's CPU, and most of the latency growth (the viewers' jitter buffer grew from ~8 ms to 30–60 ms). Two computers (`--host-only` and `--join`) would separate the streamer's cost from the viewers'.
+- At 1080p, each viewer froze for 0.4–0.9 s once or twice in 90 s, about 52 s into each connection and again 52 s later, while the streamer kept sending a steady 58 fps with no packet loss. So the cause is on the receiving side. To be looked at with latency (Task 2).

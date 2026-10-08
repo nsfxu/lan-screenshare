@@ -11,3 +11,6 @@ native/bin/
 test-results/
 playwright-report/
 e2e.local.json
+
+# Measuring runs (npm run perf)
+perf-results/

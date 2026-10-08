@@ -1,8 +1,10 @@
 import { app, BrowserWindow, clipboard, desktopCapturer, dialog, ipcMain, screen, session, shell } from 'electron'
+import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { APP_NAME, DEFAULT_PORT, TITLE_BAR_HEIGHT } from '../shared/constants'
 import { IPC } from '../shared/ipc'
+import { parsePerfArgs, type PerfRendererOptions } from '../shared/perf'
 import { cpuBusyPercent, type CpuTimes } from '../shared/systemStats'
 import type { AppInfo, CreateRoomRequest, NativeAudioOptions, Settings, SystemStats, UpdateRoomRequest } from '../shared/types'
 import { parseHostPort } from '../utils/network'
@@ -24,6 +26,9 @@ if (profileArg) {
   const profile = profileArg.slice('--profile='.length).replace(/[^\w-]/g, '')
   if (profile) app.setPath('userData', path.join(app.getPath('appData'), `${APP_NAME}-${profile}`))
 }
+
+// `--perf-log=<file>` and `--perf-view-height=<px>`: measuring mode for `npm run perf`.
+const perf = parsePerfArgs(process.argv)
 
 // --- Chromium switches -------------------------------------------------------
 // LAN-only WebRTC: expose real host candidates instead of obfuscated mDNS
@@ -253,6 +258,23 @@ function registerIpc(): void {
     const fn = log[level] ?? log.info
     fn(`[renderer] ${String(message).slice(0, 2000)}`)
   })
+
+  ipcMain.on(IPC.perfOptions, (e) => {
+    const options: PerfRendererOptions = { logging: !!perf.logFile, viewHeight: perf.viewHeight }
+    e.returnValue = options
+  })
+  if (perf.logFile) {
+    const file = path.resolve(perf.logFile)
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    const out = fs.createWriteStream(file, { flags: 'a' })
+    out.on('error', (err) => log.warn('perf log not written', err))
+    log.info(`perf log: ${file}`)
+    ipcMain.on(IPC.perfSample, (_e, sample: unknown) => {
+      if (!sample || typeof sample !== 'object' || Array.isArray(sample)) return
+      const line = JSON.stringify(sample)
+      if (line.length <= 64_000) out.write(line + '\n')
+    })
+  }
 
   rooms.on('rooms', (list) => mainWindow?.webContents.send(IPC.roomsChanged, list))
   rooms.on('hosted', (hosted) => mainWindow?.webContents.send(IPC.hostedChanged, hosted))

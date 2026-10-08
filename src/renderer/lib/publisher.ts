@@ -12,7 +12,14 @@ import {
   type QualityPreset,
   type ViewLimit
 } from '../../shared/quality'
-import { STRUGGLE_KINDS, StruggleDetector, type SenderSample, type StruggleKind } from '../../shared/struggle'
+import type { PerfSenderRow } from '../../shared/perf'
+import {
+  isSoftwareEncoder,
+  STRUGGLE_KINDS,
+  StruggleDetector,
+  type SenderSample,
+  type StruggleKind
+} from '../../shared/struggle'
 import type {
   AudioChoice,
   CodecSupport,
@@ -22,6 +29,7 @@ import type {
   ServerMessage,
   SignalData,
   Settings,
+  SystemStats,
   Transport,
   ViewerStats
 } from '../../shared/types'
@@ -942,8 +950,51 @@ export class Publisher extends Emitter<Events> {
     }
     this.lastStats = stats
     this.emit('stats', stats)
+    if (window.api.perf.options.logging && this.track) this.logPerf(system, tcpKbps)
     if (struggle) this.emit('struggle', struggle)
     if (this.tick % 2 === 0 && this.track) this.client.send({ type: 'publisher-stats', encodeMs: stats.encodeMs })
+  }
+
+  /** One line for the --perf-log file: every watcher's connection, as this streamer sees it. */
+  private logPerf(system: SystemStats, tcpKbps: number): void {
+    const name = (id: string): string => this.client.participants.find((p) => p.id === id)?.name ?? id
+    const watchers: PerfSenderRow[] = []
+    for (const [id, peer] of this.peers) {
+      const s = peer.sample
+      if (!s) continue
+      watchers.push({
+        watcher: name(id),
+        transport: 'webrtc',
+        encoder: s.encoder,
+        hardware: !!s.encoder && !isSoftwareEncoder(s.encoder),
+        fps: Math.round(s.fps),
+        width: s.width,
+        height: s.height,
+        bitrateKbps: Math.round(s.bitrateKbps),
+        encodeMs: s.encodeMs === null ? null : Math.round(s.encodeMs * 10) / 10,
+        limitation: s.limitation,
+        rttMs: s.rttMs,
+        hidden: this.isHidden(id)
+      })
+    }
+    // One WebCodecs encoder serves every TCP watcher, so they share its numbers.
+    for (const id of this.tcpViewers) {
+      watchers.push({
+        watcher: name(id),
+        transport: 'tcp',
+        encoder: this.tcp ? 'WebCodecs' : '',
+        hardware: !!this.tcp?.hardware,
+        fps: null,
+        width: this.tcp?.width ?? 0,
+        height: this.tcp?.height ?? 0,
+        bitrateKbps: Math.round(tcpKbps),
+        encodeMs: this.tcp?.encodeMs ?? null,
+        limitation: 'none',
+        rttMs: null,
+        hidden: this.isHidden(id)
+      })
+    }
+    window.api.perf.log({ kind: 'streamer', t: Date.now(), watchers, system })
   }
 
   private async samplePeer(peer: Peer, now: number): Promise<void> {

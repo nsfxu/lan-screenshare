@@ -17,6 +17,7 @@ npm run typecheck    # must pass
 npm test             # must pass (vitest, real servers on random ports)
 npm run test:e2e     # must pass: two real app instances in a room (Playwright; Linux: under xvfb-run)
 npm run build        # production build into out/
+npm run perf -- --viewers=2   # measure a streamer and viewers (see docs/en-US/testing.md#measuring-performance)
 ```
 
 ## Where things are
@@ -35,6 +36,7 @@ npm run build        # production build into out/
 | Quality maths (pure, tested) | `src/shared/quality.ts` |
 | UI | `src/renderer/App.tsx` (three columns), `src/renderer/components/` (`RoomsSidebar`, `RoomMembers`, `RoomView`, `RoomStage`, `RoomInfo`, `ChatPanel`), `src/renderer/styles.css`, layout helpers in `src/renderer/lib/layout.ts` |
 | Windows helpers (C#) | `native/win-audio-capture/Program.cs` (system audio), `native/win-cursor-watch/Program.cs` (games hiding the cursor) |
+| Measuring performance | `scripts/perf/`, `src/shared/perf.ts`, `src/shared/perfSummary.ts`, [`plans/performance.md`](plans/performance.md) |
 | Tests | `tests/` (`TestClient` in `tests/helpers.ts`) |
 
 ## Rules

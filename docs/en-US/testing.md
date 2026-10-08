@@ -12,6 +12,7 @@ How the project is tested today, how to add tests, and how to check a change in 
 - [Testing pure logic](#testing-pure-logic)
 - [End-to-end tests](#end-to-end-tests)
 - [Driving the real app](#driving-the-real-app)
+- [Measuring performance](#measuring-performance)
 - [Checking the Windows audio helper](#checking-the-windows-audio-helper)
 - [Manual checklist before a release](#manual-checklist-before-a-release)
 
@@ -37,6 +38,7 @@ Tests run in Node (`vitest.config.ts`, environment `node`, 15 s timeout). They s
 | `tests/network.test.ts` | Address parsing and ranking, URLs with IPv6, TLS probe with fingerprint, codec ordering, Opus and bitrate SDP tweaks. |
 | `tests/crypto.test.ts` | PIN generation and validation, constant-time comparison, `PinGuard` lockout and reset. |
 | `tests/crop.test.ts` | Profile picture crop: centring, clamping, zoom around a point, zoom limits. |
+| `tests/perf.test.ts` | Measuring tool: its switches, percentiles, joining what each streamer sent with what each viewer received, freezes across reconnects, the warm-up left out, the summary table. |
 | `tests/renderer/gameCursor.test.ts` | Games that hide the cursor: switching to a fullscreen game's window and back after alt-tab, ignoring brief flashes and other displays, suggesting windowed games, keeping the screen when asked, no retry loop on failure. |
 
 The unit and integration tests don't cover what needs a real browser engine (WebRTC, WebCodecs, capture, the React UI): the [end-to-end tests](#end-to-end-tests) cover the main flows in the real app, and [driving the real app](#driving-the-real-app) by hand covers the rest. The Windows helpers need a Windows machine.
@@ -212,6 +214,46 @@ Tips:
 - **Pretend to be another OS** for platform-only UI: override the `system:app-info` IPC handler to return `platform: 'win32'`.
 - **Logs** of each profile are in its user data folder (for example `~/.config/ScreenShare-alice/logs/` on Linux).
 - Delete the test profiles' folders afterwards if you want a clean state.
+
+## Measuring performance
+
+`npm run perf` starts a streamer and some viewers on one computer, lets them run, and writes what they measured. It's for questions like "how many viewers before the graphics card runs out of hardware encoders?" (the plan is in [`plans/performance.md`](../../plans/performance.md)). It builds the app first, so run it from a clone with `npm install` done.
+
+```bash
+npm run perf -- --viewers=4                     # 1 streamer + 4 viewers, 60 s after a 15 s warm-up
+npm run perf -- --viewers=8 --view-height=1080 --seconds=90
+npm run perf -- --viewers=2 --source=fake       # the animated canvas of the e2e tests (Linux: under xvfb-run)
+```
+
+| Option | Meaning |
+|---|---|
+| `--viewers=<n>` | How many viewers (default 1, at most 9: a room holds 10 people). Each is its own app instance with its own `--profile`, and watches the streamer. |
+| `--seconds=<s>` | How long to measure (default 60), after `--warmup=<s>` (default 15). |
+| `--source=screen\|fake` | Share the first real screen (default on Windows and macOS) or an animated canvas (default on Linux). |
+| `--quality=<preset>` | The streamer's maximum quality: `native60`, `1080p60`, `720p60`, `720p30` or `480p30`. |
+| `--view-height=<px>` | Viewers ask for this height instead of their tile's, so a dozen small windows on one computer still ask for 1080p. |
+| `--host-only` | Only the streamer: it prints the address and waits (up to 10 minutes) for a viewer from another computer. |
+| `--join=<address:port>` | Only viewers, joining a room hosted on another computer. |
+| anything else | Passed to every app instance (for Chromium switches being tested). |
+
+**Two computers** (the clean way: viewers on the same computer also use its graphics card to decode): on the streaming PC run `npm run perf -- --host-only --seconds=90`, then on the other `npm run perf -- --join=<address>:47800 --viewers=4 --seconds=90` with an address the first one printed. Start the second within a minute or so of the first, so their measuring windows overlap.
+
+Each run writes `perf-results/<date-time>/` (git-ignored):
+
+- `summary.md`: one row per viewer (the encoder the streamer used for it, fps p50/p5, latency p50/p95, jitter buffer, freezes, dropped frames) and one per streamer (the app's and the computer's CPU, encode time, sent fps). Only the measured window counts, not the warm-up.
+- `streamer.jsonl`, `viewer-<n>.jsonl`: one JSON sample per second per stream, as written by `--perf-log`.
+- `run.json`: the command, the app version, the OS, CPU and graphics card.
+
+To report results, attach the folder (or at least `summary.md` and `run.json`) to the pull request that asked for them.
+
+**Under the hood.** `scripts/perf/run.cjs` turns the options into `PERF_OPTIONS` for `scripts/perf/perf.spec.ts`, which drives the instances with Playwright like the end-to-end tests. Two switches of the app do the measuring, and do nothing unless given:
+
+- `--perf-log=<file>`: every second, the streamer writes what it sends each watcher (encoder, hardware or not, fps, size, bitrate, encode time, limitation, RTT) with the app's and the computer's CPU and memory; a watcher writes what it receives (fps, size, latency estimate, jitter buffer delay of that second, freezes, dropped frames, decoder).
+- `--perf-view-height=<px>`: the forced view height above.
+
+The summary is computed by pure functions in `src/shared/perfSummary.ts` (tested in `tests/perf.test.ts`).
+
+On a Linux machine without a graphics card everything is encoded in software, and Chromium may leave the encoder and decoder names blank (the summary then says "without a known encoder"): use such runs to check the tool, not to measure.
 
 ## Checking the Windows audio helper
 
