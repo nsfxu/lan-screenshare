@@ -87,7 +87,7 @@ Anyone in a room can share, not just the host, and several people can share at t
 | Where | Buttons |
 |---|---|
 | Left (when a stream is focused) | **Grid** (back to the grid) and **Hide others / Show others** (the strip) |
-| Middle | **Share screen** (or **Sharing** while you share), **ⓘ** room details, and the red **leave** button, last |
+| Middle | **ⓘ** room details, **Share screen** (or **Sharing** while you share), and the red **leave** button, last |
 | Right | **Volume** and **New window** (for the focused stream), and **Full screen** |
 
 While you share, the button becomes a green screen icon. Click it (or right-click your own tile) for the sharing menu:

@@ -607,7 +607,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
         aria-expanded={infoOpen}
         onClick={() => setInfoOpen((v) => !v)}
       >
-        <Icon name="info" size={20} />
+        <Icon name="info" size={20} stroke={2.3} />
       </button>
       {infoOpen && (
         <RoomInfo
@@ -641,7 +641,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
         {focused && shown.length > 1 && (
           <>
             <button className="bar-btn" title="Back to the grid (Esc)" aria-label="Grid view" onClick={() => setFocus(null)}>
-              <Icon name="grid" size={20} />
+              <Icon name="grid" size={20} stroke={2.3} />
             </button>
             <button
               className={`bar-btn ${strip === 'closed' ? 'on' : ''}`}
@@ -650,12 +650,13 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
               title={strip === 'open' ? 'Hide the others (their video pauses)' : 'Show the others'}
               onClick={() => setStrip(strip === 'open' ? 'closed' : 'open')}
             >
-              <Icon name={strip === 'open' ? 'stripHide' : 'stripShow'} size={20} />
+              <Icon name={strip === 'open' ? 'stripHide' : 'stripShow'} size={20} stroke={2.3} />
             </button>
           </>
         )}
       </div>
       <div className="controls-center">
+        {roomDetails}
         {sharing.sharing ? (
           // Shows that we're sharing; its menu changes the source, mutes, sets the quality, shows the stats or stops.
           <button
@@ -668,22 +669,21 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
               menu?.label === 'Sharing' ? setMenu(null) : openMenu(menuAbove(e.currentTarget), 'Sharing', [sharingItems()])
             }
           >
-            <Icon name={sharing.paused ? 'pause' : 'shareScreen'} size={20} />
-            <Icon name="chevronUp" size={14} />
+            <Icon name={sharing.paused ? 'pause' : 'shareScreen'} size={20} stroke={2.3} />
+            <Icon name="chevronUp" size={14} stroke={2.3} />
           </button>
         ) : (
           <button className="bar-btn share" title="Share your screen or a window" onClick={() => setPickSource(true)}>
-            <Icon name="shareScreen" size={20} /> Share screen
+            <Icon name="shareScreen" size={20} stroke={2.3} /> Share screen
           </button>
         )}
-        {roomDetails}
         <button
           className="bar-btn hang-up"
           title={isHost ? 'End the room for everyone' : 'Leave the room'}
           aria-label={isHost ? 'End room' : 'Leave'}
           onClick={isHost ? endRoom : () => onLeave()}
         >
-          <Icon name="hangUp" size={22} />
+          <Icon name="hangUp" size={22} stroke={2.3} />
         </button>
       </div>
       <div className="controls-side end">
@@ -695,7 +695,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
             aria-label={streamWindows.has(focusedStream.id) ? 'Back to this window' : 'Open in a new window'}
             onClick={() => toggleWindow(focusedStream)}
           >
-            <Icon name={streamWindows.has(focusedStream.id) ? 'popIn' : 'popOut'} size={20} />
+            <Icon name={streamWindows.has(focusedStream.id) ? 'popIn' : 'popOut'} size={20} stroke={2.3} />
           </button>
         )}
         <button
@@ -704,7 +704,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           aria-label={stageFullscreen ? 'Exit full screen' : 'Full screen'}
           onClick={toggleStageFullscreen}
         >
-          <Icon name={stageFullscreen ? 'exitFullscreen' : 'fullscreen'} size={20} />
+          <Icon name={stageFullscreen ? 'exitFullscreen' : 'fullscreen'} size={20} stroke={2.3} />
         </button>
       </div>
     </div>
@@ -1254,7 +1254,7 @@ function VolumeControl({ name }: { name: string }) {
         aria-label={silent ? `Unmute ${name}` : `Mute ${name}`}
         onClick={() => toggleMute(name)}
       >
-        <Icon name={silent ? 'volumeOff' : 'volume'} size={20} />
+        <Icon name={silent ? 'volumeOff' : 'volume'} size={20} stroke={2.3} />
       </button>
       <div className="volume-pop">
         <input

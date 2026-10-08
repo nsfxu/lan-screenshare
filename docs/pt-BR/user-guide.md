@@ -89,7 +89,7 @@ Qualquer pessoa na sala pode compartilhar, não só o anfitrião, e várias pess
 | Onde | Botões |
 |---|---|
 | Esquerda (com uma transmissão em destaque) | **Grade** (volta à grade) e **Hide others / Show others** (a faixa) |
-| Meio | **Share screen** (ou **Sharing** enquanto você compartilha), **ⓘ** detalhes da sala, e o botão vermelho de **sair**, por último |
+| Meio | **ⓘ** detalhes da sala, **Share screen** (ou **Sharing** enquanto você compartilha), e o botão vermelho de **sair**, por último |
 | Direita | **Volume** e **Nova janela** (da transmissão em destaque), e **Tela cheia** |
 
 Enquanto você compartilha, o botão vira um ícone de tela verde. Clique nele (ou clique com o botão direito no seu próprio quadro) para o menu de compartilhamento:

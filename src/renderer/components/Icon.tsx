@@ -56,7 +56,18 @@ const PATHS: Record<string, string> = {
 
 export type IconName = keyof typeof PATHS
 
-export function Icon({ name, size = 16, className }: { name: IconName; size?: number; className?: string }) {
+export function Icon({
+  name,
+  size = 16,
+  className,
+  stroke = 1.8
+}: {
+  name: IconName
+  size?: number
+  className?: string
+  /** Line width; the controls over the stage use a thicker one. */
+  stroke?: number
+}) {
   return (
     <svg
       className={className}
@@ -65,7 +76,7 @@ export function Icon({ name, size = 16, className }: { name: IconName; size?: nu
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.8}
+      strokeWidth={stroke}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
