@@ -35,11 +35,14 @@ test('a stream opens in its own window, keeps playing when the room is minimized
     await win.screenshot({ path: `${shots}/2-room-while-in-window.png` })
   }
 
-  // Like the room's window, it's hidden from screen capture while watching.
-  const protectedWindows = await app.evaluate(({ BrowserWindow }) =>
-    BrowserWindow.getAllWindows().map((w) => w.isContentProtected())
-  )
-  expect(protectedWindows).toEqual([true, true])
+  // Like the room's window, it's hidden from screen capture while watching (Windows and macOS: the
+  // system feature doesn't exist on Linux, where both report false).
+  if (process.platform !== 'linux') {
+    const protectedWindows = await app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows().map((w) => w.isContentProtected())
+    )
+    expect(protectedWindows).toEqual([true, true])
+  }
 
   // Minimizing the room's window doesn't pause it: it's still on screen.
   await setWindowState(bob, 'minimized')
