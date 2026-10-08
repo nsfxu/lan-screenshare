@@ -36,7 +36,7 @@ export interface Person {
  * Starts the built app (out/) as a new person with a fresh profile, and makes
  * it safe and predictable to drive:
  *  - screen capture is an animated canvas, never the real screen;
- *  - system audio is off, and the native audio helper can't start;
+ *  - system audio is off, the native audio helper can't start, and nothing plays aloud (--mute-audio);
  *  - the Windows foreground helper never starts; tests report what's in front
  *    themselves (setForeground).
  */
@@ -46,7 +46,8 @@ async function launchPerson(
   tiles: number,
   launched: (app: ElectronApplication) => void
 ): Promise<Person> {
-  const args = [repo, `--profile=e2e-${name.toLowerCase()}-${process.pid}`]
+  // --mute-audio: the fake screen carries a test tone; streams keep their audio track, the speakers stay quiet.
+  const args = [repo, `--profile=e2e-${name.toLowerCase()}-${process.pid}`, '--mute-audio']
   if (display) args.push(`--display=${display}`, `--tile=${tile}/${tiles}`)
   // CI runners don't allow Chromium's sandbox (unprivileged user namespaces).
   if (process.platform === 'linux') args.push('--no-sandbox')
