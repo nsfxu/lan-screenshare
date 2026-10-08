@@ -74,7 +74,7 @@ Be honest about these in reviews and issues:
 - **The PIN lockout is per IP address.** Several machines behind one address share a counter, and an attacker with many addresses gets 3 tries per address.
 - **The host is trusted.** It relays signaling and chat, so it could read or alter them. Media on the WebRTC path flows directly between streamer and watcher and is encrypted, but the host relays the signaling that sets up that encryption, so a malicious host could interfere with it. On the TCP fallback, media passes through the host, readable by it (the TLS WebSocket only protects it on the network).
 - **TLS can be turned off** in Settings (for debugging). Then chat, signaling and TCP media are unencrypted on the network.
-- **Content protection is best effort.** It stops screenshots and screen recorders on the viewer's machine, not a phone camera.
+- **Content protection is best effort.** It stops screenshots and screen recorders on the viewer's machine (Windows and macOS; Linux has no such system feature), not a phone camera.
 - **Updates trust the GitHub repository.** The installers aren't code-signed yet, so the SHA-512 check proves the file is the one in the release, not who built it: someone who could publish a release on the repository could ship an update. Signing (and setting `publisherName`) would close that.
 - **Profile pictures and previews are images from other people.** They are only rendered as `<img>` data URLs of JPEG/WebP/PNG type, never as HTML or SVG.
 

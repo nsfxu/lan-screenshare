@@ -74,7 +74,7 @@ Seja transparente sobre isso em revisões e issues:
 - **O bloqueio de PIN é por endereço IP.** Várias máquinas atrás de um mesmo endereço dividem o contador, e um atacante com muitos endereços tem 3 tentativas por endereço.
 - **O anfitrião é confiável.** Ele repassa a sinalização e o chat, então poderia lê-los ou alterá-los. No caminho WebRTC a mídia vai direto entre quem transmite e quem assiste, cifrada, mas é o anfitrião que repassa a sinalização que configura essa cifragem, então um anfitrião malicioso poderia interferir. No fallback TCP, a mídia passa pelo anfitrião, que consegue lê-la (o WebSocket com TLS só a protege na rede).
 - **O TLS pode ser desligado** nas configurações (para depuração). Nesse caso, chat, sinalização e mídia TCP trafegam sem cifragem na rede.
-- **A proteção de conteúdo é a melhor possível, não absoluta.** Ela impede capturas e gravadores de tela no computador do espectador, não a câmera de um celular.
+- **A proteção de conteúdo é a melhor possível, não absoluta.** Ela impede capturas e gravadores de tela no computador do espectador (Windows e macOS; o Linux não tem esse recurso), não a câmera de um celular.
 - **As atualizações confiam no repositório do GitHub.** Os instaladores ainda não são assinados, então a verificação do SHA-512 prova que o arquivo é o da versão publicada, não quem o gerou: alguém que conseguisse publicar uma versão no repositório poderia distribuir uma atualização. Assinar (e definir o `publisherName`) fecharia isso.
 - **Fotos de perfil e prévias são imagens de outras pessoas.** Elas só são exibidas como `<img>` com data URLs do tipo JPEG/WebP/PNG, nunca como HTML ou SVG.
 
