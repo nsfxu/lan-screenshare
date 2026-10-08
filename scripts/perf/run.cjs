@@ -9,7 +9,7 @@ const path = require('node:path')
 
 const repo = path.join(__dirname, '..', '..')
 /** Options of this script; any other --switch is passed to every app instance. */
-const OWN = ['viewers', 'seconds', 'warmup', 'source', 'quality', 'view-height', 'join', 'host-only']
+const OWN = ['viewers', 'seconds', 'warmup', 'source', 'quality', 'view-height', 'join', 'host-only', 'hint']
 
 const options = { passthrough: [] }
 for (const arg of process.argv.slice(2)) {

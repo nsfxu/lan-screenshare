@@ -41,6 +41,9 @@ function options() {
     throw new Error('--source must be screen, fake or fake-detailed')
   }
   const quality = raw.quality === undefined ? null : String(raw.quality)
+  // The streamer's "Optimize for": WebRTC paces screen content ('detail') and video ('motion') differently.
+  const hint = raw.hint === undefined ? null : String(raw.hint)
+  if (hint && !['auto', 'detail', 'motion'].includes(hint)) throw new Error('--hint must be auto, detail or motion')
   if (quality && !QUALITY_PRESETS.some((p) => p.id === quality)) {
     throw new Error(`--quality must be one of ${QUALITY_PRESETS.map((p) => p.id).join(', ')}`)
   }
@@ -56,6 +59,7 @@ function options() {
     warmup: int('warmup', 15, 0),
     source,
     quality,
+    hint,
     viewHeight,
     join,
     hostOnly,
@@ -92,16 +96,17 @@ async function launch(name: string, opts: ReturnType<typeof options>, fakeSource
   }
   await win.waitForSelector('.rooms-sidebar')
   await win.evaluate(
-    ([displayName, maxQuality]) =>
+    ([displayName, maxQuality, contentHint]) =>
       window.api.settings.update({
         displayName,
         shareAudio: false,
         notifications: false,
         // No update checks from a measuring run.
         autoUpdate: false,
-        ...(maxQuality ? { maxQuality: maxQuality as never } : {})
+        ...(maxQuality ? { maxQuality: maxQuality as never } : {}),
+        ...(contentHint ? { contentHint: contentHint as never } : {})
       }),
-    [name, opts.quality] as const
+    [name, opts.quality, opts.hint] as const
   )
   await win.reload() // the UI reads the settings above at startup
   await win.waitForSelector('.rooms-sidebar')

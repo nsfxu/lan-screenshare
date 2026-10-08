@@ -230,6 +230,7 @@ npm run perf -- --viewers=2 --source=fake       # the animated canvas of the e2e
 | `--viewers=<n>` | How many viewers (default 1, at most 9: a room holds 10 people). Each is its own app instance with its own `--profile`, and watches the streamer. |
 | `--seconds=<s>` | How long to measure (default 60), after `--warmup=<s>` (default 15). |
 | `--source=screen\|fake\|fake-detailed` | Share the first real screen (default on Windows and macOS) or an animated 1080p60 canvas (default on Linux). `fake-detailed` covers the canvas with still text, like a desktop: big keyframes, small frames in between. |
+| `--hint=auto\|detail\|motion` | The streamer's **Optimize for**: `detail` (text, a desktop) is sent as screen content and `motion` (games) as video, which WebRTC paces differently. Default: the app's setting (Automatic). |
 | `--quality=<preset>` | The streamer's maximum quality: `native60`, `1080p60`, `720p60`, `720p30` or `480p30`. |
 | `--view-height=<px>` | Viewers ask for this height instead of their tile's, so a dozen small windows on one computer still ask for 1080p. |
 | `--host-only` | Only the streamer: it prints the address and waits (up to 10 minutes) for a viewer from another computer. |
