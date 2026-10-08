@@ -86,8 +86,8 @@ Anyone in a room can share, not just the host, and several people can share at t
 
 | Where | Buttons |
 |---|---|
-| Left (when a stream is focused) | **Grid** (back to the grid) and **Hide others / Show others** (the strip) |
-| Middle | **ⓘ** room details, **Share screen** (or **Sharing** while you share), and the red **leave** button, last |
+| Left | **ⓘ** room details, then, when a stream is focused, **Grid** (back to the grid) and **Hide others / Show others** (the strip) |
+| Middle | **Share screen** (or **Sharing** while you share), and the red **leave** button |
 | Right | **Volume** and **New window** (for the focused stream), and **Full screen** |
 
 While you share, the button becomes a green screen icon. Click it (or right-click your own tile) for the sharing menu:
@@ -153,7 +153,7 @@ If your network drops for a moment, the app reconnects on its own and puts you b
 
 ## If you are the host
 
-The **ⓘ** in the controls, next to the share button, shows the room's details: privacy, how long it has been open, who hosts it and the round trip to it (and, for guests, the address to copy). For the host, it also lets you:
+The **ⓘ** at the left of the controls shows the room's details: privacy, how long it has been open, who hosts it and the round trip to it (and, for guests, the address to copy). For the host, it also lets you:
 
 - switch between **Public** and **Private** at any time; people already inside stay connected;
 - show or hide the **PIN**, **copy** it, **generate a new one**, or **set your own**;

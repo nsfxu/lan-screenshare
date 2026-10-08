@@ -1818,6 +1818,7 @@ button.member-main {
   right: 0;
   bottom: 100%;
   display: none;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
@@ -1939,6 +1940,51 @@ button.member-main {
 }
 .bar-btn svg {
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
+}
+/* Tooltips: the controls' own, quick and readable (the system's take a second and look out of place).
+   Above the controls; at the ends of the bar they line up with the edge so they stay in the window. */
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: #0b0c0e;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+[data-tip]:hover::after,
+[data-tip]:focus-visible::after {
+  opacity: 1;
+  transition-delay: 0.25s;
+}
+/* not over the menu or panel the button just opened */
+[data-tip][aria-expanded='true']::after {
+  display: none;
+}
+.controls-side [data-tip]::after {
+  left: 0;
+  transform: none;
+}
+.controls-side.end [data-tip]::after {
+  left: auto;
+  right: 0;
+}
+.title-bar [data-tip]::after {
+  top: calc(100% + 6px);
+  bottom: auto;
+  left: auto;
+  right: 0;
+  transform: none;
 }
 .bar-btn:hover {
   background: rgba(255, 255, 255, 0.12);
@@ -2363,6 +2409,17 @@ button.member-main {
 .room-info-anchor {
   position: relative;
   display: flex;
+}
+/* the volume panel says what a click on the speaker does (instead of a tooltip, which would cover it) */
+.volume-pop-hint {
+  flex-basis: 100%;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+/* ⓘ is the first control on the left: its panel opens from there, not centred on it */
+.controls-side .room-info {
+  left: 0;
+  transform: none;
 }
 .room-info {
   position: absolute;

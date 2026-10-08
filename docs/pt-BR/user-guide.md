@@ -88,8 +88,8 @@ Qualquer pessoa na sala pode compartilhar, não só o anfitrião, e várias pess
 
 | Onde | Botões |
 |---|---|
-| Esquerda (com uma transmissão em destaque) | **Grade** (volta à grade) e **Hide others / Show others** (a faixa) |
-| Meio | **ⓘ** detalhes da sala, **Share screen** (ou **Sharing** enquanto você compartilha), e o botão vermelho de **sair**, por último |
+| Esquerda | **ⓘ** detalhes da sala e, com uma transmissão em destaque, **Grade** (volta à grade) e **Hide others / Show others** (a faixa) |
+| Meio | **Share screen** (ou **Sharing** enquanto você compartilha), e o botão vermelho de **sair** |
 | Direita | **Volume** e **Nova janela** (da transmissão em destaque), e **Tela cheia** |
 
 Enquanto você compartilha, o botão vira um ícone de tela verde. Clique nele (ou clique com o botão direito no seu próprio quadro) para o menu de compartilhamento:
@@ -155,7 +155,7 @@ Se a sua rede cair por um instante, o app reconecta sozinho e te coloca de volta
 
 ## Se você é o anfitrião
 
-O **ⓘ** nos controles, ao lado do botão de compartilhar, mostra os detalhes dela: privacidade, há quanto tempo está aberta, quem hospeda e o tempo de ida e volta até ela (e, para convidados, o endereço para copiar). Para o anfitrião, ele também permite:
+O **ⓘ** à esquerda dos controles mostra os detalhes dela: privacidade, há quanto tempo está aberta, quem hospeda e o tempo de ida e volta até ela (e, para convidados, o endereço para copiar). Para o anfitrião, ele também permite:
 
 - alternar entre **Public** e **Private** a qualquer momento; quem já está dentro continua conectado;
 - mostrar ou esconder o **PIN**, **copiar**, **gerar um novo** ou **definir o seu**;

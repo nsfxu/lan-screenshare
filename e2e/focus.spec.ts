@@ -33,6 +33,16 @@ test('click to focus, double-click for full screen; volume below a focused strea
   await expect.poll(controlsOpacity, { timeout: 6_000 }).toBe('0')
   await win.mouse.move(stageBox.x + stageBox.width / 2, stageBox.y + 60)
   await expect.poll(controlsOpacity).toBe('1')
+  // Each control has a tooltip of its own, shown when pointed at.
+  const fullscreenButton = controls.getByRole('button', { name: 'Full screen' })
+  const tip = () =>
+    fullscreenButton.evaluate((el) => {
+      const after = getComputedStyle(el, '::after')
+      return { text: after.content, opacity: after.opacity }
+    })
+  await fullscreenButton.hover()
+  await expect.poll(tip).toEqual({ text: '"Full screen"', opacity: '1' })
+  if (shots) await win.screenshot({ path: `${shots}/0-tooltip.png` })
 
   // Focused: the speaker in the controls mutes and unmutes back to the volume; pointing at it shows the slider.
   await aliceStream.click()
@@ -77,13 +87,35 @@ test('click to focus, double-click for full screen; volume below a focused strea
 
   // ...and everything but the picture hides after a moment without the mouse moving.
   const opacity = (selector: string) => win.locator(selector).first().evaluate((el) => getComputedStyle(el).opacity)
+  const why = () =>
+    win.evaluate(() => ({
+      stage: document.querySelector('.stage-area')?.className,
+      active: document.activeElement?.tagName + ' ' + (document.activeElement?.getAttribute('aria-label') ?? ''),
+      hovered: [...document.querySelectorAll(':hover')].map((e) => e.className).slice(-3),
+      menu: !!document.querySelector('[role=menu]')
+    }))
   for (const part of ['.stage-controls', '.spotlight-strip', '.spotlight-main .tile-bar']) {
-    await expect.poll(() => opacity(part), { timeout: 6_000 }).toBe('0')
+    await expect
+      .poll(() => opacity(part), { timeout: 6_000, message: `${part} hides` })
+      .toBe('0')
+      .catch(async (err) => {
+        console.log('WHY', JSON.stringify(await why()))
+        throw err
+      })
   }
   if (shots) await win.screenshot({ path: `${shots}/4-fullscreen-idle.png` })
   await win.mouse.move(10, 10)
   await expect.poll(() => opacity('.stage-controls')).toBe('1')
   await expect.poll(() => opacity('.spotlight-main .tile-bar')).toBe('1')
+  await win.getByRole('button', { name: 'Exit full screen' }).click()
+  await expect.poll(() => win.evaluate(() => !!document.fullscreenElement)).toBe(false)
+
+  // Entering full screen with its button (which keeps focus after the click) still lets the controls hide.
+  await win.locator('.stage-controls').getByRole('button', { name: 'Full screen' }).click()
+  await expect.poll(() => win.evaluate(() => !!document.fullscreenElement)).toBe(true)
+  await win.mouse.move(200, 200)
+  await expect.poll(() => opacity('.stage-controls'), { timeout: 6_000, message: 'controls hide' }).toBe('0')
+  await win.mouse.move(10, 10)
   await win.getByRole('button', { name: 'Exit full screen' }).click()
   await expect.poll(() => win.evaluate(() => !!document.fullscreenElement)).toBe(false)
 

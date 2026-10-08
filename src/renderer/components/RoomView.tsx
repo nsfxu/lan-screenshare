@@ -118,7 +118,9 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   /** The controls float over the stage and show while the mouse moves there (see wake). */
   const [controlsAwake, setControlsAwake] = useState(true)
   const controlsTimer = useRef<number | null>(null)
-  const [overControls, setOverControls] = useState(false)
+  /** Where the pointer last was: Chromium also sends mouse moves when the page changes under a still pointer. */
+  const lastPointer = useRef<{ x: number; y: number } | null>(null)
+  const controlsRef = useRef<HTMLDivElement>(null)
   const [controlsFocused, setControlsFocused] = useState(false)
   /** Streams playing in a window of their own, by streamer id. */
   const [streamWindows, setStreamWindows] = useState<ReadonlyMap<string, { win: Window; root: HTMLElement }>>(new Map())
@@ -198,7 +200,11 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const wake = (): void => {
     setControlsAwake(true)
     if (controlsTimer.current) clearTimeout(controlsTimer.current)
-    controlsTimer.current = window.setTimeout(() => setControlsAwake(false), CONTROLS_IDLE_MS)
+    controlsTimer.current = window.setTimeout(() => {
+      // Still pointing at them: they stay until the mouse moves off.
+      if (controlsRef.current?.matches(':hover')) wake()
+      else setControlsAwake(false)
+    }, CONTROLS_IDLE_MS)
   }
   const sleep = (): void => {
     if (controlsTimer.current) clearTimeout(controlsTimer.current)
@@ -602,7 +608,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     <div className="room-info-anchor">
       <button
         className={`bar-btn room-info-button ${infoOpen ? 'on' : ''}`}
-        title="Room details"
+        data-tip="Room details"
         aria-label="Room details"
         aria-expanded={infoOpen}
         onClick={() => setInfoOpen((v) => !v)}
@@ -625,29 +631,30 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
 
   // The focused stream you watch: the volume and "new window" act on it.
   const focusedStream = focused && subs.has(focused.id) ? focused : null
-  const controlsShown =
-    controlsAwake || overControls || controlsFocused || infoOpen || showStats || menu?.label === 'Sharing'
+  const controlsShown = controlsAwake || controlsFocused || infoOpen || showStats || menu?.label === 'Sharing'
   const controls = (
     <div
       className="stage-controls"
-      onMouseEnter={() => setOverControls(true)}
-      onMouseLeave={() => setOverControls(false)}
-      onFocus={() => setControlsFocused(true)}
+      ref={controlsRef}
+      onMouseEnter={wake}
+      // Keyboard focus keeps them up; a button clicked with the mouse keeps focus too, and mustn't.
+      onFocus={(e) => setControlsFocused(e.target.matches(':focus-visible'))}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setControlsFocused(false)
       }}
     >
       <div className="controls-side">
+        {roomDetails}
         {focused && shown.length > 1 && (
           <>
-            <button className="bar-btn" title="Back to the grid (Esc)" aria-label="Grid view" onClick={() => setFocus(null)}>
+            <button className="bar-btn" data-tip="Back to the grid (Esc)" aria-label="Grid view" onClick={() => setFocus(null)}>
               <Icon name="grid" size={20} stroke={2.3} />
             </button>
             <button
               className={`bar-btn ${strip === 'closed' ? 'on' : ''}`}
               aria-label={strip === 'open' ? 'Hide others' : `Show others (${shown.length - 1})`}
               aria-pressed={strip === 'closed'}
-              title={strip === 'open' ? 'Hide the others (their video pauses)' : 'Show the others'}
+              data-tip={strip === 'open' ? 'Hide the others (their video pauses)' : 'Show the others'}
               onClick={() => setStrip(strip === 'open' ? 'closed' : 'open')}
             >
               <Icon name={strip === 'open' ? 'stripHide' : 'stripShow'} size={20} stroke={2.3} />
@@ -656,12 +663,11 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
         )}
       </div>
       <div className="controls-center">
-        {roomDetails}
         {sharing.sharing ? (
           // Shows that we're sharing; its menu changes the source, mutes, sets the quality, shows the stats or stops.
           <button
             className={`bar-btn sharing ${menu?.label === 'Sharing' ? 'on' : ''}`}
-            title="You're sharing: change the source, mute, set the quality, see the stats or stop"
+            data-tip="Sharing: source, audio, quality, stats, stop"
             aria-label={sharing.paused ? 'Sharing (paused)' : 'Sharing'}
             aria-haspopup="menu"
             aria-expanded={menu?.label === 'Sharing'}
@@ -673,13 +679,13 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
             <Icon name="chevronUp" size={14} stroke={2.3} />
           </button>
         ) : (
-          <button className="bar-btn share" title="Share your screen or a window" onClick={() => setPickSource(true)}>
+          <button className="bar-btn share" data-tip="Share your screen or a window" onClick={() => setPickSource(true)}>
             <Icon name="shareScreen" size={20} stroke={2.3} /> Share screen
           </button>
         )}
         <button
           className="bar-btn hang-up"
-          title={isHost ? 'End the room for everyone' : 'Leave the room'}
+          data-tip={isHost ? 'End the room for everyone' : 'Leave the room'}
           aria-label={isHost ? 'End room' : 'Leave'}
           onClick={isHost ? endRoom : () => onLeave()}
         >
@@ -691,7 +697,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
         {focusedStream && (
           <button
             className={`bar-btn ${streamWindows.has(focusedStream.id) ? 'on' : ''}`}
-            title={streamWindows.has(focusedStream.id) ? 'Bring the stream back to this window' : 'Open the stream in a new window'}
+            data-tip={streamWindows.has(focusedStream.id) ? 'Bring it back to this window' : 'Open in a new window'}
             aria-label={streamWindows.has(focusedStream.id) ? 'Back to this window' : 'Open in a new window'}
             onClick={() => toggleWindow(focusedStream)}
           >
@@ -700,7 +706,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
         )}
         <button
           className="bar-btn"
-          title={stageFullscreen ? 'Leave full screen (Esc)' : 'Full screen'}
+          data-tip={stageFullscreen ? 'Leave full screen (Esc)' : 'Full screen'}
           aria-label={stageFullscreen ? 'Exit full screen' : 'Full screen'}
           onClick={toggleStageFullscreen}
         >
@@ -718,7 +724,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
             {connection === 'reconnecting' && <span className="status-pill warn">Reconnecting…</span>}
             <button
               className={`title-bar-btn chat-toggle ${chatOpen ? 'on' : ''}`}
-              title={chatOpen ? 'Hide chat' : 'Show chat'}
+              data-tip={chatOpen ? 'Hide chat' : unread > 0 ? `Show chat (${unread} new)` : 'Show chat'}
               aria-label={chatOpen ? 'Hide chat' : unread > 0 ? `Show chat (${unread} unread)` : 'Show chat'}
               aria-expanded={chatOpen}
               onClick={toggleChat}
@@ -734,7 +740,12 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           <div
             className={`stage-area ${stageFullscreen ? 'fullscreen' : ''} ${controlsShown ? '' : 'idle'}`}
             ref={stageRef}
-            onMouseMove={wake}
+            onMouseMove={(e) => {
+              const last = lastPointer.current
+              if (last && last.x === e.screenX && last.y === e.screenY) return
+              lastPointer.current = { x: e.screenX, y: e.screenY }
+              wake()
+            }}
             onMouseLeave={sleep}
           >
             {stage}
@@ -1250,7 +1261,6 @@ function VolumeControl({ name }: { name: string }) {
     <div className="volume-control">
       <button
         className={`bar-btn ${silent ? 'off' : ''}`}
-        title={silent ? 'Unmute' : 'Mute'}
         aria-label={silent ? `Unmute ${name}` : `Mute ${name}`}
         onClick={() => toggleMute(name)}
       >
@@ -1267,6 +1277,7 @@ function VolumeControl({ name }: { name: string }) {
           onChange={(e) => setVolume(name, Number(e.target.value))}
         />
         <span>{silent ? 0 : Math.round(level.volume * 100)}%</span>
+        <span className="volume-pop-hint">Click the speaker to {silent ? 'unmute' : 'mute'}</span>
       </div>
     </div>
   )
