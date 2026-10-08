@@ -31,7 +31,14 @@ export function openStreamWindow(id: string, title: string): { win: Window; root
   const style = doc.createElement('style')
   style.textContent = css
   doc.head.appendChild(style)
-  doc.documentElement.dataset.theme = document.documentElement.dataset.theme ?? ''
+  // The app's theme, now and when it changes while the window is open.
+  const syncTheme = (): void => {
+    doc.documentElement.dataset.theme = document.documentElement.dataset.theme ?? ''
+  }
+  syncTheme()
+  const themeWatch = new MutationObserver(syncTheme)
+  themeWatch.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+  win.addEventListener('pagehide', () => themeWatch.disconnect())
   doc.body.classList.add('stream-window-body')
   const root = doc.createElement('div')
   root.className = 'stream-window'

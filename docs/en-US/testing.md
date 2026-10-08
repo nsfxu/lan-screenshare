@@ -98,7 +98,7 @@ Keep decision logic out of React and out of WebRTC callbacks, in `src/shared/*.t
 | Layout (`layout.spec.ts`) | Recent rooms, rejoining, the window title, hidden columns surviving a reload; in a 700 px window the chat and rooms open over the room. |
 | People in the sidebar (`members.spec.ts`) | Bob's list under the room, the hover preview, watching from it, the host removing someone. |
 | Tiles (`stage.spec.ts`) | The invite tile, a tile per person, no room header (the name in the title bar), the first stream watched opening focused, Esc and click to focus, the ⓘ details (in the floating controls) for a guest and the host. |
-| A stream's own window (`window.spec.ts`) | The focused stream opens in a window of its own and plays there; its tile says so; both windows are hidden from screen capture; minimizing the room doesn't pause it; closing it brings the stream back. |
+| A stream's own window (`window.spec.ts`) | The focused stream opens in a window of its own and plays there, with the app's title bar, theme (also when it changes) and controls; its tile says so; both windows are hidden from screen capture; minimizing the room doesn't pause it; closing it brings the stream back. |
 | Who's watching (`watchers.spec.ts`) | Three people: the stream's viewers (count, pictures, names) for a watcher and the streamer, the muted icon, Show only streams from the right-click menu (remembered). |
 | Chat (`chat.spec.ts`) | The room-named message box, the unread count while hidden, grouping. |
 | Menus (`menus.spec.ts`) | The Sharing button's menu (quality, stop), right-click on your own tile and on a stream (quality you receive, stop watching), the host's actions. |

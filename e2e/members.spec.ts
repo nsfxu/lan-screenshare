@@ -39,8 +39,12 @@ test('people are listed under the room: watch from the list, see a preview, and 
   // The host removes Bob from the menu next to his name.
   await alice.win.getByRole('button', { name: 'Moderate Bob' }).click()
   if (shots) await alice.win.screenshot({ path: `${shots}/3-host-menu.png` })
-  alice.win.once('dialog', (d) => void d.accept())
   await alice.win.getByRole('menuitem', { name: 'Remove from room' }).click()
+  // The app's own dialog asks first.
+  const ask = alice.win.getByRole('dialog', { name: 'Remove Bob from the room?' })
+  await expect(ask).toContainText("They can't come back to this room.")
+  if (shots) await alice.win.screenshot({ path: `${shots}/4-confirm.png` })
+  await ask.getByRole('button', { name: 'Remove' }).click()
   await expect(bob.win.locator('.welcome')).toBeVisible()
   await expect(alice.win.locator('.room-members .member')).toHaveCount(1)
 })

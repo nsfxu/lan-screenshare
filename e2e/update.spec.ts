@@ -58,14 +58,11 @@ test('updates: Settings explains them, a downloaded one offers a restart, which 
 
   // Hosting: it asks first, and "Cancel" keeps the room.
   await createRoom(alice)
-  const asked = new Promise<string>((resolve) =>
-    win.once('dialog', (dialog) => {
-      resolve(dialog.message())
-      void dialog.dismiss()
-    })
-  )
   await restart.click()
-  expect(await asked).toMatch(/ends .* for everyone/)
+  const ask = win.getByRole('dialog', { name: 'Restart to update?' })
+  await expect(ask).toContainText(/ends .* for everyone/)
+  await ask.getByRole('button', { name: 'Cancel' }).click()
+  await expect(ask).toHaveCount(0)
   expect(await installs()).toBe(1)
   await expect(win.locator('.room')).toBeVisible()
 

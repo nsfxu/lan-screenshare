@@ -48,6 +48,8 @@ export const IPC = {
   setViewerProtection: 'window:protect',
   setTitleBarColors: 'window:title-bar-colors',
   windowState: 'window:state',
+  confirmClose: 'window:confirm-close',
+  closeConfirmed: 'window:close-confirmed',
   copyText: 'clipboard:write',
   openLogs: 'system:open-logs',
   updateStatus: 'update:status',
@@ -136,6 +138,9 @@ export interface ScreenShareApi {
     /** Colours of the system's window buttons over our title bar (Windows, Linux), as #rrggbb. */
     setTitleBarColors(color: string, symbolColor: string): Promise<void>
     onWindowState(cb: (state: WindowState) => void): () => void
+    /** Closing the window while hosting: the page asks in its own dialog, then answers with closeConfirmed. */
+    onConfirmClose(cb: () => void): () => void
+    closeConfirmed(): Promise<void>
     log(level: 'info' | 'warn' | 'error', message: string): void
   }
   /** Measuring mode (`--perf-log`, `--perf-view-height`); does nothing without those switches. */

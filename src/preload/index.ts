@@ -72,6 +72,8 @@ const api: ScreenShareApi = {
     setViewerProtection: (enabled) => ipcRenderer.invoke(IPC.setViewerProtection, enabled),
     setTitleBarColors: (color, symbolColor) => ipcRenderer.invoke(IPC.setTitleBarColors, color, symbolColor),
     onWindowState: (cb) => subscribe<WindowState>(IPC.windowState, cb),
+    onConfirmClose: (cb) => subscribe<void>(IPC.confirmClose, cb),
+    closeConfirmed: () => ipcRenderer.invoke(IPC.closeConfirmed),
     log: (level, message) => ipcRenderer.send(IPC.log, level, message)
   },
   perf: {
