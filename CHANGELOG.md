@@ -10,6 +10,17 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Changed
+
+- **More room for the streams**: the bar at the top of the room is gone. The room's name is in the title bar, the room details (ⓘ) are in the control bar next to the share button, and the chat button is at the right end of the control bar.
+- **The first stream you watch opens focused**, with everyone else in the strip below. **Watch all** keeps the grid.
+
+### Added
+
+- **Who's watching**: a stream shows how many people watch it, with their pictures; point at it for their names.
+- **Only streams**: a button in the control bar (and an option in the right-click menu) leaves out the people who aren't sharing, so the streams get all the space. It's remembered.
+- A stream you muted shows a crossed-out speaker next to its name.
+
 ## [2.2.1] - 2026-10-08
 
 ### Fixed

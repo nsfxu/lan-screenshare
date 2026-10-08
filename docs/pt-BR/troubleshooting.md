@@ -30,7 +30,7 @@ flowchart TD
   F -->|Não| C
 ```
 
-- A descoberta usa **multicast (mDNS)**, que muitas VPNs, redes Wi-Fi de visitantes e alguns roteadores bloqueiam. O **Join by IP** sempre funciona se o anfitrião estiver alcançável: ele vê os próprios endereços no **ⓘ** ao lado do nome da sala. Amigos em outras redes: veja [jogando pelo ZeroTier](zerotier.md).
+- A descoberta usa **multicast (mDNS)**, que muitas VPNs, redes Wi-Fi de visitantes e alguns roteadores bloqueiam. O **Join by IP** sempre funciona se o anfitrião estiver alcançável: ele vê os próprios endereços no **ⓘ** da barra de controles. Amigos em outras redes: veja [jogando pelo ZeroTier](zerotier.md).
 - A porta padrão é **47800**. Se ela estava ocupada, o anfitrião escolheu a próxima livre; o **ⓘ** mostra a correta.
 - **Firewall do Windows**: na primeira vez que você hospeda, o Windows pergunta se deve permitir o ScreenShare. Permita em redes **privadas**. Se você clicou em Cancelar, permita depois em *Segurança do Windows → Firewall → Permitir um aplicativo*.
 - Uma sala que para de responder por 10 segundos sai da lista. Ela volta assim que responder de novo.

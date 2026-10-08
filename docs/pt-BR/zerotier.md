@@ -66,7 +66,7 @@ Não precisa mudar nada no ScreenShare: ele enxerga a rede do ZeroTier como a re
 - **Anfitrião**: clique em **Create room**, como sempre.
 - **Os outros**: a sala aparece em **Rooms on your network** em poucos segundos. Clique nela para entrar.
 
-Se uma sala não aparecer, use o **Join by IP** com o endereço do anfitrião no ZeroTier. O anfitrião vê esse endereço ao lado do nome dele em **Members** no my.zerotier.com, ou nos detalhes da sala (**ⓘ** ao lado do nome da sala): passe o mouse sobre o endereço para ver todos; o do ZeroTier está na faixa definida no passo 1.
+Se uma sala não aparecer, use o **Join by IP** com o endereço do anfitrião no ZeroTier. O anfitrião vê esse endereço ao lado do nome dele em **Members** no my.zerotier.com, ou nos detalhes da sala (**ⓘ** na barra de controles): passe o mouse sobre o endereço para ver todos; o do ZeroTier está na faixa definida no passo 1.
 
 ## Se algo não funcionar
 

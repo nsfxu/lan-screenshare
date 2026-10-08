@@ -60,9 +60,9 @@ A coluna de salas mostra:
 
 Cada linha mostra um cadeado para salas privadas, quantas transmissões estão ao vivo e quantas pessoas estão dentro; passe o mouse por cima para ver quem hospeda, há quanto tempo e o endereço. Uma sala numa versão incompatível diz *Update to join* ou *Older version* (passe o mouse para ver quem precisa atualizar). Salas adicionadas pelo IP têm um **×** para tirá-las da lista. Clique numa sala para entrar. Se você já está numa sala, sai dela antes; o app pergunta antes quando isso encerra uma sala que você hospeda ou para o seu compartilhamento.
 
-O botão no topo de cada coluna lateral a esconde (a coluna de salas vira uma faixa com as iniciais das salas; o botão do chat fica no topo da sala). O app lembra quais colunas você escondeu. Numa janela pequena (por exemplo encaixada ao lado de um jogo) as colunas abrem espaço para os quadros sozinhas: abaixo de 1100 px de largura o chat fica fechado, e abaixo de 760 px a coluna de salas vira uma faixa. Os botões delas então as abrem por cima da sala, e clicar ao lado as fecha.
+O botão no topo de cada coluna lateral a esconde (a coluna de salas vira uma faixa com as iniciais das salas; o botão do chat fica na ponta direita da barra de controles). O app lembra quais colunas você escondeu. Numa janela pequena (por exemplo encaixada ao lado de um jogo) as colunas abrem espaço para os quadros sozinhas: abaixo de 1100 px de largura o chat fica fechado, e abaixo de 760 px a coluna de salas vira uma faixa. Os botões delas então as abrem por cima da sala, e clicar ao lado as fecha.
 
-**Join by IP**: se você está numa VPN ou em outra sub-rede, as salas podem não aparecer sozinhas. Clique em **Join by IP** (ao lado de **Create room**) e digite o endereço do anfitrião, por exemplo `10.8.0.5` ou `192.168.1.20:47800`. O anfitrião vê os endereços dele no **ⓘ** ao lado do nome da sala. A porta padrão é 47800.
+**Join by IP**: se você está numa VPN ou em outra sub-rede, as salas podem não aparecer sozinhas. Clique em **Join by IP** (ao lado de **Create room**) e digite o endereço do anfitrião, por exemplo `10.8.0.5` ou `192.168.1.20:47800`. O anfitrião vê os endereços dele no **ⓘ** da barra de controles. A porta padrão é 47800.
 
 **Amigos em outras redes**: coloque todos numa rede do [ZeroTier](zerotier.md). Leva poucos minutos, e as salas passam a aparecer na lista como se todos estivessem em casa.
 
@@ -108,7 +108,11 @@ O botão vermelho à esquerda dele sai da sala (para o anfitrião, encerra a sal
 Todos na sala têm um **quadro** no meio: a foto e o nome. Os quadros mantêm o formato 16:9 e crescem o quanto a janela permite. Nada toca até você escolher: quem está compartilhando tem um selo vermelho **Live**, e o quadro mostra uma prévia da transmissão, tirada quando a pessoa começa e atualizada mais ou menos uma vez por minuto.
 
 - Clique em **Watch stream** no quadro, clique na pessoa na coluna de salas (passe o mouse antes para ver a prévia), ou em **Watch all** na barra de controles. O quadro passa a exibir a transmissão, com o nome da pessoa por cima. Clique na pessoa de novo na coluna de salas, ou em **Stop watching** no menu do botão direito da transmissão, para parar; um olho marca as transmissões que você assiste.
-- **Clique num quadro** para colocá-lo em **destaque**, com todos os outros numa faixa embaixo (clicar num deles o coloca em destaque no lugar). Clique de novo no quadro em destaque, no botão de grade embaixo dele (à esquerda), ou aperte **Esc** para voltar à grade. O topo da sala mostra quem está nela em fotos (passe o mouse para ver os nomes) e quantas transmissões estão ao vivo.
+- **A primeira transmissão que você assiste abre em destaque**, com todos os outros numa faixa embaixo. **Watch all**, ou uma segunda transmissão, mantém a grade.
+- **Clique num quadro** para colocá-lo em **destaque** (clicar num da faixa o coloca em destaque no lugar). Clique de novo no quadro em destaque, no botão de grade embaixo dele (à esquerda), ou aperte **Esc** para voltar à grade.
+- **Only streams** (o botão de funil à esquerda da barra de controles, ou a mesma opção no menu do botão direito de qualquer quadro) deixa de fora quem não está compartilhando, para as transmissões ocuparem todo o espaço. A escolha é lembrada; enquanto ninguém compartilha, todos aparecem do mesmo jeito.
+- **Quem está assistindo**: a barra com o nome da transmissão mostra um olho com quantas pessoas a assistem e as fotos delas; aponte para ver os nomes. Uma transmissão que você silenciou mostra um alto-falante riscado ao lado do nome.
+- O nome da sala fica na barra de título, no topo da janela.
 - **Dois cliques numa transmissão** a colocam em tela cheia, como num player de vídeo: a transmissão ocupa a tela toda, e a faixa e os controles ficam por cima da parte de baixo dela. Depois de 2,5 s sem mexer o mouse, tudo menos a imagem some (a faixa, os controles, o nome, os selos de estatística e o ponteiro); mexa o mouse para trazê-los de volta. **Esc** ou o botão no canto de baixo à direita volta à janela.
 - No destaque, **Hide others** guarda a faixa para o quadro em destaque ocupar toda a altura; as transmissões nela param de te mandar vídeo até você mostrá-las de novo (o som continua).
 - Quando você está sozinho na sua sala, um quadro **Invite people** mostra o endereço para passar a quem está numa VPN.
@@ -133,14 +137,14 @@ Enquanto você **minimiza** o app, ou deixa um quadro em tela cheia, as transmis
 
 ## Chat e pessoas
 
-- O **chat** fica à direita: mensagens com horário e foto, e um seletor de emojis. Mensagens que alguém manda com até 5 minutos de diferença ficam sob um só nome e foto (passe o mouse numa delas para ver o horário). Esconda o chat com o botão de chat no canto superior direito; enquanto ele está escondido, o botão conta as mensagens novas. As mensagens só existem enquanto a sala existir.
+- O **chat** fica à direita: mensagens com horário e foto, e um seletor de emojis. Mensagens que alguém manda com até 5 minutos de diferença ficam sob um só nome e foto (passe o mouse numa delas para ver o horário). Esconda o chat com o botão de chat na ponta direita da barra de controles; enquanto ele está escondido, o botão conta as mensagens novas. As mensagens só existem enquanto a sala existir.
 - As **pessoas** aparecem embaixo da sala em que você está, na coluna de salas: quem hospeda, quem está ao vivo (**Live**, ou **Paused**) e quem está reconectando. Enquanto você compartilha, quem está te assistindo mostra como está indo embaixo do nome (*watching you · 60 fps · 20 ms*, ou *not looking*).
 
 Se a sua rede cair por um instante, o app reconecta sozinho e te coloca de volta no mesmo lugar sem pedir o PIN de novo, desde que você volte em até 30 segundos. As transmissões que você assistia reconectam automaticamente.
 
 ## Se você é o anfitrião
 
-O **ⓘ** ao lado do nome da sala mostra os detalhes dela: privacidade, há quanto tempo está aberta, quem hospeda e o tempo de ida e volta até ela (e, para convidados, o endereço para copiar). Para o anfitrião, ele também permite:
+O **ⓘ** na barra de controles, ao lado do botão de compartilhar, mostra os detalhes dela: privacidade, há quanto tempo está aberta, quem hospeda e o tempo de ida e volta até ela (e, para convidados, o endereço para copiar). Para o anfitrião, ele também permite:
 
 - alternar entre **Public** e **Private** a qualquer momento; quem já está dentro continua conectado;
 - mostrar ou esconder o **PIN**, **copiar**, **gerar um novo** ou **definir o seu**;
