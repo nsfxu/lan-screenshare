@@ -97,7 +97,8 @@ Keep decision logic out of React and out of WebRTC callbacks, in `src/shared/*.t
 | Struggle warnings (`struggle.spec.ts`) | Faked `qualityLimitationReason`: a short spike says nothing, a lasting one shows the notice, it clears with the problem, and "Lower to" lowers the quality. |
 | Layout (`layout.spec.ts`) | Recent rooms, rejoining, the window title, hidden columns surviving a reload; in a 700 px window the chat and rooms open over the room. |
 | People in the sidebar (`members.spec.ts`) | Bob's list under the room, the hover preview, watching from it, the host removing someone. |
-| Tiles (`stage.spec.ts`) | The invite tile, a tile per person, watching from a tile, focus and Esc, the ⓘ details for a guest and the host. |
+| Tiles (`stage.spec.ts`) | The invite tile, a tile per person, no room header (the name in the title bar), the first stream watched opening focused, Esc and click to focus, the ⓘ details (in the control bar) for a guest and the host. |
+| Who's watching (`watchers.spec.ts`) | Three people: the stream's viewers (count, pictures, names) for a watcher and the streamer, the muted icon, Only streams from the control bar (remembered) and from the right-click menu. |
 | Chat (`chat.spec.ts`) | The room-named message box, the unread count while hidden, grouping. |
 | Menus (`menus.spec.ts`) | The Sharing button's menu (quality, stop), right-click on your own tile and on a stream (quality you receive, stop watching), the host's actions. |
 | Focus and volume (`focus.spec.ts`) | Alice shares with a test tone: click to focus and back, the speaker mutes and unmutes, its slider and the menu's change the played volume, double-click full screen (the stream fills the screen with no frame; the strip, controls and name hide after a moment without the mouse and come back when it moves), hiding the strip pauses its stream. |

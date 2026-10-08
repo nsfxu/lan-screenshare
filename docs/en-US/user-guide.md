@@ -58,9 +58,9 @@ The rooms column lists:
 
 Each row shows a lock for private rooms, how many streams are live, and how many people are inside; hover over it for who hosts it, for how long, and its address. A room on an incompatible version says *Update to join* or *Older version* (hover for who needs to update). Rooms you added by IP have a **×** to remove them from the list. Click a room to join it. If you're already in a room, you leave it first; the app asks before that ends a room you host or stops your share.
 
-The button at the top of each side column hides it (the rooms column shrinks to a strip of room initials; the chat button is in the room's header). The app remembers which columns you hid. In a small window (for example snapped next to a game) the columns make room for the tiles by themselves: below 1100 px wide the chat is closed, and below 760 px the rooms column is a strip. Their buttons then open them over the room, and clicking next to them puts them away.
+The button at the top of each side column hides it (the rooms column shrinks to a strip of room initials; the chat button is at the right end of the control bar). The app remembers which columns you hid. In a small window (for example snapped next to a game) the columns make room for the tiles by themselves: below 1100 px wide the chat is closed, and below 760 px the rooms column is a strip. Their buttons then open them over the room, and clicking next to them puts them away.
 
-**Join by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click **Join by IP** (next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses behind the **ⓘ** next to the room's name. The default port is 47800.
+**Join by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click **Join by IP** (next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses behind the **ⓘ** in the control bar. The default port is 47800.
 
 **Friends on other networks**: put everyone on a [ZeroTier](zerotier.md) network. It takes a few minutes, and rooms then show up in the list as if you were all at home.
 
@@ -106,7 +106,11 @@ The red button left of it leaves the room (for the host, it ends the room for ev
 Everyone in the room has a **tile** in the middle: their picture and name. Tiles keep a 16:9 shape and grow as large as the window allows. Nothing plays until you choose: people who are sharing have a red **Live** badge, and their tile shows a preview of their stream, taken when they start and refreshed about once a minute.
 
 - Click **Watch stream** on their tile, click them in the rooms column (hover first to see their preview), or **Watch all** in the control bar. Their tile then plays their stream, with their name over its top. Click them in the rooms column again, or **Stop watching** in the stream's right-click menu, to stop; an eye marks the streams you watch.
-- **Click a tile** to put it in the **spotlight**, with everyone else in a strip below (clicking one of them focuses it instead). Click the focused tile again, the grid button under it (left), or press **Esc** to go back to the grid. The room's header shows who's in the room as pictures (hover for their names) and how many streams are live.
+- **The first stream you watch opens in the spotlight**, with everyone else in a strip below. **Watch all**, or a second stream, keeps the grid.
+- **Click a tile** to put it in the **spotlight** (clicking one in the strip focuses it instead). Click the focused tile again, the grid button under it (left), or press **Esc** to go back to the grid.
+- **Only streams** (the funnel button at the left of the control bar, or the same option in any tile's right-click menu) leaves out the people who aren't sharing, so the streams get all the space. It's remembered; while nobody shares, everyone shows anyway.
+- **Who's watching**: a stream's name bar shows an eye with how many people watch it and their pictures; point at it for their names. A stream you muted shows a crossed-out speaker next to the name.
+- The room's name is in the title bar, at the top of the window.
 - **Double-click a stream** to fill the screen with it, like a video player: the stream takes the whole screen, and the strip and the controls float over its bottom. After 2.5 s without moving the mouse everything but the picture hides (the strip, the controls, the name, the stats badges and the pointer); move the mouse to bring them back. **Esc** or the button at the bottom right brings the window back.
 - In the spotlight, **Hide others** puts the strip away so the focused tile gets the whole height; the streams in it stop sending you video until you show them again (you still hear them).
 - When you're alone in your room, an **Invite people** tile shows the address to give people on a VPN.
@@ -131,14 +135,14 @@ While you **minimize** the app, or put one tile in full screen, the streams you 
 
 ## Chat and people
 
-- **Chat** is on the right: messages with time and picture, and an emoji picker. Messages someone sends within 5 minutes of each other share one name and picture (hover over one to see its time). Hide the chat with the chat button at the top right; while it's hidden, that button counts the new messages. Messages are kept only while the room exists.
+- **Chat** is on the right: messages with time and picture, and an emoji picker. Messages someone sends within 5 minutes of each other share one name and picture (hover over one to see its time). Hide the chat with the chat button at the right end of the control bar; while it's hidden, that button counts the new messages. Messages are kept only while the room exists.
 - **People** are listed under the room you're in, in the rooms column: who hosts it, who is **Live** (or **Paused**), and who is reconnecting. While you share, the people watching you show how it's going under their name (*watching you · 60 fps · 20 ms*, or *not looking*).
 
 If your network drops for a moment, the app reconnects on its own and puts you back in your seat without asking for the PIN again, as long as you're back within 30 seconds. Streams you were watching reconnect automatically.
 
 ## If you are the host
 
-The **ⓘ** next to the room's name shows the room's details: privacy, how long it has been open, who hosts it and the round trip to it (and, for guests, the address to copy). For the host, it also lets you:
+The **ⓘ** in the control bar, next to the share button, shows the room's details: privacy, how long it has been open, who hosts it and the round trip to it (and, for guests, the address to copy). For the host, it also lets you:
 
 - switch between **Public** and **Private** at any time; people already inside stay connected;
 - show or hide the **PIN**, **copy** it, **generate a new one**, or **set your own**;
