@@ -37,7 +37,9 @@ function options() {
   const join = typeof raw.join === 'string' ? raw.join : null
   if (hostOnly && join) throw new Error('--host-only and --join go on different computers')
   const source = String(raw.source ?? (process.platform === 'linux' ? 'fake' : 'screen'))
-  if (source !== 'screen' && source !== 'fake') throw new Error('--source must be screen or fake')
+  if (!['screen', 'fake', 'fake-detailed'].includes(source)) {
+    throw new Error('--source must be screen, fake or fake-detailed')
+  }
   const quality = raw.quality === undefined ? null : String(raw.quality)
   if (quality && !QUALITY_PRESETS.some((p) => p.id === quality)) {
     throw new Error(`--quality must be one of ${QUALITY_PRESETS.map((p) => p.id).join(', ')}`)
@@ -104,7 +106,9 @@ async function launch(name: string, opts: ReturnType<typeof options>, fakeSource
   await win.reload() // the UI reads the settings above at startup
   await win.waitForSelector('.rooms-sidebar')
   // Like a 1080p60 screen, the size the measured cases share.
-  if (fakeSource) await fakeScreenCapture(win, { width: 1920, height: 1080, fps: 60 })
+  if (fakeSource) {
+    await fakeScreenCapture(win, { width: 1920, height: 1080, fps: 60 }, opts.source === 'fake-detailed')
+  }
   return { name, app, win, userData, log }
 }
 
@@ -174,7 +178,7 @@ test('measure', async () => {
     let address = opts.join
     let gpu: unknown = null
     if (!opts.join) {
-      const streamer = await launch(STREAMER, opts, opts.source === 'fake')
+      const streamer = await launch(STREAMER, opts, opts.source !== 'screen')
       instances.push(streamer)
       const port = await createRoom(streamer)
       address = `127.0.0.1:${port}`
