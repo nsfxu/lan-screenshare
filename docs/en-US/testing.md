@@ -227,7 +227,7 @@ npm run perf -- --viewers=2 --source=fake       # the animated canvas of the e2e
 
 | Option | Meaning |
 |---|---|
-| `--viewers=<n>` | How many viewers (default 1). Each is its own app instance with its own `--profile`, and watches the streamer. |
+| `--viewers=<n>` | How many viewers (default 1, at most 9: a room holds 10 people). Each is its own app instance with its own `--profile`, and watches the streamer. |
 | `--seconds=<s>` | How long to measure (default 60), after `--warmup=<s>` (default 15). |
 | `--source=screen\|fake` | Share the first real screen (default on Windows and macOS) or an animated canvas (default on Linux). |
 | `--quality=<preset>` | The streamer's maximum quality: `native60`, `1080p60`, `720p60`, `720p30` or `480p30`. |

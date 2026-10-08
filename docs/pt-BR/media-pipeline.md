@@ -260,3 +260,20 @@ Windows 10, GPU NVIDIA, todas as instâncias no mesmo computador (rede de loopba
 A escolha automática de codec ficou com H.265 nessa máquina porque o driver informava a codificação HEVC em hardware como eficiente, mas não a H.264, embora a codificação H.264 em hardware funcionasse quando forçada.
 
 Perda de pacotes real ainda não foi simulada; o controlador adaptativo e a divisão de banda são cobertos por testes unitários.
+
+### Capacidade de codificação (`npm run perf`, 2.2.0)
+
+Windows 10 (19045), NVIDIA GeForce RTX 4070 (driver 32.0.16.1047), AMD Ryzen 9 7900X, a tela de verdade compartilhada em 1080p60, o streamer e todos os espectadores nesse mesmo computador. Os espectadores pediram 1080p (`--view-height=1080`), menos na primeira linha. Todo espectador recebeu um codificador de hardware: H.265 pelo `MediaFoundationVideoEncodeAccelerator (NVIDIA HEVC Encoder MFT)`.
+
+| Espectadores | Codificadores de hardware | fps no espectador p50 (p5) | Latência p50 / p95 | Codificação p50 / p95 | CPU do app | CPU do computador p50 / p95 |
+|---|---|---|---|---|---|---|
+| 4, no tamanho do bloco (640×360) | 4 de 4 | 58 (56) | 30–34 / 33–39 ms | 2,9 / 3,4 ms | 5 % | 25 / 31 % |
+| 4 | 4 de 4 | 57–58 (55–56) | 52–59 / 85–162 ms | 6,5 / 7,6 ms | 8 % | 23 / 27 % |
+| 8 | 8 de 8 | 57–58 (54–56) | 61–82 / 97–132 ms | 11,3 / 14,5 ms | 15 % | 52 / 58 % |
+| 9 | 9 de 9 | 57 (48–54) | 75–100 / 106–186 ms | 15 / 26–31 ms | 19 % | 76 / 83–89 % |
+
+- **Essa placa nunca ficou sem codificadores de hardware**, até 9 espectadores, o máximo que uma sala comporta (`MAX_USERS` = 10 pessoas, contando o streamer). Passar espectadores extras para o caminho TCP (Tarefa 4 de `plans/performance.md`) não é necessário nela; placas Intel e AMD ainda precisam ser medidas.
+- Os números com 9 espectadores vêm de duas execuções que pararam quando um décimo espectador encontrou a sala cheia, então incluem o aquecimento (30–45 s por espectador).
+- O tempo de codificação por quadro cresce com o número de espectadores, já que todos os codificadores dividem a placa, mas o streamer continuou enviando 57–58 fps para todos.
+- Com tudo num computador só, a decodificação dos espectadores também pesa: é a maior parte da CPU do computador e do aumento da latência (o jitter buffer dos espectadores foi de ~8 ms para 30–60 ms). Dois computadores (`--host-only` e `--join`) separariam o custo do streamer do dos espectadores.
+- Em 1080p, cada espectador travou por 0,4–0,9 s uma ou duas vezes em 90 s, uns 52 s depois do início de cada conexão e de novo 52 s depois, enquanto o streamer enviava 58 fps estáveis sem perda de pacotes. A causa está, então, do lado de quem recebe. Fica para ser vista junto com a latência (Tarefa 2).

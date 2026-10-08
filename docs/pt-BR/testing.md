@@ -227,7 +227,7 @@ npm run perf -- --viewers=2 --source=fake       # o canvas animado dos testes e2
 
 | Opção | Significado |
 |---|---|
-| `--viewers=<n>` | Quantos espectadores (padrão 1). Cada um é uma instância do app com seu próprio `--profile`, assistindo ao streamer. |
+| `--viewers=<n>` | Quantos espectadores (padrão 1, no máximo 9: uma sala comporta 10 pessoas). Cada um é uma instância do app com seu próprio `--profile`, assistindo ao streamer. |
 | `--seconds=<s>` | Quanto tempo medir (padrão 60), depois de `--warmup=<s>` (padrão 15). |
 | `--source=screen\|fake` | Compartilhar a primeira tela de verdade (padrão no Windows e no macOS) ou um canvas animado (padrão no Linux). |
 | `--quality=<preset>` | A qualidade máxima do streamer: `native60`, `1080p60`, `720p60`, `720p30` ou `480p30`. |

@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fakeScreenCapture } from '../../e2e/fixtures'
+import { MAX_USERS } from '../../src/shared/constants'
 import { IPC } from '../../src/shared/ipc'
 import { parsePerfLog, summarize, summaryMarkdown } from '../../src/shared/perfSummary'
 import { QUALITY_PRESETS } from '../../src/shared/quality'
@@ -42,8 +43,13 @@ function options() {
     throw new Error(`--quality must be one of ${QUALITY_PRESETS.map((p) => p.id).join(', ')}`)
   }
   const viewHeight = raw['view-height'] === undefined ? null : int('view-height', 0, 90)
+  const viewers = hostOnly ? 0 : int('viewers', 1, 1)
+  // A room holds MAX_USERS people, the streamer included: one more viewer would find it full.
+  if (viewers > MAX_USERS - 1) {
+    throw new Error(`--viewers can be at most ${MAX_USERS - 1}: a room holds ${MAX_USERS} people`)
+  }
   return {
-    viewers: hostOnly ? 0 : int('viewers', 1, 1),
+    viewers,
     seconds: int('seconds', 60, 1),
     warmup: int('warmup', 15, 0),
     source,
