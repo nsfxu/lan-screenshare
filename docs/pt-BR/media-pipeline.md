@@ -98,7 +98,11 @@ Um codec que o espectador não consegue decodificar nunca é oferecido. A tela d
 4. Aplica a ordem de codecs, cria a oferta e envia pelo servidor.
 5. Quando a resposta chega, aumenta as dicas de bitrate inicial/mínimo do WebRTC (`mungeBitrates`) para uma transmissão na rede local chegar à qualidade total em um ou dois segundos, e ajusta o Opus para música (`mungeOpus`: estéreo, média de 128 kbps, FEC embutido, sem DTX).
 
-O Chromium é iniciado com flags importantes aqui (`src/main/index.ts`): candidatos ICE com o IP real em vez de nomes mDNS (que não resolvem através de VPNs), envio e recebimento de H.265 permitidos, e nada de reduzir o ritmo de uma janela minimizada.
+O Chromium é iniciado com flags importantes aqui (`src/main/index.ts`): candidatos ICE com o IP real em vez de nomes mDNS (que não resolvem através de VPNs), envio e recebimento de H.265 permitidos, nada de reduzir o ritmo de uma janela minimizada, e **envio mais rápido de quadros grandes**.
+
+### Quadros-chave sem travadas
+
+O WebRTC envia um quadro-chave a cada 3000 quadros mesmo sem ninguém pedir (`keyFrameInterval`), uns 52 s a 58 fps. Ele cadencia os pacotes num múltiplo da sua taxa alvo: 1,0× para conteúdo de tela (a dica "detail", uma área de trabalho) e 1,1× para vídeo ("motion", um jogo). Um quadro-chave de uma área de trabalho detalhada em 1080p (100–700 KB) levava então 0,2–0,9 s para chegar, e a imagem de todos os espectadores travava nesse meio-tempo, uma vez por minuto. O app inicia o Chromium com `--force-fieldtrials=WebRTC-ProbingScreenshareBwe/10.0,2875,80,40,-60,3/WebRTC-Video-Pacing/factor:10.0/`, que cadencia os dois tipos a 10×: os mesmos quadros-chave chegam sem travar. Só rajadas curtas vão mais rápido; a taxa média não muda. Um `--force-fieldtrials` na linha de comando substitui esse (para experimentos com `npm run perf`).
 
 ## Controle de qualidade
 
@@ -276,4 +280,9 @@ Windows 10 (19045), NVIDIA GeForce RTX 4070 (driver 32.0.16.1047), AMD Ryzen 9 7
 - Os números com 9 espectadores vêm de duas execuções que pararam quando um décimo espectador encontrou a sala cheia, então incluem o aquecimento (30–45 s por espectador).
 - O tempo de codificação por quadro cresce com o número de espectadores, já que todos os codificadores dividem a placa, mas o streamer continuou enviando 57–58 fps para todos.
 - Com tudo num computador só, a decodificação dos espectadores também pesa: é a maior parte da CPU do computador e do aumento da latência (o jitter buffer dos espectadores foi de ~8 ms para 30–60 ms). Dois computadores (`--host-only` e `--join`) separariam o custo do streamer do dos espectadores.
-- Em 1080p, cada espectador travou por 0,4–0,9 s uma ou duas vezes em 90 s, uns 52 s depois do início de cada conexão e de novo 52 s depois, enquanto o streamer enviava 58 fps estáveis sem perda de pacotes. A causa está, então, do lado de quem recebe. Fica para ser vista junto com a latência (Tarefa 2).
+- Em 1080p, cada espectador travou por 0,4–0,9 s uma ou duas vezes em 90 s, uns 52 s depois do início de cada conexão e de novo 52 s depois, enquanto o streamer enviava 58 fps estáveis sem perda de pacotes. Cada travada era um quadro-chave sendo enviado devagar; resolvido com o [envio mais rápido](#quadros-chave-sem-travadas). Mesmo PC, 2 espectadores em 1080p por 120 s, uma área de trabalho compartilhada:
+
+  | Cadência | Quadros-chave por espectador | Travadas por espectador | Latência p50 / p95 |
+  |---|---|---|---|
+  | Padrão do WebRTC | 2 | 2 (0,4 s no total) | 32 / 33–35 ms |
+  | 10× (padrão do app desde esta mudança) | 2 | 0 | 31 / 32 ms |

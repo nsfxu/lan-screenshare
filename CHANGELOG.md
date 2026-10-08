@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Fixed
+
+- **No more short freeze about once a minute** when watching a shared desktop at full size. Every minute or so the stream sends a full picture, and it used to arrive slowly enough to stall the video for a moment (0.2–0.9 s); it now arrives without a pause.
+
 ## [2.2.0] - 2026-10-07
 
 ### Added
