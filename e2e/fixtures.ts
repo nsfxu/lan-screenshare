@@ -97,26 +97,27 @@ async function launchPerson(
 }
 
 /**
- * getDisplayMedia() returns an animated 1280×720 canvas (background
- * FAKE_SCREEN_RGB), with a 440 Hz tone when audio is asked for.
+ * getDisplayMedia() returns an animated canvas (1280×720 at 30 fps unless
+ * asked otherwise; background FAKE_SCREEN_RGB), with a 440 Hz tone when audio
+ * is asked for.
  */
-export async function fakeScreenCapture(win: Page): Promise<void> {
-  await win.evaluate(([r, g, b]) => {
+export async function fakeScreenCapture(win: Page, size = { width: 1280, height: 720, fps: 30 }): Promise<void> {
+  await win.evaluate(([[r, g, b], { width, height, fps }]) => {
     navigator.mediaDevices.getDisplayMedia = async (constraints?: DisplayMediaStreamOptions) => {
       const canvas = document.createElement('canvas')
-      canvas.width = 1280
-      canvas.height = 720
+      canvas.width = width
+      canvas.height = height
       const ctx = canvas.getContext('2d')!
       let frame = 0
       setInterval(() => {
         ctx.fillStyle = `rgb(${r}, ${g}, ${b})`
         ctx.fillRect(0, 0, canvas.width, canvas.height)
         ctx.fillStyle = '#fff'
-        ctx.fillRect(((frame * 8) % 1180) + 50, 300, 80, 120)
+        ctx.fillRect(((frame * 8) % (width - 100)) + 50, height / 2 - 60, 80, 120)
         ctx.font = '64px sans-serif'
-        ctx.fillText(`frame ${frame++}`, 440, 600)
-      }, 33)
-      const stream = canvas.captureStream(30)
+        ctx.fillText(`frame ${frame++}`, width / 3, height - 120)
+      }, 1000 / fps)
+      const stream = canvas.captureStream(fps)
       if (constraints?.audio) {
         const ctx = new AudioContext()
         const tone = ctx.createOscillator()
@@ -128,7 +129,7 @@ export async function fakeScreenCapture(win: Page): Promise<void> {
       }
       return stream
     }
-  }, FAKE_SCREEN_RGB)
+  }, [FAKE_SCREEN_RGB, size] as const)
 }
 
 

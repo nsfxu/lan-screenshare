@@ -103,7 +103,8 @@ async function launch(name: string, opts: ReturnType<typeof options>, fakeSource
   )
   await win.reload() // the UI reads the settings above at startup
   await win.waitForSelector('.rooms-sidebar')
-  if (fakeSource) await fakeScreenCapture(win)
+  // Like a 1080p60 screen, the size the measured cases share.
+  if (fakeSource) await fakeScreenCapture(win, { width: 1920, height: 1080, fps: 60 })
   return { name, app, win, userData, log }
 }
 

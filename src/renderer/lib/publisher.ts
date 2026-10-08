@@ -12,7 +12,7 @@ import {
   type QualityPreset,
   type ViewLimit
 } from '../../shared/quality'
-import type { PerfSenderRow } from '../../shared/perf'
+import type { PerfSenderCounters, PerfSenderRow } from '../../shared/perf'
 import {
   isSoftwareEncoder,
   STRUGGLE_KINDS,
@@ -66,6 +66,8 @@ interface PeerSample {
   limitation: string
   width: number
   height: number
+  /** Only for the --perf-log file. */
+  counters: PerfSenderCounters
 }
 
 export interface SharingState {
@@ -974,7 +976,8 @@ export class Publisher extends Emitter<Events> {
         encodeMs: s.encodeMs === null ? null : Math.round(s.encodeMs * 10) / 10,
         limitation: s.limitation,
         rttMs: s.rttMs,
-        hidden: this.isHidden(id)
+        hidden: this.isHidden(id),
+        counters: s.counters
       })
     }
     // One WebCodecs encoder serves every TCP watcher, so they share its numbers.
@@ -1038,7 +1041,19 @@ export class Publisher extends Emitter<Events> {
       codec: shortCodecName(codecs.get(out.codecId) ?? ''),
       limitation: String(out.qualityLimitationReason ?? 'none'),
       width: Number(out.frameWidth ?? 0),
-      height: Number(out.frameHeight ?? 0)
+      height: Number(out.frameHeight ?? 0),
+      counters: {
+        keyFrames: Number(out.keyFramesEncoded ?? 0),
+        hugeFrames: Number(out.hugeFramesSent ?? 0),
+        pli: Number(out.pliCount ?? 0),
+        fir: Number(out.firCount ?? 0),
+        nack: Number(out.nackCount ?? 0),
+        retransmittedBytes: Number(out.retransmittedBytesSent ?? 0),
+        resolutionChanges: Number(out.qualityLimitationResolutionChanges ?? 0),
+        targetKbps: typeof out.targetBitrate === 'number' ? Math.round(out.targetBitrate / 1000) : null,
+        availableKbps:
+          typeof pair?.availableOutgoingBitrate === 'number' ? Math.round(pair.availableOutgoingBitrate / 1000) : null
+      }
     }
   }
 }
