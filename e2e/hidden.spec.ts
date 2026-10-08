@@ -14,8 +14,12 @@ test("viewers who can't see a stream get no video until they can", async ({ peop
   await carol.win.locator('.modal .source', { hasText: 'Fake screen' }).click()
   await carol.win.locator('.modal').getByRole('button', { name: 'Share', exact: true }).click()
   await joinByIp(bob, port)
-  // Watch all keeps the grid (watching a single stream would focus it, putting Carol in the strip).
-  await bob.win.getByRole('button', { name: 'Watch all' }).click()
+  // The first stream opens focused: back to the grid, where a second stream keeps the grid.
+  await bob.win.getByRole('button', { name: "Watch Alice's stream" }).click()
+  await expect(bob.win.locator('.spotlight-main .stream-tile')).toBeVisible()
+  await bob.win.keyboard.press('Escape')
+  await bob.win.getByRole('button', { name: "Watch Carol's stream" }).click()
+  await expect(bob.win.locator('.stage-spotlight')).toHaveCount(0)
   for (const name of ['Alice', 'Carol']) {
     await expect.poll(() => framesDuring(bob.win, name, 1000), { timeout: 30_000 }).toBeGreaterThan(15)
   }

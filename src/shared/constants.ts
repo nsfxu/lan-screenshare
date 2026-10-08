@@ -1,5 +1,8 @@
 export const APP_NAME = 'ScreenShare'
 
+/** Name prefix of a stream's own window (window.open), the only kind of window the room may open. */
+export const STREAM_WINDOW_PREFIX = 'screenshare-stream-'
+
 /** Where releases are published: the only place the app contacts on the internet (update checks). */
 export const RELEASES_REPO = 'nsfxu/lan-screenshare'
 export const RELEASES_URL = `https://github.com/${RELEASES_REPO}/releases`

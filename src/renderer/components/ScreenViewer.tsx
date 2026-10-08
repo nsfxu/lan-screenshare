@@ -45,14 +45,16 @@ export function ScreenViewer({ stream, placeholder, overlay, local, volumeKey, o
     }
   }, [stream])
 
-  // Something else full screen (another stage, a dialog) hides this one.
+  // Something else full screen (another stage, a dialog) hides this one. The
+  // viewer may live in a stream's own window: use the document it's in.
   useEffect(() => {
+    const doc = containerRef.current?.ownerDocument ?? document
     const onChange = (): void => {
-      const full = document.fullscreenElement
+      const full = doc.fullscreenElement
       hiddenRef.current?.(!!full && !full.contains(containerRef.current))
     }
-    document.addEventListener('fullscreenchange', onChange)
-    return () => document.removeEventListener('fullscreenchange', onChange)
+    doc.addEventListener('fullscreenchange', onChange)
+    return () => doc.removeEventListener('fullscreenchange', onChange)
   }, [])
 
   // Report how many pixels of the stream are actually visible, so the sender
@@ -63,17 +65,19 @@ export function ScreenViewer({ stream, placeholder, overlay, local, volumeKey, o
     const el = containerRef.current
     const video = videoRef.current
     if (!el || !video || !reportRef.current) return
+    // The window the viewer is in (the room's, or a stream's own window): its resize observer and pixel ratio.
+    const view = el.ownerDocument.defaultView ?? window
     let timer: number | null = null
     const measure = (): void => {
       if (timer) clearTimeout(timer)
       timer = window.setTimeout(() => {
         const aspect = video.videoWidth > 0 && video.videoHeight > 0 ? video.videoHeight / video.videoWidth : 9 / 16
         const shown = Math.min(el.clientHeight, el.clientWidth * aspect)
-        reportRef.current?.(Math.round(shown * window.devicePixelRatio))
+        reportRef.current?.(Math.round(shown * view.devicePixelRatio))
       }, 250)
     }
     measure()
-    const observer = new ResizeObserver(measure)
+    const observer = new view.ResizeObserver(measure)
     observer.observe(el)
     video.addEventListener('resize', measure)
     return () => {

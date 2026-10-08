@@ -37,7 +37,7 @@ test('everyone has a tile: watch from it, focus it, and find the room details be
   await bob.win.keyboard.press('Escape')
 
   // ⓘ, now in the control bar: the address for everyone; privacy, PIN and End room for the host.
-  await expect(bob.win.locator('.control-bar').getByRole('button', { name: 'Room details' })).toBeVisible()
+  await expect(bob.win.locator('.stage-controls').getByRole('button', { name: 'Room details' })).toBeVisible()
   await bob.win.getByRole('button', { name: 'Room details' }).click()
   await expect(bob.win.locator('.room-info')).toContainText(`127.0.0.1:${port}`)
   await expect(bob.win.locator('.room-info').getByRole('button', { name: /End room/ })).toHaveCount(0)

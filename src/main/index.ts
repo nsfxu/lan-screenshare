@@ -2,7 +2,7 @@ import { app, BrowserWindow, clipboard, desktopCapturer, dialog, ipcMain, screen
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { APP_NAME, DEFAULT_PORT, TITLE_BAR_HEIGHT } from '../shared/constants'
+import { APP_NAME, DEFAULT_PORT, STREAM_WINDOW_PREFIX, TITLE_BAR_HEIGHT } from '../shared/constants'
 import { IPC } from '../shared/ipc'
 import { parsePerfArgs, type PerfRendererOptions } from '../shared/perf'
 import { cpuBusyPercent, type CpuTimes } from '../shared/systemStats'
@@ -74,6 +74,8 @@ const cursorWatch = new CursorWatch(log)
 
 let mainWindow: BrowserWindow | null = null
 let quitting = false
+/** Hide the app's windows from screen capture (while watching), see setViewerProtection. */
+let viewerProtection = false
 
 process.on('uncaughtException', (err) => log.error('uncaught exception', err))
 process.on('unhandledRejection', (err) => log.error('unhandled rejection', err))
@@ -134,7 +136,34 @@ function createWindow(): void {
       win.showInactive()
     })
   })
-  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+  // The only window the page may open is a stream's own window: a blank page the room
+  // fills in (same process, so it can play the stream it already receives).
+  win.webContents.setWindowOpenHandler(({ url, frameName }) =>
+    url === 'about:blank' && frameName.startsWith(STREAM_WINDOW_PREFIX)
+      ? {
+          action: 'allow',
+          overrideBrowserWindowOptions: {
+            width: 1280,
+            height: 760,
+            minWidth: 320,
+            minHeight: 200,
+            backgroundColor: '#000000',
+            autoHideMenuBar: true,
+            title: APP_NAME
+          }
+        }
+      : { action: 'deny' }
+  )
+  win.webContents.on('did-create-window', (child) => {
+    child.setContentProtection(viewerProtection)
+    child.setMenuBarVisibility(false)
+    child.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+    child.webContents.on('will-navigate', (e) => e.preventDefault())
+    // A stream's window doesn't outlive the room's window.
+    win.once('closed', () => {
+      if (!child.isDestroyed()) child.close()
+    })
+  })
   win.webContents.on('will-navigate', (e, url) => {
     if (url !== win.webContents.getURL()) e.preventDefault()
   })
@@ -264,7 +293,9 @@ function registerIpc(): void {
   // Viewers are not allowed to record the stream: hide the window from OS
   // screen capture/screenshots while watching.
   ipcMain.handle(IPC.setViewerProtection, (_e, enabled: boolean) => {
-    mainWindow?.setContentProtection(!!enabled)
+    viewerProtection = !!enabled
+    // The room's window and any stream's own window.
+    for (const w of BrowserWindow.getAllWindows()) w.setContentProtection(viewerProtection)
   })
   ipcMain.on(IPC.log, (_e, level: 'info' | 'warn' | 'error', message: string) => {
     const fn = log[level] ?? log.info

@@ -256,6 +256,12 @@ export function cornerColour(win: Page): Promise<number[] | null> {
   })
 }
 
+/** Shows or hides your stream's stats (the Sharing menu's "Stream stats"). */
+export async function toggleStats(person: Person): Promise<void> {
+  await person.win.getByRole('button', { name: 'Sharing', exact: true }).click()
+  await person.win.getByRole('menu', { name: 'Sharing' }).getByRole('menuitem', { name: /stream stats$/i }).click()
+}
+
 /** Opens the chat if it's hidden (a narrow window starts with it hidden). */
 export async function openChat(person: Person): Promise<void> {
   await person.win.locator('.room').waitFor()

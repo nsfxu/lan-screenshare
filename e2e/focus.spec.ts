@@ -18,15 +18,23 @@ test('click to focus, double-click for full screen; volume below a focused strea
   await expect.poll(() => decodedFrames(win), { timeout: 30_000 }).toBeGreaterThan(10)
   const aliceStream = win.locator('.stream-tile')
 
-  // One click focuses, another goes back to the grid. No zooming, no controls over the stream.
+  // Watching it opened it focused; a click goes back to the grid, another focuses it again. No controls on the stream itself.
+  await expect(win.locator('.spotlight-main video')).toHaveCount(1)
   await expect(aliceStream.locator('.tile-bar')).toContainText('Alice')
   await expect(aliceStream.getByRole('button')).toHaveCount(0)
-  await aliceStream.click()
-  await expect(win.locator('.spotlight-main video')).toHaveCount(1)
   await win.locator('.spotlight-main .stream-tile').click()
   await expect(win.locator('.stage-spotlight')).toHaveCount(0)
 
-  // Focused: the speaker below mutes and unmutes back to the volume; pointing at it shows the slider.
+  // The controls float over the stage: they hide after a moment without the mouse moving there, and come back.
+  const controls = win.locator('.stage-controls')
+  const stageBox = (await win.locator('.stage-area').boundingBox())!
+  await win.mouse.move(stageBox.x + stageBox.width / 2, stageBox.y + 30)
+  const controlsOpacity = () => controls.evaluate((el) => getComputedStyle(el).opacity)
+  await expect.poll(controlsOpacity, { timeout: 6_000 }).toBe('0')
+  await win.mouse.move(stageBox.x + stageBox.width / 2, stageBox.y + 60)
+  await expect.poll(controlsOpacity).toBe('1')
+
+  // Focused: the speaker in the controls mutes and unmutes back to the volume; pointing at it shows the slider.
   await aliceStream.click()
   const speaker = win.getByRole('button', { name: 'Mute Alice' })
   await speaker.click()
@@ -69,12 +77,12 @@ test('click to focus, double-click for full screen; volume below a focused strea
 
   // ...and everything but the picture hides after a moment without the mouse moving.
   const opacity = (selector: string) => win.locator(selector).first().evaluate((el) => getComputedStyle(el).opacity)
-  for (const part of ['.focus-bar', '.spotlight-strip', '.spotlight-main .tile-bar']) {
+  for (const part of ['.stage-controls', '.spotlight-strip', '.spotlight-main .tile-bar']) {
     await expect.poll(() => opacity(part), { timeout: 6_000 }).toBe('0')
   }
   if (shots) await win.screenshot({ path: `${shots}/4-fullscreen-idle.png` })
   await win.mouse.move(10, 10)
-  await expect.poll(() => opacity('.focus-bar')).toBe('1')
+  await expect.poll(() => opacity('.stage-controls')).toBe('1')
   await expect.poll(() => opacity('.spotlight-main .tile-bar')).toBe('1')
   await win.getByRole('button', { name: 'Exit full screen' }).click()
   await expect.poll(() => win.evaluate(() => !!document.fullscreenElement)).toBe(false)

@@ -1,11 +1,11 @@
-import { createRoom, expect, setForeground, test } from './fixtures'
+import { createRoom, expect, setForeground, test, toggleStats } from './fixtures'
 
 // "Optimize for: Automatic" (the default): smooth motion while a fullscreen
 // window is in front on the shared screen, sharp text otherwise.
 test('automatic quality follows a fullscreen app in front of the shared screen', async ({ people }) => {
   const [alice] = await people(1)
   await createRoom(alice) // shares the fake screen, on display "fake"
-  await alice.win.getByRole('button', { name: 'Stats' }).click()
+  await toggleStats(alice)
   const mode = alice.win.locator('.stats-panel div', { hasText: 'Optimized for' }).locator('dd')
 
   // Nothing reported yet: smooth motion, as before this setting existed.
