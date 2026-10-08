@@ -41,6 +41,7 @@ const PATHS: Record<string, string> = {
   chevronUp: 'M6 15l6-6 6 6',
   chevronDown: 'M6 9l6 6 6-6',
   grid: 'M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z',
+  filter: 'M4 5h16l-6 7.5V19l-4 2v-8.5z',
   check: 'M5 12l5 5 9-10',
   info: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 11v5 M12 8h.01',
   sliders: 'M4 7h9 M17 7h3 M15 5v4 M4 17h3 M11 17h9 M9 15v4',

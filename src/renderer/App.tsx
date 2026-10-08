@@ -243,7 +243,7 @@ export function App() {
 
   return (
     <>
-      <TitleBar onRestartToUpdate={restartToUpdate} />
+      <TitleBar roomName={current?.name ?? null} onRestartToUpdate={restartToUpdate} />
       <div className="shell">
         {roomsFloatingNow && (
           <>

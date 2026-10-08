@@ -15,27 +15,29 @@ test('everyone has a tile: watch from it, focus it, and find the room details be
   await expect(alice.win.locator('.invite-tile')).toHaveCount(0)
   await expect(bob.win.locator('.stage-grid > .tile')).toHaveCount(2)
   await expect(bob.win.locator('.person-tile', { hasText: 'Bob (you)' })).toBeVisible()
-  // The header shows who's here as pictures.
-  await expect(bob.win.locator('.room-people .avatar')).toHaveCount(2)
-  await expect(bob.win.locator('.room-people')).toHaveAttribute('aria-label', /^2 people: /)
+  // No room header: the room's name is in the title bar.
+  await expect(bob.win.locator('.room-header')).toHaveCount(0)
+  await expect(bob.win.locator('.title-bar-room')).toContainText("Alice's room")
   const aliceTile = bob.win.locator('.person-tile', { hasText: 'Alice' })
   await expect(aliceTile.locator('.live-badge')).toHaveText('Live')
   if (shots) await bob.win.screenshot({ path: `${shots}/2-tiles.png` })
 
-  // Watching turns Alice's tile into her stream.
+  // Watching turns Alice's tile into her stream, and the first stream watched opens focused, the others below.
   await bob.win.getByRole('button', { name: "Watch Alice's stream" }).click()
   await expect.poll(() => decodedFrames(bob.win), { timeout: 30_000 }).toBeGreaterThan(10)
-  await expect(bob.win.locator('.stage-grid > .tile')).toHaveCount(2)
-
-  // A click puts it in the spotlight with the others below; Esc goes back.
-  await bob.win.locator('.stream-tile').click()
   await expect(bob.win.locator('.spotlight-main video')).toHaveCount(1)
   await expect(bob.win.locator('.spotlight-strip .person-tile', { hasText: 'Bob' })).toBeVisible()
   if (shots) await bob.win.screenshot({ path: `${shots}/3-focus.png` })
+  // Esc goes back to the grid; a click focuses again.
   await bob.win.keyboard.press('Escape')
   await expect(bob.win.locator('.stage-spotlight')).toHaveCount(0)
+  await expect(bob.win.locator('.stage-grid > .tile')).toHaveCount(2)
+  await bob.win.locator('.stream-tile').click()
+  await expect(bob.win.locator('.spotlight-main video')).toHaveCount(1)
+  await bob.win.keyboard.press('Escape')
 
-  // ⓘ: the address for everyone; privacy, PIN and End room for the host.
+  // ⓘ, now in the control bar: the address for everyone; privacy, PIN and End room for the host.
+  await expect(bob.win.locator('.control-bar').getByRole('button', { name: 'Room details' })).toBeVisible()
   await bob.win.getByRole('button', { name: 'Room details' }).click()
   await expect(bob.win.locator('.room-info')).toContainText(`127.0.0.1:${port}`)
   await expect(bob.win.locator('.room-info').getByRole('button', { name: /End room/ })).toHaveCount(0)

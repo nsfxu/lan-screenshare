@@ -7,7 +7,7 @@ import { Icon } from './Icon'
  * the window; the system's own buttons sit over its right end (Windows,
  * Linux) or its left end (macOS), so it leaves room for them.
  */
-export function TitleBar({ onRestartToUpdate }: { onRestartToUpdate(): void }) {
+export function TitleBar({ roomName, onRestartToUpdate }: { roomName: string | null; onRestartToUpdate(): void }) {
   const platform = usePlatform()
   const update = useUpdateStatus()
   return (
@@ -16,6 +16,11 @@ export function TitleBar({ onRestartToUpdate }: { onRestartToUpdate(): void }) {
         <Icon name="screen" size={12} />
       </span>
       <span className="title-bar-name">ScreenShare</span>
+      {roomName && (
+        <span className="title-bar-room" title={roomName}>
+          · {roomName}
+        </span>
+      )}
       {update?.state === 'ready' && (
         <button className="title-bar-update" title={`ScreenShare ${update.version} is downloaded`} onClick={onRestartToUpdate}>
           <Icon name="refresh" size={12} /> Restart to update
