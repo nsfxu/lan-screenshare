@@ -1,4 +1,5 @@
 import type { AudioChoice } from '../../shared/types'
+import { t, translator } from './i18n'
 
 /** Strip Electron's "Error invoking remote method 'x': Error: " prefix. */
 export function errorMessage(err: unknown): string {
@@ -7,20 +8,20 @@ export function errorMessage(err: unknown): string {
 }
 
 export function formatTime(ts: number): string {
-  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  return translator().time(ts)
 }
 
 export function formatBitrate(kbps: number): string {
-  if (kbps >= 1000) return `${(kbps / 1000).toFixed(1)} Mbps`
-  return `${Math.round(kbps)} kbps`
+  if (kbps >= 1000) return t('common.mbps', { value: translator().number(kbps / 1000, 1) })
+  return t('common.kbps', { value: Math.round(kbps) })
 }
 
 export function formatDuration(ms: number): string {
   const s = Math.max(0, Math.round(ms / 1000))
-  if (s < 60) return `${s}s`
+  if (s < 60) return t('duration.seconds', { s })
   const m = Math.floor(s / 60)
-  if (m < 60) return `${m}m ${s % 60}s`
-  return `${Math.floor(m / 60)}h ${m % 60}m`
+  if (m < 60) return t('duration.minutes', { m, s: s % 60 })
+  return t('duration.hours', { h: Math.floor(m / 60), m: m % 60 })
 }
 
 export function initials(name: string): string {
@@ -39,26 +40,11 @@ export function roomUrl(ep: { address: string; port: number; tls: boolean }): st
 export function audioUnavailableMessage(error: string | null): string {
   if (error === 'NotReadableError' && /Windows/.test(navigator.userAgent)) {
     // Only reached when both Chromium's loopback and the native helper failed.
-    return (
-      "Couldn't capture system audio from the default output device. If it is in surround (5.1/7.1) mode, " +
-      'switching it to stereo usually helps (Sound settings → device → Properties → Advanced → 2 channel), then use ' +
-      'Change source. Sharing video only for now.'
-    )
+    return t('audio.surround')
   }
-  if (error === 'NotReadableError' || error === 'NotAllowedError') {
-    return "Couldn't capture system audio (on macOS this needs macOS 13+ and Screen Recording permission). Sharing video only."
-  }
-  return 'System audio is not available here; sharing video only.'
+  if (error === 'NotReadableError' || error === 'NotAllowedError') return t('audio.unavailableMac')
+  return t('audio.unavailable')
 }
-
-/** Shown when "Leave out Discord" was on but the whole system mix is being shared. */
-export const DISCORD_NOT_EXCLUDED_MESSAGE =
-  "Couldn't leave Discord out of the shared audio (this needs Windows 10 version 2004 or newer), so viewers " +
-  'will also hear your Discord call. Use Mute audio if that is a problem.'
-
-export const APP_AUDIO_FAILED_MESSAGE =
-  "Couldn't share only that app's sound (this needs Windows 10 version 2004 or newer), so viewers hear everything " +
-  'playing on your computer. Use Mute audio if that is a problem.'
 
 /** After starting a share: what to tell the user when the sound isn't what they chose, or null. */
 export function captureAudioWarning(
@@ -67,8 +53,9 @@ export function captureAudioWarning(
 ): string | null {
   if (!asked.enabled) return null
   if (!result.hasAudio) return audioUnavailableMessage(result.audioError)
-  if (result.appAudioFailed) return APP_AUDIO_FAILED_MESSAGE
-  if (result.discordExclusionFailed) return DISCORD_NOT_EXCLUDED_MESSAGE
+  // "Only this app's sound", or "Leave out Discord", was on but the whole system mix is being shared.
+  if (result.appAudioFailed) return t('audio.appFailed')
+  if (result.discordExclusionFailed) return t('audio.discordNotExcluded')
   return null
 }
 

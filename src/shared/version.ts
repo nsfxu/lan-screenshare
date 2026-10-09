@@ -1,4 +1,4 @@
-import { APP_NAME } from './constants'
+import { english, type TFunction } from './i18n'
 
 /** An app version as rooms and participants report it: SemVer, e.g. "1.2.0" or "2.0.0-beta.1". */
 const APP_VERSION_RE = /^(\d{1,4})\.(\d{1,4})\.(\d{1,6})(?:-([0-9A-Za-z.-]{1,32}))?$/
@@ -37,14 +37,14 @@ export interface VersionSide {
  * null when they can. Which side has to update follows from the protocol
  * numbers, which only ever go up.
  */
-export function incompatibleRoomMessage(room: VersionSide, ours: VersionSide): string | null {
+export function incompatibleRoomMessage(room: VersionSide, ours: VersionSide, t: TFunction = english().t): string | null {
   if (!room.protocol || room.protocol === ours.protocol) return null
-  const theirs = isAppVersion(room.appVersion) ? `${APP_NAME} ${room.appVersion}` : null
-  const mine = isAppVersion(ours.appVersion) ? `, you have ${ours.appVersion}` : ''
+  const known = isAppVersion(room.appVersion) ? t('version.app', { version: room.appVersion }) : null
+  const yours = isAppVersion(ours.appVersion) ? t('version.yours', { version: ours.appVersion }) : ''
   if (room.protocol > ours.protocol) {
-    return `This room runs ${theirs ?? `a newer ${APP_NAME}`}${mine}: update to join`
+    return t('version.updateToJoin', { theirs: known ?? t('version.newerApp'), yours })
   }
-  return `This room runs ${theirs ?? `an older ${APP_NAME}`}${mine}: the host needs to update`
+  return t('version.hostMustUpdate', { theirs: known ?? t('version.olderApp'), yours })
 }
 
 /** The newest app version among `others` that is newer than ours, with who runs it. */

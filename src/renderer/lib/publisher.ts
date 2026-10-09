@@ -36,6 +36,7 @@ import type {
 import { applyCodecOrder, chooseCodecOrder, mungeBitrates, mungeOpus, shortCodecName } from './codecs'
 import { Emitter } from './emitter'
 import { errorMessage } from './format'
+import { t } from './i18n'
 import { blobToDataUrl } from './images'
 import { startNativeLoopback, type NativeAudioCapture } from './nativeAudio'
 import type { RoomClient } from './roomClient'
@@ -627,7 +628,8 @@ export class Publisher extends Emitter<Events> {
       case 'stream-stopped':
         log(`stream stopped by host: ${msg.reason}`)
         this.stopSharing()
-        this.emit('stopped', msg.reason)
+        // The server only ever sends this when its host stopped it.
+        this.emit('stopped', t('error.stoppedByHost'))
         return
       case 'watch-request':
         if (!this.track) return

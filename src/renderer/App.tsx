@@ -11,6 +11,7 @@ import { Welcome } from './components/Welcome'
 import { detectDecoders, detectEncoders } from './lib/codecs'
 import { captureAudioWarning, errorMessage } from './lib/format'
 import { PANEL_STATES, ROOMS_DOCKED_MIN_WIDTH, useRemembered, useWindowWidth } from './lib/layout'
+import { applyLanguage, setSystemLanguages, translator, useT } from './lib/i18n'
 import { applyTheme } from './lib/theme'
 import { audioDefaults } from './lib/publisher'
 import { disposeSession, hostRoom, joinRoom, JoinError, updateSessionSettings, type Session } from './lib/session'
@@ -28,6 +29,7 @@ interface PinPrompt {
 }
 
 export function App() {
+  const { t } = useT()
   const [settings, setSettings] = useState<Settings | null>(null)
   const [rooms, setRooms] = useState<DiscoveredRoom[]>([])
   const [session, setSession] = useState<Session | null>(null)
@@ -53,13 +55,18 @@ export function App() {
 
   const toast = useCallback((message: string, tone: 'error' | 'info' = 'info') => {
     const id = Date.now() + Math.random()
-    setToasts((t) => [...t.slice(-3), { id, message, tone }])
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), tone === 'error' ? Math.max(6000, message.length * 60) : 3000)
+    setToasts((list) => [...list.slice(-3), { id, message, tone }])
+    setTimeout(() => setToasts((list) => list.filter((x) => x.id !== id)), tone === 'error' ? Math.max(6000, message.length * 60) : 3000)
   }, [])
 
   // --- startup -----------------------------------------------------------------
   useEffect(() => {
-    void window.api.settings.get().then(setSettings)
+    // The language first, so the app opens in it.
+    void Promise.all([window.api.settings.get(), window.api.system.info()]).then(([s, info]) => {
+      setSystemLanguages(Array.isArray(info.languages) ? info.languages : [])
+      applyLanguage(s.language)
+      setSettings(s)
+    })
     void window.api.rooms.list().then(setRooms)
     void Promise.all([detectEncoders(), detectDecoders()]).then(([encoders, decoders]) => {
       setCodecs({ encoders, decoders })
@@ -75,6 +82,7 @@ export function App() {
 
   const updateSettings = useCallback(async (patch: Partial<Settings>) => {
     const next = await window.api.settings.update(patch)
+    if ('language' in patch) applyLanguage(next.language)
     setSettings(next)
     if (sessionRef.current) updateSessionSettings(sessionRef.current, next)
   }, [])
@@ -104,7 +112,9 @@ export function App() {
               room,
               error:
                 d.code === 'bad_pin'
-                  ? `Wrong PIN.${d.attemptsLeft !== undefined ? ` ${d.attemptsLeft} attempt${d.attemptsLeft === 1 ? '' : 's'} left.` : ''}`
+                  ? [t('app.wrongPin'), d.attemptsLeft !== undefined ? t('app.attemptsLeft', { count: d.attemptsLeft }) : '']
+                      .filter(Boolean)
+                      .join(' ')
                   : null,
               lockedUntil: d.code === 'locked' ? Date.now() + (d.retryAfterMs ?? 0) : null
             })
@@ -114,13 +124,13 @@ export function App() {
           toast(d.message, 'error')
         } else {
           setPinPrompt(null)
-          toast(`Could not join: ${errorMessage(err)}`, 'error')
+          toast(t('app.couldNotJoin', { error: errorMessage(err) }), 'error')
         }
       } finally {
         setBusyKey(null)
       }
     },
-    [settings, codecs, toast, updateSettings]
+    [settings, codecs, toast, updateSettings, t]
   )
 
   // Optional auto-rejoin of the last room on startup.
@@ -135,8 +145,8 @@ export function App() {
       .then((room) => {
         if (!sessionRef.current) void join(room)
       })
-      .catch(() => toast(`Last room (${last.name ?? last.address}) is not available`, 'info'))
-  }, [settings, join, toast])
+      .catch(() => toast(t('app.lastRoomUnavailable', { name: last.name ?? last.address }), 'info'))
+  }, [settings, join, toast, t])
 
   const leave = useCallback(
     (reason?: string) => {
@@ -146,7 +156,7 @@ export function App() {
       setSession(null)
       disposeSession(s)
       if (s.role === 'host') void window.api.host.close()
-      if (reason && reason !== 'You left the room') toast(reason, s.role === 'host' ? 'info' : 'error')
+      if (reason) toast(reason, s.role === 'host' ? 'info' : 'error')
     },
     [toast]
   )
@@ -155,20 +165,20 @@ export function App() {
   const leaveForAnother = async (): Promise<boolean> => {
     const s = sessionRef.current
     if (!s) return true
-    const name = s.client.room?.name ?? 'this room'
+    const name = s.client.room?.name ?? t('common.room')
     if (s.role === 'host') {
       const ok = await askConfirm({
-        title: `End ${name}?`,
-        message: `Switching rooms ends ${name} for everyone.`,
-        confirm: 'End room and switch',
+        title: t('app.endToSwitchTitle', { name }),
+        message: t('app.endToSwitchMessage', { name }),
+        confirm: t('app.endToSwitchConfirm'),
         danger: true
       })
       if (!ok) return false
     } else if (s.publisher.sharing) {
       const ok = await askConfirm({
-        title: `Leave ${name}?`,
-        message: 'This stops sharing your screen.',
-        confirm: 'Leave',
+        title: t('app.leaveTitle', { name }),
+        message: t('app.leaveSharingMessage'),
+        confirm: t('app.leave'),
         danger: true
       })
       if (!ok) return false
@@ -195,7 +205,7 @@ export function App() {
       await join(room)
     } catch (err) {
       setBusyKey(null)
-      toast(`${ep.name ?? key} isn't available: ${errorMessage(err)}`, 'error')
+      toast(t('app.notAvailable', { name: ep.name ?? key, error: errorMessage(err) }), 'error')
     }
   }
 
@@ -214,13 +224,13 @@ export function App() {
         const warning = captureAudioWarning(s.publisher, req.audio)
         if (warning) toast(warning, 'error')
       } catch (err) {
-        toast(`Room created, but capture failed: ${errorMessage(err)}`, 'error')
+        toast(t('app.captureFailedAfterCreate', { error: errorMessage(err) }), 'error')
       }
       setSession(s)
       setCreating(false)
       if (hosted.pin) {
         void window.api.system.copyText(hosted.pin)
-        toast(`Private room created. PIN ${hosted.pin} copied to clipboard.`)
+        toast(t('app.pinCopied', { pin: hosted.pin }))
       }
     } catch (err) {
       setCreateError(errorMessage(err))
@@ -234,11 +244,11 @@ export function App() {
   useEffect(
     () =>
       window.api.system.onConfirmClose(() => {
-        const name = sessionRef.current?.client.room?.name ?? 'the room'
+        const name = sessionRef.current?.client.room?.name ?? t('common.room')
         void askConfirm({
-          title: 'End the room and quit?',
-          message: `You're hosting ${name}. Closing ScreenShare ends it and disconnects everyone.`,
-          confirm: 'End room and quit',
+          title: t('app.quitTitle'),
+          message: t('app.quitMessage', { name }),
+          confirm: t('app.quitConfirm'),
           danger: true
         }).then((ok) => {
           if (ok) void window.api.system.closeConfirmed()
@@ -247,7 +257,7 @@ export function App() {
     []
   )
 
-  if (!settings) return <div className="boot">Loading…</div>
+  if (!settings) return <div className="boot">{t('common.loading')}</div>
 
   const roomsFloatingNow = !roomsDocked && (roomsFloating || !!pinPrompt)
 
@@ -260,14 +270,11 @@ export function App() {
   const restartToUpdate = async (): Promise<void> => {
     const s = sessionRef.current
     if (s) {
-      const name = s.client.room?.name ?? 'this room'
+      const name = s.client.room?.name ?? t('common.room')
       const ok = await askConfirm({
-        title: 'Restart to update?',
-        message:
-          s.role === 'host'
-            ? `Restarting to update ends ${name} for everyone.`
-            : `Restarting to update leaves ${name}.`,
-        confirm: 'Restart now',
+        title: t('app.restartTitle'),
+        message: s.role === 'host' ? t('app.restartEndsRoom', { name }) : t('app.restartLeavesRoom', { name }),
+        confirm: t('app.restartNow'),
         danger: s.role === 'host'
       })
       if (!ok) return
@@ -339,7 +346,7 @@ export function App() {
 
       {creating && (
         <CreateRoomDialog
-          defaultName={`${settings.displayName}'s room`}
+          defaultName={t('common.defaultRoomName', { name: settings.displayName })}
           defaultAudio={audioDefaults(settings)}
           busy={createBusy}
           error={createError}
@@ -363,9 +370,9 @@ export function App() {
       <ConfirmDialog />
 
       <div className="toasts" aria-live="polite">
-        {toasts.map((t) => (
-          <div key={t.id} className={`toast ${t.tone}`}>
-            {t.message}
+        {toasts.map((item) => (
+          <div key={item.id} className={`toast ${item.tone}`}>
+            {item.message}
           </div>
         ))}
       </div>
@@ -383,7 +390,7 @@ function useCurrentRoom(session: Session | null): CurrentRoom | null {
   if (!session) return null
   return {
     id: room?.id ?? '',
-    name: room?.name ?? session.endpoint.name ?? 'Room',
+    name: room?.name ?? session.endpoint.name ?? translator().t('common.room'),
     endpoint: session.role === 'host' ? null : session.endpoint,
     people: room ? room.viewerCount + 1 : 1,
     live: room?.streams ?? 0

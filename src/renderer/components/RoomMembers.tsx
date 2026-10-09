@@ -2,6 +2,7 @@ import { useState, type MouseEvent } from 'react'
 import type { Participant } from '../../shared/types'
 import { askConfirm } from '../lib/confirm'
 import { latencyClass } from '../lib/format'
+import { useT } from '../lib/i18n'
 import type { WatcherInfo } from '../lib/publisher'
 import { useRoomPeople } from '../lib/roomPeople'
 import type { Session } from '../lib/session'
@@ -22,6 +23,7 @@ interface Anchor {
  * their stream's latest preview.
  */
 export function RoomMembers({ session }: { session: Session }) {
+  const { t } = useT()
   const { client, watches } = session
   const isHost = session.role === 'host'
   const { participants, avatars, snapshots, watching, myWatchers } = useRoomPeople(session)
@@ -51,33 +53,37 @@ export function RoomMembers({ session }: { session: Session }) {
     if (p.stream && p.id !== client.selfId) {
       items.push(
         watching.has(p.id)
-          ? { label: 'Stop watching', icon: 'x', onSelect: () => watches.unwatch(p.id) }
-          : { label: 'Watch stream', icon: 'eye', onSelect: () => watches.watch(p.id) }
+          ? { label: t('room.stopWatching'), icon: 'x', onSelect: () => watches.unwatch(p.id) }
+          : { label: t('room.watchStream'), icon: 'eye', onSelect: () => watches.watch(p.id) }
       )
     }
     if (isHost && p.id !== client.selfId) {
       if (items.length > 0) items.push({ kind: 'separator' })
       if (p.stream) {
         items.push({
-          label: `Stop ${p.name}'s stream`,
+          label: t('room.stopStreamOf', { name: p.name }),
           icon: 'stop',
           danger: true,
           onSelect: () =>
-            void askConfirm({ title: `Stop ${p.name}'s stream?`, confirm: 'Stop stream', danger: true }).then(
+            void askConfirm({
+              title: t('room.stopStreamTitle', { name: p.name }),
+              confirm: t('room.stopStream'),
+              danger: true
+            }).then(
               (ok) => ok && client.send({ type: 'stop-stream', userId: p.id })
             )
         })
       }
       if (p.role === 'viewer') {
         items.push({
-          label: 'Remove from room',
+          label: t('room.removeFromRoom'),
           icon: 'kick',
           danger: true,
           onSelect: () =>
             void askConfirm({
-              title: `Remove ${p.name} from the room?`,
-              message: "They can't come back to this room.",
-              confirm: 'Remove',
+              title: t('room.removeTitle', { name: p.name }),
+              message: t('room.removeMessage'),
+              confirm: t('common.remove'),
               danger: true
             }).then((ok) => ok && client.send({ type: 'kick', userId: p.id }))
         })
@@ -91,7 +97,7 @@ export function RoomMembers({ session }: { session: Session }) {
   }
 
   return (
-    <ul className="room-members" aria-label="People in this room">
+    <ul className="room-members" aria-label={t('members.list')}>
       {sorted.map((p) => {
         const isSelf = p.id === client.selfId
         const watched = watching.has(p.id)
@@ -104,12 +110,12 @@ export function RoomMembers({ session }: { session: Session }) {
             <span className="member-text">
               <span className="member-name">
                 <span className="member-name-text">{p.name}</span>
-                {isSelf && <span className="muted member-you">(you)</span>}
-                {p.role === 'host' && <span className="role-tag">host</span>}
+                {isSelf && <span className="muted member-you">{t('members.you')}</span>}
+                {p.role === 'host' && <span className="role-tag">{t('members.host')}</span>}
               </span>
               <MemberStatus participant={p} mine={myWatchers.get(p.id)} />
             </span>
-            {p.stream && <span className={`live-badge ${p.stream.paused ? 'paused' : ''}`}>{p.stream.paused ? 'Paused' : 'Live'}</span>}
+            {p.stream && <span className={`live-badge ${p.stream.paused ? 'paused' : ''}`}>{p.stream.paused ? t('common.paused') : t('common.live')}</span>}
             {watched && <Icon name="eye" size={14} className="member-watching" />}
           </>
         )
@@ -118,9 +124,9 @@ export function RoomMembers({ session }: { session: Session }) {
             {canWatch ? (
               <button
                 className="member-main"
-                aria-label={`${p.name}, live`}
+                aria-label={t('members.liveLabel', { name: p.name })}
                 aria-pressed={watched}
-                title={watched ? `Stop watching ${p.name}` : `Watch ${p.name}'s stream`}
+                title={watched ? t('members.stopWatchingName', { name: p.name }) : t('room.watchStreamOf', { name: p.name })}
                 onClick={() => (watched ? watches.unwatch(p.id) : watches.watch(p.id))}
                 // Over, not enter: the pointer can already be there when the row appears (just after joining).
                 onMouseOver={(e) => preview?.id !== p.id && setPreview(anchorAt(e, p.id, 170))}
@@ -136,8 +142,8 @@ export function RoomMembers({ session }: { session: Session }) {
             {isHost && !isSelf && (
               <button
                 className="icon-btn member-more"
-                title={`Moderate ${p.name}`}
-                aria-label={`Moderate ${p.name}`}
+                title={t('members.moderate', { name: p.name })}
+                aria-label={t('members.moderate', { name: p.name })}
                 aria-haspopup="menu"
                 aria-expanded={menu?.id === p.id}
                 onClick={(e) => {
@@ -156,15 +162,19 @@ export function RoomMembers({ session }: { session: Session }) {
         <div className="member-preview" style={{ top: preview.top, left: preview.left }} aria-hidden="true">
           <div className="member-preview-image">
             {snapshots.get(previewed.id) ? <img src={snapshots.get(previewed.id)} alt="" /> : <Icon name="screen" size={28} />}
-            {previewed.stream.paused && <span className="preview-flag">Paused</span>}
+            {previewed.stream.paused && <span className="preview-flag">{t('common.paused')}</span>}
           </div>
           <div className="member-preview-info">
             <strong>{previewed.name}</strong>
             <span className="muted small">
-              {watcherCount(previewed.id) === 0 ? 'no one watching' : `${watcherCount(previewed.id)} watching`}
+              {watcherCount(previewed.id) === 0
+                ? t('common.noOneWatching')
+                : t('common.watching', { count: watcherCount(previewed.id) })}
             </span>
           </div>
-          <span className="muted small">{watching.has(previewed.id) ? 'Click to stop watching' : 'Click to watch'}</span>
+          <span className="muted small">
+            {watching.has(previewed.id) ? t('members.clickToStop') : t('members.clickToWatch')}
+          </span>
         </div>
       )}
 
@@ -177,19 +187,22 @@ export function RoomMembers({ session }: { session: Session }) {
 
 /** The small line under a name: only what's worth knowing at a glance. */
 function MemberStatus({ participant: p, mine }: { participant: Participant; mine: WatcherInfo | undefined }) {
-  if (p.status === 'reconnecting') return <span className="member-status warn">Reconnecting…</span>
-  if (mine?.hidden) return <span className="member-status">not looking (video paused)</span>
+  const { t, number } = useT()
+  if (p.status === 'reconnecting') return <span className="member-status warn">{t('common.reconnecting')}</span>
+  if (mine?.hidden) return <span className="member-status">{t('members.notLooking')}</span>
   if (mine?.stats && mine.mediaState === 'streaming') {
     const { fps, latencyMs, transport, packetLossPct } = mine.stats
     return (
       <span className="member-status">
-        watching you · {fps} fps ·{' '}
-        <span className={`lat ${latencyClass(latencyMs)}`}>{latencyMs === null ? '–' : `${latencyMs} ms`}</span>
+        {t('members.watchingYou')} · {t('common.fps', { value: fps })} ·{' '}
+        <span className={`lat ${latencyClass(latencyMs)}`}>
+          {latencyMs === null ? '–' : t('common.ms', { value: latencyMs })}
+        </span>
         {transport === 'tcp' ? ' · TCP' : ''}
-        {packetLossPct >= 1 ? ` · ${packetLossPct.toFixed(1)}% loss` : ''}
+        {packetLossPct >= 1 ? ` · ${t('members.loss', { percent: number(packetLossPct, 1) })}` : ''}
       </span>
     )
   }
-  if (mine) return <span className="member-status">watching you</span>
+  if (mine) return <span className="member-status">{t('members.watchingYou')}</span>
   return null
 }

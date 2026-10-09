@@ -1,4 +1,5 @@
 import { AVATAR_MAX_CHARS, AVATAR_SIZE } from '../../shared/constants'
+import { t } from './i18n'
 
 export function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -18,7 +19,7 @@ export async function loadPicture(file: Blob): Promise<ImageBitmap> {
   try {
     full = await createImageBitmap(file, { imageOrientation: 'from-image' })
   } catch {
-    throw new Error("That file isn't a picture the app can read. Try a PNG or JPEG.")
+    throw new Error(t('crop.unreadable'))
   }
   const k = PICTURE_MAX_SIDE / Math.max(full.width, full.height)
   if (k >= 1) return full
@@ -49,5 +50,5 @@ export async function renderAvatar(bitmap: ImageBitmap, crop: { x: number; y: nu
     const url = await blobToDataUrl(await canvas.convertToBlob({ type: 'image/jpeg', quality }))
     if (url.length <= AVATAR_MAX_CHARS) return url
   }
-  throw new Error('That picture is too detailed to use. Try another one.')
+  throw new Error(t('crop.tooDetailed'))
 }

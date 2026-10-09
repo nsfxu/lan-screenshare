@@ -15,6 +15,15 @@ afterEach(() => {
 })
 
 describe('settings', () => {
+  it("follows the computer's language until one is chosen, and keeps only known ones", () => {
+    const dir = tempDir()
+    const store = new SettingsStore(dir)
+    expect(store.get().language).toBe('system')
+    expect(store.update({ language: 'pt-BR' }).language).toBe('pt-BR')
+    expect(new SettingsStore(dir).get().language).toBe('pt-BR')
+    expect(store.update({ language: 'xx' as never }).language).toBe('pt-BR')
+  })
+
   it('starts new installs on automatic content hint', () => {
     const store = new SettingsStore(tempDir())
     expect(store.get().contentHint).toBe('auto')

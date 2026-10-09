@@ -8,7 +8,9 @@ import { parsePerfArgs, type PerfRendererOptions } from '../shared/perf'
 import { cpuBusyPercent, type CpuTimes } from '../shared/systemStats'
 import type { AppInfo, CreateRoomRequest, NativeAudioOptions, Settings, SystemStats, UpdateRoomRequest } from '../shared/types'
 import { parseHostPort } from '../utils/network'
+import { resolveLanguage } from '../shared/i18n'
 import { createFileLogger } from './logger'
+import { mainT, setMainLanguage } from './i18n'
 import { CursorWatch } from './cursorWatch'
 import { NativeLoopback } from './nativeAudio'
 import { Updater } from './updater'
@@ -210,6 +212,7 @@ function registerIpc(): void {
   ipcMain.handle(IPC.updateSettings, (_e, patch: Partial<Settings>) => {
     const next = settings.update(patch)
     if (patch && 'autoUpdate' in patch) updater.setAutomatic(next.autoUpdate)
+    if (patch && 'language' in patch) applyLanguage()
     return next
   })
   ipcMain.handle(IPC.updateGet, () => updater.status)
@@ -224,7 +227,7 @@ function registerIpc(): void {
   )
   ipcMain.handle(IPC.addManual, (_e, input: string) => {
     const parsed = parseHostPort(String(input), DEFAULT_PORT)
-    if (!parsed) throw new Error('Enter an address like 192.168.1.20 or 10.8.0.5:47800')
+    if (!parsed) throw new Error(mainT('error.addressFormat'))
     return rooms.addManual(parsed.address, parsed.port)
   })
   ipcMain.handle(IPC.removeManual, (_e, key: string) => rooms.removeManual(String(key)))
@@ -273,7 +276,7 @@ function registerIpc(): void {
   })
   ipcMain.handle(
     IPC.appInfo,
-    (): AppInfo => ({ version: app.getVersion(), platform: process.platform, logDir: log.dir })
+    (): AppInfo => ({ version: app.getVersion(), platform: process.platform, logDir: log.dir, languages: systemLanguages() })
   )
   ipcMain.handle(IPC.copyText, (_e, text: string) => clipboard.writeText(String(text)))
   ipcMain.handle(IPC.openLogs, () => shell.openPath(log.dir))
@@ -330,6 +333,19 @@ function registerIpc(): void {
   updater.on('status', (status) => mainWindow?.webContents.send(IPC.updateStatus, status))
 }
 
+/**
+ * The computer's languages, most preferred first: Chromium's (which `--lang` overrides, as the end-to-end
+ * tests do), then the system's list.
+ */
+function systemLanguages(): string[] {
+  return [...new Set([app.getLocale(), ...app.getPreferredSystemLanguages()].filter(Boolean))]
+}
+
+/** The main process's own text (errors, the default room name) in the chosen language. */
+function applyLanguage(): void {
+  setMainLanguage(resolveLanguage(settings.get().language, systemLanguages()))
+}
+
 /** Ends the room we host (telling everyone), then closes the window. */
 function closeEndingRoom(win: BrowserWindow): void {
   quitting = true
@@ -356,6 +372,7 @@ function configureSession(): void {
 
 app.whenReady().then(() => {
   log.info(`${APP_NAME} ${app.getVersion()} starting on ${process.platform} ${os.release()}`)
+  applyLanguage()
   configureSession()
   registerIpc()
   rooms.start()

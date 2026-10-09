@@ -33,8 +33,10 @@ import type {
   RoomInfo,
   RoomState,
   ServerMessage,
+  SystemEvent,
   Transport
 } from '../shared/types'
+import { systemText } from '../shared/chat'
 import { isAvatar, isSnapshot } from '../shared/images'
 import { incompatibleRoomMessage, isAppVersion } from '../shared/version'
 import { PinGuard, pinsEqual, randomId, randomToken } from '../utils/crypto'
@@ -383,7 +385,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
     seat.participant.appVersion = appVersion
     this.attach(seat, ws)
     this.welcome(seat)
-    this.systemMessage(`${name} joined`)
+    this.systemMessage({ kind: 'joined', name })
     this.broadcastParticipants()
     this.broadcastRoom()
     this.log.info(`viewer joined: ${name} from ${ip}`)
@@ -508,7 +510,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
         this.send(target.ws, { type: 'kicked' })
         target.ws?.close(4003, 'kicked')
         this.removeSeat(target, false)
-        this.systemMessage(`${target.participant.name} was removed by the host`)
+        this.systemMessage({ kind: 'removed', name: target.participant.name })
         this.log.info(`kicked ${target.participant.name}`)
         return
       }
@@ -516,7 +518,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
         const target = this.seats.get(msg.userId)
         if (!target?.participant.stream) return
         if (target !== seat) this.send(target.ws, { type: 'stream-stopped', reason: 'The host stopped your stream' })
-        this.endStream(target, `The host stopped ${target.participant.name}'s stream`)
+        this.endStream(target, { kind: 'stream-stopped', name: target.participant.name })
         return
       }
       case 'delete-message': {
@@ -528,7 +530,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       case 'mute-chat':
         if (this.chatMuted === !!msg.muted) return
         this.chatMuted = !!msg.muted
-        this.systemMessage(this.chatMuted ? 'The host muted the chat' : 'The host unmuted the chat')
+        this.systemMessage({ kind: this.chatMuted ? 'chat-muted' : 'chat-unmuted' })
         this.broadcastRoom()
         return
       case 'end-room':
@@ -540,14 +542,14 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
   private handleStreamState(seat: Seat, msg: Extract<ClientMessage, { type: 'stream-state' }>): void {
     const p = seat.participant
     if (!msg.sharing) {
-      this.endStream(seat, `${p.name} stopped sharing`)
+      this.endStream(seat, { kind: 'stopped-sharing', name: p.name })
       return
     }
     const paused = !!msg.paused
     const audio = !!msg.audio && !paused
     if (!p.stream) {
       p.stream = { paused, audio, startedAt: Date.now() }
-      this.systemMessage(`${p.name} started sharing their screen`)
+      this.systemMessage({ kind: 'started-sharing', name: p.name })
       this.broadcastParticipants()
       this.broadcastRoom()
       return
@@ -558,7 +560,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
   }
 
   /** End a seat's stream: its watchers are told and all subscriptions dropped. */
-  private endStream(seat: Seat, announcement: string | null): void {
+  private endStream(seat: Seat, announcement: SystemEvent | null): void {
     if (!seat.participant.stream) return
     seat.participant.stream = null
     for (const sub of seat.watchers.values()) {
@@ -610,8 +612,18 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
     this.pushChat({ id: randomId(), userId: p.id, name: p.name, color: p.color, text, ts: now })
   }
 
-  private systemMessage(text: string): void {
-    this.pushChat({ id: randomId(), userId: 'system', name: 'System', color: '#888888', text, ts: Date.now(), system: true })
+  /** A line from the room in the chat: in English for apps before 2.4.0, and as an event each app says in its language. */
+  private systemMessage(event: SystemEvent): void {
+    this.pushChat({
+      id: randomId(),
+      userId: 'system',
+      name: 'System',
+      color: '#888888',
+      text: systemText(event),
+      event,
+      ts: Date.now(),
+      system: true
+    })
   }
 
   private pushChat(message: ChatMessage): void {
@@ -699,7 +711,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
     this.seats.delete(seat.participant.id)
     if (seat.ws) this.byWs.delete(seat.ws)
     this.dropWatcher(seat)
-    if (announce) this.systemMessage(`${seat.participant.name} left`)
+    if (announce) this.systemMessage({ kind: 'left', name: seat.participant.name })
     this.broadcastParticipants()
     this.broadcastRoom()
   }

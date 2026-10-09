@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { HostedRoom, RoomEndpoint, RoomState } from '../../shared/types'
 import { formatDuration } from '../lib/format'
+import { useT } from '../lib/i18n'
 import { AccessPanel } from './HostControls'
 import { Icon } from './Icon'
 
@@ -26,6 +27,7 @@ export function RoomInfo({
   onEndRoom(): void
   onClose(): void
 }) {
+  const { t } = useT()
   const ref = useRef<HTMLDivElement>(null)
 
   // Closes on a click outside it, or Esc.
@@ -47,39 +49,39 @@ export function RoomInfo({
 
   const address = `${endpoint.address}:${endpoint.port}`
   return (
-    <div className="room-info" ref={ref} role="dialog" aria-label="Room details">
+    <div className="room-info" ref={ref} role="dialog" aria-label={t('room.details')}>
       <dl className="room-info-facts">
         <div>
-          <dt>Privacy</dt>
+          <dt>{t('info.privacy')}</dt>
           <dd>
             <Icon name={room?.privacy === 'private' ? 'lock' : 'globe'} size={13} />{' '}
-            {room?.privacy === 'private' ? 'Private (PIN)' : 'Public'}
+            {room?.privacy === 'private' ? t('info.privatePin') : t('common.public')}
           </dd>
         </div>
         {room && (
           <div>
-            <dt>Open for</dt>
+            <dt>{t('info.openFor')}</dt>
             <dd>{formatDuration(Date.now() - room.startedAt)}</dd>
           </div>
         )}
         <div>
-          <dt>Hosted by</dt>
+          <dt>{t('info.hostedBy')}</dt>
           <dd>{room?.hostName ?? '–'}</dd>
         </div>
         {rttMs !== null && (
           <div>
-            <dt>Round trip</dt>
-            <dd>{Math.round(rttMs)} ms</dd>
+            <dt>{t('info.roundTrip')}</dt>
+            <dd>{t('common.ms', { value: Math.round(rttMs) })}</dd>
           </div>
         )}
         {!hosted && (
           <div>
-            <dt>Address</dt>
+            <dt>{t('info.address')}</dt>
             <dd>
               <button
                 className="link mono small"
-                title="Copy address"
-                onClick={() => void window.api.system.copyText(address).then(() => onToast('Address copied to clipboard'))}
+                title={t('common.copyAddress')}
+                onClick={() => void window.api.system.copyText(address).then(() => onToast(t('common.addressCopied')))}
               >
                 {address} <Icon name="copy" size={12} />
               </button>
@@ -90,7 +92,7 @@ export function RoomInfo({
       {hosted && <AccessPanel hosted={hosted} onToast={onToast} />}
       {hosted && (
         <button className="btn danger full" onClick={onEndRoom}>
-          <Icon name="logout" /> End room for everyone
+          <Icon name="logout" /> {t('info.endForEveryone')}
         </button>
       )}
     </div>

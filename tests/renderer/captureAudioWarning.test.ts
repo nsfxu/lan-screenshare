@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  APP_AUDIO_FAILED_MESSAGE,
-  audioUnavailableMessage,
-  captureAudioWarning,
-  DISCORD_NOT_EXCLUDED_MESSAGE
-} from '../../src/renderer/lib/format'
+import { audioUnavailableMessage, captureAudioWarning } from '../../src/renderer/lib/format'
+import { t } from '../../src/renderer/lib/i18n'
 import type { AudioChoice } from '../../src/shared/types'
 
 const asked: AudioChoice = { enabled: true, excludeDiscord: true, appOnly: true }
@@ -22,8 +18,8 @@ describe('captureAudioWarning', () => {
     )
     // Only the app's sound wasn't possible: everything is shared (whether or not Discord could be left out).
     expect(captureAudioWarning({ ...fine, appAudioFailed: true, discordExclusionFailed: true }, asked)).toBe(
-      APP_AUDIO_FAILED_MESSAGE
+      t('audio.appFailed')
     )
-    expect(captureAudioWarning({ ...fine, discordExclusionFailed: true }, asked)).toBe(DISCORD_NOT_EXCLUDED_MESSAGE)
+    expect(captureAudioWarning({ ...fine, discordExclusionFailed: true }, asked)).toBe(t('audio.discordNotExcluded'))
   })
 })

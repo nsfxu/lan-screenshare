@@ -1,3 +1,4 @@
+import type { LanguageSetting } from './i18n'
 import type { QualityPresetId } from './quality'
 import type { StruggleKind } from './struggle'
 import type { ThemeId } from './themes'
@@ -92,7 +93,17 @@ export interface ChatMessage {
   text: string
   ts: number
   system?: boolean
+  /**
+   * What a system line is about, so each app can say it in its own language
+   * (2.4.0+). `text` stays, in English, for older apps and as the fallback.
+   */
+  event?: SystemEvent
 }
+
+/** The room's announcements in the chat (see systemText in shared/chat.ts). */
+export type SystemEvent =
+  | { kind: 'joined' | 'left' | 'removed' | 'started-sharing' | 'stopped-sharing' | 'stream-stopped'; name: string }
+  | { kind: 'chat-muted' | 'chat-unmuted' }
 
 /** Stats a viewer reports to the host (and shows itself). */
 export interface ViewerStats {
@@ -298,6 +309,8 @@ export interface Settings {
   theme: ThemeId
   /** Look for new versions on the releases page, and on Windows download them for a restart. */
   autoUpdate: boolean
+  /** The app's language, or 'system' to follow the computer's (src/shared/i18n). */
+  language: LanguageSetting
 }
 
 /**
@@ -364,6 +377,8 @@ export interface AppInfo {
   version: string
   platform: string
   logDir: string
+  /** The computer's languages, most preferred first (e.g. ["pt-BR", "en-US"]), for Settings → Language → System. */
+  languages: string[]
 }
 
 export type ScreenPermission = 'granted' | 'denied' | 'not-determined' | 'restricted' | 'unknown'

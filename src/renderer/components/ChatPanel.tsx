@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
-import { startsGroup } from '../../shared/chat'
+import { chatText, startsGroup } from '../../shared/chat'
 import { CHAT_MAX_LENGTH } from '../../shared/constants'
 import type { ChatMessage } from '../../shared/types'
 import { formatTime } from '../lib/format'
+import { useT } from '../lib/i18n'
 import { Avatar } from './Avatar'
 import { Icon } from './Icon'
 
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function ChatPanel({ messages, roomName, avatars, selfId, isHost, muted, onSend, onDelete, onToggleMute }: Props) {
+  const { t } = useT()
   const [text, setText] = useState('')
   const [emojiOpen, setEmojiOpen] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
@@ -57,15 +59,15 @@ export function ChatPanel({ messages, roomName, avatars, selfId, isHost, muted, 
     <div className="chat-panel">
       <div className="panel-header">
         <h3>
-          <Icon name="chat" size={14} /> Chat
+          <Icon name="chat" size={14} /> {t('chat.title')}
         </h3>
         {isHost && (
           <button
             className={`btn ghost small ${muted ? 'active' : ''}`}
             onClick={() => onToggleMute(!muted)}
-            title={muted ? 'Allow viewers to chat' : 'Stop viewers from sending messages'}
+            title={muted ? t('chat.allowTip') : t('chat.stopTip')}
           >
-            <Icon name="mute" size={14} /> {muted ? 'Unmute chat' : 'Mute chat'}
+            <Icon name="mute" size={14} /> {muted ? t('chat.unmute') : t('chat.mute')}
           </button>
         )}
       </div>
@@ -77,13 +79,13 @@ export function ChatPanel({ messages, roomName, avatars, selfId, isHost, muted, 
           stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40
         }}
       >
-        {messages.length === 0 && <p className="muted small center">No messages yet. Say hi!</p>}
+        {messages.length === 0 && <p className="muted small center">{t('chat.empty')}</p>}
         {messages.map((m, i) => {
           const grouped = !startsGroup(messages[i - 1], m)
           if (m.system) {
             return (
               <div key={m.id} className="chat-system">
-                <span>{m.text}</span>
+                <span>{chatText(m, t)}</span>
                 <time>{formatTime(m.ts)}</time>
               </div>
             )
@@ -108,7 +110,7 @@ export function ChatPanel({ messages, roomName, avatars, selfId, isHost, muted, 
                 <p className="chat-text">{m.text}</p>
               </div>
               {isHost && (
-                <button className="chat-delete" title="Delete message" onClick={() => onDelete(m.id)}>
+                <button className="chat-delete" title={t('chat.delete')} onClick={() => onDelete(m.id)}>
                   <Icon name="trash" size={12} />
                 </button>
               )}
@@ -121,7 +123,7 @@ export function ChatPanel({ messages, roomName, avatars, selfId, isHost, muted, 
           <button
             type="button"
             className="icon-btn"
-            title="Emoji"
+            title={t('chat.emoji')}
             disabled={!canSend}
             onClick={(e) => {
               e.stopPropagation()
@@ -137,7 +139,7 @@ export function ChatPanel({ messages, roomName, avatars, selfId, isHost, muted, 
                   type="button"
                   key={em}
                   onClick={() => {
-                    setText((t) => t + em)
+                    setText((v) => v + em)
                     setEmojiOpen(false)
                     inputRef.current?.focus()
                   }}
@@ -153,11 +155,11 @@ export function ChatPanel({ messages, roomName, avatars, selfId, isHost, muted, 
           value={text}
           maxLength={CHAT_MAX_LENGTH}
           disabled={!canSend}
-          placeholder={canSend ? `Message ${roomName}` : 'The host has muted the chat'}
+          placeholder={canSend ? t('chat.placeholder', { room: roomName }) : t('chat.mutedPlaceholder')}
           onChange={(e) => setText(e.target.value)}
-          aria-label="Chat message"
+          aria-label={t('chat.message')}
         />
-        <button className="icon-btn primary" title="Send" disabled={!canSend || !text.trim()}>
+        <button className="icon-btn primary" title={t('chat.send')} disabled={!canSend || !text.trim()}>
           <Icon name="send" />
         </button>
       </form>

@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { DEFAULT_PORT, NAME_MAX_LENGTH } from '../shared/constants'
+import { isLanguageSetting } from '../shared/i18n'
 import { isAvatar } from '../shared/images'
 import { QUALITY_PRESETS } from '../shared/quality'
 import { RECENT_ROOMS_MAX } from '../shared/roomList'
@@ -55,7 +56,8 @@ function defaults(): Settings {
     uploadBudgetMbps: 100,
     avatar: null,
     theme: DEFAULT_THEME,
-    autoUpdate: true
+    autoUpdate: true,
+    language: 'system'
   }
 }
 
@@ -116,6 +118,7 @@ function sanitize(s: Settings, fallback: Settings): Settings {
   out.uploadBudgetMbps = Number.isInteger(budget) && budget >= 0 && budget <= 10_000 ? budget : fallback.uploadBudgetMbps
   out.avatar = s.avatar === null || isAvatar(s.avatar) ? s.avatar : fallback.avatar
   out.theme = isThemeId(s.theme) ? s.theme : fallback.theme
+  out.language = isLanguageSetting(s.language) ? s.language : fallback.language
   for (const key of ['adaptiveQuality', 'forceTcp', 'useTls', 'autoRejoin', 'notifications', 'pauseOnMinimize', 'showStatsOverlay', 'shareAudio', 'excludeDiscordAudio', 'appAudioOnly', 'autoUpdate'] as const) {
     out[key] = typeof s[key] === 'boolean' ? s[key] : fallback[key]
   }

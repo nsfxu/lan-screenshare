@@ -28,6 +28,8 @@ import { useAutoContentHint } from '../lib/autoContentHint'
 import { useGameCursor } from '../lib/gameCursor'
 import { usePlatform } from '../lib/appVersion'
 import { askConfirm } from '../lib/confirm'
+import { useT } from '../lib/i18n'
+import { qualityLabel, watchQualityLabel } from '../lib/quality'
 import { useIdleControls } from '../lib/idleControls'
 import { openStreamWindow } from '../lib/streamWindow'
 import { audioDefaults, type SharingState } from '../lib/publisher'
@@ -69,6 +71,7 @@ interface Props {
  * it in the spotlight while the others keep playing.
  */
 export function RoomView({ session, settings, onLeave, onChangeSettings, onToast }: Props) {
+  const { t, rich } = useT()
   const { client, publisher, watches } = session
   const isHost = session.role === 'host'
   const [room, setRoom] = useState<RoomState | null>(client.room)
@@ -110,7 +113,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   /** In focus view, the strip of everyone else can be put away; its streams then pause their video. */
   const [strip, setStrip] = useRemembered('focus-strip', 'open', PANEL_STATES)
   /** The open popup menu: the sharing menu, or a tile's right-click menu. */
-  const [menu, setMenu] = useState<{ at: MenuAt; items: MenuItem[]; label: string } | null>(null)
+  const [menu, setMenu] = useState<{ at: MenuAt; items: MenuItem[]; label: string; sharing?: boolean } | null>(null)
   const closeMenu = useCallback(() => setMenu(null), [])
   // Messages read while the chat was open; the rest count as unread while it's hidden.
   const [seen, setSeen] = useState<ReadonlySet<string>>(() => new Set(client.messages.map((m) => m.id)))
@@ -150,12 +153,14 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
         }
       }),
       client.on('error', (e) => onToast(e.message, 'error')),
-      client.on('closed', ({ reason }) => onLeave(reason))
+      // Leaving on purpose needs no message.
+      client.on('closed', ({ reason, code }) => onLeave(code === 'left' ? undefined : reason))
     ]
-    // Pictures and previews that arrived between the first render and now
-    // (pictures are only sent once).
+    // Pictures, previews and chat lines (our own "joined") that arrived between
+    // the first render and now (pictures are only sent once).
     setSnapshots(new Map(client.snapshots))
     setAvatars(new Map(client.avatars))
+    setMessages(client.messages)
     return () => offs.forEach((o) => o())
   }, [client, settings.notifications, onLeave, onToast])
 
@@ -218,9 +223,9 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     })
   }
   const openInWindow = (p: Participant): void => {
-    const opened = openStreamWindow(p.id, `${p.name}'s stream · ScreenShare`)
+    const opened = openStreamWindow(p.id, t('room.streamWindowTitle', { name: p.name }))
     if (!opened) {
-      onToast("Couldn't open a new window", 'error')
+      onToast(t('room.windowFailed'), 'error')
       return
     }
     opened.win.addEventListener('pagehide', () => closeStreamWindow(p.id))
@@ -237,10 +242,10 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   // Closing a window by hand (the system's ×) is noticed here too, in case pagehide didn't come.
   useEffect(() => {
     if (streamWindows.size === 0) return
-    const t = setInterval(() => {
+    const timer = setInterval(() => {
       for (const [id, w] of streamWindowsRef.current) if (w.win.closed) closeStreamWindow(id)
     }, 1000)
-    return () => clearInterval(t)
+    return () => clearInterval(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streamWindows.size])
   // Leaving the room closes them.
@@ -285,8 +290,8 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   }, [publisher, settings.pauseOnMinimize])
 
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(t)
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
   }, [])
 
   useEffect(() => {
@@ -311,15 +316,15 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
       const warning = captureAudioWarning(publisher, audio)
       if (warning) onToast(warning, 'error')
     } catch (err) {
-      onToast(`Could not capture: ${errorMessage(err)}`, 'error')
+      onToast(t('room.captureFailed', { error: errorMessage(err) }), 'error')
     }
   }
 
   const endRoom = (): void => {
     void askConfirm({
-      title: 'End the room for everyone?',
-      message: 'Everyone in the room is disconnected.',
-      confirm: 'End room',
+      title: t('room.endTitle'),
+      message: t('room.endMessage'),
+      confirm: t('room.endConfirm'),
       danger: true
     }).then((ok) => ok && onLeave())
   }
@@ -349,8 +354,8 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     canFilter
       ? [
           stageFilter === 'streams'
-            ? { label: 'Show everyone', icon: 'users', onSelect: toggleFilter }
-            : { label: 'Show only streams', icon: 'filter', onSelect: toggleFilter }
+            ? { label: t('room.showEveryone'), icon: 'users', onSelect: toggleFilter }
+            : { label: t('room.showOnlyStreams'), icon: 'filter', onSelect: toggleFilter }
         ]
       : []
   const inviteAddress = hosted
@@ -362,42 +367,42 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   // --- menus -------------------------------------------------------------------
   /** Everything about our share: the Sharing button's menu, and our own tile's right-click. */
   const sharingItems = (): MenuItem[] => [
-    { label: 'Change source…', icon: 'swap', onSelect: () => setPickSource(true) },
+    { label: t('room.changeSource'), icon: 'swap', onSelect: () => setPickSource(true) },
     {
-      label: !sharing.hasAudio ? 'No audio' : sharing.audioMuted ? 'Unmute audio' : 'Mute audio',
+      label: !sharing.hasAudio ? t('room.noAudio') : sharing.audioMuted ? t('room.unmuteAudio') : t('room.muteAudio'),
       icon: sharing.hasAudio && !sharing.audioMuted ? 'volumeOff' : 'volume',
       disabled: !sharing.hasAudio,
       onSelect: () => publisher.setAudioMuted(!sharing.audioMuted)
     },
     { kind: 'separator' },
-    { kind: 'heading', label: 'Quality you send' },
+    { kind: 'heading', label: t('room.qualityYouSend') },
     ...QUALITY_PRESETS.map(
       (q): MenuItem => ({
-        label: q.label,
+        label: qualityLabel(q),
         checked: settings.maxQuality === q.id,
         onSelect: () => onChangeSettings({ maxQuality: q.id })
       })
     ),
     { kind: 'separator' },
     {
-      label: showStats ? 'Hide stream stats' : 'Stream stats',
+      label: showStats ? t('room.hideStreamStats') : t('room.streamStats'),
       icon: 'chart',
       onSelect: () => setShowStats((v) => !v)
     },
     { kind: 'separator' },
-    { label: 'Stop sharing', icon: 'stopShare', danger: true, onSelect: () => publisher.stopSharing() }
+    { label: t('room.stopSharing'), icon: 'stopShare', danger: true, onSelect: () => publisher.stopSharing() }
   ]
 
   const selfItems = (): MenuItem[] =>
     sharing.sharing
       ? [
           showSelf
-            ? { label: 'Hide my stream', icon: 'x', onSelect: () => setShowSelf(false) }
-            : { label: 'Show my stream', icon: 'screen', onSelect: () => setShowSelf(true) },
+            ? { label: t('room.hideMyStream'), icon: 'x', onSelect: () => setShowSelf(false) }
+            : { label: t('room.showMyStream'), icon: 'screen', onSelect: () => setShowSelf(true) },
           { kind: 'separator' },
           ...sharingItems()
         ]
-      : [{ label: 'Share screen…', icon: 'screen', onSelect: () => setPickSource(true) }]
+      : [{ label: t('room.shareScreenMenu'), icon: 'screen', onSelect: () => setPickSource(true) }]
 
   /** Someone else's tile: watching and focus. */
   const personItems = (p: Participant): MenuItem[] => {
@@ -405,13 +410,13 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     if (p.stream) {
       items.push(
         subs.has(p.id)
-          ? { label: 'Stop watching', icon: 'x', onSelect: () => watches.unwatch(p.id) }
-          : { label: 'Watch stream', icon: 'eye', onSelect: () => watches.watch(p.id) }
+          ? { label: t('room.stopWatching'), icon: 'x', onSelect: () => watches.unwatch(p.id) }
+          : { label: t('room.watchStream'), icon: 'eye', onSelect: () => watches.watch(p.id) }
       )
     }
     if (shown.length > 1) {
       items.push({
-        label: focus === p.id ? 'Back to grid' : 'Focus',
+        label: focus === p.id ? t('room.backToGrid') : t('room.focus'),
         icon: focus === p.id ? 'exitFullscreen' : 'fit',
         onSelect: () => setFocus(focus === p.id ? null : p.id)
       })
@@ -425,25 +430,29 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     const items: MenuItem[] = []
     if (p.stream) {
       items.push({
-        label: `Stop ${p.name}'s stream`,
+        label: t('room.stopStreamOf', { name: p.name }),
         icon: 'stop',
         danger: true,
         onSelect: () =>
-          void askConfirm({ title: `Stop ${p.name}'s stream?`, confirm: 'Stop stream', danger: true }).then(
+          void askConfirm({
+            title: t('room.stopStreamTitle', { name: p.name }),
+            confirm: t('room.stopStream'),
+            danger: true
+          }).then(
             (ok) => ok && client.send({ type: 'stop-stream', userId: p.id })
           )
       })
     }
     if (p.role === 'viewer') {
       items.push({
-        label: 'Remove from room',
+        label: t('room.removeFromRoom'),
         icon: 'kick',
         danger: true,
         onSelect: () =>
           void askConfirm({
-            title: `Remove ${p.name} from the room?`,
-            message: "They can't come back to this room.",
-            confirm: 'Remove',
+            title: t('room.removeTitle', { name: p.name }),
+            message: t('room.removeMessage'),
+            confirm: t('common.remove'),
             danger: true
           }).then((ok) => ok && client.send({ type: 'kick', userId: p.id }))
       })
@@ -451,11 +460,11 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     return items
   }
 
-  const openMenu = (at: MenuAt, label: string, groups: MenuItem[][]): void => {
+  const openMenu = (at: MenuAt, label: string, groups: MenuItem[][], sharingMenu = false): void => {
     const items = groups
       .filter((g) => g.length > 0)
       .flatMap((g, i): MenuItem[] => (i === 0 ? g : [{ kind: 'separator' }, ...g]))
-    if (items.length > 0) setMenu({ at, items, label })
+    if (items.length > 0) setMenu({ at, items, label, sharing: sharingMenu })
   }
   const rightClick =
     (label: string, groups: () => MenuItem[][]) =>
@@ -467,7 +476,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const renderTile = (p: Participant, small: boolean, collapsed = false) => {
     const focused = focus === p.id
     const onFocus = (): void => setFocus(focused ? null : p.id)
-    const onSelfMenu = rightClick('Your stream', () => [selfItems(), filterItems()])
+    const onSelfMenu = rightClick(t('room.yourStream'), () => [selfItems(), filterItems()])
     if (p.id === client.selfId) {
       if (ownStream && showSelf) {
         return (
@@ -500,8 +509,8 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
                   snapshot: ownSnapshot,
                   paused: sharing.paused,
                   watchers: watchersOf(p.id).length,
-                  action: 'Show my stream',
-                  actionLabel: 'Show your own stream',
+                  action: t('room.showMyStream'),
+                  actionLabel: t('room.showYourStream'),
                   onAction: () => setShowSelf(true)
                 }
               : null
@@ -531,7 +540,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           collapsed={collapsed}
           menuItems={personItems(p)}
           moderation={moderationItems(p)}
-          onMenu={(at, groups) => openMenu(at, `${p.name}'s stream`, groups)}
+          onMenu={(at, groups) => openMenu(at, t('room.streamOf', { name: p.name }), groups)}
           watchers={<Watchers people={watchersOf(p.id)} avatars={avatars} selfId={client.selfId} small={small} />}
           inWindow={streamWindows.has(p.id)}
           onToggleWindow={() => toggleWindow(p)}
@@ -552,8 +561,8 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
                 snapshot: snapshots.get(p.id) ?? null,
                 paused: p.stream.paused,
                 watchers: watchersOf(p.id).length,
-                action: 'Watch stream',
-                actionLabel: `Watch ${p.name}'s stream`,
+                action: t('room.watchStream'),
+                actionLabel: t('room.watchStreamOf', { name: p.name }),
                 onAction: () => watches.watch(p.id)
               }
             : null
@@ -588,7 +597,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
             address={inviteAddress}
             onCopy={() =>
               inviteAddress &&
-              void window.api.system.copyText(inviteAddress).then(() => onToast('Address copied to clipboard'))
+              void window.api.system.copyText(inviteAddress).then(() => onToast(t('common.addressCopied')))
             }
           />
         )}
@@ -599,8 +608,8 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     <div className="room-info-anchor">
       <button
         className={`bar-btn room-info-button ${infoOpen ? 'on' : ''}`}
-        data-tip="Room details"
-        aria-label="Room details"
+        data-tip={t('room.details')}
+        aria-label={t('room.details')}
         aria-expanded={infoOpen}
         onClick={() => setInfoOpen((v) => !v)}
       >
@@ -622,21 +631,27 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
 
   // The focused stream you watch: the volume and "new window" act on it.
   const focusedStream = focused && subs.has(focused.id) ? focused : null
-  const controlsShown = idleControls.shown || infoOpen || showStats || menu?.label === 'Sharing'
+  const sharingMenuOpen = !!menu?.sharing
+  const controlsShown = idleControls.shown || infoOpen || showStats || sharingMenuOpen
   const controls = (
     <div className="stage-controls" {...idleControls.controls}>
       <div className="controls-side">
         {roomDetails}
         {focused && shown.length > 1 && (
           <>
-            <button className="bar-btn" data-tip="Back to the grid (Esc)" aria-label="Grid view" onClick={() => setFocus(null)}>
+            <button
+              className="bar-btn"
+              data-tip={t('room.gridTip')}
+              aria-label={t('room.gridView')}
+              onClick={() => setFocus(null)}
+            >
               <Icon name="grid" size={20} stroke={2.3} />
             </button>
             <button
               className={`bar-btn ${strip === 'closed' ? 'on' : ''}`}
-              aria-label={strip === 'open' ? 'Hide others' : `Show others (${shown.length - 1})`}
+              aria-label={strip === 'open' ? t('room.hideOthers') : t('room.showOthers', { count: shown.length - 1 })}
               aria-pressed={strip === 'closed'}
-              data-tip={strip === 'open' ? 'Hide the others (their video pauses)' : 'Show the others'}
+              data-tip={strip === 'open' ? t('room.hideOthersTip') : t('room.showOthersTip')}
               onClick={() => setStrip(strip === 'open' ? 'closed' : 'open')}
             >
               <Icon name={strip === 'open' ? 'stripHide' : 'stripShow'} size={20} stroke={2.3} />
@@ -648,27 +663,29 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
         {sharing.sharing ? (
           // Shows that we're sharing; its menu changes the source, mutes, sets the quality, shows the stats or stops.
           <button
-            className={`bar-btn sharing ${menu?.label === 'Sharing' ? 'on' : ''}`}
-            data-tip="Sharing: source, audio, quality, stats, stop"
-            aria-label={sharing.paused ? 'Sharing (paused)' : 'Sharing'}
+            className={`bar-btn sharing ${sharingMenuOpen ? 'on' : ''}`}
+            data-tip={t('room.sharingTip')}
+            aria-label={sharing.paused ? t('room.sharingPaused') : t('room.sharing')}
             aria-haspopup="menu"
-            aria-expanded={menu?.label === 'Sharing'}
+            aria-expanded={sharingMenuOpen}
             onClick={(e) =>
-              menu?.label === 'Sharing' ? setMenu(null) : openMenu(menuAbove(e.currentTarget), 'Sharing', [sharingItems()])
+              sharingMenuOpen
+                ? setMenu(null)
+                : openMenu(menuAbove(e.currentTarget), t('room.sharing'), [sharingItems()], true)
             }
           >
             <Icon name={sharing.paused ? 'pause' : 'shareScreen'} size={22} stroke={2.3} />
             <Icon name="chevronUp" size={14} stroke={2.3} />
           </button>
         ) : (
-          <button className="bar-btn share" data-tip="Share your screen or a window" onClick={() => setPickSource(true)}>
-            <Icon name="shareScreen" size={22} stroke={2.3} /> Share screen
+          <button className="bar-btn share" data-tip={t('room.shareTip')} onClick={() => setPickSource(true)}>
+            <Icon name="shareScreen" size={22} stroke={2.3} /> {t('room.shareScreen')}
           </button>
         )}
         <button
           className="bar-btn hang-up"
-          data-tip={isHost ? 'End the room for everyone' : 'Leave the room'}
-          aria-label={isHost ? 'End room' : 'Leave'}
+          data-tip={isHost ? t('room.endRoomTip') : t('room.leaveTip')}
+          aria-label={isHost ? t('room.endRoom') : t('room.leave')}
           onClick={isHost ? endRoom : () => onLeave()}
         >
           <Icon name="hangUp" size={24} stroke={2.3} />
@@ -679,8 +696,8 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
         {focusedStream && (
           <button
             className={`bar-btn ${streamWindows.has(focusedStream.id) ? 'on' : ''}`}
-            data-tip={streamWindows.has(focusedStream.id) ? 'Bring it back to this window' : 'Open in a new window'}
-            aria-label={streamWindows.has(focusedStream.id) ? 'Back to this window' : 'Open in a new window'}
+            data-tip={streamWindows.has(focusedStream.id) ? t('room.bringBackTip') : t('room.openInWindow')}
+            aria-label={streamWindows.has(focusedStream.id) ? t('room.backToThisWindow') : t('room.openInWindow')}
             onClick={() => toggleWindow(focusedStream)}
           >
             <Icon name={streamWindows.has(focusedStream.id) ? 'popIn' : 'popOut'} size={20} stroke={2.3} />
@@ -688,8 +705,8 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
         )}
         <button
           className="bar-btn"
-          data-tip={stageFullscreen ? 'Leave full screen (Esc)' : 'Full screen'}
-          aria-label={stageFullscreen ? 'Exit full screen' : 'Full screen'}
+          data-tip={stageFullscreen ? t('room.exitFullscreenTip') : t('room.fullscreen')}
+          aria-label={stageFullscreen ? t('room.exitFullscreen') : t('room.fullscreen')}
           onClick={toggleStageFullscreen}
         >
           <Icon name={stageFullscreen ? 'exitFullscreen' : 'fullscreen'} size={20} stroke={2.3} />
@@ -702,11 +719,15 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     <div className="room">
       {/* Floating at the top right, just under the window's own buttons. */}
       <div className="room-corner">
-        {connection === 'reconnecting' && <span className="status-pill warn">Reconnecting…</span>}
+        {connection === 'reconnecting' && <span className="status-pill warn">{t('common.reconnecting')}</span>}
         <button
           className={`bar-btn corner-btn chat-toggle ${chatOpen ? 'on' : ''}`}
-          data-tip={chatOpen ? 'Hide chat' : unread > 0 ? `Show chat (${unread} new)` : 'Show chat'}
-          aria-label={chatOpen ? 'Hide chat' : unread > 0 ? `Show chat (${unread} unread)` : 'Show chat'}
+          data-tip={
+            chatOpen ? t('room.hideChat') : unread > 0 ? t('room.showChatNew', { count: unread }) : t('room.showChat')
+          }
+          aria-label={
+            chatOpen ? t('room.hideChat') : unread > 0 ? t('room.showChatUnread', { count: unread }) : t('room.showChat')
+          }
           aria-expanded={chatOpen}
           onClick={toggleChat}
         >
@@ -727,16 +748,16 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           {showStats && sharing.sharing && (
             <div className="stats-popover">
               <label className="stats-quality">
-                <span className="muted small">Maximum quality you send</span>
+                <span className="muted small">{t('room.maxQualityYouSend')}</span>
                 <select
-                  aria-label="Maximum quality you send"
-                  title="Each viewer may get less: smaller tile, their own choice, their network"
+                  aria-label={t('room.maxQualityYouSend')}
+                  title={t('room.maxQualityTip')}
                   value={settings.maxQuality}
                   onChange={(e) => onChangeSettings({ maxQuality: e.target.value as Settings['maxQuality'] })}
                 >
                   {QUALITY_PRESETS.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.label}
+                      {qualityLabel(p)}
                     </option>
                   ))}
                 </select>
@@ -747,17 +768,16 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           {gameCursor?.active && (
             <div className="notice info cursor-hint" role="status">
               <span className="cursor-hint-text">
-                Sharing <strong>{gameCursor.active.name}</strong>&apos;s window while it hides your mouse cursor, so
-                viewers don&apos;t see the cursor. Your screen comes back when you switch to another window.
+                {rich('room.gameCursorActive', { name: <strong>{gameCursor.active.name}</strong> })}
               </span>
               <button className="btn small" onClick={() => gameCursor.keepScreen()}>
-                Share the screen instead
+                {t('room.shareScreenInstead')}
               </button>
             </div>
           )}
           {struggleShown && (
             <div className="notice warn struggle-hint" role="status">
-              <span className="struggle-hint-text">{struggleMessage(struggleShown, ownStats?.viewers ?? 0)}</span>
+              <span className="struggle-hint-text">{struggleMessage(struggleShown, ownStats?.viewers ?? 0, t)}</span>
               {lower && (
                 <button
                   className="btn small"
@@ -766,30 +786,32 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
                     setStruggle(null)
                   }}
                 >
-                  Lower to {lower.label}
+                  {t('room.lowerTo', { quality: qualityLabel(lower) })}
                 </button>
               )}
               <button className="btn small" onClick={() => setStruggle(null)}>
-                OK
+                {t('common.ok')}
               </button>
             </div>
           )}
           {newer && newer.appVersion !== dismissedVersion && (
             <div className="notice info version-hint" role="status">
               <span className="version-hint-text">
-                <strong>{newer.name}</strong> runs ScreenShare {newer.appVersion}, a newer version than yours ({ourVersion}).
-                Update when you can.
+                {rich('room.newerVersion', {
+                  name: <strong>{newer.name}</strong>,
+                  version: newer.appVersion,
+                  ours: ourVersion ?? ''
+                })}
               </span>
               <button className="btn small" onClick={() => setDismissedVersion(newer.appVersion)}>
-                OK
+                {t('common.ok')}
               </button>
             </div>
           )}
           {gameCursor?.hint && (
             <div className="notice warn cursor-hint" role="status">
               <span className="cursor-hint-text">
-                Viewers see a mouse cursor over <strong>{gameCursor.hint.name}</strong> even though the game hides it.
-                Share its window instead: screen sharing on this version of Windows always draws the cursor.
+                {rich('room.gameCursorHint', { name: <strong>{gameCursor.hint.name}</strong> })}
               </span>
               <button
                 className="btn small primary"
@@ -798,9 +820,14 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
                   void shareSource(gameCursor.hint.windowId, publisher.audioChoice)
                 }
               >
-                <Icon name="swap" size={14} /> Share its window
+                <Icon name="swap" size={14} /> {t('room.shareItsWindow')}
               </button>
-              <button className="icon-btn" title="Dismiss" aria-label="Dismiss" onClick={() => gameCursor.dismissHint()}>
+              <button
+                className="icon-btn"
+                title={t('room.dismiss')}
+                aria-label={t('room.dismiss')}
+                onClick={() => gameCursor.dismissHint()}
+              >
                 <Icon name="x" size={14} />
               </button>
             </div>
@@ -810,7 +837,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
         <aside className={`sidebar ${chatDocked ? '' : 'floating'}`} hidden={!chatOpen}>
           <ChatPanel
             messages={messages}
-            roomName={room?.name ?? 'the room'}
+            roomName={room?.name ?? t('common.room')}
             avatars={avatars}
             selfId={client.selfId}
             isHost={isHost}
@@ -888,19 +915,22 @@ function SelfTile({
   onContextMenu,
   watchers
 }: TileChrome & { stream: MediaStream | null; sharing: SharingState; stats: HostStats | null }) {
+  const { t } = useT()
   const clickToFocus = useClickToFocus(onFocus)
   const overlay =
     showOverlay && stats && !small ? (
       <div className="stat-badges">
-        <span className="stat-badge">{Math.round(stats.fps)} fps</span>
+        <span className="stat-badge">{t('common.fps', { value: Math.round(stats.fps) })}</span>
         <span className="stat-badge">{formatBitrate(stats.bitrateKbps)}</span>
-        <span className="stat-badge">{stats.viewers} watching</span>
+        <span className="stat-badge">{t('common.watching', { count: stats.viewers })}</span>
         {sharing.hasAudio && (
           <span className={`stat-badge ${sharing.audioMuted ? 'muted-badge' : ''}`}>
-            {sharing.audioMuted ? 'audio muted' : `audio ${stats.audioKbps ?? 0} kbps`}
+            {sharing.audioMuted ? t('badge.audioMuted') : t('badge.audio', { kbps: stats.audioKbps ?? 0 })}
           </span>
         )}
-        <span className={`stat-badge ${stats.cpuPercent < 20 ? 'good' : 'ok'}`}>CPU {stats.cpuPercent.toFixed(0)}%</span>
+        <span className={`stat-badge ${stats.cpuPercent < 20 ? 'good' : 'ok'}`}>
+          {t('badge.cpu', { percent: Math.round(stats.cpuPercent) })}
+        </span>
       </div>
     ) : null
   return (
@@ -918,14 +948,14 @@ function SelfTile({
           sharing.paused ? (
             <div className="placeholder-content paused">
               <Icon name="pause" size={28} />
-              <h3>Sharing paused</h3>
+              <h3>{t('room.sharingPausedTitle')}</h3>
             </div>
           ) : null
         }
       />
       <div className="tile-bar">
         <span className="tile-name">
-          <Icon name="screen" size={13} /> Your screen
+          <Icon name="screen" size={13} /> {t('room.yourScreen')}
         </span>
         {watchers}
       </div>
@@ -968,6 +998,7 @@ function RemoteTile({
   moderation: MenuItem[]
   onMenu(at: MenuAt, groups: MenuItem[][]): void
 }) {
+  const { t } = useT()
   const clickToFocus = useClickToFocus(onFocus)
   // Hidden behind something else full screen, or put away with the strip.
   const [behindFullscreen, setBehindFullscreen] = useState(false)
@@ -989,7 +1020,7 @@ function RemoteTile({
     saveWatchQuality(participant?.name, id)
   }
 
-  const name = participant?.name ?? 'Someone'
+  const name = participant?.name ?? t('common.someone')
   const level = useLevel(participant?.name ?? '')
   const muted = !!participant?.stream?.audio && isSilent(level)
   const paused = !!participant?.stream?.paused
@@ -998,7 +1029,7 @@ function RemoteTile({
     placeholder = (
       <div className="placeholder-content paused">
         <Icon name="pause" size={28} />
-        <h3>Paused by {name}</h3>
+        <h3>{t('room.pausedBy', { name })}</h3>
       </div>
     )
   } else if (state === 'negotiating' || !stream) {
@@ -1007,7 +1038,7 @@ function RemoteTile({
         {snapshot && <div className="placeholder-bg" style={{ backgroundImage: `url(${snapshot})` }} />}
         <div className="placeholder-content">
           <div className="spinner" />
-          <h3>Connecting to {name}…</h3>
+          <h3>{t('room.connectingTo', { name })}</h3>
         </div>
       </>
     )
@@ -1016,9 +1047,9 @@ function RemoteTile({
   const overlay =
     showOverlay && stats && state === 'streaming' && !small ? (
       <div className="stat-badges">
-        <span className="stat-badge">{stats.fps} fps</span>
-        <span className={`stat-badge ${latencyClass(stats.latencyMs)}`} title="Estimated glass-to-glass latency">
-          {stats.latencyMs === null ? '– ms' : `~${stats.latencyMs} ms`}
+        <span className="stat-badge">{t('common.fps', { value: stats.fps })}</span>
+        <span className={`stat-badge ${latencyClass(stats.latencyMs)}`} title={t('badge.latencyTip')}>
+          {stats.latencyMs === null ? t('common.ms', { value: '–' }) : `~${t('common.ms', { value: stats.latencyMs })}`}
         </span>
         <span className="stat-badge">
           {stats.width}×{stats.height}
@@ -1026,7 +1057,7 @@ function RemoteTile({
         <span className="stat-badge">
           {stats.codec || '…'} · {stats.transport === 'tcp' ? 'TCP' : 'WebRTC'}
         </span>
-        {!participant?.stream?.audio && <span className="stat-badge muted-badge">no audio</span>}
+        {!participant?.stream?.audio && <span className="stat-badge muted-badge">{t('badge.noAudio')}</span>}
       </div>
     ) : null
 
@@ -1042,13 +1073,13 @@ function RemoteTile({
           ? [
               {
                 kind: 'slider',
-                label: `Volume of ${name}`,
+                label: t('volume.of', { name }),
                 icon: 'volume',
                 value: isSilent(getLevel(key)) ? 0 : getLevel(key).volume,
                 onChange: (v) => setVolume(key, v)
               },
               {
-                label: isSilent(getLevel(key)) ? 'Unmute' : 'Mute',
+                label: isSilent(getLevel(key)) ? t('volume.unmute') : t('volume.mute'),
                 icon: isSilent(getLevel(key)) ? 'volume' : 'volumeOff',
                 onSelect: () => toggleMute(key)
               }
@@ -1057,28 +1088,28 @@ function RemoteTile({
         const view: MenuItem[] = [
           ...menuItems,
           {
-            label: fullscreen ? 'Exit full screen' : 'Full screen',
+            label: fullscreen ? t('room.exitFullscreen') : t('room.fullscreen'),
             icon: fullscreen ? 'exitFullscreen' : 'fullscreen',
             onSelect: onFullscreen
           },
           {
-            label: inWindow ? 'Back to this window' : 'Open in a new window',
+            label: inWindow ? t('room.backToThisWindow') : t('room.openInWindow'),
             icon: inWindow ? 'popIn' : 'popOut',
             onSelect: onToggleWindow
           }
         ]
         const qualities: MenuItem[] = [
-          { kind: 'heading', label: 'Quality you receive' },
+          { kind: 'heading', label: t('room.qualityYouReceive') },
           ...WATCH_QUALITIES.map(
             (q): MenuItem => ({
-              label: q.label,
+              label: watchQualityLabel(q),
               checked: quality === q.id,
               onSelect: () => chooseQuality(q.id)
             })
           )
         ]
         if (sub.transport === 'tcp') {
-          qualities.push({ label: 'Try the faster connection again', icon: 'refresh', onSelect: () => sub.retry('webrtc') })
+          qualities.push({ label: t('room.tryFaster'), icon: 'refresh', onSelect: () => sub.retry('webrtc') })
         }
         onMenu({ x: e.clientX, y: e.clientY }, [sound, view, qualities, moderation])
       }}
@@ -1088,10 +1119,10 @@ function RemoteTile({
           <div className="screen-placeholder">
             <div className="placeholder-content">
               <Icon name="popOut" size={26} />
-              <h3>Playing in another window</h3>
+              <h3>{t('room.playingElsewhere')}</h3>
               {!small && (
                 <button className="btn small" onClick={onToggleWindow}>
-                  <Icon name="popIn" size={14} /> Bring back
+                  <Icon name="popIn" size={14} /> {t('room.bringBack')}
                 </button>
               )}
             </div>
@@ -1112,7 +1143,7 @@ function RemoteTile({
           <Avatar name={name} color={participant?.color} image={avatar} size="tiny" />
           {name}
           {muted && (
-            <span className="tile-muted" title="You muted this stream" aria-label="Muted">
+            <span className="tile-muted" title={t('room.mutedTip')} aria-label={t('room.muted')}>
               <Icon name="volumeOff" size={13} />
             </span>
           )}
@@ -1138,13 +1169,14 @@ function Watchers({
   selfId: string | null
   small: boolean
 }) {
+  const { t } = useT()
   if (people.length === 0) return null
-  const names = people.map((p) => (p.id === selfId ? `${p.name} (you)` : p.name))
+  const names = people.map((p) => (p.id === selfId ? t('common.you', { name: p.name }) : p.name)).join(', ')
   return (
     <span
       className="tile-watchers"
-      title={`Watching: ${names.join(', ')}`}
-      aria-label={`${people.length} watching: ${names.join(', ')}`}
+      title={t('room.watchingList', { names })}
+      aria-label={t('room.watchingLabel', { count: people.length, names })}
     >
       <Icon name="eye" size={13} />
       {people.length}
@@ -1197,11 +1229,17 @@ function StreamWindow({
   onBack(): void
 }) {
   const platform = usePlatform()
+  const { t } = useT()
   const [stream, setStream] = useState<MediaStream | null>(sub.stream)
   useEffect(() => {
     setStream(sub.stream)
     return sub.on('stream', setStream)
   }, [sub])
+  // The window's title follows the language too.
+  const title = t('room.streamWindowTitle', { name: participant?.name ?? t('common.someone') })
+  useEffect(() => {
+    win.document.title = title
+  }, [win, title])
   const stageRef = useRef<HTMLDivElement>(null)
   const [fullscreen, setFullscreen] = useState(false)
   const idleControls = useIdleControls(CONTROLS_IDLE_MS)
@@ -1215,7 +1253,7 @@ function StreamWindow({
     return () => doc.removeEventListener('fullscreenchange', onChange)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [win])
-  const name = participant?.name ?? 'Someone'
+  const name = participant?.name ?? t('common.someone')
   const toggleFullscreen = (): void => {
     if (win.document.fullscreenElement) void win.document.exitFullscreen()
     else void stageRef.current?.requestFullscreen()
@@ -1227,7 +1265,7 @@ function StreamWindow({
           <Icon name="screen" size={12} />
         </span>
         <span className="title-bar-name">ScreenShare</span>
-        <span className="title-bar-room">· {name}&apos;s stream</span>
+        <span className="title-bar-room">· {t('room.streamOf', { name })}</span>
       </header>
       <div
         ref={stageRef}
@@ -1245,7 +1283,7 @@ function StreamWindow({
             stream ? null : (
               <div className="placeholder-content">
                 <div className="spinner" />
-                <h3>Connecting to {name}…</h3>
+                <h3>{t('room.connectingTo', { name })}</h3>
               </div>
             )
           }
@@ -1261,13 +1299,13 @@ function StreamWindow({
           <div className="controls-center" />
           <div className="controls-side end">
             {participant?.stream?.audio && <VolumeControl name={participant.name} />}
-            <button className="bar-btn" data-tip="Back to the room" aria-label="Back to the room" onClick={onBack}>
+            <button className="bar-btn" data-tip={t('room.backToRoom')} aria-label={t('room.backToRoom')} onClick={onBack}>
               <Icon name="popIn" size={20} stroke={2.3} />
             </button>
             <button
               className="bar-btn"
-              data-tip={fullscreen ? 'Leave full screen (Esc)' : 'Full screen'}
-              aria-label={fullscreen ? 'Exit full screen' : 'Full screen'}
+              data-tip={fullscreen ? t('room.exitFullscreenTip') : t('room.fullscreen')}
+              aria-label={fullscreen ? t('room.exitFullscreen') : t('room.fullscreen')}
               onClick={toggleFullscreen}
             >
               <Icon name={fullscreen ? 'exitFullscreen' : 'fullscreen'} size={20} stroke={2.3} />
@@ -1284,13 +1322,14 @@ function StreamWindow({
  * unmutes back to the last volume; pointing at it shows the volume slider.
  */
 function VolumeControl({ name }: { name: string }) {
+  const { t } = useT()
   const level = useLevel(name)
   const silent = isSilent(level)
   return (
     <div className="volume-control">
       <button
         className={`bar-btn ${silent ? 'off' : ''}`}
-        aria-label={silent ? `Unmute ${name}` : `Mute ${name}`}
+        aria-label={silent ? t('volume.unmuteName', { name }) : t('volume.muteName', { name })}
         onClick={() => toggleMute(name)}
       >
         <Icon name={silent ? 'volumeOff' : 'volume'} size={20} stroke={2.3} />
@@ -1302,11 +1341,11 @@ function VolumeControl({ name }: { name: string }) {
           max={1}
           step={0.02}
           value={silent ? 0 : level.volume}
-          aria-label={`Volume of ${name}`}
+          aria-label={t('volume.of', { name })}
           onChange={(e) => setVolume(name, Number(e.target.value))}
         />
         <span>{silent ? 0 : Math.round(level.volume * 100)}%</span>
-        <span className="volume-pop-hint">Click the speaker to {silent ? 'unmute' : 'mute'}</span>
+        <span className="volume-pop-hint">{silent ? t('volume.hintUnmute') : t('volume.hintMute')}</span>
       </div>
     </div>
   )
