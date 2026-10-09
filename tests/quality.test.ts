@@ -7,6 +7,10 @@ import {
   getPreset,
   getWatchQuality,
   HIDDEN_VIEW,
+  HIGH_FPS_PRESET,
+  lowerPreset,
+  QUALITY_PRESETS,
+  qualityPresets,
   isHiddenView,
   largestViewLimit,
   tcpViewLimit,
@@ -244,5 +248,34 @@ describe('automatic content hint', () => {
     expect(autoContentHint(game, 'window:42:0', null)).toBe('motion')
     expect(autoContentHint({ ...game, fullscreen: false }, 'window:42:0', null)).toBe('detail')
     expect(autoContentHint(game, 'window:7:0', null)).toBe('detail')
+  })
+})
+
+describe('1080p @ 120 fps (experiment, --perf-high-fps)', () => {
+  it('is only offered with the switch, at the top', () => {
+    expect(qualityPresets(false)).toBe(QUALITY_PRESETS)
+    expect(qualityPresets(true).map((p) => p.id)).toEqual(['1080p120', ...QUALITY_PRESETS.map((p) => p.id)])
+    expect(getPreset('1080p120')).toBe(HIGH_FPS_PRESET)
+  })
+
+  it('steps down to 1080p60, not to Native (which can be bigger than 1080p)', () => {
+    expect(lowerPreset('1080p120')?.id).toBe('1080p60')
+    expect(qualityLadder('1080p120').map((p) => p.id)).toEqual(['1080p120', '1080p60', '720p60', '720p30', '480p30'])
+  })
+
+  it('asks the encoder for 120 fps, and lets a watcher cap it', () => {
+    expect(encodingFor(HIGH_FPS_PRESET, 1440)).toMatchObject({ maxFramerate: 120, maxBitrate: 25_000_000 })
+    const capped = limitPreset(HIGH_FPS_PRESET, 1080, { height: null, fps: 60 })
+    expect(capped.fps).toBe(60)
+    expect(capped.maxBitrate).toBe(12_500_000) // half the frames, half the bits
+    expect(limitPreset(HIGH_FPS_PRESET, 1080, { height: 1080, fps: null })).toBe(HIGH_FPS_PRESET)
+  })
+
+  it('walks the adaptive controller down from 120 fps', () => {
+    const c = new AdaptiveController(qualityLadder('1080p120'), 0)
+    const bad = { lossPct: 10, rttMs: 10, limitation: 'none' as const }
+    let t = 0
+    for (let i = 0; i < 4; i++) c.update(bad, (t += 5_000))
+    expect(c.preset.fps).toBeLessThan(120)
   })
 })

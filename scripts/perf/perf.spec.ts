@@ -6,7 +6,7 @@ import { fakeScreenCapture } from '../../e2e/fixtures'
 import { MAX_USERS } from '../../src/shared/constants'
 import { IPC } from '../../src/shared/ipc'
 import { parsePerfLog, summarize, summaryMarkdown } from '../../src/shared/perfSummary'
-import { QUALITY_PRESETS } from '../../src/shared/quality'
+import { HIGH_FPS_PRESET, qualityPresets } from '../../src/shared/quality'
 
 // The measuring run behind `npm run perf` (options from scripts/perf/run.cjs).
 // See docs/en-US/testing.md#measuring-performance.
@@ -44,8 +44,8 @@ function options() {
   // The streamer's "Optimize for": WebRTC paces screen content ('detail') and video ('motion') differently.
   const hint = raw.hint === undefined ? null : String(raw.hint)
   if (hint && !['auto', 'detail', 'motion'].includes(hint)) throw new Error('--hint must be auto, detail or motion')
-  if (quality && !QUALITY_PRESETS.some((p) => p.id === quality)) {
-    throw new Error(`--quality must be one of ${QUALITY_PRESETS.map((p) => p.id).join(', ')}`)
+  if (quality && !qualityPresets(true).some((p) => p.id === quality)) {
+    throw new Error(`--quality must be one of ${qualityPresets(true).map((p) => p.id).join(', ')}`)
   }
   const viewHeight = raw['view-height'] === undefined ? null : int('view-height', 0, 90)
   const viewers = hostOnly ? 0 : int('viewers', 1, 1)
@@ -63,7 +63,11 @@ function options() {
     viewHeight,
     join,
     hostOnly,
-    passthrough: raw.passthrough,
+    // The 120 fps preset only exists with --perf-high-fps.
+    passthrough:
+      quality === HIGH_FPS_PRESET.id && !raw.passthrough.includes('--perf-high-fps')
+        ? [...raw.passthrough, '--perf-high-fps']
+        : raw.passthrough,
     out: raw.out,
     command: raw.command
   }
@@ -202,16 +206,23 @@ test('measure', async () => {
       await joinAndWatch(viewer, address!)
       say(`${viewer.name} is watching`)
     }
-    for (const viewer of instances.filter((v) => v.name !== STREAMER)) {
+    const viewers = instances.filter((v) => v.name !== STREAMER)
+    for (const viewer of viewers) {
       await expect.poll(() => decodedFrames(viewer.win), { timeout: 60_000, message: `${viewer.name} gets no video` }).toBeGreaterThan(0)
     }
 
     say(`warming up for ${opts.warmup} s`)
     await new Promise((resolve) => setTimeout(resolve, opts.warmup * 1000))
     const from = Date.now()
+    const shownAtStart = await Promise.all(viewers.map((v) => decodedFrames(v.win)))
     say(`measuring for ${opts.seconds} s`)
     await new Promise((resolve) => setTimeout(resolve, opts.seconds * 1000))
     const to = Date.now()
+    // Frames the viewers' <video> elements actually showed: what a high refresh rate is for.
+    const shown = await Promise.all(viewers.map((v) => decodedFrames(v.win)))
+    const displayedFps = Object.fromEntries(
+      viewers.map((v, i) => [v.name, Math.round(((shown[i] - shownAtStart[i]) / ((to - from) / 1000)) * 10) / 10])
+    )
 
     const appVersion = await instances[0].app.evaluate(({ app }) => app.getVersion())
     fs.writeFileSync(
@@ -226,7 +237,8 @@ test('measure', async () => {
           cores: os.cpus().length,
           memoryGB: Math.round(os.totalmem() / 2 ** 30),
           gpu: gpuSummary(gpu),
-          measured: { from: new Date(from).toISOString(), to: new Date(to).toISOString() }
+          measured: { from: new Date(from).toISOString(), to: new Date(to).toISOString() },
+          displayedFps
         },
         null,
         2
@@ -244,7 +256,11 @@ test('measure', async () => {
     const title = opts.hostOnly
       ? `Streamer only, ${opts.seconds} s`
       : `${opts.viewers} viewer${opts.viewers === 1 ? '' : 's'}, ${opts.seconds} s`
-    const md = summaryMarkdown(summarize(logs, from, to), title) + `\n\`${opts.command}\`, app ${appVersion}\n`
+    const shownLines = Object.entries(displayedFps).map(([name, fps]) => `- ${name}: ${fps} fps`)
+    const md =
+      summaryMarkdown(summarize(logs, from, to), title) +
+      (shownLines.length ? `\n## Displayed by the viewers' video elements\n\n${shownLines.join('\n')}\n` : '') +
+      `\n\`${opts.command}\`, app ${appVersion}\n`
     fs.writeFileSync(path.join(opts.out, 'summary.md'), md)
     console.log(`\n${md}`)
     say(`results in ${path.relative(repo, opts.out)}`)

@@ -12,7 +12,7 @@ import {
   type CropView,
   type Point
 } from '../../shared/crop'
-import { QUALITY_PRESETS } from '../../shared/quality'
+import { qualityPresets } from '../../shared/quality'
 import { qualityLabel } from '../lib/quality'
 import { LANGUAGES, type LanguageSetting } from '../../shared/i18n'
 import { THEMES } from '../../shared/themes'
@@ -480,7 +480,7 @@ export function SettingsPanel({
                   value={settings.maxQuality}
                   onChange={(e) => onChange({ maxQuality: e.target.value as Settings['maxQuality'] })}
                 >
-                  {QUALITY_PRESETS.map((p) => (
+                  {qualityPresets(window.api.perf.options.highFps).map((p) => (
                     <option key={p.id} value={p.id}>
                       {t('settings.qualityOption', { quality: qualityLabel(p), mbps: p.maxBitrate / 1_000_000 })}
                     </option>

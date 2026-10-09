@@ -4,14 +4,16 @@ import { parsePerfLog, percentiles, summarize, summaryMarkdown, type PerfLog } f
 
 describe('parsePerfArgs', () => {
   it('is off without the switches', () => {
-    expect(parsePerfArgs(['electron', '.', '--profile=a'])).toEqual({ logFile: null, viewHeight: null })
+    expect(parsePerfArgs(['electron', '.', '--profile=a'])).toEqual({ logFile: null, viewHeight: null, highFps: false })
   })
 
   it('reads the log file and a view height in the range the server accepts', () => {
     expect(parsePerfArgs(['--perf-log=C:\\perf\\a b.jsonl', '--perf-view-height=1080'])).toEqual({
       logFile: 'C:\\perf\\a b.jsonl',
-      viewHeight: 1080
+      viewHeight: 1080,
+      highFps: false
     })
+    expect(parsePerfArgs(['--perf-high-fps']).highFps).toBe(true)
     expect(parsePerfArgs(['--perf-view-height=89']).viewHeight).toBeNull()
     expect(parsePerfArgs(['--perf-view-height=8641']).viewHeight).toBeNull()
     expect(parsePerfArgs(['--perf-view-height=720.5']).viewHeight).toBeNull()
@@ -179,5 +181,6 @@ describe('summarize', () => {
     expect(md).toContain('| Viewer 1 | Streamer | webrtc | NvencH264 (hw) | 60 | 58 | 35 ms | 49 ms | 5 ms | 0 (0.0 s) | – | 0 |')
     expect(md).toContain('| Viewer 2 | Streamer | webrtc | libvpx (sw) |')
     expect(md).toContain('| Streamer | 12 % | 13 % | 40 % | 40 % |')
+    expect(md).toContain('| Sent fps p50 | Capture fps |')
   })
 })

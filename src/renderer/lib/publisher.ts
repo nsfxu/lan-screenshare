@@ -1001,7 +1001,8 @@ export class Publisher extends Emitter<Events> {
         hidden: this.isHidden(id)
       })
     }
-    window.api.perf.log({ kind: 'streamer', t: Date.now(), watchers, system })
+    const captureFps = this.track?.getSettings().frameRate
+    window.api.perf.log({ kind: 'streamer', t: Date.now(), captureFps: captureFps ?? null, watchers, system })
   }
 
   private async samplePeer(peer: Peer, now: number): Promise<void> {

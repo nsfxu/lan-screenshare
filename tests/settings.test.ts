@@ -15,6 +15,11 @@ afterEach(() => {
 })
 
 describe('settings', () => {
+  it('accepts the 1080p @ 120 fps maximum only when the app was started with --perf-high-fps', () => {
+    expect(new SettingsStore(tempDir()).update({ maxQuality: '1080p120' }).maxQuality).toBe('1080p60')
+    expect(new SettingsStore(tempDir(), { highFps: true }).update({ maxQuality: '1080p120' }).maxQuality).toBe('1080p120')
+  })
+
   it("follows the computer's language until one is chosen, and keeps only known ones", () => {
     const dir = tempDir()
     const store = new SettingsStore(dir)

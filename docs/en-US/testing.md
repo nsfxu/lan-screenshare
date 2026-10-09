@@ -234,7 +234,7 @@ npm run perf -- --viewers=2 --source=fake       # the animated canvas of the e2e
 | `--seconds=<s>` | How long to measure (default 60), after `--warmup=<s>` (default 15). |
 | `--source=screen\|fake\|fake-detailed` | Share the first real screen (default on Windows and macOS) or an animated 1080p60 canvas (default on Linux). `fake-detailed` covers the canvas with still text, like a desktop: big keyframes, small frames in between. |
 | `--hint=auto\|detail\|motion` | The streamer's **Optimize for**: `detail` (text, a desktop) is sent as screen content and `motion` (games) as video, which WebRTC paces differently. Default: the app's setting (Automatic). |
-| `--quality=<preset>` | The streamer's maximum quality: `native60`, `1080p60`, `720p60`, `720p30` or `480p30`. |
+| `--quality=<preset>` | The streamer's maximum quality: `native60`, `1080p60`, `720p60`, `720p30` or `480p30`, or the experimental `1080p120` (the runner then adds `--perf-high-fps`). |
 | `--view-height=<px>` | Viewers ask for this height instead of their tile's, so a dozen small windows on one computer still ask for 1080p. |
 | `--host-only` | Only the streamer: it prints the address and waits (up to 10 minutes) for a viewer from another computer. |
 | `--join=<address:port>` | Only viewers, joining a room hosted on another computer. |
@@ -256,6 +256,15 @@ To report results, attach the folder (or at least `summary.md` and `run.json`) t
 - `--perf-view-height=<px>`: the forced view height above.
 
 The summary is computed by pure functions in `src/shared/perfSummary.ts` (tested in `tests/perf.test.ts`).
+
+**120 fps experiment** (`--perf-high-fps`, off by default): offers a **1080p @ 120 fps** maximum quality (25 Mbps) in Settings and the room's quality menu, and stepping down from it goes to 1080p @ 60 fps. With a 120/144 Hz game on a wired network, and the viewer on a second PC with a high-refresh monitor:
+
+```bash
+npm run perf -- --host-only --quality=1080p120 --seconds=90        # on the streaming PC
+npm run perf -- --join=<address>:47800 --viewers=1 --view-height=1080 --seconds=90   # on the viewer's PC
+```
+
+Check three numbers: the streamer's **Capture fps** (what the capture delivers), its **Sent fps**, and the viewer's line under "Displayed by the viewers' video elements" (frames actually shown). The preset ships only if all three stay at 110 or more.
 
 On a Linux machine without a graphics card everything is encoded in software, and Chromium may leave the encoder and decoder names blank (the summary then says "without a known encoder"): use such runs to check the tool, not to measure.
 

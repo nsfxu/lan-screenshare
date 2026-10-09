@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { QUALITY_PRESETS, WATCH_QUALITIES, getWatchQuality, lowerPreset, type WatchQualityId } from '../../shared/quality'
+import { WATCH_QUALITIES, qualityPresets, getWatchQuality, lowerPreset, type WatchQualityId } from '../../shared/quality'
 import { countUnread } from '../../shared/chat'
 import { struggleMessage, type StruggleKind } from '../../shared/struggle'
 import { bestTileGrid } from '../../shared/tileGrid'
@@ -376,7 +376,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     },
     { kind: 'separator' },
     { kind: 'heading', label: t('room.qualityYouSend') },
-    ...QUALITY_PRESETS.map(
+    ...qualityPresets(window.api.perf.options.highFps).map(
       (q): MenuItem => ({
         label: qualityLabel(q),
         checked: settings.maxQuality === q.id,
@@ -755,7 +755,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
                   value={settings.maxQuality}
                   onChange={(e) => onChangeSettings({ maxQuality: e.target.value as Settings['maxQuality'] })}
                 >
-                  {QUALITY_PRESETS.map((p) => (
+                  {qualityPresets(window.api.perf.options.highFps).map((p) => (
                     <option key={p.id} value={p.id}>
                       {qualityLabel(p)}
                     </option>

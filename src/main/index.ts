@@ -29,7 +29,7 @@ if (profileArg) {
   if (profile) app.setPath('userData', path.join(app.getPath('appData'), `${APP_NAME}-${profile}`))
 }
 
-// `--perf-log=<file>` and `--perf-view-height=<px>`: measuring mode for `npm run perf`.
+// `--perf-log=<file>`, `--perf-view-height=<px>` and `--perf-high-fps`: measuring mode for `npm run perf`.
 const perf = parsePerfArgs(process.argv)
 
 // --- Chromium switches -------------------------------------------------------
@@ -67,7 +67,7 @@ const MIN_WINDOW_WIDTH = 640
 const MIN_WINDOW_HEIGHT = 480
 
 const log = createFileLogger(logDir, !app.isPackaged)
-const settings = new SettingsStore(app.getPath('userData'))
+const settings = new SettingsStore(app.getPath('userData'), { highFps: perf.highFps })
 const rooms = new RoomManager(settings, app.getPath('userData'), log, app.getVersion())
 const capture = new ScreenCapture(log)
 const updater = new Updater(log, app.getVersion(), app.isPackaged)
@@ -312,7 +312,7 @@ function registerIpc(): void {
   })
 
   ipcMain.on(IPC.perfOptions, (e) => {
-    const options: PerfRendererOptions = { logging: !!perf.logFile, viewHeight: perf.viewHeight }
+    const options: PerfRendererOptions = { logging: !!perf.logFile, viewHeight: perf.viewHeight, highFps: perf.highFps }
     e.returnValue = options
   })
   if (perf.logFile) {
