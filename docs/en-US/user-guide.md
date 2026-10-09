@@ -15,6 +15,7 @@ Everything you can do in ScreenShare, from finding a room to fine-tuning quality
 - [Chat and people](#chat-and-people)
 - [If you are the host](#if-you-are-the-host)
 - [Settings](#settings)
+- [Language](#language)
 - [Updates](#updates)
 - [Mouse and keyboard](#mouse-and-keyboard)
 - [Privacy](#privacy)
@@ -182,6 +183,7 @@ Open Settings with the gear icon at the bottom of the rooms column. The list on 
 |---|---|---|---|
 | Profile | Profile picture | none | Shown instead of your initials. |
 | Profile | Display name | your computer user name | Up to 32 characters. |
+| Appearance | Language | Same as the computer | See [language](#language). |
 | Appearance | Theme | Classic | The app's colours: **Classic** (blue on blue-grey), **Graphite** (neutral greys and indigo, so streams look true to colour), **Midnight** (blue-black and teal) or **Charcoal** (warm greys and violet). Applies immediately. |
 | Appearance | Show FPS and latency on streams | on | The badges on each stream. |
 | Sharing | Maximum quality | 1080p @ 60 fps | The most you send when sharing. Applies immediately. |
@@ -201,6 +203,15 @@ Open Settings with the gear icon at the bottom of the rooms column. The list on 
 | About | Check for updates automatically | on | See [updates](#updates). |
 
 **About** shows the app version and has **Open logs**.
+
+## Language
+
+The app speaks **English** and **Portuguese (Brazil)**. In **Settings → Appearance → Language**:
+
+- **Same as the computer** (the default) follows Windows or macOS: Portuguese on a computer set to Portuguese (any country), English otherwise.
+- **English** or **Português (Brasil)** keeps that language whatever the computer's is.
+
+It changes at once, without a restart. Everyone sees the room in their own language: the room's lines in the chat ("Bob joined", "The host muted the chat") are in English for you and in Portuguese for someone using the app in Portuguese. In a room hosted by an app before 2.4.0 they arrive in English. A new room's default name follows the language of whoever creates it ("Giu's room").
 
 ## Updates
 

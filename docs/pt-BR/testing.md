@@ -85,7 +85,7 @@ Mantenha a lógica de decisão fora do React e fora dos callbacks do WebRTC, em 
 
 ## Testes de ponta a ponta
 
-A pasta `e2e/` roda o app de verdade: duas instâncias (Alice e Bob, o build de produção em `out/`) na mesma sala, controladas pelo suporte a Electron do Playwright.
+A pasta `e2e/` roda o app de verdade: duas instâncias (Alice e Bob, o build de produção em `out/`) na mesma sala, controladas pelo suporte a Electron do Playwright. Elas rodam em inglês (`--lang=en-US`), seja qual for o idioma do computador, e encontram os botões pelos nomes em inglês.
 
 | Teste | Cobre |
 |---|---|
@@ -105,6 +105,7 @@ A pasta `e2e/` roda o app de verdade: duas instâncias (Alice e Bob, o build de 
 | Destaque e volume (`focus.spec.ts`) | A Alice compartilha com um tom de teste: clicar para destacar e voltar, o alto-falante silencia e volta, o controle dele e o do menu mudam o volume tocado, dois cliques para tela cheia (a transmissão ocupa a tela sem moldura; a faixa, os controles e o nome somem depois de um tempo sem mexer o mouse e voltam quando ele se mexe), esconder a faixa pausa a transmissão dela. |
 | Temas (`theme.spec.ts`) | Cada tema muda as cores da página; a escolha sobrevive a um recarregamento. |
 | Configurações (`settings.spec.ts`) | A lista de seções pula para uma seção e acompanha a rolagem. |
+| Idioma (`language.spec.ts`) | A Alice muda para português nas configurações: a página muda na hora e continua assim depois de recarregar; o nome padrão da sala nova, a janela de criar e os controles estão em português; o Bob, em inglês, entra, e cada um vê os avisos da sala no chat no próprio idioma; voltar para "Igual ao computador" volta ao inglês. |
 | Atualizações (`update.spec.ts`) | A situação da atualização é simulada como o processo principal enviaria: Settings → About (busca automática ligada por padrão, um build de desenvolvimento não se atualiza), baixando, depois **Restart to update** na barra de título, que reinicia direto fora de uma sala e pergunta antes quando você hospeda; no macOS **Update to …** abre a página. |
 
 ```bash

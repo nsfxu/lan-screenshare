@@ -85,7 +85,7 @@ Keep decision logic out of React and out of WebRTC callbacks, in `src/shared/*.t
 
 ## End-to-end tests
 
-`e2e/` runs the real app: two instances (Alice and Bob, the production build in `out/`) in the same room, driven through Playwright's Electron support.
+`e2e/` runs the real app: two instances (Alice and Bob, the production build in `out/`) in the same room, driven through Playwright's Electron support. They run in English (`--lang=en-US`), whatever the computer's language, and find buttons by their English names.
 
 | Test | Covers |
 |---|---|
@@ -105,6 +105,7 @@ Keep decision logic out of React and out of WebRTC callbacks, in `src/shared/*.t
 | Focus and volume (`focus.spec.ts`) | Alice shares with a test tone: click to focus and back, the speaker mutes and unmutes, its slider and the menu's change the played volume, double-click full screen (the stream fills the screen with no frame; the strip, controls and name hide after a moment without the mouse and come back when it moves), hiding the strip pauses its stream. |
 | Themes (`theme.spec.ts`) | Each theme changes the page colours; the choice survives a reload. |
 | Settings (`settings.spec.ts`) | The section list jumps to a section and follows the scrolling. |
+| Language (`language.spec.ts`) | Alice switches to Portuguese in Settings: the page changes at once and stays after a reload; her new room's default name, dialog and controls are in Portuguese; Bob, in English, joins, and each sees the room's chat lines in their own language; back to "Same as the computer" gives English. |
 | Updates (`update.spec.ts`) | The update status is faked as the main process would send it: Settings → About (automatic checks on by default, a development build doesn't update), downloading, then **Restart to update** in the title bar, which restarts straight away outside a room and asks first while hosting; on macOS **Update to …** opens the page. |
 
 ```bash

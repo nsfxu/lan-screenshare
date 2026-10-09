@@ -13,6 +13,7 @@ Como preparar o projeto, rodar, depurar e gerar instaladores.
 - [Como o build funciona](#como-o-build-funciona)
 - [Depuração](#depuração)
 - [Gerando instaladores](#gerando-instaladores)
+- [Traduções](#traduções)
 - [Versões e o changelog](#versões-e-o-changelog)
 - [Publicando uma versão](#publicando-uma-versão)
 - [Tecnologias](#tecnologias)
@@ -156,6 +157,28 @@ npm run dist:mac
 
 Gera duas imagens de disco: `ScreenShare-<versão>-arm64.dmg` para Apple Silicon e `ScreenShare-<versão>-x64.dmg` para Macs Intel. Sem certificado, o `electron-builder.json` assina o app ad hoc (`mac.identity` `"-"`, hardened runtime desligado): um app sem assinatura válida aparece como "danificado" no Apple Silicon depois de baixado, sem nenhum jeito de abrir. Uma assinatura ad hoc transforma isso no aviso de sempre, "não é possível verificar o desenvolvedor", que **Abrir Mesmo Assim** resolve. Para tirar o aviso é preciso um certificado Apple Developer ID para assinar e notarizar (coloque-o em `mac.identity` e ligue de novo o hardened runtime); veja a documentação do electron-builder. O build de macOS ainda foi pouco testado.
 
+## Traduções
+
+Os textos do app ficam em [`src/shared/i18n/`](../../src/shared/i18n/): o `en.ts` é a referência (todas as chaves, em inglês) e cada outro idioma é um arquivo com as mesmas chaves (`pt-BR.ts`). O processo principal e a página usam os dois.
+
+- **Num componente**: `const { t } = useT()` (`src/renderer/lib/i18n.tsx`), depois `t('room.leave')`. O componente se redesenha quando o idioma muda. Os campos são tipados: `t('room.pausedBy', { name })` não compila sem o `name`.
+- **Fora de componentes** (código da página): o `t()` do mesmo módulo. **No processo principal**: `mainT()` (`src/main/i18n.ts`), para os erros e nomes que ele manda para a página.
+- **Plurais**: uma chave pode ter formas por quantidade, `{ one: '{count} espectador', other: '{count} espectadores' }`, escolhidas pelas regras do próprio idioma (`Intl.PluralRules`). Passe o `count`.
+- **Um nome em negrito no meio da frase**: `rich('room.pausedBy', { name: <strong>{name}</strong> })` mantém a frase inteira para quem traduz.
+- **Números e horas**: `number(n, casas)` e `time(ts)` do `useT()` escrevem do jeito do idioma (português: `1,5 Mbps`).
+- **Os avisos da sala no chat** ("Bob entrou") vão com um `event` (veja as [linhas do chat](protocol.md#linhas-do-chat)) e cada app os diz no próprio idioma; o `text` em inglês continua para os apps antigos.
+
+**Adicionar um texto**: coloque a chave no `en.ts` e em todos os outros arquivos de idioma. O `npm run typecheck` aponta o idioma que ficou sem ela, e um teste de unidade confere que todos os idiomas usam os mesmos campos.
+
+**Adicionar um idioma**:
+
+1. Copie o `src/shared/i18n/pt-BR.ts` com a sigla do novo idioma (por exemplo `es.ts`), traduza, e mantenha as chaves e os `{campos}` como estão.
+2. Coloque-o em `LANGUAGES` no `src/shared/i18n/index.ts`, com o nome no próprio idioma (`Español`) e a sigla do Chromium.
+3. Coloque essa sigla em `electronLanguages` no `electron-builder.json` (nas duas entradas), para os instaladores levarem os arquivos do Chromium dela.
+4. Cite o idioma na seção de idioma do guia do usuário, nas duas línguas.
+
+Configurações → Aparência → Idioma já o lista sozinho, e "Igual ao computador" o escolhe nos computadores nesse idioma. Os testes de ponta a ponta rodam em inglês (`--lang=en-US` no `e2e/fixtures.ts`); o `e2e/language.spec.ts` confere a troca de idioma.
+
 ## Versões e o changelog
 
 O ScreenShare segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/), onde "incompatível" quer dizer *não consegue dividir uma sala*:
@@ -200,7 +223,7 @@ Rodar o workflow sem versão é um teste: ele gera os instaladores, lista o que 
 
 Cada sistema tem um instalador por tipo de processador: `-x64` (a maioria dos PCs com Windows, Macs Intel) e `-arm64` (Windows em ARM, Macs Apple Silicon).
 
-Para os instaladores ficarem menores, eles só levam os arquivos de idioma do Chromium em inglês e português (`electronLanguages` no `electron-builder.json`). Num computador configurado em outro idioma, os textos do próprio Chromium e o formato da hora no chat voltam para o inglês dos EUA. Adicione o idioma ali se o app for traduzido.
+Para os instaladores ficarem menores, eles só levam os arquivos de idioma do Chromium em inglês e português (`electronLanguages` no `electron-builder.json`). Num computador configurado em outro idioma, os poucos textos que o próprio Chromium desenha voltam para o inglês dos EUA (os textos do app seguem as [traduções](#traduções)). Um idioma novo também ganha a sua linha ali.
 
 Os instaladores ainda não são assinados: o Windows mostra um aviso do SmartScreen (*Mais informações → Executar assim mesmo*) e o macOS bloqueia a primeira abertura até você clicar em **Abrir Mesmo Assim** em *Ajustes do Sistema → Privacidade e Segurança* (os instaladores de macOS têm assinatura ad hoc, veja [gerando instaladores](#gerando-instaladores)).
 

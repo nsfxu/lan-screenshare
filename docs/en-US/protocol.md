@@ -171,6 +171,20 @@ Host-only messages from anyone else get the non-fatal error `host_only`.
 
 `Participant` (in `participants` and `welcome`) contains: `id`, `name`, `role` (`host` or `viewer`), `color`, `joinedAt`, `status` (`connected` or `reconnecting`), `slot` (0–255, used by the TCP relay), `stream` (`{paused, audio, startedAt}` or `null`) `watching` (ids of the streams this person watches) and `appVersion` (their app version, when their app sends one).
 
+### Chat lines
+
+A `ChatMessage` (in `chat` and `welcome.history`) has `id`, `userId`, `name`, `color`, `text` and `ts`. The room's own lines ("Bob joined") also have `system: true` and, from 2.4.0, an `event` saying what they're about, so each app says them in its own language:
+
+| `event.kind` | Other fields | English `text` |
+|---|---|---|
+| `joined`, `left` | `name` | *Bob joined*, *Bob left* |
+| `removed` | `name` | *Bob was removed by the host* |
+| `started-sharing`, `stopped-sharing` | `name` | *Bob started sharing their screen*, *Bob stopped sharing* |
+| `stream-stopped` | `name` | *The host stopped Bob's stream* |
+| `chat-muted`, `chat-unmuted` | | *The host muted the chat*, *The host unmuted the chat* |
+
+`text` is still sent, in English, for apps before 2.4.0, which ignore `event`; apps show `text` for a kind they don't know. Only the server writes system lines. Adding a kind needs no protocol change.
+
 ## Watching a stream (WebRTC)
 
 The **streamer creates the offer**, the watcher answers. The server only relays between the pair.
@@ -261,6 +275,8 @@ Backpressure: when a watcher's socket has more than **2 MB** queued, the server 
 | `chat_muted` | No | Chat is muted by the host |
 | `rate_limited` | No | More than 5 chat messages in a second |
 | `not_sharing` | No | Tried to watch someone who isn't sharing |
+
+Apps show errors in their own language by `code`; `message` is English, for older apps and for cases a code doesn't tell apart (`bad_request`, `version_mismatch`).
 
 ## Limits and timings
 

@@ -63,17 +63,17 @@ Alguns segundos depois, a rede aparece como **OK** no ZeroTier do computador del
 
 Não precisa mudar nada no ScreenShare: ele enxerga a rede do ZeroTier como a rede da sua casa.
 
-- **Anfitrião**: clique em **Create room**, como sempre.
-- **Os outros**: a sala aparece em **Rooms on your network** em poucos segundos. Clique nela para entrar.
+- **Anfitrião**: clique em **Criar sala**, como sempre.
+- **Os outros**: a sala aparece em **Salas na sua rede** em poucos segundos. Clique nela para entrar.
 
-Se uma sala não aparecer, use o **Join by IP** com o endereço do anfitrião no ZeroTier. O anfitrião vê esse endereço ao lado do nome dele em **Members** no my.zerotier.com, ou nos detalhes da sala (**ⓘ** nos controles na parte de baixo da sala): passe o mouse sobre o endereço para ver todos; o do ZeroTier está na faixa definida no passo 1.
+Se uma sala não aparecer, use o **Entrar por IP** com o endereço do anfitrião no ZeroTier. O anfitrião vê esse endereço ao lado do nome dele em **Members** no my.zerotier.com, ou nos detalhes da sala (**ⓘ** nos controles na parte de baixo da sala): passe o mouse sobre o endereço para ver todos; o do ZeroTier está na faixa definida no passo 1.
 
 ## Se algo não funcionar
 
 | Problema | O que fazer |
 |---|---|
 | A rede diz *Requesting configuration* ou *Access denied* | O dono da rede ainda não marcou **Auth** para este computador. |
-| A sala não aparece | Confira se o ZeroTier mostra a rede como **OK** nos dois computadores. Depois tente o **Join by IP** com o endereço do anfitrião no ZeroTier. No Windows, confira se a rede do ZeroTier está como *Privada* (*Configurações → Rede e Internet → Ethernet → a rede do ZeroTier → Tipo de perfil de rede*). |
+| A sala não aparece | Confira se o ZeroTier mostra a rede como **OK** nos dois computadores. Depois tente o **Entrar por IP** com o endereço do anfitrião no ZeroTier. No Windows, confira se a rede do ZeroTier está como *Privada* (*Configurações → Rede e Internet → Ethernet → a rede do ZeroTier → Tipo de perfil de rede*). |
 | Entra na sala, mas o vídeo não começa | Normalmente é o firewall do Windows de quem compartilha: permita o ScreenShare em redes privadas (*Segurança do Windows → Firewall → Permitir um aplicativo*). Depois de 8 segundos o ScreenShare passa sozinho para a conexão TCP. |
 | O vídeo trava ou atrasa muito | O ZeroTier pode estar passando o tráfego pelos servidores dele em vez de ligar vocês diretamente. Rode `zerotier-cli peers` num terminal (no Windows, como administrador): os seus amigos devem aparecer como **DIRECT**. Se aparecerem como **RELAY**, ligar o UPnP num dos roteadores, normalmente o do anfitrião, costuma resolver. Confira também os selos de estatística da transmissão e [a qualidade está baixa](troubleshooting.md#a-qualidade-está-baixa). |
 | Estava tudo funcionando e parou | Um dos computadores pode ter saído da rede, ou o ZeroTier não está rodando. Abra o ZeroTier e confira se a rede está **OK**. |

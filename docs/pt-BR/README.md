@@ -51,7 +51,7 @@ flowchart LR
 - **Condições de rede**: a lógica de qualidade adaptativa tem testes unitários, mas perda de pacotes real ainda não foi simulada.
 - **Fallback TCP**: uma única codificação é dividida entre todos os espectadores TCP de quem transmite, dimensionada para o mais exigente.
 - **Os números de latência** no WebRTC são estimativas (veja [pipeline de mídia](media-pipeline.md#estatísticas-e-latência)).
-- **A descoberta** precisa de multicast; em VPNs use **Join by IP**.
+- **A descoberta** precisa de multicast; em VPNs use **Entrar por IP**.
 - **Atualizações**: no Windows, o app se atualiza sozinho a partir do 2.2.0. No macOS ele só consegue indicar o download, porque apps sem assinatura não podem se substituir.
 - **Versão**: todos na sala precisam da mesma versão do protocolo (hoje, a 4: todo app do 1.0.0 ao 2.x).
 - **Fora do escopo** por enquanto: controle remoto, áudio do microfone, vários monitores numa transmissão, gravação, Linux como plataforma suportada.

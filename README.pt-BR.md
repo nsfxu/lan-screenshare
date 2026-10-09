@@ -23,6 +23,7 @@ flowchart LR
 - 🎚️ **Qualidade do seu jeito**: quem transmite define o máximo, cada espectador escolhe o que recebe, e janelas pequenas gastam menos banda automaticamente.
 - 🔊 **Som do computador**, inclusive com headsets 5.1/7.1, e uma opção para **deixar a chamada do Discord de fora** para seus amigos não ouvirem a própria voz (Windows).
 - 💬 **Chat, fotos de perfil e controles do anfitrião**: remover pessoas, parar transmissões, silenciar o chat.
+- 🌎 **Em português e inglês**, seguindo o idioma do seu computador (Configurações → Aparência → Idioma).
 - ⬆️ **Se atualiza sozinho** no Windows: a versão nova baixa em segundo plano e é instalada quando você reinicia.
 - 🔁 **Se recupera sozinho** depois de quedas curtas de rede e usa TCP quando a rede bloqueia o WebRTC.
 
@@ -42,7 +43,7 @@ npm install
 npm run dev
 ```
 
-A janela do app abre. Clique em **Create room** para criar uma sala, ou espere as salas da sua rede aparecerem e clique numa para entrar.
+A janela do app abre. Clique em **Criar sala** para criar uma sala, ou espere as salas da sua rede aparecerem e clique numa para entrar.
 
 ### Testar com duas pessoas no mesmo computador
 

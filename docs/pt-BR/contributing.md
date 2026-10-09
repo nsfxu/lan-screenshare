@@ -63,7 +63,7 @@ Não há configuração de formatador no repositório; **siga o código ao redor
 - Coloque a **lógica de decisão em `src/shared`** como funções puras (sem DOM, sem APIs do Node), com testes unitários. Mantenha os componentes React e os callbacks do WebRTC enxutos.
 - O código do renderer nunca importa módulos do Node; ele passa pelo `window.api`.
 - Constantes (limites, tempos) ficam em `src/shared/constants.ts` com um comentário, não como números mágicos.
-- Textos da interface: em inglês simples e amigável, com só a primeira letra maiúscula (*Share screen*, não *Share Screen*). Mensagens de erro dizem o que aconteceu e o que fazer.
+- Textos da interface: em inglês simples e amigável, com só a primeira letra maiúscula (*Share screen*, não *Share Screen*). Mensagens de erro dizem o que aconteceu e o que fazer. Eles ficam no `src/shared/i18n/en.ts` e em todos os outros arquivos de idioma, nunca direto num componente (veja [traduções](development.md#traduções)).
 - O auxiliar de áudio do Windows precisa continuar sendo **C# 5** válido (veja [desenvolvimento](development.md#trabalhando-no-auxiliar-de-áudio-sem-windows)).
 
 ## Checklists para mudanças comuns

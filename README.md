@@ -23,6 +23,7 @@ flowchart LR
 - 🎚️ **Quality your way**: the streamer sets the maximum, each viewer picks what they receive, and small windows automatically cost less bandwidth.
 - 🔊 **Computer sound**, including 5.1/7.1 headsets, and an option to **leave your Discord call out** so friends don't hear themselves (Windows).
 - 💬 **Chat, profile pictures, and host controls**: remove people, stop streams, mute the chat.
+- 🌎 **In English and Portuguese**, following your computer's language (Settings → Appearance → Language).
 - ⬆️ **Updates itself** on Windows: a new version downloads in the background and installs when you restart.
 - 🔁 **Recovers by itself** after short network drops, and falls back to TCP when a network blocks WebRTC.
 

@@ -10,8 +10,13 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Added
+
+- **ScreenShare speaks Portuguese.** The app opens in your computer's language (Portuguese or English), and **Settings → Appearance → Language** picks one for good. It changes at once, no restart. Everyone in a room sees it in their own language, the room's messages in the chat included ("Bob joined" is "Bob entrou" for a friend in Portuguese).
+
 ### Fixed
 
+- Your own "joined" line sometimes didn't appear in the chat when you entered a room.
 - **macOS**: the downloaded app no longer says it is "damaged and can't be opened". The first launch now shows macOS's usual "can't verify" warning instead; click **Done**, then **Open Anyway** in *System Settings → Privacy & Security*, and enter your password ([step by step](docs/en-US/user-guide.md#opening-it-for-the-first-time-on-macos)).
 
 ## [2.3.0] - 2026-10-08

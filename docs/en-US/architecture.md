@@ -103,6 +103,7 @@ src/
     cursorWatch.ts   runs the Windows cursor helper (games that hide the cursor)
     settings.ts      settings.json load/validate/save
     updater.ts       updates from the GitHub releases (Windows: download, restart to install; macOS: a link)
+    i18n.ts          the main process's own text (errors, default room name) in the chosen language
     logger.ts        rotating file logger
   preload/
     index.ts         contextBridge: window.api
@@ -111,7 +112,8 @@ src/
     components/      React components (see "Renderer: the UI")
     lib/             session logic: roomClient, publisher, subscription, watches, tcpStream,
                      nativeAudio, gameCursor, foregroundWatch, autoContentHint, codecs, images,
-                     session, format, emitter; UI helpers: layout, volume, theme, appVersion, roomPeople
+                     session, format, emitter; UI helpers: layout, volume, theme, appVersion, roomPeople,
+                     i18n (useT: the page's language), quality (quality names)
     styles.css       all styles; the themes are CSS variables on :root[data-theme]
   shared/            code used by both sides; no DOM/Node APIs in the pure modules
     types.ts         wire protocol + settings + IPC types
@@ -127,6 +129,7 @@ src/
     tileGrid.ts      the tile grid that fits the most 16:9 area
     chat.ts          chat grouping and unread count
     themes.ts        the theme list
+    i18n/            the app's text: en.ts (reference), pt-BR.ts; t(), plurals, numbers, the language list
   utils/             main-process helpers
     mdns.ts          DNS-SD advert + browse (bonjour-service, pure JS)
     network.ts       addresses, URLs, /info probing, certificate fingerprints
@@ -290,6 +293,8 @@ flowchart TB
   Room --> Menu["Menu<br/>every right-click and button menu; volume sliders"]
   Room --> Chat["ChatPanel (right)"]
 ```
+
+Every text on screen comes from `src/shared/i18n` through `useT()`, so changing the language re-renders the page in it (see [translations](development.md#translations)).
 
 Components subscribe to the session objects' events (`client.on('participants', …)`, `publisher.on('stats', …)`, …) and keep React state as copies. Session objects never import React.
 
