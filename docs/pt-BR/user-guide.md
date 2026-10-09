@@ -219,7 +219,7 @@ A troca vale na hora, sem reiniciar. Cada pessoa vê a sala no próprio idioma: 
 
 O app procura uma versão nova na [página de versões](https://github.com/nsfxu/lan-screenshare/releases) logo depois de abrir e a cada algumas horas.
 
-- **Windows**: a versão nova baixa em silêncio, em segundo plano. Quando ela está pronta, um botão verde **Reiniciar para atualizar** aparece na barra de título (e em **Configurações → Sobre**). Clique quando for melhor para você: o app fecha, instala a atualização e abre de novo. Se você está numa sala ele pergunta antes, porque reiniciar sai da sala (ou a encerra, se você é o anfitrião). Nada é instalado sozinho quando você fecha o app.
+- **Windows**: a versão nova baixa em silêncio, em segundo plano. Quando ela está pronta, um botão verde **Reinicie para atualizar** aparece na barra de título (e em **Configurações → Sobre**). Clique quando for melhor para você: o app fecha, instala a atualização e abre de novo. Se você está numa sala ele pergunta antes, porque reiniciar sai da sala (ou a encerra, se você é o anfitrião). Nada é instalado sozinho quando você fecha o app.
 - **macOS**: a barra de título mostra **Atualizar para …**, que abre a página de download. A Apple só deixa apps assinados se substituírem, e o ScreenShare ainda não é assinado.
 
 **Configurações → Sobre** mostra a situação e tem o botão **Verificar agora**. Desligue **Procurar atualizações automaticamente** se não quiser que o app fale com o GitHub; dá para procurar à mão do mesmo jeito. Versões anteriores ao 2.2.0 não se atualizam sozinhas: baixe o 2.2.0 uma vez, e as próximas chegam sozinhas.

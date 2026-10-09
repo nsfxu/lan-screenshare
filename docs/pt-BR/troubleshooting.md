@@ -106,7 +106,7 @@ No Windows 10 (e no 11 anterior ao 24H2), compartilhar uma tela inteira mostra o
 ## Atualizações
 
 - **"Couldn't check for updates"**: o computador não consegue chegar ao GitHub (sem internet, ou um firewall ou proxy bloqueia). Baixe a versão nova na [página de versões](https://github.com/nsfxu/lan-screenshare/releases); o instalador atualiza o app no lugar e mantém as suas configurações.
-- **Não aparece "Reiniciar para atualizar" mesmo com versão nova publicada**: versões anteriores ao 2.2.0 não se atualizam sozinhas, e no macOS o app só mostra **Update to …**. Confira também se **Configurações → Sobre → Procurar atualizações automaticamente** está ligado, ou clique em **Verificar agora**.
+- **Não aparece "Reinicie para atualizar" mesmo com versão nova publicada**: versões anteriores ao 2.2.0 não se atualizam sozinhas, e no macOS o app só mostra **Update to …**. Confira também se **Configurações → Sobre → Procurar atualizações automaticamente** está ligado, ou clique em **Verificar agora**.
 - **A atualização baixa de novo a cada reinício**: o instalador baixado fica no cache de atualizações do app; algo (um limpador ou antivírus) pode estar apagando. O log (**Configurações → Sobre → Abrir logs**) tem linhas `updater:`.
 
 ## Reunindo informações para relatar um bug

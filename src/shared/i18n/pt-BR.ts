@@ -52,9 +52,9 @@ export const ptBR: Messages = {
   'app.restartNow': 'Reiniciar agora',
 
   // --- Title bar and updates --------------------------------------------------------
-  'update.restartToUpdate': 'Reiniciar para atualizar',
+  'update.restartToUpdate': 'Reinicie para atualizar',
   'update.downloadedTip': 'O ScreenShare {version} já foi baixado',
-  'update.openPageTip': 'Abre a página de download',
+  'update.openPageTip': 'Abrir página de download',
   'update.updateTo': 'Atualizar para {version}',
   'update.unsupported': 'As atualizações vêm com o app instalado, não com versões de desenvolvimento.',
   'update.upToDate': 'Atualizado (verificado às {time}).',

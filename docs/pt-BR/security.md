@@ -31,7 +31,7 @@ Ele **não** tenta proteger contra um anfitrião malicioso (o anfitrião roda o 
 | Voltar depois de ser removido | O client id removido fica banido pelo resto daquela sessão da sala | conjunto `banned` |
 | Dados grandes demais ou malformados | Nomes limpos e limitados; limites de tamanho e de taxa no chat; imagens precisam seguir padrões rígidos de data URL e limites de tamanho; tamanhos de exibição e fps verificados; mensagem máxima de 16 MB; 10 s para enviar o hello | `server.ts`, `shared/images.ts` |
 | Gravar o que se assiste | Enquanto você assiste qualquer transmissão, as janelas do app (a da sala e a janela própria de uma transmissão) ficam ocultas para captura e capturas de tela (`setContentProtection`). O app não tem gravação nem exportação do chat | `RoomView.tsx`, IPC `setViewerProtection` |
-| Uma atualização adulterada | As atualizações só vêm das versões publicadas deste projeto no GitHub, por HTTPS. No Windows, o instalador baixado precisa bater com o SHA-512 do `latest.yml` da versão; nada é instalado até a pessoa clicar em **Reiniciar para atualizar**. O link aberto no macOS precisa ser da página de versões | `src/main/updater.ts` |
+| Uma atualização adulterada | As atualizações só vêm das versões publicadas deste projeto no GitHub, por HTTPS. No Windows, o instalador baixado precisa bater com o SHA-512 do `latest.yml` da versão; nada é instalado até a pessoa clicar em **Reinicie para atualizar**. O link aberto no macOS precisa ser da página de versões | `src/main/updater.ts` |
 
 ## Fixação de certificado
 
