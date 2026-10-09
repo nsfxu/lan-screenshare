@@ -198,7 +198,7 @@ Como funciona (`src/renderer/lib/tcpStream.ts`):
 - **Latência em primeiro lugar**: quadros são pulados quando a fila do codificador ou o buffer do socket local (4 MB) fica para trás, e o próximo quadro é um quadro-chave.
 - **Servidor**: marca cada pacote com o slot de quem transmite, deixa no máximo 2 MB na fila de cada espectador e descarta o vídeo até o próximo quadro-chave quando um espectador fica para trás (veja [protocolo → fallback TCP](protocol.md#fallback-tcp)).
 - **Retorno**: a cada 2 s o servidor envia `tcp-feedback {sent, dropped}`, que alimenta o controlador adaptativo do próprio codificador TCP.
-- **Espectador**: o `TcpDecoder` decodifica com WebCodecs para um `MediaStreamTrackGenerator`, então o mesmo elemento `<video>` exibe os dois transportes.
+- **Espectador**: o `TcpDecoder` decodifica com WebCodecs (em hardware quando o computador tem um decodificador para o codec, em software caso contrário) para um `MediaStreamTrackGenerator`, então o mesmo elemento `<video>` exibe os dois transportes.
 
 ## Áudio do sistema
 

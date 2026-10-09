@@ -593,7 +593,9 @@ export class TcpDecoder {
         this.reset()
       }
     })
-    decoder.configure({ codec, hardwareAcceleration: 'prefer-hardware', optimizeForLatency: true })
+    // 'no-preference' still picks a hardware decoder when there is one; 'prefer-hardware' would refuse to decode
+    // at all on a computer without one for this codec (WebCodecs treats it as "hardware only").
+    decoder.configure({ codec, hardwareAcceleration: 'no-preference', optimizeForLatency: true })
     this.decoder = decoder
     this.configuredCodec = codec
     this.stats.codec = codec

@@ -198,7 +198,7 @@ How it works (`src/renderer/lib/tcpStream.ts`):
 - **Latency first**: frames are skipped when the encoder queue or the local socket buffer (4 MB) falls behind, and the next frame is a keyframe.
 - **Server**: tags each packet with the streamer's slot, keeps at most 2 MB queued per watcher, and drops video to the next keyframe when a watcher falls behind (see [protocol → TCP fallback](protocol.md#tcp-fallback)).
 - **Feedback**: every 2 s the server sends `tcp-feedback {sent, dropped}`, which feeds the TCP encoder's own adaptive controller.
-- **Watcher**: `TcpDecoder` decodes with WebCodecs into a `MediaStreamTrackGenerator`, so the same `<video>` element plays both transports.
+- **Watcher**: `TcpDecoder` decodes with WebCodecs (in hardware when the computer has a decoder for the codec, in software otherwise) into a `MediaStreamTrackGenerator`, so the same `<video>` element plays both transports.
 
 ## System audio
 

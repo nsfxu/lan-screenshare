@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Fixed
+
+- **Watching over the slower TCP connection works on every computer.** On a computer without a hardware video decoder for the stream's format (some laptops and virtual machines), the stream stayed on "Connecting…" forever; it now plays, decoded by the processor.
+
 ## [2.4.0] - 2026-10-09
 
 ### Added
