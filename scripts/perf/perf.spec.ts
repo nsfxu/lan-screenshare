@@ -37,8 +37,8 @@ function options() {
   const join = typeof raw.join === 'string' ? raw.join : null
   if (hostOnly && join) throw new Error('--host-only and --join go on different computers')
   const source = String(raw.source ?? (process.platform === 'linux' ? 'fake' : 'screen'))
-  if (!['screen', 'fake', 'fake-detailed'].includes(source)) {
-    throw new Error('--source must be screen, fake or fake-detailed')
+  if (!['screen', 'fake', 'fake-detailed'].includes(source) && !/^window:.+/.test(source)) {
+    throw new Error('--source must be screen, window:<part of its title>, fake or fake-detailed')
   }
   const quality = raw.quality === undefined ? null : String(raw.quality)
   // The streamer's "Optimize for": WebRTC paces screen content ('detail') and video ('motion') differently.
@@ -84,7 +84,8 @@ interface Instance {
 async function launch(name: string, opts: ReturnType<typeof options>, fakeSource: boolean): Promise<Instance> {
   const slug = name.toLowerCase().replace(/\W+/g, '-')
   const log = path.join(opts.out, `${slug}.jsonl`)
-  const args = [repo, `--profile=perf-${slug}-${process.pid}`, `--perf-log=${log}`, ...opts.passthrough]
+  // --lang: the runner finds buttons by their English names, whatever the computer's language.
+  const args = [repo, `--profile=perf-${slug}-${process.pid}`, `--perf-log=${log}`, '--lang=en-US', ...opts.passthrough]
   if (opts.viewHeight) args.push(`--perf-view-height=${opts.viewHeight}`)
   // Chromium's sandbox needs unprivileged user namespaces, which containers and CI often lack.
   if (process.platform === 'linux') args.push('--no-sandbox')
@@ -133,11 +134,20 @@ async function quit(instance: Instance): Promise<void> {
   fs.rmSync(instance.userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 })
 }
 
-async function createRoom(streamer: Instance): Promise<number> {
+async function createRoom(streamer: Instance, source: string): Promise<number> {
   const { win } = streamer
   await win.getByRole('button', { name: /^Create( a)? room$/ }).first().click()
   // The first screen is chosen by default (the fake one with --source=fake).
   await win.locator('.modal .source.selected').waitFor()
+  if (source.startsWith('window:')) {
+    const title = source.slice('window:'.length)
+    await win.locator('.modal').getByRole('button', { name: 'Windows', exact: true }).click()
+    const match = win.locator('.modal .source', { hasText: title }).first()
+    await match.waitFor({ timeout: 10_000 }).catch(() => {
+      throw new Error(`--source=${source}: no window whose title contains "${title}"`)
+    })
+    await match.click()
+  }
   await win.locator('.modal').getByRole('button', { name: 'Start sharing' }).click()
   await win.waitForSelector('.room')
   return win.evaluate(() => window.api.host.get().then((h) => h?.port ?? 0))
@@ -187,9 +197,9 @@ test('measure', async () => {
     let address = opts.join
     let gpu: unknown = null
     if (!opts.join) {
-      const streamer = await launch(STREAMER, opts, opts.source !== 'screen')
+      const streamer = await launch(STREAMER, opts, opts.source.startsWith('fake'))
       instances.push(streamer)
-      const port = await createRoom(streamer)
+      const port = await createRoom(streamer, opts.source)
       address = `127.0.0.1:${port}`
       gpu = await streamer.app.evaluate(({ app }) => app.getGPUInfo('complete')).catch(() => null)
       if (opts.hostOnly) {

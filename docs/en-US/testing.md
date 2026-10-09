@@ -232,7 +232,7 @@ npm run perf -- --viewers=2 --source=fake       # the animated canvas of the e2e
 |---|---|
 | `--viewers=<n>` | How many viewers (default 1, at most 9: a room holds 10 people). Each is its own app instance with its own `--profile`, and watches the streamer. |
 | `--seconds=<s>` | How long to measure (default 60), after `--warmup=<s>` (default 15). |
-| `--source=screen\|fake\|fake-detailed` | Share the first real screen (default on Windows and macOS) or an animated 1080p60 canvas (default on Linux). `fake-detailed` covers the canvas with still text, like a desktop: big keyframes, small frames in between. |
+| `--source=screen\|window:<title>\|fake\|fake-detailed` | Share the first real screen (default on Windows and macOS), the first window whose title contains `<title>` (e.g. `window:Minecraft`), or an animated 1080p60 canvas (default on Linux). `fake-detailed` covers the canvas with still text, like a desktop: big keyframes, small frames in between. |
 | `--hint=auto\|detail\|motion` | The streamer's **Optimize for**: `detail` (text, a desktop) is sent as screen content and `motion` (games) as video, which WebRTC paces differently. Default: the app's setting (Automatic). |
 | `--quality=<preset>` | The streamer's maximum quality: `native60`, `1080p60`, `720p60`, `720p30` or `480p30`, or the experimental `1080p120` (the runner then adds `--perf-high-fps`). |
 | `--view-height=<px>` | Viewers ask for this height instead of their tile's, so a dozen small windows on one computer still ask for 1080p. |
@@ -265,6 +265,17 @@ npm run perf -- --join=<address>:47800 --viewers=1 --view-height=1080 --seconds=
 ```
 
 Check three numbers: the streamer's **Capture fps** (what the capture delivers), its **Sent fps**, and the viewer's line under "Displayed by the viewers' video elements" (frames actually shown). The preset ships only if all three stay at 110 or more.
+
+**Faster capture experiment** (`--capture-experiment`, off by default): turns on two Chromium 152 features that copy each captured frame fewer times. `ZeroCopyDesktopCapture` (all platforms) writes screen frames straight into the capture buffer; on Windows, `WebRtcAllowWgcUsingTexture` keeps Windows Graphics Capture frames on the graphics card. Windows uses that capture API for windows, and for whole screens only from Windows 11 24H2, so on Windows 10 measure a window too. Compare the streamer's CPU, encode time and sent fps:
+
+```bash
+npm run perf -- --viewers=2 --seconds=90
+npm run perf -- --viewers=2 --seconds=90 --capture-experiment
+npm run perf -- --viewers=2 --seconds=90 --source=window:<game title>
+npm run perf -- --viewers=2 --seconds=90 --source=window:<game title> --capture-experiment
+```
+
+Then, with the switch on and a viewer on another PC, check that nothing breaks: alt-tab in and out of a game, a game in exclusive fullscreen, resetting the graphics driver (Win+Ctrl+Shift+B), the screen sleeping and waking, **Change source** while sharing, and a 30-minute share. Chromium notes that a graphics driver reset ends a texture capture with an error instead of recovering.
 
 On a Linux machine without a graphics card everything is encoded in software, and Chromium may leave the encoder and decoder names blank (the summary then says "without a known encoder"): use such runs to check the tool, not to measure.
 
