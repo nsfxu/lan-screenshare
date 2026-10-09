@@ -103,6 +103,7 @@ src/
     cursorWatch.ts   roda o auxiliar de cursor do Windows (jogos que escondem o cursor)
     settings.ts      carrega/valida/salva o settings.json
     updater.ts       atualizações pelas versões do GitHub (Windows: baixa e instala ao reiniciar; macOS: um link)
+    i18n.ts          os textos do próprio processo principal (erros, nome padrão da sala) no idioma escolhido
     logger.ts        logger em arquivo com rotação
   preload/
     index.ts         contextBridge: window.api
@@ -111,7 +112,8 @@ src/
     components/      componentes React (veja "Renderer: a interface")
     lib/             lógica da sessão: roomClient, publisher, subscription, watches, tcpStream,
                      nativeAudio, gameCursor, foregroundWatch, autoContentHint, codecs, images,
-                     session, format, emitter; ajudantes da interface: layout, volume, theme, appVersion, roomPeople
+                     session, format, emitter; ajudantes da interface: layout, volume, theme, appVersion, roomPeople,
+                     i18n (useT: o idioma da página), quality (nomes das qualidades)
     styles.css       todos os estilos; os temas são variáveis CSS em :root[data-theme]
   shared/            código usado pelos dois lados; os módulos puros não usam APIs de DOM/Node
     types.ts         tipos do protocolo, das configurações e do IPC
@@ -127,6 +129,7 @@ src/
     tileGrid.ts      a grade de quadros que ocupa mais área 16:9
     chat.ts          agrupamento do chat e contagem de não lidas
     themes.ts        a lista de temas
+    i18n/            os textos do app: en.ts (referência), pt-BR.ts; t(), plurais, números, a lista de idiomas
   utils/             utilitários do processo principal
     mdns.ts          anúncio e busca DNS-SD (bonjour-service, JS puro)
     network.ts       endereços, URLs, consulta /info, impressões digitais de certificado
@@ -290,6 +293,8 @@ flowchart TB
   Room --> Menu["Menu<br/>todos os menus do botão direito e de botões; controles de volume"]
   Room --> Chat["ChatPanel (direita)"]
 ```
+
+Todo texto na tela vem do `src/shared/i18n` pelo `useT()`, então trocar o idioma redesenha a página nele (veja [traduções](development.md#traduções)).
 
 Os componentes assinam os eventos dos objetos da sessão (`client.on('participants', …)`, `publisher.on('stats', …)`, …) e guardam cópias no estado do React. Os objetos da sessão nunca importam React.
 

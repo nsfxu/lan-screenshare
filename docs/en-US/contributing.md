@@ -63,7 +63,7 @@ There is no formatter configuration in the repository; **match the surrounding c
 - Put **decision logic in `src/shared`** as pure functions (no DOM, no Node APIs), with unit tests. Keep React components and WebRTC callbacks thin.
 - Renderer code never imports Node modules; it goes through `window.api`.
 - Constants (limits, timings) live in `src/shared/constants.ts` with a comment, not as magic numbers.
-- User-facing text: plain, friendly English, sentence case (*Share screen*, not *Share Screen*). Error messages say what happened and what to do.
+- User-facing text: plain, friendly English, sentence case (*Share screen*, not *Share Screen*). Error messages say what happened and what to do. It goes in `src/shared/i18n/en.ts` and every other language file, never straight into a component (see [translations](development.md#translations)).
 - The Windows audio helper must stay valid **C# 5** (see [development](development.md#working-on-the-audio-helper-without-windows)).
 
 ## Checklists for common changes

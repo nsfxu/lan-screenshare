@@ -34,6 +34,7 @@ npm run perf -- --viewers=2   # measure a streamer and viewers (see docs/en-US/t
 | Watching | `src/renderer/lib/subscription.ts`, `src/renderer/lib/watches.ts` |
 | TCP fallback | `src/renderer/lib/tcpStream.ts` |
 | Quality maths (pure, tested) | `src/shared/quality.ts` |
+| UI text, translations | `src/shared/i18n/` (`en.ts` is the reference), `useT()` in `src/renderer/lib/i18n.tsx`, `mainT()` in `src/main/i18n.ts`; see [translations](docs/en-US/development.md#translations) |
 | UI | `src/renderer/App.tsx` (three columns), `src/renderer/components/` (`RoomsSidebar`, `RoomMembers`, `RoomView`, `RoomStage`, `RoomInfo`, `ChatPanel`), `src/renderer/styles.css`, layout helpers in `src/renderer/lib/layout.ts` |
 | Windows helpers (C#) | `native/win-audio-capture/Program.cs` (system audio), `native/win-cursor-watch/Program.cs` (games hiding the cursor) |
 | Measuring performance | `scripts/perf/`, `src/shared/perf.ts`, `src/shared/perfSummary.ts`, [`plans/performance.md`](plans/performance.md) |
@@ -48,10 +49,11 @@ npm run perf -- --viewers=2   # measure a streamer and viewers (see docs/en-US/t
 5. **The renderer is sandboxed.** It never imports Node modules; add IPC through `src/shared/ipc.ts` + preload + a handler that coerces its arguments.
 6. **The Windows helpers must remain C# 5** (they are compiled with the `csc.exe` that ships with Windows). No `$"..."`, `?.`, `nameof`, expression-bodied members or `out var`. Check with `mcs -langversion:5` on non-Windows machines.
 7. **Match the code style**: TypeScript strict, 2 spaces, single quotes, no semicolons, ~120 columns, comments that explain *why*.
-8. **Docs are bilingual.** When behaviour changes, update the matching page in both `docs/en-US/` and `docs/pt-BR/` (same file names). Keep the root READMEs short.
-9. **Keep changes scoped** to the task: don't bump the protocol, change defaults, or reformat unrelated files unless asked.
-10. **Never write secrets** (PINs, host tokens, resume tokens) to disk or logs.
-11. **User-visible changes get a line in `CHANGELOG.md`** under `## [Unreleased]`, written for users, in the same change. Never edit the version in `package.json` by hand: releases are prepared with `npm run release` (see [versions](docs/en-US/development.md#versions-and-the-changelog)).
+8. **The app is translated.** Never write user-visible text straight into a component or the main process: add a key to `src/shared/i18n/en.ts` and to every other language file (typecheck fails otherwise), and use `t()`. Keep placeholders the same in every language.
+9. **Docs are bilingual.** When behaviour changes, update the matching page in both `docs/en-US/` and `docs/pt-BR/` (same file names). Keep the root READMEs short.
+10. **Keep changes scoped** to the task: don't bump the protocol, change defaults, or reformat unrelated files unless asked.
+11. **Never write secrets** (PINs, host tokens, resume tokens) to disk or logs.
+12. **User-visible changes get a line in `CHANGELOG.md`** under `## [Unreleased]`, written for users, in the same change. Never edit the version in `package.json` by hand: releases are prepared with `npm run release` (see [versions](docs/en-US/development.md#versions-and-the-changelog)).
 
 ## Verifying your work
 
@@ -67,6 +69,7 @@ npm run perf -- --viewers=2   # measure a streamer and viewers (see docs/en-US/t
 - The host's own renderer connects to its server over `wss://127.0.0.1` with a host token; it is also a normal participant.
 - Your own stream is intentionally not rendered until the user clicks **Show**.
 - Per-stream volume and watch quality live in the renderer's `localStorage`, keyed by the streamer's name.
+- The end-to-end tests run the app in English (`--lang=en-US`) and find buttons by their English names.
 
 ## Commits
 

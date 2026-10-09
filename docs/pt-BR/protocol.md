@@ -171,6 +171,20 @@ Mensagens exclusivas do anfitrião enviadas por outra pessoa recebem o erro não
 
 Um `Participant` (em `participants` e `welcome`) contém: `id`, `name`, `role` (`host` ou `viewer`), `color`, `joinedAt`, `status` (`connected` ou `reconnecting`), `slot` (0–255, usado no repasse TCP), `stream` (`{paused, audio, startedAt}` ou `null`) `watching` (ids das transmissões que essa pessoa assiste) e `appVersion` (a versão do app dela, quando o app a envia).
 
+### Linhas do chat
+
+Uma `ChatMessage` (no `chat` e no `welcome.history`) tem `id`, `userId`, `name`, `color`, `text` e `ts`. Os avisos da própria sala ("Bob joined") também têm `system: true` e, a partir do 2.4.0, um `event` dizendo do que se trata, para cada app dizê-los no próprio idioma:
+
+| `event.kind` | Outros campos | `text` em inglês |
+|---|---|---|
+| `joined`, `left` | `name` | *Bob joined*, *Bob left* |
+| `removed` | `name` | *Bob was removed by the host* |
+| `started-sharing`, `stopped-sharing` | `name` | *Bob started sharing their screen*, *Bob stopped sharing* |
+| `stream-stopped` | `name` | *The host stopped Bob's stream* |
+| `chat-muted`, `chat-unmuted` | | *The host muted the chat*, *The host unmuted the chat* |
+
+O `text` continua indo, em inglês, para os apps anteriores ao 2.4.0, que ignoram o `event`; os apps mostram o `text` quando não conhecem o tipo. Só o servidor escreve avisos da sala. Um tipo novo não exige mudar o protocolo.
+
 ## Assistir uma transmissão (WebRTC)
 
 **Quem transmite cria a oferta**, o espectador responde. O servidor só repassa entre o par.
@@ -261,6 +275,8 @@ Contrapressão: quando o socket de um espectador tem mais de **2 MB** na fila, o
 | `chat_muted` | Não | O anfitrião silenciou o chat |
 | `rate_limited` | Não | Mais de 5 mensagens de chat em um segundo |
 | `not_sharing` | Não | Tentou assistir alguém que não está compartilhando |
+
+Os apps mostram os erros no próprio idioma pelo `code`; o `message` vem em inglês, para os apps antigos e para os casos que o código não distingue (`bad_request`, `version_mismatch`).
 
 ## Limites e tempos
 

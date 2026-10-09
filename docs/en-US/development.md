@@ -13,6 +13,7 @@ How to set up the project, run it, debug it and build installers.
 - [How the build works](#how-the-build-works)
 - [Debugging](#debugging)
 - [Building installers](#building-installers)
+- [Translations](#translations)
 - [Versions and the changelog](#versions-and-the-changelog)
 - [Releasing](#releasing)
 - [Tech stack](#tech-stack)
@@ -156,6 +157,28 @@ npm run dist:mac
 
 This produces two disk images: `ScreenShare-<version>-arm64.dmg` for Apple Silicon and `ScreenShare-<version>-x64.dmg` for Intel Macs. Without a certificate, `electron-builder.json` signs the app ad hoc (`mac.identity` `"-"`, hardened runtime off): an app with no valid signature is reported as "damaged" on Apple Silicon once it has been downloaded, with no way to open it. An ad-hoc signature turns that into the usual "can't verify the developer" warning, which **Open Anyway** gets past. Removing the warning needs an Apple Developer ID certificate for signing and notarisation (set `mac.identity` to it and turn the hardened runtime back on); see electron-builder's documentation. The macOS build hasn't been tested much yet.
 
+## Translations
+
+The app's text is in [`src/shared/i18n/`](../../src/shared/i18n/): `en.ts` is the reference (every key, in English) and each other language is a file with the same keys (`pt-BR.ts`). The main process and the page both use it.
+
+- **In a component**: `const { t } = useT()` (`src/renderer/lib/i18n.tsx`), then `t('room.leave')`. The component re-renders when the language changes. Placeholders are typed: `t('room.pausedBy', { name })` won't compile without `name`.
+- **Outside components** (page code): `t()` from the same module. **In the main process**: `mainT()` (`src/main/i18n.ts`), for the errors and names it sends to the page.
+- **Plurals**: a key can have forms by count, `{ one: '{count} viewer', other: '{count} viewers' }`, chosen with the language's own rules (`Intl.PluralRules`). Pass `count`.
+- **A name in bold inside a sentence**: `rich('room.pausedBy', { name: <strong>{name}</strong> })` keeps the sentence in one piece for translators.
+- **Numbers, times**: `number(n, digits)` and `time(ts)` from `useT()` write them the language's way (Portuguese: `1,5 Mbps`).
+- **The room's lines in the chat** ("Bob joined") are sent with an `event` (see [chat lines](protocol.md#chat-lines)) and said by each app in its own language; the English `text` stays for older apps.
+
+**Adding a text**: add the key to `en.ts` and to every other language file. `npm run typecheck` lists any language missing it, and a unit test checks that every language uses the same placeholders.
+
+**Adding a language**:
+
+1. Copy `src/shared/i18n/pt-BR.ts` to the new language's tag (for example `es.ts`), translate it, and keep the keys and `{placeholders}` as they are.
+2. Add it to `LANGUAGES` in `src/shared/i18n/index.ts`, with its name in its own words (`Español`) and its Chromium locale.
+3. Add that locale to `electronLanguages` in `electron-builder.json` (both entries), so the installers carry Chromium's files for it.
+4. Mention it in the user guide's language section, in both languages.
+
+Settings → Appearance → Language lists it by itself, and "Same as the computer" picks it for computers in that language. The end-to-end tests run in English (`--lang=en-US` in `e2e/fixtures.ts`); `e2e/language.spec.ts` checks switching languages.
+
 ## Versions and the changelog
 
 ScreenShare follows [Semantic Versioning](https://semver.org/), where "breaking" means *can't share a room*:
@@ -200,7 +223,7 @@ Running the workflow without a version is a dry run: it builds, lists what would
 
 Each system gets one installer per processor type: `-x64` (most Windows PCs, Intel Macs) and `-arm64` (Windows on ARM, Apple Silicon Macs).
 
-To keep the installers small, they only include Chromium's English and Portuguese language files (`electronLanguages` in `electron-builder.json`). On a computer set to another language, Chromium's own text and the chat's time format fall back to US English. Add the language there if the app gets translated.
+To keep the installers small, they only include Chromium's English and Portuguese language files (`electronLanguages` in `electron-builder.json`). On a computer set to another language, the few texts Chromium draws itself fall back to US English (the app's own text follows [Translations](#translations)). A new language gets its line there too.
 
 The installers are not code-signed yet: Windows shows a SmartScreen warning (*More info → Run anyway*) and macOS blocks the first launch until you click **Open Anyway** in *System Settings → Privacy & Security* (the macOS installers are signed ad hoc, see [building installers](#building-installers)).
 
