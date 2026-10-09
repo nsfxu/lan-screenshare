@@ -98,6 +98,8 @@ On Windows 10 (and 11 before 24H2), sharing a whole screen shows the cursor even
 
 ## macOS permissions
 
+- **"Apple could not verify ScreenShare is free of malware"** on the first launch: the app is signed but not notarised. Click **Done**, then *System Settings → Privacy & Security* → **Open Anyway**, and confirm.
+- **"ScreenShare is damaged and can't be opened"**: older installers (and builds made without a signature) have no valid signature. Download the current version, or run `xattr -dr com.apple.quarantine /Applications/ScreenShare.app` in Terminal and open it again.
 - **Screen Recording**: *System Settings → Privacy & Security → Screen Recording* → enable ScreenShare, then restart the app. The source picker shows a button that opens this page when permission is missing.
 - **Local Network**: allow it when asked, or rooms won't be found.
 

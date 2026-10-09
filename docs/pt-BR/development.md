@@ -154,7 +154,7 @@ Gera `release/<versão>/ScreenShare-Setup-<versão>-<arch>.exe`: um instalador N
 npm run dist:mac
 ```
 
-Gera duas imagens de disco: `ScreenShare-<versão>-arm64.dmg` para Apple Silicon e `ScreenShare-<versão>-x64.dmg` para Macs Intel. Para distribuir para outros Macs é preciso um certificado Apple Developer ID para assinar e notarizar; veja a documentação do electron-builder. O build de macOS ainda não foi testado.
+Gera duas imagens de disco: `ScreenShare-<versão>-arm64.dmg` para Apple Silicon e `ScreenShare-<versão>-x64.dmg` para Macs Intel. Sem certificado, o `electron-builder.json` assina o app ad hoc (`mac.identity` `"-"`, hardened runtime desligado): um app sem assinatura válida aparece como "danificado" no Apple Silicon depois de baixado, sem nenhum jeito de abrir. Uma assinatura ad hoc transforma isso no aviso de sempre, "não é possível verificar o desenvolvedor", que **Abrir Mesmo Assim** resolve. Para tirar o aviso é preciso um certificado Apple Developer ID para assinar e notarizar (coloque-o em `mac.identity` e ligue de novo o hardened runtime); veja a documentação do electron-builder. O build de macOS ainda foi pouco testado.
 
 ## Versões e o changelog
 
@@ -202,7 +202,7 @@ Cada sistema tem um instalador por tipo de processador: `-x64` (a maioria dos PC
 
 Para os instaladores ficarem menores, eles só levam os arquivos de idioma do Chromium em inglês e português (`electronLanguages` no `electron-builder.json`). Num computador configurado em outro idioma, os textos do próprio Chromium e o formato da hora no chat voltam para o inglês dos EUA. Adicione o idioma ali se o app for traduzido.
 
-Os instaladores ainda não são assinados: o Windows mostra um aviso do SmartScreen (*Mais informações → Executar assim mesmo*) e o macOS bloqueia a primeira abertura (clique com o botão direito no app → *Abrir*).
+Os instaladores ainda não são assinados: o Windows mostra um aviso do SmartScreen (*Mais informações → Executar assim mesmo*) e o macOS bloqueia a primeira abertura até você clicar em **Abrir Mesmo Assim** em *Ajustes do Sistema → Privacidade e Segurança* (os instaladores de macOS têm assinatura ad hoc, veja [gerando instaladores](#gerando-instaladores)).
 
 ## Tecnologias
 

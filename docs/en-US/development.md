@@ -154,7 +154,7 @@ This produces `release/<version>/ScreenShare-Setup-<version>-<arch>.exe`: an NSI
 npm run dist:mac
 ```
 
-This produces two disk images: `ScreenShare-<version>-arm64.dmg` for Apple Silicon and `ScreenShare-<version>-x64.dmg` for Intel Macs. Distributing it to other Macs needs an Apple Developer ID certificate for signing and notarisation; see electron-builder's documentation. The macOS build hasn't been tested yet.
+This produces two disk images: `ScreenShare-<version>-arm64.dmg` for Apple Silicon and `ScreenShare-<version>-x64.dmg` for Intel Macs. Without a certificate, `electron-builder.json` signs the app ad hoc (`mac.identity` `"-"`, hardened runtime off): an app with no valid signature is reported as "damaged" on Apple Silicon once it has been downloaded, with no way to open it. An ad-hoc signature turns that into the usual "can't verify the developer" warning, which **Open Anyway** gets past. Removing the warning needs an Apple Developer ID certificate for signing and notarisation (set `mac.identity` to it and turn the hardened runtime back on); see electron-builder's documentation. The macOS build hasn't been tested much yet.
 
 ## Versions and the changelog
 
@@ -202,7 +202,7 @@ Each system gets one installer per processor type: `-x64` (most Windows PCs, Int
 
 To keep the installers small, they only include Chromium's English and Portuguese language files (`electronLanguages` in `electron-builder.json`). On a computer set to another language, Chromium's own text and the chat's time format fall back to US English. Add the language there if the app gets translated.
 
-The installers are not code-signed yet: Windows shows a SmartScreen warning (*More info → Run anyway*) and macOS blocks the first launch (right-click the app → *Open*).
+The installers are not code-signed yet: Windows shows a SmartScreen warning (*More info → Run anyway*) and macOS blocks the first launch until you click **Open Anyway** in *System Settings → Privacy & Security* (the macOS installers are signed ad hoc, see [building installers](#building-installers)).
 
 ## Tech stack
 

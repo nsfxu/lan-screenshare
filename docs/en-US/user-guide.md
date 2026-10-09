@@ -25,7 +25,7 @@ Everything you can do in ScreenShare, from finding a room to fine-tuning quality
 - **Computers**: Windows 10/11 or macOS. System audio on macOS needs macOS 13 or newer. Leaving Discord out of the audio needs Windows 10 version 2004 or newer.
 - **Network**: everyone must be on the same local network or VPN. Nothing goes over the internet (apart from the update check) and there are no accounts.
 - **Compatible versions**: 1.x and 2.x apps can share a room (2.0.0 changed the look, not how apps talk to each other). Only a version that changes the room protocol, such as a future 3.0.0, needs everyone to update; the room list then says who has to, e.g. "This room runs ScreenShare 3.0.0, you have 2.0.0: update to join". When someone in your room runs a newer version, you get a one-time suggestion to update.
-- **macOS**: the first time you share, macOS asks for **Screen Recording** permission, and it may ask for **Local Network** access. Allow both, then restart the app if asked.
+- **macOS**: the app isn't notarised by Apple, so the first time you open it macOS says it can't verify it. Click **Done**, then **Open Anyway** in *System Settings → Privacy & Security* (on macOS 14 and older, right-click the app → **Open** also works). The first time you share, macOS asks for **Screen Recording** permission, and it may ask for **Local Network** access. Allow both, then restart the app if asked.
 
 ```mermaid
 flowchart LR
