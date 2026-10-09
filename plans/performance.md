@@ -10,6 +10,22 @@ A plan for the performance work on ScreenShare, written for an AI agent (or a pe
 
 Every task below says which part is whose, what to build, how to verify it, and when it's done.
 
+## Status
+
+Update this table when a task's pull request merges or results come back.
+
+| Task | Status | Where |
+|---|---|---|
+| 0. Measuring tool | **Done** (2.2.1): `npm run perf`, `--perf-log`, `--perf-view-height`, plus keyframe counters, `--source=fake-detailed` and `--hint` | #28, #29 |
+| 1. Encoder limit | **Done for NVIDIA RTX 4070**: hardware encoders for all 9 viewers, the most a room holds (`MAX_USERS` = 10 with the streamer). Intel and AMD graphics not measured. | "Encoder capacity" in `docs/*/media-pipeline.md` |
+| 2. Latency | **Partly done**: 31–35 ms p50 on a wired LAN (PC → PC and PC → Mac). It found a freeze at every keyframe (~52 s), fixed by pacing keyframes 10× faster (2.2.1). Not done: runs over Wi-Fi and ZeroTier; "Smoother playback" not built (no freezes left to justify it). | #29, "Keyframes without freezes" in `docs/*/media-pipeline.md` |
+| 3. Faster capture | Not started | |
+| 4. Encoders running out | **Not needed on the measured card** (Task 1 never reached the limit). Revisit only if Intel/AMD graphics or a Mac streamer run out. | |
+| 5. 120/144 fps | Not started | |
+| 6. No video for hidden TCP viewers | Not started | |
+
+Also seen, not yet a task: a few short freezes in the first ~15 s after a viewer starts watching (Mac viewer, 2.2.1).
+
 ---
 
 ## Ground rules
