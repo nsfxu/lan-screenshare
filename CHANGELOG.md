@@ -10,6 +10,8 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-10-09
+
 ### Changed
 
 - **Minimized viewers on the slower TCP connection cost nothing**, as on the normal connection: while you can't see a stream, the host's computer stops sending you its video (you still hear it), and the streamer stops encoding it when nobody on TCP is looking. It comes back within a second when you look again.
@@ -139,7 +141,8 @@ The first release.
 - Reconnects after short network drops, and switches to TCP when a network blocks WebRTC.
 - Encrypted connections, the PIN kept only in memory, and the window hidden from screenshots while you watch.
 
-[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.4.0...HEAD
+[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.2.1...v2.3.0
 [2.2.1]: https://github.com/nsfxu/lan-screenshare/compare/v2.2.0...v2.2.1

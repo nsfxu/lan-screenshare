@@ -42,6 +42,15 @@ app.commandLine.appendSwitch('disable-features', 'WebRtcHideLocalIpsWithMdns,Cal
 // macOS 13+), which Chromium keeps behind feature flags.
 const enabledFeatures = ['WebRtcAllowH265Send', 'WebRtcAllowH265Receive']
 if (process.platform === 'darwin') enabledFeatures.push('MacLoopbackAudioForScreenShare', 'MacSckSystemAudioLoopbackOverride')
+// `--capture-experiment` (off by default, for measuring with `npm run perf`): fewer copies of each captured frame.
+// ZeroCopyDesktopCapture (all platforms) writes screen frames straight into the capture buffer; on Windows,
+// WebRtcAllowWgcUsingTexture keeps Windows Graphics Capture frames on the GPU (WGC captures windows, and screens
+// only from Windows 11 24H2). Both exist, off by default, in Chromium 152 (media/base/media_switches.cc,
+// media/webrtc/webrtc_features.cc).
+if (process.argv.includes('--capture-experiment')) {
+  enabledFeatures.push('ZeroCopyDesktopCapture')
+  if (process.platform === 'win32') enabledFeatures.push('WebRtcAllowWgcUsingTexture')
+}
 app.commandLine.appendSwitch('enable-features', enabledFeatures.join(','))
 // Send big frames faster. WebRTC sends a keyframe every 3000 frames on its own (~50 s at 60 fps) and paces
 // packets at only 1.0x (screen content) or 1.1x (video) its target bitrate, so a keyframe of a detailed 1080p
