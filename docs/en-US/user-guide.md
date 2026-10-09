@@ -25,7 +25,7 @@ Everything you can do in ScreenShare, from finding a room to fine-tuning quality
 - **Computers**: Windows 10/11 or macOS. System audio on macOS needs macOS 13 or newer. Leaving Discord out of the audio needs Windows 10 version 2004 or newer.
 - **Network**: everyone must be on the same local network or VPN. Nothing goes over the internet (apart from the update check) and there are no accounts.
 - **Compatible versions**: 1.x and 2.x apps can share a room (2.0.0 changed the look, not how apps talk to each other). Only a version that changes the room protocol, such as a future 3.0.0, needs everyone to update; the room list then says who has to, e.g. "This room runs ScreenShare 3.0.0, you have 2.0.0: update to join". When someone in your room runs a newer version, you get a one-time suggestion to update.
-- **macOS**: the first time you share, macOS asks for **Screen Recording** permission, and it may ask for **Local Network** access. Allow both, then restart the app if asked.
+- **macOS**: the first time you open the app, macOS blocks it until you allow it once; see [opening it for the first time on macOS](#opening-it-for-the-first-time-on-macos). The first time you share, macOS asks for **Screen Recording** permission, and it may ask for **Local Network** access. Allow both, then restart the app if asked.
 
 ```mermaid
 flowchart LR
@@ -36,6 +36,17 @@ flowchart LR
   C --> G["Watch streams, chat, share your own screen"]
   F --> G
 ```
+
+### Opening it for the first time on macOS
+
+ScreenShare isn't notarised by Apple yet, so macOS stops it the first time with the message *Apple could not verify "ScreenShare" is free of malware*. Clicking **Done** only closes that message; the app stays blocked until you allow it:
+
+1. Drag ScreenShare from the disk image into **Applications** and open it from there (not from the disk image window).
+2. When the message appears, click **Done**.
+3. Open *System Settings → Privacy & Security* and scroll down to **Security**. It says ScreenShare was blocked; click **Open Anyway** next to it. The button only shows for about an hour after you tried to open the app: if it isn't there, open ScreenShare again, click **Done**, and come back.
+4. Enter your password or use Touch ID. ScreenShare opens (if macOS asks once more, click **Open Anyway** or **Open**).
+
+You only do this once per version you download; afterwards ScreenShare opens normally. On macOS 14 and older, right-clicking the app → **Open** → **Open** also works.
 
 ## Your name and picture
 

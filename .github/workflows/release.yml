@@ -107,9 +107,9 @@ jobs:
     runs-on: macos-latest
     # The macOS build is still untested; it must not block a release.
     continue-on-error: true
-    env:
-      # No signing certificate yet: build unsigned.
-      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    # No Developer ID certificate yet: electron-builder.json signs ad hoc
+    # (mac.identity "-"). Without a valid signature, Apple Silicon Macs call a
+    # downloaded app "damaged" and offer no way to open it.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

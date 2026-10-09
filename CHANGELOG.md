@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Fixed
+
+- **macOS**: the downloaded app no longer says it is "damaged and can't be opened". The first launch now shows macOS's usual "can't verify" warning instead; click **Done**, then **Open Anyway** in *System Settings → Privacy & Security*, and enter your password ([step by step](docs/en-US/user-guide.md#opening-it-for-the-first-time-on-macos)).
+
 ## [2.3.0] - 2026-10-08
 
 ### Changed
