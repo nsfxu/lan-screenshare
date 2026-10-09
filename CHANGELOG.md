@@ -10,6 +10,8 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-10-09
+
 ### Added
 
 - **ScreenShare speaks Portuguese.** The app opens in your computer's language (Portuguese or English), and **Settings → Appearance → Language** picks one for good. It changes at once, no restart. Everyone in a room sees it in their own language, the room's messages in the chat included ("Bob joined" is "Bob entrou" for a friend in Portuguese).
@@ -129,7 +131,8 @@ The first release.
 - Reconnects after short network drops, and switches to TCP when a network blocks WebRTC.
 - Encrypted connections, the PIN kept only in memory, and the window hidden from screenshots while you watch.
 
-[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.3.0...HEAD
+[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.4.0...HEAD
+[2.4.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.2.1...v2.3.0
 [2.2.1]: https://github.com/nsfxu/lan-screenshare/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.1.0...v2.2.0
