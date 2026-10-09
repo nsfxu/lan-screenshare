@@ -4,7 +4,7 @@ import path from 'node:path'
 import { DEFAULT_PORT, NAME_MAX_LENGTH } from '../shared/constants'
 import { isLanguageSetting } from '../shared/i18n'
 import { isAvatar } from '../shared/images'
-import { QUALITY_PRESETS } from '../shared/quality'
+import { qualityPresets } from '../shared/quality'
 import { RECENT_ROOMS_MAX } from '../shared/roomList'
 import { DEFAULT_THEME, isThemeId } from '../shared/themes'
 import type { RoomEndpoint, Settings } from '../shared/types'
@@ -61,17 +61,25 @@ function defaults(): Settings {
   }
 }
 
+export interface SettingsOptions {
+  /** Accept the experimental 1080p @ 120 fps maximum quality (`--perf-high-fps`). */
+  highFps: boolean
+}
+
 /** Settings persisted as JSON in the user-data directory. */
 export class SettingsStore {
   private data: Settings
   private readonly file: string
 
-  constructor(dir: string) {
+  constructor(
+    dir: string,
+    private readonly options: SettingsOptions = { highFps: false }
+  ) {
     this.file = path.join(dir, 'settings.json')
     const base = defaults()
     try {
       const raw = JSON.parse(fs.readFileSync(this.file, 'utf8')) as Partial<Settings>
-      this.data = sanitize({ ...base, ...migrate(raw) }, base)
+      this.data = sanitize({ ...base, ...migrate(raw) }, base, this.options)
       if (raw.settingsVersion !== SETTINGS_VERSION) this.save()
     } catch {
       this.data = base
@@ -84,7 +92,7 @@ export class SettingsStore {
   }
 
   update(patch: Partial<Settings>): Settings {
-    const next = sanitize({ ...this.data, ...patch }, this.data)
+    const next = sanitize({ ...this.data, ...patch }, this.data, this.options)
     // The client id identifies this install to rooms; it is never changed by the UI.
     next.clientId = this.data.clientId
     this.data = next
@@ -102,10 +110,10 @@ export class SettingsStore {
   }
 }
 
-function sanitize(s: Settings, fallback: Settings): Settings {
+function sanitize(s: Settings, fallback: Settings, options: SettingsOptions): Settings {
   const out = { ...s }
   out.displayName = String(s.displayName ?? '').trim().slice(0, NAME_MAX_LENGTH) || fallback.displayName
-  if (!QUALITY_PRESETS.some((p) => p.id === s.maxQuality)) out.maxQuality = fallback.maxQuality
+  if (!qualityPresets(options.highFps).some((p) => p.id === s.maxQuality)) out.maxQuality = fallback.maxQuality
   if (!['auto', 'h264', 'h265', 'vp9', 'av1'].includes(s.codec)) out.codec = fallback.codec
   if (!['auto', 'motion', 'detail'].includes(s.contentHint)) out.contentHint = fallback.contentHint
   out.settingsVersion = SETTINGS_VERSION

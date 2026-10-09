@@ -9,12 +9,15 @@ export interface PerfOptions {
   logFile: string | null
   /** `--perf-view-height=<px>`: report this height for every watched stream instead of the tile's. */
   viewHeight: number | null
+  /** `--perf-high-fps` (experiment): offer the 1080p @ 120 fps preset (HIGH_FPS_PRESET). */
+  highFps: boolean
 }
 
 /** The part of PerfOptions the renderer needs (it never sees the file path). */
 export interface PerfRendererOptions {
   logging: boolean
   viewHeight: number | null
+  highFps: boolean
 }
 
 /** Same range the server accepts in `view-size`. */
@@ -30,7 +33,7 @@ export function parsePerfArgs(argv: readonly string[]): PerfOptions {
   const height = Number(value('perf-view-height'))
   const viewHeight =
     Number.isInteger(height) && height >= VIEW_HEIGHT_MIN && height <= VIEW_HEIGHT_MAX ? height : null
-  return { logFile, viewHeight }
+  return { logFile, viewHeight, highFps: argv.includes('--perf-high-fps') }
 }
 
 /** Cumulative counters from the sender's getStats, to see what happens around a freeze. */
@@ -90,6 +93,8 @@ export interface PerfStreamerSample {
   kind: 'streamer'
   /** Wall clock, ms since 1970: the instances of one run share the computer's clock. */
   t: number
+  /** The frame rate the capture track runs at (its settings), when known. */
+  captureFps?: number | null
   watchers: PerfSenderRow[]
   system: SystemStats
 }

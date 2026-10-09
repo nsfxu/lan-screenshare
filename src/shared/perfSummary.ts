@@ -70,6 +70,8 @@ export interface StreamerSummary {
   encodeMs: Percentiles | null
   /** What the streamer sent, frames per second, over every watcher's connection. */
   sentFps: Percentiles | null
+  /** What the capture track runs at (its settings), which caps everything after it. */
+  captureFps: Percentiles | null
 }
 
 export interface PerfSummary {
@@ -129,7 +131,8 @@ export function summarize(logs: readonly PerfLog[], from = -Infinity, to = Infin
       appCpu: percentiles(own.map((s) => s.system.cpuPercent)),
       computerCpu: percentiles(numbers(own.map((s) => s.system.computerCpuPercent))),
       encodeMs: percentiles(numbers(rows.map((r) => r.encodeMs))),
-      sentFps: percentiles(numbers(rows.map((r) => r.fps)))
+      sentFps: percentiles(numbers(rows.map((r) => r.fps))),
+      captureFps: percentiles(numbers(own.map((s) => s.captureFps ?? null)))
     })
   }
 
@@ -199,12 +202,12 @@ export function summaryMarkdown(summary: PerfSummary, title: string): string {
     )
   }
   lines.push('', '## Streamers', '')
-  lines.push('| Streamer | App CPU p50 | App CPU p95 | Computer CPU p50 | Computer CPU p95 | Encode p50 | Encode p95 | Sent fps p50 |')
-  lines.push('|---|---|---|---|---|---|---|---|')
+  lines.push('| Streamer | App CPU p50 | App CPU p95 | Computer CPU p50 | Computer CPU p95 | Encode p50 | Encode p95 | Sent fps p50 | Capture fps |')
+  lines.push('|---|---|---|---|---|---|---|---|---|')
   for (const s of summary.streamers) {
     lines.push(
       `| ${s.instance} | ${fmt(s.appCpu?.p50)} % | ${fmt(s.appCpu?.p95)} % | ${fmt(s.computerCpu?.p50)} % | ` +
-        `${fmt(s.computerCpu?.p95)} % | ${fmt(s.encodeMs?.p50, 1)} ms | ${fmt(s.encodeMs?.p95, 1)} ms | ${fmt(s.sentFps?.p50)} |`
+        `${fmt(s.computerCpu?.p95)} % | ${fmt(s.encodeMs?.p50, 1)} ms | ${fmt(s.encodeMs?.p95, 1)} ms | ${fmt(s.sentFps?.p50)} | ${fmt(s.captureFps?.p50)} |`
     )
   }
   lines.push('')

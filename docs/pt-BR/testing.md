@@ -234,7 +234,7 @@ npm run perf -- --viewers=2 --source=fake       # o canvas animado dos testes e2
 | `--seconds=<s>` | Quanto tempo medir (padrão 60), depois de `--warmup=<s>` (padrão 15). |
 | `--source=screen\|fake\|fake-detailed` | Compartilhar a primeira tela de verdade (padrão no Windows e no macOS) ou um canvas animado em 1080p60 (padrão no Linux). `fake-detailed` cobre o canvas de texto parado, como uma área de trabalho: quadros-chave grandes, quadros pequenos entre eles. |
 | `--hint=auto\|detail\|motion` | O **Optimize for** do streamer: `detail` (texto, uma área de trabalho) vai como conteúdo de tela e `motion` (jogos) como vídeo, que o WebRTC cadencia de jeitos diferentes. Padrão: a configuração do app (Automático). |
-| `--quality=<preset>` | A qualidade máxima do streamer: `native60`, `1080p60`, `720p60`, `720p30` ou `480p30`. |
+| `--quality=<preset>` | A qualidade máxima do streamer: `native60`, `1080p60`, `720p60`, `720p30` ou `480p30`, ou a experimental `1080p120` (o script então adiciona `--perf-high-fps`). |
 | `--view-height=<px>` | Os espectadores pedem essa altura em vez da do bloco deles, para que uma dúzia de janelas pequenas num computador ainda peça 1080p. |
 | `--host-only` | Só o streamer: mostra o endereço e espera (até 10 minutos) um espectador de outro computador. |
 | `--join=<endereço:porta>` | Só espectadores, entrando numa sala hospedada em outro computador. |
@@ -256,6 +256,15 @@ Para mandar os resultados, anexe a pasta (ou pelo menos `summary.md` e `run.json
 - `--perf-view-height=<px>`: a altura forçada acima.
 
 O resumo é calculado por funções puras em `src/shared/perfSummary.ts` (testadas em `tests/perf.test.ts`).
+
+**Experimento de 120 fps** (`--perf-high-fps`, desligado por padrão): oferece a qualidade máxima **1080p @ 120 fps** (25 Mbps) em Settings e no menu de qualidade da sala, e baixar a partir dela vai para 1080p @ 60 fps. Com um jogo em 120/144 Hz numa rede cabeada, e o espectador num segundo PC com monitor de alta taxa de atualização:
+
+```bash
+npm run perf -- --host-only --quality=1080p120 --seconds=90        # no PC que transmite
+npm run perf -- --join=<endereço>:47800 --viewers=1 --view-height=1080 --seconds=90   # no PC do espectador
+```
+
+Confira três números: o **Capture fps** do streamer (o que a captura entrega), o **Sent fps** dele, e a linha do espectador em "Displayed by the viewers' video elements" (quadros realmente exibidos). O preset só entra se os três ficarem em 110 ou mais.
 
 Numa máquina Linux sem placa de vídeo tudo é codificado em software, e o Chromium pode deixar em branco os nomes do codificador e do decodificador (o resumo diz então "without a known encoder"): use essas execuções para conferir a ferramenta, não para medir.
 

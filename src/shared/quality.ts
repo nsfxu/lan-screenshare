@@ -8,7 +8,7 @@ import type { ContentHint, CursorWatchState } from './types'
  * by both the WebRTC path (per viewer) and the TCP fallback encoder (shared).
  */
 
-export type QualityPresetId = 'native60' | '1080p60' | '720p60' | '720p30' | '480p30'
+export type QualityPresetId = '1080p120' | 'native60' | '1080p60' | '720p60' | '720p30' | '480p30'
 
 export interface QualityPreset {
   id: QualityPresetId
@@ -28,18 +28,39 @@ export const QUALITY_PRESETS: readonly QualityPreset[] = [
   { id: '480p30', label: '480p @ 30 fps', height: 480, fps: 30, maxBitrate: 2_500_000 }
 ]
 
+/**
+ * Experiment (`--perf-high-fps`, see plans/performance.md Task 5): 120 fps for high-refresh games on a wired
+ * network. Only offered when the app was started with that switch. Below it comes 1080p60, not Native (which can
+ * be a bigger picture than 1080p).
+ */
+export const HIGH_FPS_PRESET: QualityPreset = {
+  id: '1080p120',
+  label: '1080p @ 120 fps',
+  height: 1080,
+  fps: 120,
+  maxBitrate: 25_000_000
+}
+
+/** The presets a streamer can choose from, best first. */
+export function qualityPresets(highFps: boolean): readonly QualityPreset[] {
+  return highFps ? [HIGH_FPS_PRESET, ...QUALITY_PRESETS] : QUALITY_PRESETS
+}
+
 export function getPreset(id: QualityPresetId): QualityPreset {
+  if (id === HIGH_FPS_PRESET.id) return HIGH_FPS_PRESET
   return QUALITY_PRESETS.find((p) => p.id === id) ?? QUALITY_PRESETS[1]
 }
 
 /** The next preset below `id`, or null at the bottom. */
 export function lowerPreset(id: QualityPresetId): QualityPreset | null {
+  if (id === HIGH_FPS_PRESET.id) return getPreset('1080p60')
   const i = QUALITY_PRESETS.findIndex((p) => p.id === id)
   return i >= 0 ? (QUALITY_PRESETS[i + 1] ?? null) : null
 }
 
 /** The presets the controller may use, starting at the user's maximum. */
 export function qualityLadder(max: QualityPresetId): QualityPreset[] {
+  if (max === HIGH_FPS_PRESET.id) return [HIGH_FPS_PRESET, ...qualityLadder('1080p60')]
   const start = QUALITY_PRESETS.findIndex((p) => p.id === max)
   return QUALITY_PRESETS.slice(start < 0 ? 1 : start)
 }
