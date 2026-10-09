@@ -1,7 +1,7 @@
 {
   "name": "lan-screenshare",
   "productName": "ScreenShare",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "LAN/VPN desktop screen sharing with rooms, PIN access control and chat",
   "main": "out/main/index.js",
   "author": "ScreenShare",

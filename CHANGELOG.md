@@ -10,6 +10,8 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-10-09
+
 ### Fixed
 
 - **macOS**: the downloaded app no longer says it is "damaged and can't be opened". The first launch now shows macOS's usual "can't verify" warning instead; click **Done**, then **Open Anyway** in *System Settings → Privacy & Security*, and enter your password ([step by step](docs/en-US/user-guide.md#opening-it-for-the-first-time-on-macos)).
@@ -124,7 +126,8 @@ The first release.
 - Reconnects after short network drops, and switches to TCP when a network blocks WebRTC.
 - Encrypted connections, the PIN kept only in memory, and the window hidden from screenshots while you watch.
 
-[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.3.0...HEAD
+[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.3.1...HEAD
+[2.3.1]: https://github.com/nsfxu/lan-screenshare/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.2.1...v2.3.0
 [2.2.1]: https://github.com/nsfxu/lan-screenshare/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.1.0...v2.2.0
