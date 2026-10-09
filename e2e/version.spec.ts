@@ -57,7 +57,7 @@ test('someone in the room runs a newer version: the others hear about it once', 
   // Bob's app says it is newer (same protocol, so he can still join).
   await bob.app.evaluate(({ ipcMain }, channel) => {
     ipcMain.removeHandler(channel)
-    ipcMain.handle(channel, () => ({ version: '9.9.0', platform: process.platform, logDir: '' }))
+    ipcMain.handle(channel, () => ({ version: '9.9.0', platform: process.platform, logDir: '', languages: ['en-US'] }))
   }, IPC.appInfo)
   // The app asks for its version once and keeps it: start Bob's window again to pick up the new one.
   await bob.win.reload()

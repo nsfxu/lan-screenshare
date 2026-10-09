@@ -13,18 +13,22 @@ import {
   type Point
 } from '../../shared/crop'
 import { QUALITY_PRESETS } from '../../shared/quality'
+import { qualityLabel } from '../lib/quality'
+import { LANGUAGES, type LanguageSetting } from '../../shared/i18n'
 import { THEMES } from '../../shared/themes'
 import type { AppInfo, AudioChoice, CodecSupport, DiscoveredRoom, Privacy, Settings } from '../../shared/types'
 import { shortCodecName } from '../lib/codecs'
 import { errorMessage } from '../lib/format'
 import { loadPicture, renderAvatar } from '../lib/images'
 import { useConfirmRequest } from '../lib/confirm'
+import { systemLanguage, useT } from '../lib/i18n'
 import { useUpdateStatus } from '../lib/update'
 import { Avatar } from './Avatar'
 import { Icon } from './Icon'
 import { SourcePicker } from './SourcePicker'
 
 export function Modal({ title, onClose, children, wide }: { title: string; onClose(): void; children: ReactNode; wide?: boolean }) {
+  const { t } = useT()
   const backdrop = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
@@ -41,7 +45,7 @@ export function Modal({ title, onClose, children, wide }: { title: string; onClo
       <div className={`modal ${wide ? 'wide' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
         <header className="modal-header">
           <h2>{title}</h2>
-          <button className="icon-btn" onClick={onClose} title="Close">
+          <button className="icon-btn" onClick={onClose} title={t('common.close')}>
             <Icon name="x" />
           </button>
         </header>
@@ -76,6 +80,7 @@ function AudioToggle({
   /** The chosen source: "Only this app's sound" applies to windows. */
   sourceId: string | null
 }) {
+  const { t } = useT()
   const [supported, setSupported] = useState<boolean | null>(null)
   const [platform, setPlatform] = useState('')
   useEffect(() => {
@@ -92,13 +97,11 @@ function AudioToggle({
       <label className="toggle-row">
         <div>
           <span>
-            <Icon name="volume" size={14} /> Share system audio
+            <Icon name="volume" size={14} /> {t('audio.share')}
           </span>
           <span className="muted small block">
-            {appOnly
-              ? 'Only the sound of the app you share.'
-              : 'Everything playing on this computer is shared, even when you pick a single window.'}
-            {platform === 'darwin' ? ' Requires macOS 13 or later.' : ''}
+            {appOnly ? t('audio.appOnlyHint') : t('audio.everythingHint')}
+            {platform === 'darwin' ? ` ${t('audio.macRequirement')}` : ''}
           </span>
         </div>
         <input type="checkbox" checked={value.enabled} onChange={(e) => set({ enabled: e.target.checked })} />
@@ -106,11 +109,8 @@ function AudioToggle({
       {windows && windowChosen && (
         <label className={`toggle-row nested ${value.enabled ? '' : 'disabled'}`}>
           <div>
-            <span>Only this app&apos;s sound</span>
-            <span className="muted small block">
-              Leaves out everything else, like Discord, music and notifications. Needs Windows 10 version 2004 or
-              newer.
-            </span>
+            <span>{t('audio.appOnly')}</span>
+            <span className="muted small block">{t('audio.appOnlyDetail')}</span>
           </div>
           <input
             type="checkbox"
@@ -123,11 +123,8 @@ function AudioToggle({
       {windows && !appOnly && (
         <label className={`toggle-row nested ${value.enabled ? '' : 'disabled'}`}>
           <div>
-            <span>Leave out Discord</span>
-            <span className="muted small block">
-              People in your Discord call won't hear themselves through your stream. Needs Windows 10 version 2004 or
-              newer.
-            </span>
+            <span>{t('audio.leaveOutDiscord')}</span>
+            <span className="muted small block">{t('audio.leaveOutDiscordDetail')}</span>
           </div>
           <input
             type="checkbox"
@@ -156,6 +153,7 @@ export function CreateRoomDialog({
   onCancel(): void
   onCreate(r: CreateRoomResult): void
 }) {
+  const { t } = useT()
   const [name, setName] = useState(defaultName)
   const [privacy, setPrivacy] = useState<Privacy>('public')
   const [pinLength, setPinLength] = useState(DEFAULT_PIN_LENGTH)
@@ -169,14 +167,14 @@ export function CreateRoomDialog({
   }
 
   return (
-    <Modal title="Create room" onClose={onCancel} wide>
+    <Modal title={t('common.createRoom')} onClose={onCancel} wide>
       <form className="modal-body" onSubmit={submit}>
         <div className="form-row">
-          <label htmlFor="room-name">Room name</label>
+          <label htmlFor="room-name">{t('create.roomName')}</label>
           <input id="room-name" autoFocus maxLength={48} value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div className="form-row">
-          <label>Access</label>
+          <label>{t('create.access')}</label>
           <div className="privacy-options">
             <button
               type="button"
@@ -184,8 +182,8 @@ export function CreateRoomDialog({
               onClick={() => setPrivacy('public')}
             >
               <Icon name="globe" size={18} />
-              <strong>Public</strong>
-              <span className="muted small">Anyone on the network can join</span>
+              <strong>{t('common.public')}</strong>
+              <span className="muted small">{t('create.publicHint')}</span>
             </button>
             <button
               type="button"
@@ -193,35 +191,35 @@ export function CreateRoomDialog({
               onClick={() => setPrivacy('private')}
             >
               <Icon name="lock" size={18} />
-              <strong>Private</strong>
-              <span className="muted small">Viewers need a PIN (generated for you)</span>
+              <strong>{t('common.private')}</strong>
+              <span className="muted small">{t('create.privateHint')}</span>
             </button>
           </div>
         </div>
         {privacy === 'private' && (
           <div className="form-row inline">
-            <label htmlFor="pin-length">PIN length</label>
+            <label htmlFor="pin-length">{t('create.pinLength')}</label>
             <select id="pin-length" value={pinLength} onChange={(e) => setPinLength(Number(e.target.value))}>
               {Array.from({ length: PIN_MAX_LENGTH - PIN_MIN_LENGTH + 1 }, (_, i) => PIN_MIN_LENGTH + i).map((n) => (
                 <option key={n} value={n}>
-                  {n} digits
+                  {t('create.digits', { count: n })}
                 </option>
               ))}
             </select>
           </div>
         )}
         <div className="form-row">
-          <label>What do you want to share?</label>
+          <label>{t('create.whatToShare')}</label>
           <SourcePicker selected={sourceId} onSelect={setSourceId} />
         </div>
         <AudioToggle value={audio} onChange={setAudio} sourceId={sourceId} />
         {error && <div className="notice error">{error}</div>}
         <footer className="modal-footer">
           <button type="button" className="btn ghost" onClick={onCancel}>
-            Cancel
+            {t('common.cancel')}
           </button>
           <button className="btn primary" disabled={!sourceId || busy}>
-            <Icon name="play" /> {busy ? 'Starting…' : 'Start sharing'}
+            <Icon name="play" /> {busy ? t('create.starting') : t('create.startSharing')}
           </button>
         </footer>
       </form>
@@ -242,23 +240,24 @@ export function ChangeSourceDialog({
   onCancel(): void
   onPick(id: string, audio: AudioChoice): void
 }) {
+  const { t } = useT()
   const [sourceId, setSourceId] = useState<string | null>(current)
   const [audio, setAudio] = useState(currentAudio)
   return (
-    <Modal title="Choose what to share" onClose={onCancel} wide>
+    <Modal title={t('source.title')} onClose={onCancel} wide>
       <div className="modal-body">
         <SourcePicker selected={sourceId} onSelect={setSourceId} />
         <AudioToggle value={audio} onChange={setAudio} sourceId={sourceId} />
         <footer className="modal-footer">
           <button className="btn ghost" onClick={onCancel}>
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             className="btn primary"
             disabled={!sourceId}
             onClick={() => sourceId && onPick(sourceId, audio)}
           >
-            Share
+            {t('source.share')}
           </button>
         </footer>
       </div>
@@ -268,16 +267,8 @@ export function ChangeSourceDialog({
 
 // ---------------------------------------------------------------------------
 
-const SETTINGS_SECTIONS = [
-  ['profile', 'Profile'],
-  ['appearance', 'Appearance'],
-  ['sharing', 'Sharing'],
-  ['notifications', 'Notifications'],
-  ['connection', 'Connection'],
-  ['advanced', 'Advanced'],
-  ['about', 'About']
-] as const
-type SettingsSection = (typeof SETTINGS_SECTIONS)[number][0]
+const SETTINGS_SECTIONS = ['profile', 'appearance', 'sharing', 'notifications', 'connection', 'advanced', 'about'] as const
+type SettingsSection = (typeof SETTINGS_SECTIONS)[number]
 
 export function SettingsPanel({
   settings,
@@ -294,6 +285,7 @@ export function SettingsPanel({
   onRestartToUpdate(): void
   onClose(): void
 }) {
+  const { t } = useT()
   const [info, setInfo] = useState<AppInfo | null>(null)
   const [avatarError, setAvatarError] = useState<string | null>(null)
   const [cropping, setCropping] = useState<{ picture: ImageBitmap; url: string } | null>(null)
@@ -345,7 +337,7 @@ export function SettingsPanel({
   const sectionTops = (): [SettingsSection, number][] => {
     const body = bodyRef.current
     if (!body) return []
-    return SETTINGS_SECTIONS.map(([id]) => {
+    return SETTINGS_SECTIONS.map((id) => {
       const el = body.querySelector<HTMLElement>(`[data-section="${id}"]`)
       return [id, el ? el.offsetTop - body.offsetTop : 0]
     })
@@ -376,32 +368,32 @@ export function SettingsPanel({
 
   return (
     <>
-      <Modal title="Settings" onClose={onClose} wide>
+      <Modal title={t('common.settings')} onClose={onClose} wide>
         <div className="settings-layout">
-          <nav className="settings-nav" aria-label="Settings sections">
-            {SETTINGS_SECTIONS.map(([id, label]) => (
+          <nav className="settings-nav" aria-label={t('settings.sections')}>
+            {SETTINGS_SECTIONS.map((id) => (
               <button
                 key={id}
                 className={active === id ? 'active' : ''}
                 aria-current={active === id ? 'true' : undefined}
                 onClick={() => jumpTo(id)}
               >
-                {label}
+                {t(`settings.${id}`)}
               </button>
             ))}
           </nav>
           <div className="modal-body settings" ref={bodyRef} onScroll={followScroll}>
             <section data-section="profile">
-              <h3>Profile</h3>
+              <h3>{t('settings.profile')}</h3>
               <div className="form-row inline">
                 <label>
-                  Profile picture
-                  <span className="muted small block">Shown to everyone in the room instead of your initials</span>
+                  {t('settings.picture')}
+                  <span className="muted small block">{t('settings.pictureHint')}</span>
                 </label>
                 <div className="avatar-picker">
                   <Avatar name={settings.displayName} color="var(--accent)" image={settings.avatar} size="large" />
                   <label className="btn small">
-                    {settings.avatar ? 'Change…' : 'Choose…'}
+                    {settings.avatar ? t('settings.pictureChange') : t('settings.pictureChoose')}
                     <input
                       type="file"
                       accept="image/png,image/jpeg,image/webp,image/gif,image/bmp"
@@ -414,14 +406,14 @@ export function SettingsPanel({
                   </label>
                   {settings.avatar && (
                     <button className="btn ghost small" onClick={() => onChange({ avatar: null })}>
-                      Remove
+                      {t('common.remove')}
                     </button>
                   )}
                 </div>
               </div>
               {avatarError && <div className="notice error">{avatarError}</div>}
               <div className="form-row inline">
-                <label htmlFor="display-name">Display name</label>
+                <label htmlFor="display-name">{t('settings.displayName')}</label>
                 <input
                   id="display-name"
                   maxLength={32}
@@ -432,36 +424,56 @@ export function SettingsPanel({
             </section>
 
             <section data-section="appearance">
-              <h3>Appearance</h3>
-              <div className="theme-picker" role="radiogroup" aria-label="Theme">
-                {THEMES.map((t) => (
+              <h3>{t('settings.appearance')}</h3>
+              <div className="form-row inline">
+                <label htmlFor="language">{t('settings.language')}</label>
+                <select
+                  id="language"
+                  value={settings.language}
+                  onChange={(e) => onChange({ language: e.target.value as LanguageSetting })}
+                >
+                  <option value="system">
+                    {t('settings.languageSystem', {
+                      language: LANGUAGES.find((l) => l.id === systemLanguage())?.name ?? ''
+                    })}
+                  </option>
+                  {LANGUAGES.map((l) => (
+                    // Each language in its own words, so anyone can find theirs.
+                    <option key={l.id} value={l.id} lang={l.id}>
+                      {l.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="theme-picker" role="radiogroup" aria-label={t('settings.theme')}>
+                {THEMES.map((theme) => (
                   <button
-                    key={t.id}
+                    key={theme.id}
                     type="button"
                     role="radio"
-                    aria-checked={settings.theme === t.id}
-                    className={`theme-option ${settings.theme === t.id ? 'selected' : ''}`}
-                    onClick={() => onChange({ theme: t.id })}
+                    aria-checked={settings.theme === theme.id}
+                    className={`theme-option ${settings.theme === theme.id ? 'selected' : ''}`}
+                    onClick={() => onChange({ theme: theme.id })}
                   >
                     <span className="theme-preview" aria-hidden="true">
-                      {t.swatches.map((c, i) => (
+                      {theme.swatches.map((c, i) => (
                         <span key={i} style={{ background: c }} />
                       ))}
                     </span>
-                    <span className="theme-label">{t.label}</span>
-                    <span className="muted small">{t.description}</span>
+                    <span className="theme-label">{t(`theme.${theme.id}`)}</span>
+                    <span className="muted small">{t(`theme.${theme.id}.description`)}</span>
                   </button>
                 ))}
               </div>
-              {toggle('showStatsOverlay', 'Show FPS and latency on streams')}
+              {toggle('showStatsOverlay', t('settings.showStats'))}
             </section>
 
             <section data-section="sharing">
-              <h3>Sharing</h3>
+              <h3>{t('settings.sharing')}</h3>
               <div className="form-row inline">
                 <label htmlFor="max-quality">
-                  Maximum quality
-                  <span className="muted small block">Applies immediately, also while sharing</span>
+                  {t('settings.maxQuality')}
+                  <span className="muted small block">{t('settings.maxQualityHint')}</span>
                 </label>
                 <select
                   id="max-quality"
@@ -470,69 +482,61 @@ export function SettingsPanel({
                 >
                   {QUALITY_PRESETS.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.label} · up to {p.maxBitrate / 1_000_000} Mbps
+                      {t('settings.qualityOption', { quality: qualityLabel(p), mbps: p.maxBitrate / 1_000_000 })}
                     </option>
                   ))}
                 </select>
               </div>
               <div className="form-row inline">
-                <label htmlFor="content-hint">Optimize for</label>
+                <label htmlFor="content-hint">{t('settings.optimizeFor')}</label>
                 <select
                   id="content-hint"
                   value={settings.contentHint}
                   onChange={(e) => onChange({ contentHint: e.target.value as Settings['contentHint'] })}
                 >
-                  <option value="auto">Automatic (smooth for fullscreen games and videos)</option>
-                  <option value="motion">Smooth motion (keep 60 fps)</option>
-                  <option value="detail">Sharp text (keep resolution)</option>
+                  <option value="auto">{t('settings.optimizeAuto')}</option>
+                  <option value="motion">{t('settings.optimizeMotion')}</option>
+                  <option value="detail">{t('settings.optimizeDetail')}</option>
                 </select>
               </div>
               <div className="form-row inline">
                 <label htmlFor="upload-budget">
-                  Upload limit when sharing
-                  <span className="muted small block">Shared between everyone watching you; applies immediately</span>
+                  {t('settings.uploadLimit')}
+                  <span className="muted small block">{t('settings.uploadLimitHint')}</span>
                 </label>
                 <select
                   id="upload-budget"
                   value={settings.uploadBudgetMbps}
                   onChange={(e) => onChange({ uploadBudgetMbps: Number(e.target.value) })}
                 >
-                  <option value={0}>Unlimited (wired gigabit)</option>
-                  <option value={200}>200 Mbps</option>
-                  <option value={100}>100 Mbps (default)</option>
-                  <option value={60}>60 Mbps (good Wi-Fi)</option>
-                  <option value={30}>30 Mbps</option>
-                  <option value={15}>15 Mbps (slow Wi-Fi / VPN)</option>
+                  <option value={0}>{t('settings.uploadUnlimited')}</option>
+                  <option value={200}>{t('common.mbps', { value: 200 })}</option>
+                  <option value={100}>{t('settings.uploadDefault', { mbps: 100 })}</option>
+                  <option value={60}>{t('settings.uploadGoodWifi', { mbps: 60 })}</option>
+                  <option value={30}>{t('common.mbps', { value: 30 })}</option>
+                  <option value={15}>{t('settings.uploadSlow', { mbps: 15 })}</option>
                 </select>
               </div>
-              {toggle('shareAudio', 'Share system audio by default', 'Pre-selects the audio switch when you start sharing')}
+              {toggle('shareAudio', t('settings.shareAudio'), t('settings.shareAudioHint'))}
               {info?.platform === 'win32' &&
-                toggle(
-                  'appAudioOnly',
-                  "Only the shared app's sound by default",
-                  'When you share a single window, viewers hear only that app'
-                )}
+                toggle('appAudioOnly', t('settings.appAudioOnly'), t('settings.appAudioOnlyHint'))}
               {info?.platform === 'win32' &&
-                toggle(
-                  'excludeDiscordAudio',
-                  'Leave out Discord by default',
-                  "People in your Discord call don't hear themselves through your stream"
-                )}
-              {toggle('pauseOnMinimize', 'Pause sharing while minimized', 'Sharing resumes automatically when restored')}
+                toggle('excludeDiscordAudio', t('settings.excludeDiscord'), t('settings.excludeDiscordHint'))}
+              {toggle('pauseOnMinimize', t('settings.pauseOnMinimize'), t('settings.pauseOnMinimizeHint'))}
             </section>
 
             <section data-section="notifications">
-              <h3>Notifications</h3>
-              {toggle('notifications', 'Chat notifications when the window is in the background')}
+              <h3>{t('settings.notifications')}</h3>
+              {toggle('notifications', t('settings.chatNotifications'))}
             </section>
 
             <section data-section="connection">
-              <h3>Connection</h3>
-              {toggle('autoRejoin', 'Rejoin last room on startup')}
-              {toggle('useTls', 'Encrypt connections (TLS)', 'Chat and signaling use TLS; video is always DTLS-SRTP encrypted')}
-              {toggle('forceTcp', 'Always use TCP transport', 'For VPNs/firewalls that block UDP (adds some latency)')}
+              <h3>{t('settings.connection')}</h3>
+              {toggle('autoRejoin', t('settings.autoRejoin'))}
+              {toggle('useTls', t('settings.useTls'), t('settings.useTlsHint'))}
+              {toggle('forceTcp', t('settings.forceTcp'), t('settings.forceTcpHint'))}
               <div className="form-row inline">
-                <label htmlFor="port">Hosting port</label>
+                <label htmlFor="port">{t('settings.port')}</label>
                 <input
                   id="port"
                   type="number"
@@ -545,35 +549,33 @@ export function SettingsPanel({
             </section>
 
             <section data-section="advanced">
-              <h3>Advanced</h3>
+              <h3>{t('settings.advanced')}</h3>
               <div className="form-row inline">
-                <label htmlFor="codec">Video codec</label>
+                <label htmlFor="codec">{t('settings.codec')}</label>
                 <select id="codec" value={settings.codec} onChange={(e) => onChange({ codec: e.target.value as Settings['codec'] })}>
-                  <option value="auto">Automatic (hardware H.264 preferred)</option>
+                  <option value="auto">{t('settings.codecAuto')}</option>
                   <option value="h264">H.264</option>
                   <option value="h265">H.265 / HEVC</option>
                   <option value="vp9">VP9</option>
                   <option value="av1">AV1</option>
                 </select>
               </div>
-              {toggle('adaptiveQuality', 'Adaptive quality', 'Lower resolution/frame rate per viewer when the network degrades')}
+              {toggle('adaptiveQuality', t('settings.adaptive'), t('settings.adaptiveHint'))}
               <CodecTable encoders={encoders} decoders={decoders} />
             </section>
 
             <section data-section="about">
-              <h3>About</h3>
+              <h3>{t('settings.about')}</h3>
               <div className="form-row inline">
                 <span>{info ? `ScreenShare ${info.version} · ${info.platform}` : ''}</span>
                 <button className="btn ghost small" onClick={() => void window.api.system.openLogs()}>
-                  <Icon name="folder" size={14} /> Open logs
+                  <Icon name="folder" size={14} /> {t('settings.openLogs')}
                 </button>
               </div>
               {toggle(
                 'autoUpdate',
-                'Check for updates automatically',
-                info?.platform === 'darwin'
-                  ? 'Looks at the ScreenShare releases on GitHub every few hours and tells you when there is a new version.'
-                  : 'Looks at the ScreenShare releases on GitHub every few hours. A new version downloads by itself and installs when you restart.'
+                t('settings.autoUpdate'),
+                info?.platform === 'darwin' ? t('settings.autoUpdateHintMac') : t('settings.autoUpdateHint')
               )}
               <UpdateRow onRestart={onRestartToUpdate} />
             </section>
@@ -614,6 +616,7 @@ function AvatarCropper({
   onCancel(): void
   onSave(crop: { x: number; y: number; size: number }): void
 }) {
+  const { t } = useT()
   const v: CropView = { view: CROP_VIEW, imageWidth: picture.width, imageHeight: picture.height }
   const [zoom, setZoom] = useState(1)
   const [offset, setOffset] = useState<Point>(() => centredOffset(v))
@@ -669,7 +672,7 @@ function AvatarCropper({
   })
 
   return (
-    <Modal title="Crop your picture" onClose={onCancel}>
+    <Modal title={t('crop.title')} onClose={onCancel}>
       <div className="modal-body">
         <div className="cropper-row">
           <div
@@ -677,7 +680,7 @@ function AvatarCropper({
             className="cropper"
             style={{ width: CROP_VIEW, height: CROP_VIEW }}
             tabIndex={0}
-            aria-label="Picture to crop: drag or use the arrow keys to move, scroll or + and - to zoom"
+            aria-label={t('crop.area')}
             onKeyDown={onKey}
             onPointerDown={(e) => {
               e.currentTarget.setPointerCapture(e.pointerId)
@@ -697,33 +700,33 @@ function AvatarCropper({
             <div className="cropper-preview" style={{ width: CROP_PREVIEW, height: CROP_PREVIEW }}>
               <img src={url} alt="" draggable={false} style={placed(CROP_PREVIEW / CROP_VIEW)} />
             </div>
-            <span className="muted small">Preview</span>
+            <span className="muted small">{t('crop.preview')}</span>
           </div>
         </div>
         <div className="cropper-zoom">
-          <button className="icon-btn" title="Zoom out" onClick={() => zoomTo(zoom / 1.2)}>
+          <button className="icon-btn" title={t('crop.zoomOut')} onClick={() => zoomTo(zoom / 1.2)}>
             <Icon name="zoomOut" size={16} />
           </button>
           <input
             type="range"
-            aria-label="Zoom"
+            aria-label={t('crop.zoom')}
             min={MIN_CROP_ZOOM}
             max={MAX_CROP_ZOOM}
             step={0.01}
             value={zoom}
             onChange={(e) => zoomTo(Number(e.target.value))}
           />
-          <button className="icon-btn" title="Zoom in" onClick={() => zoomTo(zoom * 1.2)}>
+          <button className="icon-btn" title={t('crop.zoomIn')} onClick={() => zoomTo(zoom * 1.2)}>
             <Icon name="zoomIn" size={16} />
           </button>
         </div>
-        <p className="muted small">Drag to move the picture, scroll or use the slider to zoom.</p>
+        <p className="muted small">{t('crop.help')}</p>
         <footer className="modal-footer">
           <button className="btn ghost" onClick={onCancel}>
-            Cancel
+            {t('common.cancel')}
           </button>
           <button className="btn primary" onClick={() => onSave(cropRect(v, zoom, offset))}>
-            Use picture
+            {t('crop.use')}
           </button>
         </footer>
       </div>
@@ -732,27 +735,29 @@ function AvatarCropper({
 }
 
 function CodecTable({ encoders, decoders }: { encoders: CodecSupport[]; decoders: CodecSupport[] }) {
+  const { t } = useT()
   const mimes = [...new Set([...encoders, ...decoders].map((c) => c.mimeType))]
   if (mimes.length === 0) return null
-  const cell = (list: CodecSupport[], mime: string): string => {
+  const cell = (list: CodecSupport[], mime: string): { text: string; hardware: boolean } => {
     const c = list.find((x) => x.mimeType === mime)
-    return !c ? '—' : c.hardware ? 'Hardware' : 'Software'
+    if (!c) return { text: '—', hardware: false }
+    return { text: c.hardware ? t('settings.hardware') : t('settings.software'), hardware: c.hardware }
   }
   return (
     <table className="codec-table">
       <thead>
         <tr>
-          <th>Codec</th>
-          <th>Encode</th>
-          <th>Decode</th>
+          <th>{t('settings.codecName')}</th>
+          <th>{t('settings.encode')}</th>
+          <th>{t('settings.decode')}</th>
         </tr>
       </thead>
       <tbody>
         {mimes.map((m) => (
           <tr key={m}>
             <td>{shortCodecName(m)}</td>
-            <td className={cell(encoders, m) === 'Hardware' ? 'good' : ''}>{cell(encoders, m)}</td>
-            <td className={cell(decoders, m) === 'Hardware' ? 'good' : ''}>{cell(decoders, m)}</td>
+            <td className={cell(encoders, m).hardware ? 'good' : ''}>{cell(encoders, m).text}</td>
+            <td className={cell(decoders, m).hardware ? 'good' : ''}>{cell(decoders, m).text}</td>
           </tr>
         ))}
       </tbody>
@@ -763,23 +768,22 @@ function CodecTable({ encoders, decoders }: { encoders: CodecSupport[]; decoders
 /** The update status in Settings → About, with what can be done about it. */
 function UpdateRow({ onRestart }: { onRestart(): void }) {
   const status = useUpdateStatus()
+  const { t, time } = useT()
   if (!status) return null
   const text = (() => {
     switch (status.state) {
       case 'unsupported':
-        return 'Updates come with the installed app, not with development builds.'
+        return t('update.unsupported')
       case 'idle':
-        return status.checkedAt
-          ? `Up to date (checked at ${new Date(status.checkedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}).`
-          : 'Not checked yet.'
+        return status.checkedAt ? t('update.upToDate', { time: time(status.checkedAt) }) : t('update.notChecked')
       case 'checking':
-        return 'Checking for updates…'
+        return t('update.checking')
       case 'downloading':
-        return `Downloading ScreenShare ${status.version}… ${status.percent} %`
+        return t('update.downloading', { version: status.version, percent: status.percent })
       case 'ready':
-        return `ScreenShare ${status.version} is ready to install.`
+        return t('update.ready', { version: status.version })
       case 'available':
-        return `ScreenShare ${status.version} is available.`
+        return t('update.available', { version: status.version })
       case 'error':
         return status.message
     }
@@ -789,11 +793,11 @@ function UpdateRow({ onRestart }: { onRestart(): void }) {
       <span className={`small ${status.state === 'error' ? 'bad-text' : 'muted'}`}>{text}</span>
       {status.state === 'ready' ? (
         <button className="btn primary small" onClick={onRestart}>
-          <Icon name="refresh" size={14} /> Restart to update
+          <Icon name="refresh" size={14} /> {t('update.restartToUpdate')}
         </button>
       ) : status.state === 'available' ? (
         <button className="btn primary small" onClick={() => void window.api.update.openPage()}>
-          <Icon name="download" size={14} /> Download
+          <Icon name="download" size={14} /> {t('update.download')}
         </button>
       ) : (
         <button
@@ -801,7 +805,7 @@ function UpdateRow({ onRestart }: { onRestart(): void }) {
           disabled={status.state === 'unsupported' || status.state === 'checking' || status.state === 'downloading'}
           onClick={() => void window.api.update.check()}
         >
-          Check now
+          {t('update.checkNow')}
         </button>
       )}
     </div>
@@ -814,6 +818,7 @@ function UpdateRow({ onRestart }: { onRestart(): void }) {
  */
 export function ConfirmDialog() {
   const question = useConfirmRequest()
+  const { t } = useT()
   if (!question) return null
   return (
     <Modal title={question.title} onClose={() => question.answer(false)}>
@@ -821,7 +826,7 @@ export function ConfirmDialog() {
         {question.message && <p className="confirm-message">{question.message}</p>}
         <footer className="modal-footer">
           <button className="btn ghost" autoFocus={question.danger} onClick={() => question.answer(false)}>
-            {question.cancel ?? 'Cancel'}
+            {question.cancel ?? t('common.cancel')}
           </button>
           <button
             className={`btn ${question.danger ? 'solid-danger' : 'primary'}`}

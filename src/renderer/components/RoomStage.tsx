@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, type MouseEvent } from 'react'
+import { useT } from '../lib/i18n'
 import { Avatar } from './Avatar'
 import { Icon } from './Icon'
 
@@ -42,6 +43,7 @@ export function PersonTile({
   onFocus(): void
   onContextMenu?(e: MouseEvent): void
 }) {
+  const { t } = useT()
   const clickToFocus = useClickToFocus(onFocus)
   return (
     <div
@@ -59,11 +61,13 @@ export function PersonTile({
         )}
       </div>
       <div className="person-tile-name">
-        {live && <span className={`live-badge ${live.paused ? 'paused' : ''}`}>{live.paused ? 'Paused' : 'Live'}</span>}
-        <span className="person-tile-name-text">{you ? `${name} (you)` : name}</span>
-        {reconnecting && <span className="person-tile-note">reconnecting…</span>}
+        {live && <span className={`live-badge ${live.paused ? 'paused' : ''}`}>{live.paused ? t('common.paused') : t('common.live')}</span>}
+        <span className="person-tile-name-text">{you ? t('common.you', { name }) : name}</span>
+        {reconnecting && <span className="person-tile-note">{t('room.reconnectingNote')}</span>}
         {live && !small && (
-          <span className="person-tile-note">{live.watchers === 0 ? 'no one watching' : `${live.watchers} watching`}</span>
+          <span className="person-tile-note">
+            {live.watchers === 0 ? t('common.noOneWatching') : t('common.watching', { count: live.watchers })}
+          </span>
         )}
       </div>
     </div>
@@ -72,16 +76,15 @@ export function PersonTile({
 
 /** Shown next to your own tile while you're alone: how others can join. */
 export function InviteTile({ address, onCopy }: { address: string | null; onCopy(): void }) {
+  const { t } = useT()
   return (
     <div className="tile person-tile invite-tile">
       <div className="person-tile-body">
         <Icon name="users" size={28} />
-        <strong>Invite people</strong>
-        <span className="muted small">
-          People on your network see this room in their list. On a VPN, they can use Join by IP:
-        </span>
+        <strong>{t('room.invite')}</strong>
+        <span className="muted small">{t('room.inviteHint')}</span>
         {address && (
-          <button className="btn small" onClick={onCopy} title="Copy address">
+          <button className="btn small" onClick={onCopy} title={t('common.copyAddress')}>
             <span className="mono">{address}</span> <Icon name="copy" size={13} />
           </button>
         )}

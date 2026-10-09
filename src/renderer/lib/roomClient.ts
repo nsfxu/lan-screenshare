@@ -9,6 +9,7 @@ import type {
   ServerMessage
 } from '../../shared/types'
 import { Emitter } from './emitter'
+import { t } from './i18n'
 
 export type ConnectionState = 'connecting' | 'connected' | 'reconnecting' | 'closed'
 
@@ -40,7 +41,7 @@ type Events = {
   chat: ChatMessage[]
   error: ClientError
   /** Fatal: the session is over (kicked, room ended, auth failed). */
-  closed: { reason: string; code: ErrorCode | 'ended' | 'kicked' | 'connection' }
+  closed: { reason: string; code: ErrorCode | 'ended' | 'kicked' | 'connection' | 'left' }
   message: ServerMessage
   binary: ArrayBuffer
   latency: number
@@ -140,7 +141,7 @@ export class RoomClient extends Emitter<Events> {
   leave(): void {
     if (this.finished) return
     this.send({ type: 'bye' })
-    this.finish('You left the room', 'ended')
+    this.finish(t('closed.left'), 'left')
   }
 
   private open(): void {
@@ -149,7 +150,7 @@ export class RoomClient extends Emitter<Events> {
     try {
       ws = new WebSocket(this.opts.url)
     } catch (err) {
-      this.finish(`Invalid room address: ${String(err)}`, 'connection')
+      this.finish(t('closed.invalidAddress', { error: String(err) }), 'connection')
       return
     }
     ws.binaryType = 'arraybuffer'
@@ -187,12 +188,12 @@ export class RoomClient extends Emitter<Events> {
       this.stopPing()
       if (this.finished) return
       if (!this.resumeToken) {
-        this.finish('Could not connect to the room', 'connection')
+        this.finish(t('closed.couldNotConnect'), 'connection')
         return
       }
       this.disconnectedAt ||= Date.now()
       if (Date.now() - this.disconnectedAt > RECONNECT_WINDOW_MS) {
-        this.finish('Lost connection to the room', 'connection')
+        this.finish(t('closed.lost'), 'connection')
         return
       }
       this.setState('reconnecting')
@@ -270,20 +271,18 @@ export class RoomClient extends Emitter<Events> {
         this.emit('latency', this.rttMs)
         break
       }
-      case 'error':
-        this.emit('error', {
-          code: msg.code,
-          message: msg.message,
-          retryAfterMs: msg.retryAfterMs,
-          attemptsLeft: msg.attemptsLeft
-        })
-        if (msg.fatal) this.finish(msg.message, msg.code)
+      case 'error': {
+        const message = serverErrorText(msg.code, msg.message)
+        this.emit('error', { code: msg.code, message, retryAfterMs: msg.retryAfterMs, attemptsLeft: msg.attemptsLeft })
+        if (msg.fatal) this.finish(message, msg.code)
         break
+      }
       case 'kicked':
-        this.finish('You were removed from the room by the host', 'kicked')
+        this.finish(t('closed.kicked'), 'kicked')
         break
       case 'room-ended':
-        this.finish(msg.reason, 'ended')
+        // The server only ends a room because its host did.
+        this.finish(t('closed.ended'), 'ended')
         break
     }
     this.emit('message', msg)
@@ -318,5 +317,41 @@ export class RoomClient extends Emitter<Events> {
   private stopPing(): void {
     if (this.pingTimer) clearInterval(this.pingTimer)
     this.pingTimer = null
+  }
+}
+
+/**
+ * A room server's error in our language, by its code. Some codes cover several
+ * cases told apart by the (English) text, which rooms of every version send
+ * the same; anything else keeps the room's own text.
+ */
+export function serverErrorText(code: ErrorCode, message: string): string {
+  switch (code) {
+    case 'pin_required':
+      return t('error.pinRequired')
+    case 'bad_pin':
+      return t('error.badPin')
+    case 'locked':
+      return t('error.locked')
+    case 'room_full':
+      return t('error.roomFull')
+    case 'kicked':
+      return t('error.kicked')
+    case 'host_only':
+      return t('error.hostOnly')
+    case 'chat_muted':
+      return t('error.chatMuted')
+    case 'rate_limited':
+      return t('error.rateLimited')
+    case 'not_sharing': {
+      const name = /^(.*) is not sharing$/.exec(message)?.[1]
+      return name ? t('error.notSharing', { name }) : message
+    }
+    case 'bad_request':
+      if (message === 'Message too long') return t('error.messageTooLong')
+      if (message === 'Room has ended') return t('error.roomHasEnded')
+      return message
+    default:
+      return message
   }
 }

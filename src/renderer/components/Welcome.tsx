@@ -1,7 +1,9 @@
+import { useT } from '../lib/i18n'
 import { Icon } from './Icon'
 
 /** The centre while you're not in a room. */
 export function Welcome({ hasRooms, onCreate }: { hasRooms: boolean; onCreate(): void }) {
+  const { t } = useT()
   return (
     <div className="welcome">
       <div className="welcome-mark">
@@ -9,12 +11,10 @@ export function Welcome({ hasRooms, onCreate }: { hasRooms: boolean; onCreate():
       </div>
       <h1>ScreenShare</h1>
       <p className="muted">
-        {hasRooms
-          ? 'Pick a room on the left to join it, or create your own.'
-          : 'No rooms on your network yet. Create one, or use Join by IP for rooms on a VPN.'}
+        {hasRooms ? t('welcome.pickRoom') : t('welcome.noRooms')}
       </p>
       <button className="btn primary" onClick={onCreate}>
-        <Icon name="plus" /> Create room
+        <Icon name="plus" /> {t('common.createRoom')}
       </button>
     </div>
   )

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { CaptureSource, ScreenPermission } from '../../shared/types'
 import { errorMessage } from '../lib/format'
+import { useT } from '../lib/i18n'
 import { Icon } from './Icon'
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 
 /** Grid of screens and windows with live thumbnails. */
 export function SourcePicker({ selected, onSelect }: Props) {
+  const { t } = useT()
   const [sources, setSources] = useState<CaptureSource[] | null>(null)
   const [permission, setPermission] = useState<ScreenPermission>('granted')
   const [error, setError] = useState<string | null>(null)
@@ -45,38 +47,36 @@ export function SourcePicker({ selected, onSelect }: Props) {
       <div className="source-tabs">
         <div className="segmented">
           <button className={tab === 'screen' ? 'active' : ''} onClick={() => setTab('screen')} type="button">
-            Screens
+            {t('source.screens')}
           </button>
           <button className={tab === 'window' ? 'active' : ''} onClick={() => setTab('window')} type="button">
-            Windows
+            {t('source.windows')}
           </button>
         </div>
-        <button className="icon-btn" type="button" title="Reload sources" onClick={() => void load()}>
+        <button className="icon-btn" type="button" title={t('source.reload')} onClick={() => void load()}>
           <Icon name="refresh" />
         </button>
       </div>
 
       {permission === 'denied' || permission === 'restricted' ? (
         <div className="notice warn">
-          Screen Recording permission is required. Allow ScreenShare in System Settings → Privacy &amp; Security →
-          Screen Recording, then restart the app.
+          {t('source.permission')}
           <button className="btn small" type="button" onClick={() => void window.api.capture.openPermissionSettings()}>
-            Open settings
+            {t('source.openSettings')}
           </button>
         </div>
       ) : null}
       {error && <div className="notice error">{error}</div>}
       {cursorCaveat && tab === 'screen' && (
-        <p className="muted small source-hint">
-          On this version of Windows, screen sharing shows your mouse cursor even when a game hides it. While a
-          fullscreen game on the shared screen hides it, the app shares the game&apos;s window instead.
-        </p>
+        <p className="muted small source-hint">{t('source.cursorCaveat')}</p>
       )}
 
       {sources === null ? (
-        <div className="source-grid loading">Loading sources…</div>
+        <div className="source-grid loading">{t('source.loading')}</div>
       ) : visible.length === 0 ? (
-        <div className="source-grid empty-small muted">No {tab === 'screen' ? 'screens' : 'windows'} available</div>
+        <div className="source-grid empty-small muted">
+          {tab === 'screen' ? t('source.noScreens') : t('source.noWindows')}
+        </div>
       ) : (
         <div className="source-grid">
           {visible.map((s) => (

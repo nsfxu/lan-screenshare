@@ -1489,7 +1489,16 @@ button.member-main {
 .member-you {
   margin-left: 4px;
 }
+/* The name comes first: "(you)" and the host tag shorten before it does (they're longer in some languages). */
 .member-name-text {
+  flex-shrink: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.member-name .member-you,
+.member-name .role-tag {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }

@@ -5,6 +5,7 @@ import type { DiscoveredRoom, RoomEndpoint, Settings } from '../../shared/types'
 import { incompatibleRoomMessage } from '../../shared/version'
 import { useAppVersion } from '../lib/appVersion'
 import { errorMessage, formatDuration } from '../lib/format'
+import { useT } from '../lib/i18n'
 import { Avatar } from './Avatar'
 import { Icon } from './Icon'
 
@@ -67,6 +68,7 @@ interface Row {
  */
 export function RoomsSidebar(props: Props) {
   const { settings, rooms, current, collapsed, onToggle } = props
+  const { t } = useT()
   const [manualOpen, setManualOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -93,11 +95,16 @@ export function RoomsSidebar(props: Props) {
 
   if (collapsed) {
     return (
-      <nav className="rooms-sidebar collapsed" aria-label="Rooms">
-        <button className="icon-btn" title="Show rooms" aria-label="Show rooms" onClick={onToggle}>
+      <nav className="rooms-sidebar collapsed" aria-label={t('rooms.label')}>
+        <button className="icon-btn" title={t('rooms.show')} aria-label={t('rooms.show')} onClick={onToggle}>
           <Icon name="panelLeft" size={18} />
         </button>
-        <button className="icon-btn" title="Create room" aria-label="Create room" onClick={props.onCreate}>
+        <button
+          className="icon-btn"
+          title={t('common.createRoom')}
+          aria-label={t('common.createRoom')}
+          onClick={props.onCreate}
+        >
           <Icon name="plus" size={18} />
         </button>
         <div className="rooms-strip">
@@ -112,7 +119,7 @@ export function RoomsSidebar(props: Props) {
             />
           ))}
         </div>
-        <button className="icon-btn" title="Settings" aria-label="Settings" onClick={props.onSettings}>
+        <button className="icon-btn" title={t('common.settings')} aria-label={t('common.settings')} onClick={props.onSettings}>
           <Icon name="settings" size={18} />
         </button>
       </nav>
@@ -120,20 +127,20 @@ export function RoomsSidebar(props: Props) {
   }
 
   return (
-    <nav className={`rooms-sidebar ${props.floating ? 'floating' : ''}`} aria-label="Rooms">
+    <nav className={`rooms-sidebar ${props.floating ? 'floating' : ''}`} aria-label={t('rooms.label')}>
       <div className="rooms-actions">
         <button className="btn primary small" onClick={props.onCreate}>
-          <Icon name="plus" size={14} /> Create room
+          <Icon name="plus" size={14} /> {t('common.createRoom')}
         </button>
         <button
           className={`btn small ${manualOpen ? 'active' : ''}`}
-          title="Join a room by its address, e.g. over a VPN"
+          title={t('rooms.joinByIpTip')}
           aria-expanded={manualOpen}
           onClick={() => setManualOpen((v) => !v)}
         >
-          <Icon name="network" size={14} /> Join by IP
+          <Icon name="network" size={14} /> {t('common.joinByIp')}
         </button>
-        <button className="icon-btn" title="Hide rooms" aria-label="Hide rooms" onClick={onToggle}>
+        <button className="icon-btn" title={t('rooms.hide')} aria-label={t('rooms.hide')} onClick={onToggle}>
           <Icon name="panelLeft" />
         </button>
       </div>
@@ -144,7 +151,7 @@ export function RoomsSidebar(props: Props) {
         {props.pin && ![...recent, ...network].some((row) => row.key === props.pin!.key) && pinForm}
         {(current || recent.length > 0) && (
           <section className="rooms-group">
-            <h3 className="rooms-group-title">Recent rooms</h3>
+            <h3 className="rooms-group-title">{t('rooms.recent')}</h3>
             {/* Your own room, or one just joined that isn't in the recent rooms yet. */}
             {current && !recent.some((row) => isCurrent(row.endpoint)) && (
               <CurrentRow current={current} members={props.members} />
@@ -159,7 +166,7 @@ export function RoomsSidebar(props: Props) {
                     busy={props.busyKey === row.key}
                     onJoin={() => (row.room?.reachable ? props.onJoin(row.room) : props.onJoinEndpoint(row.endpoint))}
                     onRemove={() => props.onForgetRecent(row.endpoint)}
-                    removeLabel="Forget this room"
+                    removeLabel={t('rooms.forget')}
                   />
                   {props.pin?.key === row.key && pinForm}
                 </div>
@@ -170,11 +177,11 @@ export function RoomsSidebar(props: Props) {
 
         <section className="rooms-group">
           <h3 className="rooms-group-title">
-            Rooms on your network <span className="live-dot" title="Listening for rooms on your network" />
+            {t('rooms.onNetwork')} <span className="live-dot" title={t('rooms.listening')} />
             <button
               className="icon-btn rooms-refresh"
-              title="Scan the network again"
-              aria-label="Refresh"
+              title={t('rooms.scanAgain')}
+              aria-label={t('rooms.refresh')}
               onClick={() => void refresh()}
             >
               <Icon name="refresh" size={13} className={refreshing ? 'spin' : ''} />
@@ -182,9 +189,7 @@ export function RoomsSidebar(props: Props) {
           </h3>
           {network.length === 0 ? (
             <p className="muted small rooms-empty">
-              {rooms.length === 0
-                ? 'Rooms on this network show up here by themselves. On a VPN, use Join by IP.'
-                : 'No other rooms right now.'}
+              {rooms.length === 0 ? t('rooms.emptyNetwork') : t('rooms.noOthers')}
             </p>
           ) : (
             network.map((row) => (
@@ -194,7 +199,7 @@ export function RoomsSidebar(props: Props) {
                   busy={props.busyKey === row.key}
                   onJoin={() => row.room && props.onJoin(row.room)}
                   onRemove={row.room?.source === 'manual' ? () => void window.api.rooms.removeManual(row.key) : undefined}
-                  removeLabel="Remove from list"
+                  removeLabel={t('rooms.removeFromList')}
                 />
                 {props.pin?.key === row.key && pinForm}
               </div>
@@ -205,7 +210,7 @@ export function RoomsSidebar(props: Props) {
 
       <div className="user-panel">
         <NameEditor name={settings.displayName} avatar={settings.avatar} onSave={props.onRename} />
-        <button className="icon-btn" title="Settings" aria-label="Settings" onClick={props.onSettings}>
+        <button className="icon-btn" title={t('common.settings')} aria-label={t('common.settings')} onClick={props.onSettings}>
           <Icon name="settings" size={18} />
         </button>
       </div>
@@ -214,6 +219,7 @@ export function RoomsSidebar(props: Props) {
 }
 
 function CurrentRow({ current, members }: { current: CurrentRoom; members: ReactNode }) {
+  const { t } = useT()
   return (
     <div className="current-room">
       <div className="room-row current" aria-current="true">
@@ -222,7 +228,7 @@ function CurrentRow({ current, members }: { current: CurrentRoom; members: React
           {current.name}
         </span>
         <span className="room-row-meta">
-          {current.live > 0 && <span className="room-row-live">{current.live} live</span>}
+          {current.live > 0 && <span className="room-row-live">{t('rooms.live', { count: current.live })}</span>}
           <Icon name="users" size={13} /> {current.people}
         </span>
       </div>
@@ -242,12 +248,13 @@ function PinForm({
   onSubmit(pin: string): void
   onCancel(): void
 }) {
+  const { t } = useT()
   const [pin, setPin] = useState('')
   const [now, setNow] = useState(Date.now())
   useEffect(() => {
     if (!prompt.lockedUntil) return
-    const t = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(t)
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
   }, [prompt.lockedUntil])
   const lockedFor = prompt.lockedUntil ? Math.max(0, prompt.lockedUntil - now) : 0
   const valid = new RegExp(`^\\d{${PIN_MIN_LENGTH},${PIN_MAX_LENGTH}}$`).test(pin)
@@ -262,7 +269,8 @@ function PinForm({
       onKeyDown={(e) => e.key === 'Escape' && onCancel()}
     >
       <p className="muted small">
-        <Icon name="lock" size={12} /> {prompt.roomName} is private. Ask {prompt.hostName || 'the host'} for the PIN.
+        <Icon name="lock" size={12} />{' '}
+        {t('rooms.pinPrompt', { room: prompt.roomName, host: prompt.hostName || t('rooms.pinTheHost') })}
       </p>
       <div className="pin-form-row">
         <input
@@ -270,20 +278,26 @@ function PinForm({
           inputMode="numeric"
           autoComplete="off"
           maxLength={PIN_MAX_LENGTH}
-          placeholder="PIN"
+          placeholder={t('rooms.pinPlaceholder')}
           value={pin}
           onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-          aria-label="Room PIN"
+          aria-label={t('rooms.pinLabel')}
         />
         <button className="btn primary small" disabled={!valid || busy || lockedFor > 0}>
-          {busy ? 'Joining…' : 'Join'}
+          {busy ? t('rooms.joining') : t('rooms.pinJoin')}
         </button>
-        <button type="button" className="icon-btn" title="Cancel" aria-label="Cancel" onClick={onCancel}>
+        <button
+          type="button"
+          className="icon-btn"
+          title={t('common.cancel')}
+          aria-label={t('common.cancel')}
+          onClick={onCancel}
+        >
           <Icon name="x" size={14} />
         </button>
       </div>
       {lockedFor > 0 ? (
-        <p className="error-text">Too many wrong attempts. Try again in {Math.ceil(lockedFor / 1000)} s.</p>
+        <p className="error-text">{t('rooms.pinLocked', { seconds: Math.ceil(lockedFor / 1000) })}</p>
       ) : (
         prompt.error && <p className="error-text">{prompt.error}</p>
       )}
@@ -305,16 +319,17 @@ function RoomRow({
   removeLabel: string
 }) {
   const ours = useAppVersion()
+  const { t } = useT()
   const { room } = row
   // Rooms on another protocol answer probes but can't be joined: say who has to update.
-  const versionProblem = room ? incompatibleRoomMessage(room, { protocol: PROTOCOL_VERSION, appVersion: ours }) : null
+  const versionProblem = room ? incompatibleRoomMessage(room, { protocol: PROTOCOL_VERSION, appVersion: ours }, t) : null
   const full = !!room && room.maxUsers > 0 && room.viewerCount + 1 >= room.maxUsers
   const offline = !room || (!room.reachable && !versionProblem)
   const people = room ? room.viewerCount + 1 : 0
   const title = [
     row.name,
-    room?.hostName && `Hosted by ${room.hostName}`,
-    room?.startedAt && room.reachable ? `open for ${formatDuration(Date.now() - room.startedAt)}` : null,
+    room?.hostName && t('rooms.hostedBy', { name: room.hostName }),
+    room?.startedAt && room.reachable ? t('rooms.openFor', { duration: formatDuration(Date.now() - room.startedAt) }) : null,
     `${row.endpoint.address}:${row.endpoint.port}${row.endpoint.tls ? ' · TLS' : ''}`,
     versionProblem
   ]
@@ -322,14 +337,19 @@ function RoomRow({
     .join('\n')
 
   let meta
-  if (busy) meta = <span className="muted">Joining…</span>
-  else if (versionProblem) meta = <span className="room-row-warn">{room!.protocol > PROTOCOL_VERSION ? 'Update to join' : 'Older version'}</span>
-  else if (offline) meta = <span className="muted">offline</span>
-  else if (full) meta = <span className="muted">Full</span>
+  if (busy) meta = <span className="muted">{t('rooms.joining')}</span>
+  else if (versionProblem)
+    meta = (
+      <span className="room-row-warn">
+        {room!.protocol > PROTOCOL_VERSION ? t('rooms.updateToJoin') : t('rooms.olderVersion')}
+      </span>
+    )
+  else if (offline) meta = <span className="muted">{t('rooms.offline')}</span>
+  else if (full) meta = <span className="muted">{t('rooms.full')}</span>
   else
     meta = (
       <>
-        {room!.streams > 0 && <span className="room-row-live">{room!.streams} live</span>}
+        {room!.streams > 0 && <span className="room-row-live">{t('rooms.live', { count: room!.streams })}</span>}
         <Icon name="users" size={13} /> {people}
       </>
     )
@@ -341,7 +361,7 @@ function RoomRow({
         title={title}
         disabled={busy || full || !!versionProblem}
         onClick={onJoin}
-        aria-label={`Join ${row.name}`}
+        aria-label={t('rooms.join', { name: row.name })}
       >
         <Icon name={room?.privacy === 'private' ? 'lock' : 'screen'} size={15} />
         <span className="room-row-name">{row.name}</span>
@@ -367,6 +387,7 @@ function RoomBadge({ name, active, live, onClick }: { name: string; active: bool
 }
 
 function ManualConnect({ onClose }: { onClose(): void }) {
+  const { t } = useT()
   const [value, setValue] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -391,12 +412,12 @@ function ManualConnect({ onClose }: { onClose(): void }) {
     <form className="manual-connect" onSubmit={submit}>
       <input
         autoFocus
-        placeholder="Host address, e.g. 10.8.0.5 or 192.168.1.20:47800"
+        placeholder={t('rooms.manualPlaceholder')}
         value={value}
         onChange={(e) => setValue(e.target.value)}
       />
       <button className="btn primary small" disabled={busy}>
-        {busy ? 'Checking…' : 'Add'}
+        {busy ? t('rooms.manualChecking') : t('rooms.manualAdd')}
       </button>
       {error && <p className="error-text">{error}</p>}
     </form>
@@ -404,11 +425,12 @@ function ManualConnect({ onClose }: { onClose(): void }) {
 }
 
 function NameEditor({ name, avatar, onSave }: { name: string; avatar: string | null; onSave(name: string): void }) {
+  const { t } = useT()
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(name)
   if (!editing) {
     return (
-      <button className="user-chip" title="Change your display name" onClick={() => (setValue(name), setEditing(true))}>
+      <button className="user-chip" title={t('rooms.changeName')} onClick={() => (setValue(name), setEditing(true))}>
         <Avatar name={name} image={avatar} />
         <span className="user-chip-name">{name}</span>
       </button>
@@ -425,7 +447,7 @@ function NameEditor({ name, avatar, onSave }: { name: string; avatar: string | n
       autoFocus
       maxLength={32}
       value={value}
-      aria-label="Your display name"
+      aria-label={t('rooms.nameLabel')}
       onChange={(e) => setValue(e.target.value)}
       onBlur={commit}
       onKeyDown={(e) => {

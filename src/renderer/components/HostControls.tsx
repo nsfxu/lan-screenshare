@@ -2,10 +2,12 @@ import { useState } from 'react'
 import { PIN_MAX_LENGTH, PIN_MIN_LENGTH } from '../../shared/constants'
 import type { HostedRoom, HostStats, Privacy } from '../../shared/types'
 import { errorMessage, formatBitrate, latencyClass } from '../lib/format'
+import { useT } from '../lib/i18n'
 import { Icon } from './Icon'
 
 /** Privacy, PIN and "how to reach me" panel for the host. */
 export function AccessPanel({ hosted, onToast }: { hosted: HostedRoom; onToast(msg: string, tone?: 'error' | 'info'): void }) {
+  const { t } = useT()
   const [editing, setEditing] = useState(false)
   const [customPin, setCustomPin] = useState('')
   const [showPin, setShowPin] = useState(true)
@@ -19,46 +21,46 @@ export function AccessPanel({ hosted, onToast }: { hosted: HostedRoom; onToast(m
     }
   }
 
-  const copy = (text: string, what: string): void => {
-    void window.api.system.copyText(text).then(() => onToast(`${what} copied to clipboard`))
+  const copy = (text: string, done: string): void => {
+    void window.api.system.copyText(text).then(() => onToast(done))
   }
 
   const setPrivacy = (p: Privacy): void => {
     if (p !== privacy) void update({ privacy: p })
   }
 
-  const address = hosted.addresses[0] ? `${hosted.addresses[0]}:${hosted.port}` : `port ${hosted.port}`
+  const address = hosted.addresses[0] ? `${hosted.addresses[0]}:${hosted.port}` : t('access.portOnly', { port: String(hosted.port) })
 
   return (
     <div className="access-panel">
       <div className="panel-header">
         <h3>
-          <Icon name="key" size={14} /> Access
+          <Icon name="key" size={14} /> {t('access.title')}
         </h3>
       </div>
       <div className="segmented full">
         <button className={privacy === 'public' ? 'active' : ''} onClick={() => setPrivacy('public')}>
-          <Icon name="globe" size={13} /> Public
+          <Icon name="globe" size={13} /> {t('common.public')}
         </button>
         <button className={privacy === 'private' ? 'active' : ''} onClick={() => setPrivacy('private')}>
-          <Icon name="lock" size={13} /> Private
+          <Icon name="lock" size={13} /> {t('common.private')}
         </button>
       </div>
 
       {privacy === 'private' && hosted.pin && (
         <div className="pin-box">
-          <span className="muted small">PIN</span>
-          <button className="pin-value mono" title="Click to hide/show" onClick={() => setShowPin((v) => !v)}>
+          <span className="muted small">{t('access.pin')}</span>
+          <button className="pin-value mono" title={t('access.toggleShow')} onClick={() => setShowPin((v) => !v)}>
             {showPin ? hosted.pin : '•'.repeat(hosted.pin.length)}
           </button>
           <div className="pin-actions">
-            <button className="icon-btn" title="Copy PIN" onClick={() => copy(hosted.pin!, 'PIN')}>
+            <button className="icon-btn" title={t('access.copyPin')} onClick={() => copy(hosted.pin!, t('access.pinCopied'))}>
               <Icon name="copy" size={14} />
             </button>
-            <button className="icon-btn" title="Generate a new PIN" onClick={() => void update({ pin: 'regenerate' })}>
+            <button className="icon-btn" title={t('access.newPin')} onClick={() => void update({ pin: 'regenerate' })}>
               <Icon name="refresh" size={14} />
             </button>
-            <button className="icon-btn" title="Set a custom PIN" onClick={() => setEditing((v) => !v)}>
+            <button className="icon-btn" title={t('access.customPin')} onClick={() => setEditing((v) => !v)}>
               <Icon name="settings" size={14} />
             </button>
           </div>
@@ -79,26 +81,24 @@ export function AccessPanel({ hosted, onToast }: { hosted: HostedRoom; onToast(m
             autoFocus
             inputMode="numeric"
             maxLength={PIN_MAX_LENGTH}
-            placeholder={`${PIN_MIN_LENGTH}–${PIN_MAX_LENGTH} digits`}
+            placeholder={t('access.pinPlaceholder', { min: PIN_MIN_LENGTH, max: PIN_MAX_LENGTH })}
             value={customPin}
             onChange={(e) => setCustomPin(e.target.value.replace(/\D/g, ''))}
           />
           <button className="btn small primary" disabled={customPin.length < PIN_MIN_LENGTH}>
-            Set
+            {t('access.set')}
           </button>
         </form>
       )}
       <p className="muted small">
-        {privacy === 'private'
-          ? 'New viewers need this PIN. People already in the room stay connected when it changes.'
-          : 'Anyone on your network can join.'}
+        {privacy === 'private' ? t('access.privateHint') : t('access.publicHint')}
       </p>
       <div className="address-row">
-        <span className="muted small">VPN / manual address</span>
+        <span className="muted small">{t('access.address')}</span>
         <button
           className="link mono small"
-          title={`Copy address\nAll addresses:\n${hosted.addresses.map((a) => `${a}:${hosted.port}`).join('\n')}`}
-          onClick={() => copy(address, 'Address')}
+          title={t('access.addressTip', { list: hosted.addresses.map((a) => `${a}:${hosted.port}`).join('\n') })}
+          onClick={() => copy(address, t('common.addressCopied'))}
         >
           {address} <Icon name="copy" size={12} />
         </button>
@@ -107,8 +107,8 @@ export function AccessPanel({ hosted, onToast }: { hosted: HostedRoom; onToast(m
   )
 }
 
-function gigabytes(mb: number): string {
-  return (mb / 1024).toFixed(1)
+function gigabytes(mb: number, number: (n: number, digits: number) => string): string {
+  return number(Math.round((mb / 1024) * 10) / 10, 1)
 }
 
 /** Most of the memory in use is fine; nearly all of it means the computer is swapping. */
@@ -118,37 +118,54 @@ function memoryTone(used: number): string {
 
 /** Live encoder / network stats for the host. */
 export function HostStatsPanel({ stats }: { stats: HostStats | null }) {
+  const { t, number } = useT()
   if (!stats) return null
+  const limits = { none: t('stats.limit.none'), cpu: t('stats.limit.cpu'), bandwidth: t('stats.limit.bandwidth'), other: t('stats.limit.other') }
+  const limitedBy = limits[stats.qualityLimitation as keyof typeof limits] ?? stats.qualityLimitation
+  const hint = stats.contentHint === 'motion' ? t('stats.smoothMotion') : t('stats.sharpText')
   const rows: [string, string, string?][] = [
-    ['Resolution', stats.width && stats.height ? `${stats.width}×${stats.height}` : '–'],
-    ['Frame rate', `${Math.round(stats.fps)} fps`],
-    ['Upload', formatBitrate(stats.bitrateKbps)],
-    ['Avg. RTT', stats.avgRttMs === null ? '–' : `${stats.avgRttMs} ms`, latencyClass(stats.avgRttMs === null ? null : stats.avgRttMs)],
-    ['Encode', stats.encodeMs === null ? '–' : `${stats.encodeMs} ms`],
-    ['Codec', stats.codec || '–'],
-    ['Encoder', stats.encoder || '–'],
-    ['CPU (app)', `${stats.cpuPercent.toFixed(1)} %`, stats.cpuPercent < 20 ? 'good' : stats.cpuPercent < 35 ? 'ok' : 'bad'],
-    ['Memory (app)', `${stats.memoryMB} MB`],
+    [t('stats.resolution'), stats.width && stats.height ? `${stats.width}×${stats.height}` : '–'],
+    [t('stats.frameRate'), t('common.fps', { value: Math.round(stats.fps) })],
+    [t('stats.upload'), formatBitrate(stats.bitrateKbps)],
     [
-      'CPU (computer)',
-      stats.computerCpuPercent === null ? '–' : `${stats.computerCpuPercent.toFixed(0)} %`,
+      t('stats.rtt'),
+      stats.avgRttMs === null ? '–' : t('common.ms', { value: stats.avgRttMs }),
+      latencyClass(stats.avgRttMs === null ? null : stats.avgRttMs)
+    ],
+    [t('stats.encode'), stats.encodeMs === null ? '–' : t('common.ms', { value: stats.encodeMs })],
+    [t('stats.codec'), stats.codec || '–'],
+    [t('stats.encoder'), stats.encoder || '–'],
+    [
+      t('stats.cpuApp'),
+      `${number(stats.cpuPercent, 1)} %`,
+      stats.cpuPercent < 20 ? 'good' : stats.cpuPercent < 35 ? 'ok' : 'bad'
+    ],
+    [t('stats.memoryApp'), `${stats.memoryMB} MB`],
+    [
+      t('stats.cpuComputer'),
+      stats.computerCpuPercent === null ? '–' : `${Math.round(stats.computerCpuPercent)} %`,
       stats.computerCpuPercent === null ? undefined : stats.computerCpuPercent < 70 ? 'good' : stats.computerCpuPercent < 90 ? 'ok' : 'bad'
     ],
     [
-      'Memory (computer)',
-      stats.computerMemoryTotalMB ? `${gigabytes(stats.computerMemoryMB)} of ${gigabytes(stats.computerMemoryTotalMB)} GB` : '–',
+      t('stats.memoryComputer'),
+      stats.computerMemoryTotalMB
+        ? t('stats.memoryOf', {
+            used: gigabytes(stats.computerMemoryMB, number),
+            total: gigabytes(stats.computerMemoryTotalMB, number)
+          })
+        : '–',
       stats.computerMemoryTotalMB
         ? memoryTone(stats.computerMemoryMB / stats.computerMemoryTotalMB)
         : undefined
     ],
-    ['Limited by', stats.qualityLimitation === 'none' ? 'nothing' : stats.qualityLimitation, stats.qualityLimitation === 'none' ? 'good' : 'ok'],
-    ['Optimized for', `${stats.contentHint === 'motion' ? 'Smooth motion' : 'Sharp text'}${stats.contentHintAuto ? ' (automatic)' : ''}`]
+    [t('stats.limitedBy'), limitedBy, stats.qualityLimitation === 'none' ? 'good' : 'ok'],
+    [t('stats.optimizedFor'), stats.contentHintAuto ? t('stats.automatic', { hint }) : hint]
   ]
   return (
     <div className="stats-panel">
       <div className="panel-header">
         <h3>
-          <Icon name="chart" size={14} /> Stream stats
+          <Icon name="chart" size={14} /> {t('room.streamStats')}
         </h3>
       </div>
       <dl>

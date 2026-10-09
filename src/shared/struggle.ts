@@ -5,6 +5,8 @@
  * Pure: fed one sample per stats tick (about once a second) by the publisher.
  */
 
+import { english, type TFunction } from './i18n'
+
 export type StruggleKind = 'cpu' | 'bandwidth' | 'encoders'
 export const STRUGGLE_KINDS: readonly StruggleKind[] = ['cpu', 'bandwidth', 'encoders']
 
@@ -92,15 +94,13 @@ export class StruggleDetector {
 }
 
 /** The notice for a kind. `viewers`: how many people watch the stream. */
-export function struggleMessage(kind: StruggleKind, viewers: number): string {
+export function struggleMessage(kind: StruggleKind, viewers: number, t: TFunction = english().t): string {
   switch (kind) {
     case 'cpu':
-      return 'Your computer is struggling to encode your stream, so viewers get a lower quality. A lower quality or closing heavy apps helps.'
+      return t('struggle.cpu')
     case 'bandwidth':
-      return viewers > 1
-        ? `Your upload can't keep up with ${viewers} viewers, so they get a lower quality. A lower quality, an upload limit (Settings) or a wired connection helps.`
-        : "The network can't keep up with your stream, so it's sent at a lower quality. A lower quality or a wired connection helps."
+      return viewers > 1 ? t('struggle.bandwidthViewers', { count: viewers }) : t('struggle.bandwidth')
     case 'encoders':
-      return 'Your graphics card ran out of hardware encoders, so some viewers are encoded by your CPU instead. If your computer slows down, a lower quality helps.'
+      return t('struggle.encoders')
   }
 }

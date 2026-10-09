@@ -183,6 +183,27 @@ describe('RoomServer', () => {
     await bob.wait('chat', (m) => m.message.text === 'host can still talk')
   })
 
+  it('says what system lines are about, for each app to show in its language', async () => {
+    const port = await startServer()
+    const host = await connect(port, { hostToken: HOST_TOKEN })
+    await host.wait('welcome')
+    const bob = await connect(port, { name: 'Bob' })
+    const { selfId: bobId } = await bob.wait('welcome')
+    const joined = await host.wait('chat', (m) => m.message.event?.kind === 'joined')
+    // Older apps keep reading the English text.
+    expect(joined.message).toMatchObject({ system: true, text: 'Bob joined', event: { kind: 'joined', name: 'Bob' } })
+
+    host.send({ type: 'mute-chat', muted: true })
+    const muted = await bob.wait('chat', (m) => m.message.event?.kind === 'chat-muted')
+    expect(muted.message.text).toBe('The host muted the chat')
+
+    bob.send({ type: 'stream-state', sharing: true, paused: false, audio: false })
+    await host.wait('chat', (m) => m.message.event?.kind === 'started-sharing')
+    host.send({ type: 'stop-stream', userId: bobId })
+    const stopped = await host.wait('chat', (m) => m.message.event?.kind === 'stream-stopped')
+    expect(stopped.message).toMatchObject({ text: "The host stopped Bob's stream", event: { name: 'Bob' } })
+  })
+
   it('resumes a dropped viewer seat without the PIN', async () => {
     const port = await startServer({ privacy: 'private', pin: '5555' })
     const bob = await connect(port, { name: 'Bob', clientId: 'bob', pin: '5555' })

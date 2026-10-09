@@ -4,6 +4,7 @@ import type { AppUpdater } from 'electron-updater'
 import { RELEASES_REPO, RELEASES_URL, UPDATE_CHECK_INTERVAL_MS } from '../shared/constants'
 import type { UpdateStatus } from '../shared/types'
 import { newerRelease } from '../shared/version'
+import { mainT } from './i18n'
 import type { Logger } from './server'
 
 const FIRST_CHECK_DELAY_MS = 15_000
@@ -71,7 +72,7 @@ export class Updater extends EventEmitter<UpdaterEvents> {
     } catch (err) {
       const message = (err as Error).message
       this.log.warn(`update check failed: ${message}`)
-      this.set(manual ? { state: 'error', message: "Couldn't check for updates. Are you connected to the internet?" } : { state: 'idle', checkedAt: null })
+      this.set(manual ? { state: 'error', message: mainT('update.checkFailed') } : { state: 'idle', checkedAt: null })
     }
     return this.current
   }

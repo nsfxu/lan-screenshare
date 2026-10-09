@@ -1,4 +1,5 @@
 import { usePlatform } from '../lib/appVersion'
+import { useT } from '../lib/i18n'
 import { useUpdateStatus } from '../lib/update'
 import { Icon } from './Icon'
 
@@ -10,6 +11,7 @@ import { Icon } from './Icon'
 export function TitleBar({ roomName, onRestartToUpdate }: { roomName: string | null; onRestartToUpdate(): void }) {
   const platform = usePlatform()
   const update = useUpdateStatus()
+  const { t } = useT()
   return (
     <header className={`title-bar ${platform === 'darwin' ? 'mac' : ''}`}>
       <span className="title-bar-mark" aria-hidden="true">
@@ -22,17 +24,17 @@ export function TitleBar({ roomName, onRestartToUpdate }: { roomName: string | n
         </span>
       )}
       {update?.state === 'ready' && (
-        <button className="title-bar-update" title={`ScreenShare ${update.version} is downloaded`} onClick={onRestartToUpdate}>
-          <Icon name="refresh" size={12} /> Restart to update
+        <button className="title-bar-update" title={t('update.downloadedTip', { version: update.version })} onClick={onRestartToUpdate}>
+          <Icon name="refresh" size={12} /> {t('update.restartToUpdate')}
         </button>
       )}
       {update?.state === 'available' && (
         <button
           className="title-bar-update"
-          title="Opens the download page"
+          title={t('update.openPageTip')}
           onClick={() => void window.api.update.openPage()}
         >
-          <Icon name="download" size={12} /> Update to {update.version}
+          <Icon name="download" size={12} /> {t('update.updateTo', { version: update.version })}
         </button>
       )}
     </header>

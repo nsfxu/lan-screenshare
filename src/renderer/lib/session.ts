@@ -38,7 +38,7 @@ function waitForWelcome(client: RoomClient): Promise<void> {
       }),
       client.on('closed', ({ reason, code }) => {
         offs.forEach((o) => o())
-        reject(new JoinError(lastError ?? { code: code === 'ended' || code === 'kicked' ? 'connection' : code, message: reason }))
+        reject(new JoinError(lastError ?? { code: code === 'ended' || code === 'kicked' || code === 'left' ? 'connection' : code, message: reason }))
       })
     ]
   })

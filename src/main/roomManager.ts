@@ -15,6 +15,7 @@ import { incompatibleRoomMessage } from '../shared/version'
 import { clampPinLength, generatePin, isValidPin, randomId, randomToken } from '../utils/crypto'
 import { MdnsDiscovery, type MdnsRoomRecord } from '../utils/mdns'
 import { endpointKey, fingerprintFromPem, getLocalAddresses, probeRoom } from '../utils/network'
+import { mainT } from './i18n'
 import { RoomServer, type Logger } from './server'
 import type { SettingsStore } from './settings'
 
@@ -109,10 +110,11 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
     for (const tls of order) {
       try {
         const result = await probeRoom({ address, port, tls }, 2500, existing?.advertisedFingerprint)
-        const incompatible = incompatibleRoomMessage(result.info, {
-          protocol: PROTOCOL_VERSION,
-          appVersion: this.appVersion
-        })
+        const incompatible = incompatibleRoomMessage(
+          result.info,
+          { protocol: PROTOCOL_VERSION, appVersion: this.appVersion },
+          mainT
+        )
         if (incompatible) throw new Error(incompatible)
         if (result.fingerprint) this.trust(address, result.fingerprint)
         const room: DiscoveredRoom = {
@@ -135,7 +137,7 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
         lastErr = err
       }
     }
-    throw lastErr instanceof Error ? lastErr : new Error('Room not reachable')
+    throw lastErr instanceof Error ? lastErr : new Error(mainT('error.notReachable'))
   }
 
   async addManual(address: string, port: number): Promise<DiscoveredRoom> {
@@ -187,7 +189,7 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
     const pin = req.privacy === 'private' ? generatePin(pinLength) : null
     const hostToken = randomToken(32)
     const roomId = randomId()
-    const name = req.name.trim() || `${settings.displayName}'s room`
+    const name = req.name.trim() || mainT('common.defaultRoomName', { name: settings.displayName })
 
     const server = new RoomServer({
       roomId,
@@ -233,13 +235,13 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
 
   updateRoom(req: UpdateRoomRequest): HostedRoom {
     const h = this.hosting
-    if (!h) throw new Error('Not hosting a room')
+    if (!h) throw new Error(mainT('error.notHosting'))
     if (req.pinLength !== undefined) h.pinLength = clampPinLength(req.pinLength)
     const privacy = req.privacy ?? h.server.getInfo().privacy
     let pin = h.pin
     if (req.pin === 'regenerate') pin = generatePin(h.pinLength)
     else if (req.pin !== undefined) {
-      if (!isValidPin(req.pin)) throw new Error('PIN must be 4–6 digits')
+      if (!isValidPin(req.pin)) throw new Error(mainT('error.pinDigits'))
       pin = req.pin
     }
     if (privacy === 'private' && !pin) pin = generatePin(h.pinLength)
