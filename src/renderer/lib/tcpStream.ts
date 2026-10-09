@@ -100,6 +100,8 @@ export class TcpEncoder {
   private lastFrameAt = 0
   private framesSinceKey = 0
   private paused = false
+  /** No TCP watcher can see the stream: encode nothing until one can. */
+  private idle = false
   private stopped = false
   /** Share of the streamer's upload budget (bits/s); null = unlimited. */
   private bitrateCap: number | null = null
@@ -167,6 +169,12 @@ export class TcpEncoder {
     if (!paused) this.forceKey = true
   }
 
+  setIdle(idle: boolean): void {
+    if (idle === this.idle) return
+    this.idle = idle
+    if (!idle) this.forceKey = true
+  }
+
   replaceTrack(track: MediaStreamTrack): void {
     this.track = track
     void this.reader?.cancel()
@@ -217,7 +225,7 @@ export class TcpEncoder {
   }
 
   private async handleFrame(frame: VideoFrame): Promise<void> {
-    if (this.paused) return
+    if (this.paused || this.idle) return
     const preset = limitPreset(this.controller.preset, frame.displayHeight, this.view)
     const now = performance.now()
     if (now - this.lastFrameAt < 1000 / preset.fps - 2) return

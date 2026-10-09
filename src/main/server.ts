@@ -38,6 +38,7 @@ import type {
 } from '../shared/types'
 import { systemText } from '../shared/chat'
 import { isAvatar, isSnapshot } from '../shared/images'
+import { isHiddenView } from '../shared/quality'
 import { incompatibleRoomMessage, isAppVersion } from '../shared/version'
 import { PinGuard, pinsEqual, randomId, randomToken } from '../utils/crypto'
 
@@ -81,6 +82,8 @@ interface Subscription {
   /** TCP fallback: drop video until the next keyframe (after joining or drops). */
   waitingKey: boolean
   lastKeyRequest: number
+  /** The watcher can't see the stream (its view-size is HIDDEN_VIEW): TCP video isn't relayed to it, audio is. */
+  hidden: boolean
 }
 
 interface Seat {
@@ -446,6 +449,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
           transport,
           mediaState: 'negotiating',
           waitingKey: true,
+          hidden: false,
           lastKeyRequest: 0
         })
         this.send(streamer.ws, { type: 'watch-request', from: me.id, transport, decoders: seat.decoders })
@@ -481,11 +485,19 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       }
       case 'view-size': {
         const streamer = this.seats.get(msg.streamer)
-        if (!streamer?.watchers.has(me.id)) return
+        const sub = streamer?.watchers.get(me.id)
+        if (!streamer || !sub) return
         const height = msg.height == null ? null : Number(msg.height)
         if (height !== null && !(Number.isInteger(height) && height >= MIN_VIEW_HEIGHT && height <= 8640)) return
         const fps = msg.fps == null ? null : Number(msg.fps)
         if (fps !== null && !(Number.isInteger(fps) && fps >= 1 && fps <= 240)) return
+        const hidden = isHiddenView({ height, fps })
+        if (sub.hidden && !hidden && sub.transport === 'tcp') {
+          // Visible again: TCP video restarts at a keyframe, so ask for one now.
+          sub.waitingKey = true
+          this.requestKeyframe(streamer, sub, true)
+        }
+        sub.hidden = hidden
         this.send(streamer.ws, { type: 'watcher-view', from: me.id, height, fps })
         return
       }
@@ -652,6 +664,8 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
         if (ws.bufferedAmount <= TCP_MAX_BUFFERED_BYTES) ws.send(tagged, { binary: true })
         continue
       }
+      // Nobody looking: skip video without counting it as a drop (that would make the streamer lower its quality).
+      if (sub.hidden) continue
       if (sub.waitingKey && !isKey) {
         streamer.tcpStats.dropped++
         continue
@@ -669,9 +683,10 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
     }
   }
 
-  private requestKeyframe(streamer: Seat, sub: Subscription): void {
+  /** Rate-limited to one a second per subscription, unless forced (a watcher just became visible again). */
+  private requestKeyframe(streamer: Seat, sub: Subscription, force = false): void {
     const now = Date.now()
-    if (now - sub.lastKeyRequest < 1000) return
+    if (!force && now - sub.lastKeyRequest < 1000) return
     sub.lastKeyRequest = now
     this.send(streamer.ws, { type: 'keyframe-request', from: sub.watcher.participant.id })
   }

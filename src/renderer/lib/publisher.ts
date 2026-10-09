@@ -5,10 +5,10 @@ import {
   encodingForWatcher,
   getPreset,
   isHiddenView,
-  largestViewLimit,
   NO_VIEW_LIMIT,
   qualityLadder,
   splitBudget,
+  tcpViewLimit,
   type QualityPreset,
   type ViewLimit
 } from '../../shared/quality'
@@ -783,8 +783,10 @@ export class Publisher extends Emitter<Events> {
           }).maxBitrate
     )
     if (this.tcp) {
-      this.tcp.setViewLimit(largestViewLimit([...this.tcpViewers].map(view)))
-      demands.push(this.tcp.preset.maxBitrate)
+      const { view: tcpView, idle } = tcpViewLimit([...this.tcpViewers].map(view))
+      this.tcp.setViewLimit(tcpView)
+      this.tcp.setIdle(idle)
+      demands.push(idle ? 0 : this.tcp.preset.maxBitrate)
     }
     const shares = splitBudget(budget, demands)
     this.tcp?.setBitrateCap(budget === null ? null : shares[shares.length - 1])

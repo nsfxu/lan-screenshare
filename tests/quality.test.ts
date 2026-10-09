@@ -9,6 +9,7 @@ import {
   HIDDEN_VIEW,
   isHiddenView,
   largestViewLimit,
+  tcpViewLimit,
   limitPreset,
   MIN_VIDEO_BITRATE,
   qualityLadder,
@@ -200,6 +201,13 @@ describe('watcher quality choice', () => {
     expect(largestViewLimit([])).toEqual({ height: null, fps: null })
     expect(largestViewLimit([{ height: 360, fps: 30 }, { height: 720, fps: 30 }])).toEqual({ height: 720, fps: 30 })
     expect(largestViewLimit([{ height: 360, fps: 30 }, { height: null, fps: null }])).toEqual({ height: null, fps: null })
+  })
+
+  it('sizes the shared TCP encoder for the TCP watchers who can see the stream, and idles it when none can', () => {
+    expect(tcpViewLimit([])).toEqual({ view: { height: null, fps: null }, idle: false })
+    expect(tcpViewLimit([HIDDEN_VIEW, { height: 720, fps: 30 }])).toEqual({ view: { height: 720, fps: 30 }, idle: false })
+    expect(tcpViewLimit([HIDDEN_VIEW, { height: null, fps: null }])).toEqual({ view: { height: null, fps: null }, idle: false })
+    expect(tcpViewLimit([HIDDEN_VIEW, HIDDEN_VIEW])).toEqual({ view: HIDDEN_VIEW, idle: true })
   })
 })
 
