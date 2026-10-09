@@ -56,7 +56,7 @@ Cada `--profile` tem suas próprias configurações, então as duas janelas se c
 
 ### Baixar
 
-Os instaladores para Windows (`.exe`) e macOS (`.dmg`) estão na [página de releases](https://github.com/nsfxu/lan-screenshare/releases). Eles ainda não são assinados, então o SmartScreen do Windows pode avisar (**Mais informações → Executar assim mesmo**), e na primeira vez o macOS diz que não pode verificar o app: abra uma vez e clique em **Abrir Mesmo Assim** em *Ajustes do Sistema → Privacidade e Segurança*.
+Os instaladores para Windows (`.exe`) e macOS (`.dmg`) estão na [página de releases](https://github.com/nsfxu/lan-screenshare/releases). Eles ainda não são assinados, então o SmartScreen do Windows pode avisar (**Mais informações → Executar assim mesmo**), e na primeira vez o macOS diz que não pode verificar o app: abra uma vez, feche a mensagem e clique em **Abrir Mesmo Assim** em *Ajustes do Sistema → Privacidade e Segurança*, com a sua senha ([passo a passo](docs/pt-BR/user-guide.md#abrir-pela-primeira-vez-no-macos)).
 
 ### Gerar um instalador
 

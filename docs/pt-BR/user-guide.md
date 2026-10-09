@@ -27,7 +27,7 @@ O app está em inglês, então os nomes dos botões aparecem aqui **como estão 
 - **Computadores**: Windows 10/11 ou macOS. O áudio do sistema no macOS precisa do macOS 13 ou mais novo. Deixar o Discord fora do áudio precisa do Windows 10 versão 2004 ou mais novo.
 - **Rede**: todos precisam estar na mesma rede local ou VPN. Nada passa pela internet (fora a busca por atualizações) e não existem contas.
 - **Versões compatíveis**: apps 1.x e 2.x podem estar na mesma sala (o 2.0.0 mudou a aparência, não a forma como os apps conversam). Só uma versão que muda o protocolo da sala, como um futuro 3.0.0, exige que todos atualizem; a lista de salas diz quem precisa, por exemplo "This room runs ScreenShare 3.0.0, you have 2.0.0: update to join". Quando alguém na sua sala usa uma versão mais nova, aparece uma sugestão (uma vez) para atualizar.
-- **macOS**: o app não é notarizado pela Apple, então na primeira vez que você abre o macOS diz que não pode verificá-lo. Clique em **OK** e depois em **Abrir Mesmo Assim** em *Ajustes do Sistema → Privacidade e Segurança* (no macOS 14 e anteriores, botão direito no app → **Abrir** também funciona). Na primeira vez que você compartilhar, o macOS pede a permissão de **Gravação de Tela** e pode pedir acesso à **Rede Local**. Permita as duas e reinicie o app se ele pedir.
+- **macOS**: na primeira vez que você abre o app, o macOS o bloqueia até você permitir uma vez; veja [abrir pela primeira vez no macOS](#abrir-pela-primeira-vez-no-macos). Na primeira vez que você compartilhar, o macOS pede a permissão de **Gravação de Tela** e pode pedir acesso à **Rede Local**. Permita as duas e reinicie o app se ele pedir.
 
 ```mermaid
 flowchart LR
@@ -38,6 +38,17 @@ flowchart LR
   C --> G["Assistir, conversar, compartilhar a sua tela"]
   F --> G
 ```
+
+### Abrir pela primeira vez no macOS
+
+O ScreenShare ainda não é notarizado pela Apple, então na primeira vez o macOS o impede com a mensagem de que não foi possível verificar se o "ScreenShare" está livre de malware. Fechar essa mensagem não basta; o app continua bloqueado até você permitir:
+
+1. Arraste o ScreenShare da imagem de disco para **Aplicativos** e abra de lá (não pela janela da imagem de disco).
+2. Quando a mensagem aparecer, feche-a (**OK**).
+3. Abra *Ajustes do Sistema → Privacidade e Segurança* e role até **Segurança**. Ali diz que o ScreenShare foi bloqueado; clique em **Abrir Mesmo Assim** ao lado. O botão só aparece por mais ou menos uma hora depois que você tentou abrir o app: se ele não estiver lá, abra o ScreenShare de novo, feche a mensagem e volte.
+4. Digite a sua senha ou use o Touch ID. O ScreenShare abre (se o macOS perguntar mais uma vez, clique em **Abrir Mesmo Assim** ou **Abrir**).
+
+Isso é feito uma vez para cada versão baixada; depois o ScreenShare abre normalmente. No macOS 14 e anteriores, botão direito no app → **Abrir** → **Abrir** também funciona.
 
 ## Seu nome e sua foto
 

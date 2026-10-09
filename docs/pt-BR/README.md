@@ -47,7 +47,7 @@ flowchart LR
 ## Situação atual e limitações conhecidas
 
 - **Testado**: Windows 10 com GPU NVIDIA, várias instâncias no mesmo computador, e os recursos de áudio em máquinas Windows reais. Os testes unitários cobrem o servidor, o roteamento, a lógica de qualidade, criptografia, codecs e o cálculo do recorte, e os testes de ponta a ponta usam duas instâncias reais do app numa sala.
-- **macOS**: o fluxo de release gera os `.dmg`, mas eles ainda não foram testados num Mac de verdade, e têm só uma assinatura ad hoc, sem notarização (a primeira abertura precisa de **Abrir Mesmo Assim**, veja [permissões do macOS](troubleshooting.md#permissões-do-macos)). O áudio do sistema depende de flags do Chromium (macOS 13+) e não foi testado.
+- **macOS**: o fluxo de release gera os `.dmg`, mas eles ainda não foram testados num Mac de verdade, e têm só uma assinatura ad hoc, sem notarização (a primeira abertura precisa de **Abrir Mesmo Assim**, veja [abrir pela primeira vez](user-guide.md#abrir-pela-primeira-vez-no-macos)). O áudio do sistema depende de flags do Chromium (macOS 13+) e não foi testado.
 - **Condições de rede**: a lógica de qualidade adaptativa tem testes unitários, mas perda de pacotes real ainda não foi simulada.
 - **Fallback TCP**: uma única codificação é dividida entre todos os espectadores TCP de quem transmite, dimensionada para o mais exigente.
 - **Os números de latência** no WebRTC são estimativas (veja [pipeline de mídia](media-pipeline.md#estatísticas-e-latência)).

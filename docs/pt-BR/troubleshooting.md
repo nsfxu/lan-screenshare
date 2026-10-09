@@ -98,7 +98,7 @@ No Windows 10 (e no 11 anterior ao 24H2), compartilhar uma tela inteira mostra o
 
 ## Permissões do macOS
 
-- **"Não foi possível verificar se o ScreenShare está livre de malware"** na primeira abertura: o app é assinado, mas não notarizado. Clique em **OK**, depois em *Ajustes do Sistema → Privacidade e Segurança* → **Abrir Mesmo Assim**, e confirme.
+- **"Não foi possível verificar se o ScreenShare está livre de malware"** na primeira abertura: o app é assinado, mas não notarizado. Feche a mensagem, depois vá em *Ajustes do Sistema → Privacidade e Segurança* → **Abrir Mesmo Assim** (em **Segurança**), e digite a sua senha ou use o Touch ID. Passo a passo: [abrir pela primeira vez no macOS](user-guide.md#abrir-pela-primeira-vez-no-macos).
 - **"ScreenShare está danificado e não pode ser aberto"**: instaladores antigos (e builds feitos sem assinatura) não têm assinatura válida. Baixe a versão atual, ou rode `xattr -dr com.apple.quarantine /Applications/ScreenShare.app` no Terminal e abra de novo.
 - **Gravação de Tela**: *Ajustes do Sistema → Privacidade e Segurança → Gravação de Tela* → ative o ScreenShare e reinicie o app. O seletor de fonte mostra um botão que abre essa página quando falta a permissão.
 - **Rede Local**: permita quando o sistema perguntar, senão as salas não são encontradas.
