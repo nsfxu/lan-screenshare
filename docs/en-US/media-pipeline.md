@@ -163,6 +163,8 @@ On the streamer side, `limitPreset()` lowers the preset to that height and fps a
 
 **Streams nobody can see get no video.** When a watcher can't see a stream (its window is minimized, or the stream is in the spotlight strip and they put the strip away), `Subscription` sends `HIDDEN_VIEW` instead: 90 px at 1 fps, the smallest view the server accepts. No real tile reports it (the smallest step is 360), so the streamer recognises it (`isHiddenView`) and sets that watcher's video encoding to `active: false`: nothing is encoded or sent, and the watcher needs no share of the upload budget. Audio is a separate sender and keeps playing. When the watcher can see the stream again, it reports its real view and video resumes within a second. The streamer's People list says "not looking (video paused)". A streamer on an older version, which doesn't know the convention, sends a tiny 160×90 picture at 1 fps instead, so no protocol change was needed.
 
+The same holds on the [TCP fallback](#tcp-fallback). The room server sees each watcher's `view-size`: it relays no video to a hidden TCP watcher (audio keeps flowing, and the skipped packets aren't counted as drops), and when the watcher can see the stream again it asks the streamer for a keyframe and relays video from it. The streamer's one TCP encoder only serves the TCP watchers who can see the stream (`tcpViewLimit`), and when none can, it stops encoding until one can, then restarts with a keyframe. Older apps in the room behave as before; the host's server does the skipping.
+
 Minimizing is reported by the main process (`window:state`); the page itself can't tell, because the app disables background throttling so capture and encoding keep running in the background. A window that is only *covered* (for example by a fullscreen game on the same screen) isn't detected yet.
 
 ### 3. Upload budget
@@ -194,7 +196,7 @@ stateDiagram-v2
 
 How it works (`src/renderer/lib/tcpStream.ts`):
 
-- **Streamer**: `TcpEncoder` reads frames with `MediaStreamTrackProcessor` and encodes with WebCodecs `VideoEncoder` (tries H.264 Baseline and High, then VP9, then VP8, hardware first; `latencyMode: realtime`). Keyframe every 4 s or on request. Audio uses `TcpAudioEncoder` (Opus). One encoder serves all TCP watchers; it is sized for the most demanding of them (`largestViewLimit`) and gets one share of the upload budget.
+- **Streamer**: `TcpEncoder` reads frames with `MediaStreamTrackProcessor` and encodes with WebCodecs `VideoEncoder` (tries H.264 Baseline and High, then VP9, then VP8, hardware first; `latencyMode: realtime`). Keyframe every 4 s or on request. Audio uses `TcpAudioEncoder` (Opus). One encoder serves all TCP watchers; it is sized for the most demanding of those who can see the stream (`tcpViewLimit`), idles when none can, and gets one share of the upload budget.
 - **Latency first**: frames are skipped when the encoder queue or the local socket buffer (4 MB) falls behind, and the next frame is a keyframe.
 - **Server**: tags each packet with the streamer's slot, keeps at most 2 MB queued per watcher, and drops video to the next keyframe when a watcher falls behind (see [protocol → TCP fallback](protocol.md#tcp-fallback)).
 - **Feedback**: every 2 s the server sends `tcp-feedback {sent, dropped}`, which feeds the TCP encoder's own adaptive controller.

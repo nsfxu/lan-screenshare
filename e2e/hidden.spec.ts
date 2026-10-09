@@ -56,3 +56,25 @@ test("viewers who can't see a stream get no video until they can", async ({ peop
   await fullscreen(false)
   await expect.poll(() => framesDuring(bob.win, 'Carol', 1000), { timeout: 15_000 }).toBeGreaterThan(15)
 })
+
+// The same on the TCP fallback: the room server stops relaying video to a
+// hidden TCP watcher, and the streamer's TCP encoder idles when nobody on TCP
+// can see the stream. Video comes back from a keyframe.
+test("TCP watchers who can't see a stream get no video until they can", async ({ people }) => {
+  const [alice, bob] = await people(2)
+  await bob.win.evaluate(() => window.api.settings.update({ forceTcp: true }))
+  await bob.win.reload() // the room reads the settings at startup
+  await bob.win.waitForSelector('.rooms-sidebar')
+
+  const port = await createRoom(alice)
+  await joinByIp(bob, port)
+  await bob.win.getByRole('button', { name: "Watch Alice's stream" }).click()
+  await expect.poll(() => framesDuring(bob.win, 'Alice', 1000), { timeout: 30_000 }).toBeGreaterThan(15)
+
+  await setWindowState(bob, 'minimized')
+  await bob.win.waitForTimeout(1000) // frames already in flight
+  expect(await framesDuring(bob.win, 'Alice', 3000)).toBeLessThanOrEqual(2)
+
+  await setWindowState(bob, 'restored')
+  await expect.poll(() => framesDuring(bob.win, 'Alice', 1000), { timeout: 15_000 }).toBeGreaterThan(15)
+})

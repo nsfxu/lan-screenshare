@@ -263,6 +263,18 @@ export function largestViewLimit(views: readonly ViewLimit[]): ViewLimit {
   return { height: most(views.map((v) => v.height)), fps: most(views.map((v) => v.fps)) }
 }
 
+/**
+ * What the one shared TCP encoder must produce for its watchers: the largest of
+ * the visible ones' limits, or nothing (`idle`) when none of them can see the
+ * stream. Hidden watchers get no TCP video at all (the server skips it), so they
+ * don't count.
+ */
+export function tcpViewLimit(views: readonly ViewLimit[]): { view: ViewLimit; idle: boolean } {
+  const visible = views.filter((v) => !isHiddenView(v))
+  if (views.length > 0 && visible.length === 0) return { view: HIDDEN_VIEW, idle: true }
+  return { view: largestViewLimit(visible), idle: false }
+}
+
 export interface WatcherLimits {
   /** Height (pixels) the watcher displays the stream at; null = full quality. */
   viewHeight: number | null

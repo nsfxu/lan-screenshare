@@ -407,6 +407,56 @@ describe('multi-stream: TCP fallback relay', () => {
     ])
   })
 
+  it("relays no video to a TCP watcher who can't see the stream, keeps its audio, and restarts at a keyframe", async () => {
+    const port = await startServer()
+    await join(port, 'Host', true)
+    const alice = await join(port, 'Alice')
+    const bob = await join(port, 'Bob')
+    const carol = await join(port, 'Carol')
+
+    share(alice.c, { audio: true })
+    await bob.c.wait('room', (m) => m.room.streams === 1)
+    bob.c.send({ type: 'watch', streamer: alice.id, transport: 'tcp' })
+    carol.c.send({ type: 'watch', streamer: alice.id, transport: 'tcp' })
+    await alice.c.wait('watch-request', (m) => m.from === bob.id)
+    await alice.c.wait('watch-request', (m) => m.from === carol.id)
+
+    const video = (key: boolean, tag: number): Buffer => Buffer.from([BINARY_KIND_VIDEO, key ? BINARY_FLAG_KEY : 0, tag])
+    const audio = (tag: number): Buffer => Buffer.from([BINARY_KIND_AUDIO, 0, tag])
+    const got = (c: TestClient): number[][] => c.binary.map((b) => [b[1], b[3]])
+    alice.c.ws.send(video(true, 1))
+
+    // Bob minimizes: no more video for him, Carol's keeps coming, and both still hear it.
+    bob.c.send({ type: 'view-size', streamer: alice.id, height: HIDDEN_VIEW.height, fps: HIDDEN_VIEW.fps })
+    await alice.c.wait('watcher-view', (m) => m.from === bob.id && m.height === HIDDEN_VIEW.height)
+    alice.c.ws.send(video(false, 2))
+    alice.c.ws.send(audio(3))
+    alice.c.ws.send(video(true, 4))
+    await sleep(200)
+    expect(got(bob.c)).toEqual([
+      [BINARY_KIND_VIDEO, 1],
+      [BINARY_KIND_AUDIO, 3]
+    ])
+    expect(got(carol.c)).toEqual([
+      [BINARY_KIND_VIDEO, 1],
+      [BINARY_KIND_VIDEO, 2],
+      [BINARY_KIND_AUDIO, 3],
+      [BINARY_KIND_VIDEO, 4]
+    ])
+    // Skipped on purpose, not dropped: the streamer isn't told to lower its quality.
+    const feedback = await alice.c.wait('tcp-feedback', () => true, 4000)
+    expect(feedback.dropped).toBe(0)
+
+    // Bob comes back: the streamer is asked for a keyframe at once, and Bob's video restarts at it.
+    alice.c.messages.length = 0
+    bob.c.send({ type: 'view-size', streamer: alice.id, height: 720, fps: null })
+    expect((await alice.c.wait('keyframe-request')).from).toBe(bob.id)
+    alice.c.ws.send(video(false, 5))
+    alice.c.ws.send(video(true, 6))
+    await sleep(200)
+    expect(got(bob.c).slice(2)).toEqual([[BINARY_KIND_VIDEO, 6]])
+  })
+
   it('reports TCP relay stats to the streamer they belong to', async () => {
     const port = await startServer()
     const host = await join(port, 'Host', true)
