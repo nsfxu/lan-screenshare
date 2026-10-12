@@ -232,7 +232,7 @@ npm run perf -- --viewers=2 --source=fake       # o canvas animado dos testes e2
 |---|---|
 | `--viewers=<n>` | Quantos espectadores (padrão 1, no máximo 9: uma sala comporta 10 pessoas). Cada um é uma instância do app com seu próprio `--profile`, assistindo ao streamer. |
 | `--seconds=<s>` | Quanto tempo medir (padrão 60), depois de `--warmup=<s>` (padrão 15). |
-| `--source=screen\|fake\|fake-detailed` | Compartilhar a primeira tela de verdade (padrão no Windows e no macOS) ou um canvas animado em 1080p60 (padrão no Linux). `fake-detailed` cobre o canvas de texto parado, como uma área de trabalho: quadros-chave grandes, quadros pequenos entre eles. |
+| `--source=screen\|window:<título>\|fake\|fake-detailed` | Compartilhar a primeira tela de verdade (padrão no Windows e no macOS), a primeira janela cujo título contém `<título>` (ex.: `window:Minecraft`), ou um canvas animado em 1080p60 (padrão no Linux). `fake-detailed` cobre o canvas de texto parado, como uma área de trabalho: quadros-chave grandes, quadros pequenos entre eles. |
 | `--hint=auto\|detail\|motion` | O **Optimize for** do streamer: `detail` (texto, uma área de trabalho) vai como conteúdo de tela e `motion` (jogos) como vídeo, que o WebRTC cadencia de jeitos diferentes. Padrão: a configuração do app (Automático). |
 | `--quality=<preset>` | A qualidade máxima do streamer: `native60`, `1080p60`, `720p60`, `720p30` ou `480p30`, ou a experimental `1080p120` (o script então adiciona `--perf-high-fps`). |
 | `--view-height=<px>` | Os espectadores pedem essa altura em vez da do bloco deles, para que uma dúzia de janelas pequenas num computador ainda peça 1080p. |
@@ -265,6 +265,17 @@ npm run perf -- --join=<endereço>:47800 --viewers=1 --view-height=1080 --second
 ```
 
 Confira três números: o **Capture fps** do streamer (o que a captura entrega), o **Sent fps** dele, e a linha do espectador em "Displayed by the viewers' video elements" (quadros realmente exibidos). O preset só entra se os três ficarem em 110 ou mais.
+
+**Experimento de captura mais rápida** (`--capture-experiment`, desligado por padrão): liga dois recursos do Chromium 152 que copiam cada quadro capturado menos vezes. O `ZeroCopyDesktopCapture` (todas as plataformas) grava os quadros da tela direto no buffer de captura; no Windows, o `WebRtcAllowWgcUsingTexture` mantém os quadros do Windows Graphics Capture na placa de vídeo. O Windows usa essa API de captura para janelas, e para telas inteiras só a partir do Windows 11 24H2, então no Windows 10 meça também uma janela. Compare a CPU, o tempo de codificação e o fps enviado de quem transmite:
+
+```bash
+npm run perf -- --viewers=2 --seconds=90
+npm run perf -- --viewers=2 --seconds=90 --capture-experiment
+npm run perf -- --viewers=2 --seconds=90 --source=window:<título do jogo>
+npm run perf -- --viewers=2 --seconds=90 --source=window:<título do jogo> --capture-experiment
+```
+
+Depois, com a chave ligada e um espectador em outro PC, confira que nada quebra: alt-tab para dentro e fora de um jogo, um jogo em tela cheia exclusiva, reiniciar o driver de vídeo (Win+Ctrl+Shift+B), a tela dormir e acordar, **Change source** durante o compartilhamento, e um compartilhamento de 30 minutos. O Chromium avisa que reiniciar o driver de vídeo encerra uma captura por textura com um erro em vez de se recuperar.
 
 Numa máquina Linux sem placa de vídeo tudo é codificado em software, e o Chromium pode deixar em branco os nomes do codificador e do decodificador (o resumo diz então "without a known encoder"): use essas execuções para conferir a ferramenta, não para medir.
 
