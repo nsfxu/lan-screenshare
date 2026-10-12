@@ -126,7 +126,7 @@ ${compatibility}
 
 ${entries.replace(/^### /gm, '#### ')}
 
-The installers aren't code-signed yet: on Windows click **More info → Run anyway**, on macOS right-click the app → **Open** the first time.
+The installers aren't code-signed yet: on Windows click **More info → Run anyway**, on macOS open the app once, click **Done**, then **Open Anyway** in *System Settings → Privacy & Security* ([step by step](${repo}/blob/main/docs/en-US/user-guide.md#opening-it-for-the-first-time-on-macos)).
 
 Full list of changes: [CHANGELOG.md](${repo}/blob/main/CHANGELOG.md)
 
