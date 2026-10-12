@@ -22,7 +22,9 @@
 // With a tap, the set of processes left out is re-checked every second, so it
 // follows an app starting to play (Discord joining a call after the share began).
 //
-// Diagnostics go to stderr. The process exits when stdin closes (the app went away),
+// As in the Windows helper, everything that can fail is set up first, then the header is
+// written, and only then does the capture start, so the header is always the first thing on
+// stdout. All writes go through one lock. Diagnostics go to stderr. The process exits when stdin closes (the app went away),
 // when the capture stops by itself (exit code 2), or, before writing the header, when it
 // can't start: the macOS version is too old for the mode asked for (exit code 3), or the
 // permission is missing (exit code 5: Screen Recording, or System Audio Recording for a tap).
@@ -42,9 +44,24 @@ func log(_ message: String) {
   FileHandle.standardError.write(Data((message + "\n").utf8))
 }
 
+let outputLock = NSLock()
+
+/// Every write to stdout goes through here, one at a time. A closed pipe means the app is gone.
 func write(_ data: Data) {
-  FileHandle.standardOutput.write(data)
+  outputLock.lock()
+  defer { outputLock.unlock() }
+  var offset = 0
+  data.withUnsafeBytes { (raw: UnsafeRawBufferPointer) in
+    while offset < raw.count {
+      let n = Foundation.write(STDOUT_FILENO, raw.baseAddress! + offset, raw.count - offset)
+      if n < 0 && errno == EINTR { continue }
+      if n <= 0 { exit(0) }
+      offset += n
+    }
+  }
 }
+
+signal(SIGPIPE, SIG_IGN)
 
 func header(sampleRate: Int) -> Data {
   var data = Data("SSA1".utf8)
@@ -103,7 +120,8 @@ final class ScreenKitCapture: NSObject, SCStreamOutput, SCStreamDelegate {
   private var stream: SCStream?
   private let queue = DispatchQueue(label: "mac-audio-capture")
 
-  func start() async throws {
+  /// Everything that can fail (the permission shows up here); nothing is captured yet.
+  func prepare() async throws {
     let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
     guard let display = content.displays.first else { throw CaptureError.noDisplay }
     let filter = SCContentFilter(display: display, excludingWindows: [])
@@ -120,8 +138,11 @@ final class ScreenKitCapture: NSObject, SCStreamOutput, SCStreamDelegate {
     // Without a screen output ScreenCaptureKit logs every dropped picture.
     try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: queue)
     try stream.addStreamOutput(self, type: .audio, sampleHandlerQueue: queue)
-    try await stream.startCapture()
     self.stream = stream
+  }
+
+  func begin() async throws {
+    try await stream?.startCapture()
   }
 
   func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
@@ -215,12 +236,17 @@ final class ProcessTapCapture {
     return all.filter { $0.bundleId.lowercased().hasPrefix(prefix) }.map { ($0.object, $0.bundleId) }
   }
 
-  func start() throws {
-    try open(processesToExclude())
+  func prepare() throws {
+    try build(processesToExclude())
   }
 
-  /// Build the tap, the private device that carries it, and start reading from it.
-  private func open(_ processes: [(object: AudioObjectID, bundleId: String)]) throws {
+  func begin() throws {
+    let status = AudioDeviceStart(aggregateId, procId)
+    guard status == noErr else { throw CaptureError.tap("start the tap", status) }
+  }
+
+  /// Build the tap, the private device that carries it, and the reader of its sound, without starting.
+  private func build(_ processes: [(object: AudioObjectID, bundleId: String)]) throws {
     excluded = processes.map { $0.object }.sorted()
     log("leaving out: " + (processes.isEmpty ? "nothing playing" : processes.map { $0.bundleId }.joined(separator: ", ")))
 
@@ -265,8 +291,6 @@ final class ProcessTapCapture {
         .withUnsafeBytes { write(Data($0)) }
     }
     guard status == noErr, procId != nil else { throw CaptureError.tap("start reading the tap", status) }
-    status = AudioDeviceStart(aggregateId, procId)
-    guard status == noErr else { throw CaptureError.tap("start the tap", status) }
   }
 
   private func close() {
@@ -285,9 +309,16 @@ final class ProcessTapCapture {
   func refreshExclusions() {
     let wanted = processesToExclude()
     if wanted.map({ $0.object }).sorted() == excluded { return }
+    let rate = sampleRate
     close()
     do {
-      try open(wanted)
+      try build(wanted)
+      // The header already told the app the rate; a different one would play at the wrong speed.
+      if sampleRate != rate {
+        log("the output device's rate changed from \(rate) to \(sampleRate) Hz")
+        exit(2)
+      }
+      try begin()
     } catch {
       log("can't update the apps left out: \(error)")
       exit(2)
@@ -312,12 +343,18 @@ if !excludedPrefixes.isEmpty {
   }
   let tap = ProcessTapCapture()
   do {
-    try tap.start()
+    try tap.prepare()
   } catch {
     log("can't capture system audio: \(error) (is System Audio Recording allowed for ScreenShare?)")
     exit(5)
   }
   write(header(sampleRate: tap.sampleRate))
+  do {
+    try tap.begin()
+  } catch {
+    log("can't start capturing system audio: \(error)")
+    exit(2)
+  }
   log("capturing system audio with a tap at \(tap.sampleRate) Hz x\(channels)")
   Thread.detachNewThread {
     while true {
@@ -336,12 +373,18 @@ guard #available(macOS 13.0, *) else {
 let capture = ScreenKitCapture()
 Task {
   do {
-    try await capture.start()
-    write(header(sampleRate: ScreenKitCapture.sampleRate))
-    log("capturing system audio at \(ScreenKitCapture.sampleRate) Hz x\(channels)")
+    try await capture.prepare()
   } catch {
     log("can't capture system audio: \(error.localizedDescription) (is Screen Recording allowed for ScreenShare?)")
     exit(5)
   }
+  write(header(sampleRate: ScreenKitCapture.sampleRate))
+  do {
+    try await capture.begin()
+  } catch {
+    log("can't start capturing system audio: \(error.localizedDescription)")
+    exit(2)
+  }
+  log("capturing system audio at \(ScreenKitCapture.sampleRate) Hz x\(channels)")
 }
 dispatchMain()

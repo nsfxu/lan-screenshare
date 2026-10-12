@@ -235,7 +235,7 @@ No macOS, a captura de loopback do Chromium não funciona: a faixa de áudio já
 
 O tap é necessário porque o ScreenCaptureKit só deixa de fora *apps* inteiros, e o som dos apps Chromium/Electron (o Discord é um) vem dos processos auxiliares deles, que ele não atribui ao app: medido com um app Electron tocando um tom, excluir o app desse jeito deixou o tom em volume total, e o tap o silenciou.
 
-Quando o tap não pode ser usado (macOS antigo, ou a permissão foi negada), o `publisher.ts` inicia o primeiro modo e o usuário é avisado de que o Discord não ficou de fora (`audio.discordNotExcluded`). Códigos de saída: `2` a captura parou sozinha, `3` macOS antigo demais para o modo pedido, `5` não conseguiu iniciar (a Gravação de Tela, ou a Gravação de Áudio do Sistema no caso do tap, não está liberada). Não há modo por app.
+Quando o tap não pode ser usado (macOS antigo, ou a permissão foi negada), o `publisher.ts` inicia o primeiro modo e o usuário é avisado de que o Discord não ficou de fora (`audio.discordNotExcluded`). Códigos de saída: `2` a captura parou sozinha, `3` macOS antigo demais para o modo pedido, `5` não conseguiu iniciar (a Gravação de Tela, ou a Gravação de Áudio do Sistema no caso do tap, não está liberada). Como no auxiliar do Windows, tudo o que pode falhar é preparado primeiro, depois o cabeçalho é escrito, e só então a captura começa, com toda escrita no stdout passando por um único bloqueio, então o cabeçalho é sempre a primeira coisa que o app lê. Não há modo por app.
 
 ### O auxiliar do Windows (`native/win-audio-capture`)
 
