@@ -16,6 +16,7 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ### Fixed
 
+- **Rooms show up on ZeroTier and other VPNs.** The room is now announced on every network of your computer, not only the physical one, so friends on your ZeroTier network see it in the list without typing an address (the VPN has to allow multicast; ZeroTier needs *Enable Broadcast* on).
 - **Watching over the slower TCP connection works on every computer.** On a computer without a hardware video decoder for the stream's format (some laptops and virtual machines), the stream stayed on "Connecting…" forever; it now plays, decoded by the processor.
 
 ## [2.4.0] - 2026-10-09

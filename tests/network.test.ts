@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { generate } from 'selfsigned'
 import { createHash, X509Certificate } from 'node:crypto'
 import { RoomServer } from '../src/main/server'
-import { addressRank, endpointUrl, fingerprintFromPem, parseHostPort, probeRoom } from '../src/utils/network'
+import { addressRank, endpointUrl, getMulticastAddresses, fingerprintFromPem, parseHostPort, probeRoom } from '../src/utils/network'
 import { chooseCodecOrder, mungeBitrates, mungeOpus } from '../src/shared/codecs'
 
 describe('parseHostPort', () => {
@@ -134,5 +134,36 @@ describe('codec selection', () => {
     expect(out).toContain('a=fmtp:97 apt=96')
     expect(out).toContain('a=fmtp:96 x-google-start-bitrate=6000;x-google-min-bitrate=300')
     expect(out).toContain('a=fmtp:98 packetization-mode=1;profile-level-id=42e01f;x-google-start-bitrate=6000;x-google-min-bitrate=300')
+  })
+})
+
+describe('getMulticastAddresses', () => {
+  const v4 = (address: string, internal = false) => ({
+    address,
+    netmask: '255.255.255.0',
+    family: 'IPv4' as const,
+    mac: '00:00:00:00:00:00',
+    internal,
+    cidr: null
+  })
+
+  it('returns one address per interface, VPN adapters included', () => {
+    expect(
+      getMulticastAddresses({
+        lo0: [v4('127.0.0.1', true)],
+        en0: [v4('192.168.1.20')],
+        feth1: [v4('10.147.17.5'), v4('10.147.17.6')]
+      })
+    ).toEqual(['192.168.1.20', '10.147.17.5'])
+  })
+
+  it('skips loopback, link-local and IPv6-only interfaces', () => {
+    expect(
+      getMulticastAddresses({
+        lo0: [v4('127.0.0.1', true)],
+        en1: [v4('169.254.3.4')],
+        en2: [{ ...v4('::1'), family: 'IPv6' as const, netmask: 'ffff::', cidr: null, scopeid: 0 }]
+      })
+    ).toEqual([])
   })
 })

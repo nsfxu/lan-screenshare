@@ -152,7 +152,7 @@ Cuida de tudo que envolve salas neste computador.
 
 - **Hospedagem.** `createRoom()` gera o PIN (salas privadas) e o token de anfitrião, carrega ou cria a identidade TLS, inicia um `RoomServer` e publica o anúncio mDNS. `updateRoom()` muda o nome, a privacidade ou o PIN com a sala no ar. `closeRoom()` encerra tudo.
 - **Identidade TLS.** Um certificado autoassinado EC P-256 é gerado uma vez e guardado em `host-identity.json` (pasta de dados do usuário) por dois anos, para que a impressão digital (*fingerprint*) não mude e os espectadores possam fixá-la.
-- **Descoberta.** Mantém uma lista de salas vindas do mDNS e de endereços manuais, consulta o `GET /info` de cada uma a cada 3 s (`PROBE_INTERVAL_MS`) e remove as salas que não respondem há 10 s (`ROOM_STALE_MS`).
+- **Descoberta.** O anúncio e a busca por mDNS rodam uma vez por interface IPv4 (LAN, Wi-Fi, adaptadores de VPN), reconferidas a cada 5 s, porque um único socket só envia multicast pela interface padrão do sistema. Mantém uma lista de salas vindas do mDNS e de endereços manuais, consulta o `GET /info` de cada uma a cada 3 s (`PROBE_INTERVAL_MS`) e remove as salas que não respondem há 10 s (`ROOM_STALE_MS`).
 - **Confiança no certificado.** Lembra quais impressões digitais pertencem a qual host (vindas do registro TXT do mDNS ou da primeira consulta). O `index.ts` pede a ele para aprovar certificados autoassinados em `setCertificateVerifyProc`.
 
 ### RoomServer (`src/main/server.ts`)

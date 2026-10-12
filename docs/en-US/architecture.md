@@ -152,7 +152,7 @@ Owns everything about rooms on this machine.
 
 - **Hosting.** `createRoom()` generates the PIN (private rooms) and the host token, loads or creates the TLS identity, starts a `RoomServer`, and publishes the mDNS advert. `updateRoom()` changes the name, privacy or PIN live. `closeRoom()` stops everything.
 - **TLS identity.** A self-signed EC P-256 certificate is generated once and stored in `host-identity.json` (user data folder) for two years, so its fingerprint stays stable and viewers can pin it.
-- **Discovery.** It keeps a list of rooms from mDNS and from manual addresses, probes each one at `GET /info` every 3 s (`PROBE_INTERVAL_MS`), and drops rooms that have not answered for 10 s (`ROOM_STALE_MS`).
+- **Discovery.** The mDNS advert and browse run once per IPv4 interface (LAN, Wi-Fi, VPN adapters), re-checked every 5 s, because one socket only sends multicast out of the OS's default interface. It keeps a list of rooms from mDNS and from manual addresses, probes each one at `GET /info` every 3 s (`PROBE_INTERVAL_MS`), and drops rooms that have not answered for 10 s (`ROOM_STALE_MS`).
 - **Certificate trust.** It remembers which certificate fingerprints belong to which host (from the mDNS TXT record or from the first probe). `index.ts` asks it to approve self-signed certificates in `setCertificateVerifyProc`.
 
 ### RoomServer (`src/main/server.ts`)
