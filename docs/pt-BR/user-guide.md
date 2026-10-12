@@ -25,7 +25,7 @@ Os nomes dos botões aqui são os do app em português. Ele abre no idioma do se
 
 ## Antes de começar
 
-- **Computadores**: Windows 10/11 ou macOS. O áudio do sistema no macOS precisa do macOS 13 ou mais novo. Deixar o Discord fora do áudio precisa do Windows 10 versão 2004 ou mais novo.
+- **Computadores**: Windows 10/11 ou macOS. O áudio do sistema no macOS precisa do macOS 13 ou mais novo. Deixar o Discord fora do áudio precisa do Windows 10 versão 2004 ou mais novo, ou do macOS 14.2 ou mais novo.
 - **Rede**: todos precisam estar na mesma rede local ou VPN. Nada passa pela internet (fora a busca por atualizações) e não existem contas.
 - **Versões compatíveis**: apps 1.x e 2.x podem estar na mesma sala (o 2.0.0 mudou a aparência, não a forma como os apps conversam). Só uma versão que muda o protocolo da sala, como um futuro 3.0.0, exige que todos atualizem; a lista de salas diz quem precisa, por exemplo "Esta sala usa o ScreenShare 3.0.0, você tem o 2.0.0: atualize para entrar". Quando alguém na sua sala usa uma versão mais nova, aparece uma sugestão (uma vez) para atualizar.
 - **macOS**: na primeira vez que você abre o app, o macOS o bloqueia até você permitir uma vez; veja [abrir pela primeira vez no macOS](#abrir-pela-primeira-vez-no-macos). Na primeira vez que você compartilhar, o macOS pede a permissão de **Gravação de Tela** e pode pedir acesso à **Rede Local**. Permita as duas e reinicie o app se ele pedir.
@@ -85,7 +85,7 @@ O botão no topo de cada coluna lateral a esconde (a coluna de salas vira uma fa
 1. Clique em **Criar sala**.
 2. Dê um nome e escolha **Pública** (qualquer pessoa da rede pode entrar) ou **Privada** (as pessoas precisam de um PIN, que é gerado para você; escolha 4, 5 ou 6 dígitos).
 3. Escolha o que compartilhar: uma **tela** inteira ou uma única **janela**.
-4. **Compartilhar o áudio do sistema** envia tudo que está tocando no seu computador. No Windows, **Deixar o Discord de fora** (ligado por padrão) deixa a sua chamada do Discord de fora, para quem está na mesma chamada não ouvir a própria voz pela sua transmissão. Quando você compartilha uma única **janela** no Windows, **Só o som deste app** (ligado por padrão) envia só o som daquele app, por exemplo só o seu jogo, sem Discord, música ou notificações.
+4. **Compartilhar o áudio do sistema** envia tudo que está tocando no seu computador. No Windows e no macOS, **Deixar o Discord de fora** (ligado por padrão) deixa a sua chamada do Discord de fora, para quem está na mesma chamada não ouvir a própria voz pela sua transmissão. Quando você compartilha uma única **janela** no Windows, **Só o som deste app** (ligado por padrão) envia só o som daquele app, por exemplo só o seu jogo, sem Discord, música ou notificações.
 5. Clique em **Começar a compartilhar**.
 
 Numa sala privada, o PIN é copiado para a área de transferência para você colar para os seus amigos.
@@ -193,7 +193,7 @@ Abra as configurações pelo ícone de engrenagem embaixo da coluna de salas. A 
 | Compartilhamento | Limite de upload ao compartilhar | 100 Mbps | O seu upload total, dividido de forma justa entre quem te assiste. Diminua no Wi-Fi ou na VPN. |
 | Compartilhamento | Compartilhar o áudio do sistema por padrão | ligado | Deixa o interruptor de áudio pré-marcado. |
 | Compartilhamento | Só o som do app compartilhado por padrão | ligado | Só no Windows. Deixa **Só o som deste app** pré-marcado quando você compartilha uma janela. |
-| Compartilhamento | Deixar o Discord de fora por padrão | ligado | Só no Windows. Deixa o interruptor do Discord pré-marcado. |
+| Compartilhamento | Deixar o Discord de fora por padrão | ligado | Windows e macOS. Deixa o interruptor do Discord pré-marcado. |
 | Compartilhamento | Pausar o compartilhamento ao minimizar | desligado | Retoma quando você restaura a janela. |
 | Notificações | Notificações do chat | ligado | Quando a janela está em segundo plano. |
 | Conexão | Voltar para a última sala ao abrir | desligado | Entra automaticamente na última sala quando o app abre. |

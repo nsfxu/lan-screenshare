@@ -23,7 +23,7 @@ Everything you can do in ScreenShare, from finding a room to fine-tuning quality
 
 ## Before you start
 
-- **Computers**: Windows 10/11 or macOS. System audio on macOS needs macOS 13 or newer. Leaving Discord out of the audio needs Windows 10 version 2004 or newer.
+- **Computers**: Windows 10/11 or macOS. System audio on macOS needs macOS 13 or newer. Leaving Discord out of the audio needs Windows 10 version 2004 or newer, or macOS 14.2 or newer.
 - **Network**: everyone must be on the same local network or VPN. Nothing goes over the internet (apart from the update check) and there are no accounts.
 - **Compatible versions**: 1.x and 2.x apps can share a room (2.0.0 changed the look, not how apps talk to each other). Only a version that changes the room protocol, such as a future 3.0.0, needs everyone to update; the room list then says who has to, e.g. "This room runs ScreenShare 3.0.0, you have 2.0.0: update to join". When someone in your room runs a newer version, you get a one-time suggestion to update.
 - **macOS**: the first time you open the app, macOS blocks it until you allow it once; see [opening it for the first time on macOS](#opening-it-for-the-first-time-on-macos). The first time you share, macOS asks for **Screen Recording** permission, and it may ask for **Local Network** access. Allow both, then restart the app if asked.
@@ -83,7 +83,7 @@ The button at the top of each side column hides it (the rooms column shrinks to 
 1. Click **Create room**.
 2. Give it a name and choose **Public** (anyone on the network can join) or **Private** (people need a PIN, which is generated for you; pick 4, 5 or 6 digits).
 3. Choose what to share: a whole **screen** or a single **window**.
-4. **Share system audio** sends everything playing on your computer. On Windows, **Leave out Discord** (on by default) keeps your Discord call out of it, so people in the same call don't hear themselves through your stream. When you share a single **window** on Windows, **Only this app's sound** (on by default) sends just that app's sound, for example only your game, without Discord, music or notifications.
+4. **Share system audio** sends everything playing on your computer. On Windows and macOS, **Leave out Discord** (on by default) keeps your Discord call out of it, so people in the same call don't hear themselves through your stream. When you share a single **window** on Windows, **Only this app's sound** (on by default) sends just that app's sound, for example only your game, without Discord, music or notifications.
 5. Click **Start sharing**.
 
 For a private room, the PIN is copied to your clipboard so you can paste it to your friends.
@@ -191,7 +191,7 @@ Open Settings with the gear icon at the bottom of the rooms column. The list on 
 | Sharing | Upload limit when sharing | 100 Mbps | Your total upload, shared fairly between everyone watching you. Lower it on Wi-Fi or VPN. |
 | Sharing | Share system audio by default | on | Pre-selects the audio switch. |
 | Sharing | Only the shared app's sound by default | on | Windows only. Pre-selects **Only this app's sound** when you share a window. |
-| Sharing | Leave out Discord by default | on | Windows only. Pre-selects the Discord switch. |
+| Sharing | Leave out Discord by default | on | Windows and macOS. Pre-selects the Discord switch. |
 | Sharing | Pause sharing while minimized | off | Resumes when you restore the window. |
 | Notifications | Chat notifications | on | When the window is in the background. |
 | Connection | Rejoin last room on startup | off | Joins your last room automatically when the app starts. |

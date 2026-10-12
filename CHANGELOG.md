@@ -16,6 +16,7 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ### Fixed
 
+- **macOS: the shared screen now has sound.** Sharing system audio from a Mac produced no sound at all (viewers saw the picture only, with no warning). The app now captures it with a small helper of its own, so it works on macOS 13 or newer once Screen Recording is allowed for ScreenShare. **Leave out Discord** works on the Mac too (macOS 14.2 or newer, and a second permission prompt, *System Audio Recording*): people in your Discord call don't hear themselves through your stream.
 - **Rooms show up on ZeroTier and other VPNs.** The room is now announced on every network of your computer, not only the physical one, so friends on your ZeroTier network see it in the list without typing an address (the VPN has to allow multicast; ZeroTier needs *Enable Broadcast* on).
 - **Watching over the slower TCP connection works on every computer.** On a computer without a hardware video decoder for the stream's format (some laptops and virtual machines), the stream stayed on "Connecting…" forever; it now plays, decoded by the processor.
 

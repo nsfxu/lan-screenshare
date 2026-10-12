@@ -89,6 +89,7 @@ function AudioToggle({
   }, [])
   if (supported === false) return null
   const windows = platform === 'win32'
+  const canLeaveOutDiscord = windows || platform === 'darwin'
   const windowChosen = sourceId?.startsWith('window:') ?? false
   const appOnly = windows && windowChosen && value.appOnly
   const set = (patch: Partial<AudioChoice>): void => onChange({ ...value, ...patch })
@@ -120,7 +121,7 @@ function AudioToggle({
           />
         </label>
       )}
-      {windows && !appOnly && (
+      {canLeaveOutDiscord && !appOnly && (
         <label className={`toggle-row nested ${value.enabled ? '' : 'disabled'}`}>
           <div>
             <span>{t('audio.leaveOutDiscord')}</span>
@@ -520,7 +521,7 @@ export function SettingsPanel({
               {toggle('shareAudio', t('settings.shareAudio'), t('settings.shareAudioHint'))}
               {info?.platform === 'win32' &&
                 toggle('appAudioOnly', t('settings.appAudioOnly'), t('settings.appAudioOnlyHint'))}
-              {info?.platform === 'win32' &&
+              {(info?.platform === 'win32' || info?.platform === 'darwin') &&
                 toggle('excludeDiscordAudio', t('settings.excludeDiscord'), t('settings.excludeDiscordHint'))}
               {toggle('pauseOnMinimize', t('settings.pauseOnMinimize'), t('settings.pauseOnMinimizeHint'))}
             </section>

@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { app, type WebContents } from 'electron'
 import { IPC } from '../shared/ipc'
-import { DISCORD_PROCESSES, NO_APP_WINDOW, NO_PROCESS_LOOPBACK } from '../shared/constants'
+import { DISCORD_BUNDLE_PREFIXES, DISCORD_PROCESSES, NO_APP_WINDOW, NO_PROCESS_LOOPBACK } from '../shared/constants'
 import type { NativeAudioFormat, NativeAudioOptions } from '../shared/types'
 import type { Logger } from './server'
 
@@ -15,15 +15,20 @@ const EXIT_NO_PROCESS_LOOPBACK = 3
 const EXIT_NO_TARGET = 4
 
 /**
- * Windows system audio through the bundled WASAPI helper
- * (native/win-audio-capture), in one of two modes:
+ * System audio through a bundled helper that writes PCM to stdout.
+ *
+ * macOS: native/mac-audio-capture, the whole system sound (ScreenCaptureKit), or everything except
+ * Discord (a Core Audio process tap, macOS 14.2+). Chromium's own loopback doesn't work there: its
+ * track ends the moment it is created.
+ *
+ * Windows: the WASAPI helper (native/win-audio-capture), in one of two modes:
  *  - everything except Discord (per-process loopback), so viewers in the same
  *    voice call don't hear themselves. While Discord isn't running, the helper
  *    leaves out this app instead, and it follows Discord starting or quitting;
  *  - the output device's loopback, when Chromium's own loopback can't open the
  *    device, e.g. a headset in 7.1 mode (captured in the device's mix format).
- * Either way the helper produces stereo float32, which is forwarded to the
- * renderer in frame-aligned chunks.
+ * Every helper produces stereo float32, which is forwarded to the renderer in
+ * frame-aligned chunks.
  */
 export class NativeLoopback {
   private child: ChildProcessWithoutNullStreams | null = null
@@ -32,13 +37,14 @@ export class NativeLoopback {
   constructor(private readonly log: Logger) {}
 
   private get exePath(): string {
+    const name = process.platform === 'darwin' ? 'mac-audio-capture' : 'win-audio-capture.exe'
     return app.isPackaged
-      ? path.join(process.resourcesPath, 'win-audio-capture.exe')
-      : path.join(app.getAppPath(), 'native', 'bin', 'win-audio-capture.exe')
+      ? path.join(process.resourcesPath, name)
+      : path.join(app.getAppPath(), 'native', 'bin', name)
   }
 
   available(): boolean {
-    return process.platform === 'win32' && fs.existsSync(this.exePath)
+    return (process.platform === 'win32' || process.platform === 'darwin') && fs.existsSync(this.exePath)
   }
 
   start(target: WebContents, options: NativeAudioOptions = { excludeDiscord: false }): Promise<NativeAudioFormat> {
@@ -46,13 +52,27 @@ export class NativeLoopback {
     if (!this.available()) return Promise.reject(new Error('Native audio capture is not available'))
     const id = ++this.runs
     const hwnd = options.appWindow?.split(':')[1]
-    const args = hwnd
-      ? ['--include-window', hwnd]
-      : options.excludeDiscord
-        ? ['--exclude', DISCORD_PROCESSES.join(','), '--fallback-pid', String(process.pid)]
+    const mac = process.platform === 'darwin'
+    const args = mac
+      ? options.excludeDiscord
+        ? ['--exclude-bundle-prefix', DISCORD_BUNDLE_PREFIXES.join(','), '--fallback-pid', String(process.pid)]
         : []
-    const mode = hwnd ? `only the app of window ${hwnd}` : options.excludeDiscord ? 'all audio except Discord' : 'device loopback'
-    this.log.info(`[win-audio] run ${id}: ${mode}`)
+      : hwnd
+        ? ['--include-window', hwnd]
+        : options.excludeDiscord
+          ? ['--exclude', DISCORD_PROCESSES.join(','), '--fallback-pid', String(process.pid)]
+          : []
+    const mode = mac
+      ? options.excludeDiscord
+        ? 'all audio except Discord (process tap)'
+        : 'system audio (ScreenCaptureKit)'
+      : hwnd
+        ? `only the app of window ${hwnd}`
+        : options.excludeDiscord
+          ? 'all audio except Discord'
+          : 'device loopback'
+    const tag = mac ? 'mac-audio' : 'win-audio'
+    this.log.info(`[${tag}] run ${id}: ${mode}`)
     const child = spawn(this.exePath, args, { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
     this.child = child
     let pending: Buffer = Buffer.alloc(0)
@@ -62,13 +82,13 @@ export class NativeLoopback {
       const fail = (err: Error): void => {
         if (!format) reject(err)
       }
-      child.stderr.on('data', (d: Buffer) => this.log.info(`[win-audio] ${d.toString().trim()}`))
+      child.stderr.on('data', (d: Buffer) => this.log.info(`[${tag}] ${d.toString().trim()}`))
       child.on('error', fail)
       child.on('exit', (code) => {
         // stop() clears this.child first, so only unexpected exits are reported.
         const unexpected = this.child === child
         if (unexpected) this.child = null
-        this.log.info(`[win-audio] run ${id} exited with code ${code}`)
+        this.log.info(`[${tag}] run ${id} exited with code ${code}`)
         fail(
           new Error(
             code === EXIT_NO_PROCESS_LOOPBACK

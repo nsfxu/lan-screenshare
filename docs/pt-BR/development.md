@@ -58,7 +58,7 @@ npm test
 | `npm run test:watch` | Testes em modo observação. |
 | `npm run test:e2e` | Compila e roda os testes de ponta a ponta: duas instâncias reais do app numa sala (veja [testes](testing.md#testes-de-ponta-a-ponta)). |
 | `npm run typecheck` | Verificação do TypeScript do lado Node (`tsconfig.node.json`, inclui `tests/`) e do lado web (`tsconfig.web.json`). |
-| `npm run build:native` | Compila os auxiliares do Windows em `native/bin/` (`win-audio-capture.exe`, `win-cursor-watch.exe`); não faz nada em outros sistemas ou se já estiverem atualizados. |
+| `npm run build:native` | Compila os auxiliares nativos em `native/bin/`: no Windows `win-audio-capture.exe` e `win-cursor-watch.exe`, no macOS o `mac-audio-capture` universal (precisa do `swiftc` das ferramentas de linha de comando do Xcode); não faz nada no Linux ou se já estiverem atualizados. |
 | `npm run dist:win` | Build + instalador do Windows (NSIS, x64 e arm64) em `release/<versão>/`. |
 | `npm run dist:mac` | Build + imagens de disco do macOS (Intel e Apple Silicon) em `release/<versão>/`. Precisa rodar num Mac. |
 | `npm run dist` | Build + instalador para a plataforma atual. |

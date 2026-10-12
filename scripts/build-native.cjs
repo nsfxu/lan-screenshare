@@ -1,17 +1,27 @@
-// Compiles the Windows helpers in native/<name>/Program.cs to
-// native/bin/<name>.exe with the C# compiler that ships with .NET Framework 4
-// on every Windows 10/11 machine:
+// Compiles the native helpers into native/bin/. No-op on Linux and for binaries
+// that are already up to date.
+//
+// Windows: native/<name>/Program.cs to native/bin/<name>.exe with the C# compiler
+// that ships with .NET Framework 4 on every Windows 10/11 machine:
 //   - win-audio-capture: WASAPI loopback (surround devices, all audio except Discord)
 //   - win-cursor-watch:  reports when a game hides the mouse cursor
-// No-op on other platforms and for binaries that are already up to date.
+//
+// macOS: native/mac-audio-capture/main.swift to native/bin/mac-audio-capture, a
+// universal (Apple Silicon + Intel) binary, with swiftc from the Xcode command
+// line tools (system audio through ScreenCaptureKit).
 const { execFileSync } = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
 
-if (process.platform !== 'win32') process.exit(0)
-
 const root = path.join(__dirname, '..')
 const outDir = path.join(root, 'native', 'bin')
+
+if (process.platform === 'darwin') {
+  buildMacAudioCapture()
+  process.exit(0)
+}
+if (process.platform !== 'win32') process.exit(0)
+
 const helpers = ['win-audio-capture', 'win-cursor-watch']
 
 const windir = process.env.WINDIR || 'C:\Windows'
@@ -53,5 +63,27 @@ function moveAsideIfRunning(file) {
     fs.unlinkSync(file)
   } catch {
     fs.renameSync(file, `${file}.${Date.now()}.old`)
+  }
+}
+
+function buildMacAudioCapture() {
+  const source = path.join(root, 'native', 'mac-audio-capture', 'main.swift')
+  const output = path.join(outDir, 'mac-audio-capture')
+  if (fs.existsSync(output) && fs.statSync(output).mtimeMs >= fs.statSync(source).mtimeMs) return
+  const parts = []
+  try {
+    fs.mkdirSync(outDir, { recursive: true })
+    // One slice per architecture, joined with lipo, so either Mac can run the same file.
+    for (const arch of ['arm64', 'x86_64']) {
+      const part = `${output}-${arch}`
+      execFileSync('swiftc', ['-O', '-target', `${arch}-apple-macos13.0`, source, '-o', part], { stdio: 'inherit' })
+      parts.push(part)
+    }
+    execFileSync('lipo', ['-create', ...parts, '-output', output], { stdio: 'inherit' })
+    console.log(`[native] built ${path.relative(root, output)}`)
+  } catch (err) {
+    console.warn(`[native] could not build mac-audio-capture (is Xcode's swiftc installed?); system audio will be unavailable: ${err.message}`)
+  } finally {
+    for (const part of parts) fs.rmSync(part, { force: true })
   }
 }

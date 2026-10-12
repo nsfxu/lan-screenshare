@@ -36,6 +36,7 @@ npm run perf -- --viewers=2   # measure a streamer and viewers (see docs/en-US/t
 | Quality maths (pure, tested) | `src/shared/quality.ts` |
 | UI text, translations | `src/shared/i18n/` (`en.ts` is the reference), `useT()` in `src/renderer/lib/i18n.tsx`, `mainT()` in `src/main/i18n.ts`; see [translations](docs/en-US/development.md#translations) |
 | UI | `src/renderer/App.tsx` (three columns), `src/renderer/components/` (`RoomsSidebar`, `RoomMembers`, `RoomView`, `RoomStage`, `RoomInfo`, `ChatPanel`), `src/renderer/styles.css`, layout helpers in `src/renderer/lib/layout.ts` |
+| macOS helper (Swift) | `native/mac-audio-capture/main.swift` (system audio through ScreenCaptureKit; Chromium's own loopback doesn't work on macOS) |
 | Windows helpers (C#) | `native/win-audio-capture/Program.cs` (system audio), `native/win-cursor-watch/Program.cs` (games hiding the cursor) |
 | Measuring performance | `scripts/perf/`, `src/shared/perf.ts`, `src/shared/perfSummary.ts`, [`plans/performance.md`](plans/performance.md) |
 | Tests | `tests/` (`TestClient` in `tests/helpers.ts`) |
@@ -60,7 +61,7 @@ npm run perf -- --viewers=2   # measure a streamer and viewers (see docs/en-US/t
 - Always run `npm run typecheck` and `npm test`, and `npm run test:e2e` for anything that touches the app (CI runs all three on every push). New user flows get an end-to-end test (`e2e/`, see [testing](docs/en-US/testing.md#end-to-end-tests)).
 - For UI or media changes, drive the real app headlessly with Playwright's Electron support under Xvfb, and look at the result (screenshots, `.stat-badge` values, computed styles). A tested example script and tips (fake capture source, two instances with `--profile`, Xvfb flags) are in [`docs/en-US/testing.md`](docs/en-US/testing.md#driving-the-real-app).
 - Running Electron as root (containers) needs `--no-sandbox`.
-- You can't run Windows-only features (the audio helper, Discord exclusion) or macOS permissions on Linux. Say clearly what you verified and what still needs a real machine.
+- You can't run Windows-only features (the audio helper, Discord exclusion) or macOS permissions on Linux, nor the macOS audio helper off a Mac. Say clearly what you verified and what still needs a real machine.
 
 ## Gotchas
 
