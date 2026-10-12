@@ -75,9 +75,11 @@ export const SNAPSHOT_MIN_INTERVAL_MS = 1_000
 
 /**
  * Discord builds whose audio (the voice call) is left out of a shared system
- * audio mix on Windows, so viewers in the same call don't hear themselves.
+ * audio mix on Windows and macOS, so viewers in the same call don't hear themselves.
  */
 export const DISCORD_PROCESSES = ['Discord.exe', 'DiscordPTB.exe', 'DiscordCanary.exe', 'DiscordDevelopment.exe']
+/** The same on macOS, as bundle id prefixes: the app and its helper processes (com.hnc.Discord.helper...). */
+export const DISCORD_BUNDLE_PREFIXES = ['com.hnc.Discord']
 /** Error text when this Windows can't capture system audio minus one app (needs Windows 10 2004+). */
 export const NO_PROCESS_LOOPBACK = 'per-app audio capture is not supported on this version of Windows'
 /** Error from the native audio helper: the window whose app sound was asked for is gone. */

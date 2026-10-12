@@ -62,7 +62,7 @@ flowchart TB
     RS["RoomServer<br/>HTTP /info + WebSocket /ws"]
     MD["MdnsDiscovery<br/>src/utils/mdns.ts"]
     SC["ScreenCapture<br/>seletor de fonte + handler de display-media"]
-    NL["NativeLoopback<br/>roda o win-audio-capture.exe"]
+    NL["NativeLoopback<br/>roda o auxiliar de áudio"]
     ST["SettingsStore<br/>settings.json"]
     LG["Logger em arquivo"]
     RM --> RS
@@ -136,6 +136,7 @@ src/
     crypto.ts        geração/comparação de PIN, bloqueio, ids aleatórios
 native/
   win-audio-capture/Program.cs   auxiliar de áudio do Windows (C#, compilado com o compilador que vem no Windows)
+  mac-audio-capture/main.swift   auxiliar de áudio do macOS (Swift, ScreenCaptureKit, compilado com o swiftc)
   win-cursor-watch/Program.cs    auxiliar do Windows que avisa quando um jogo esconde o cursor (C#)
 scripts/build-native.cjs         compila os auxiliares antes do `dev`/`build` (não faz nada fora do Windows)
 tests/                           vitest: servidor, transmissões, qualidade, recorte, codecs/TLS, cripto e os
@@ -152,7 +153,7 @@ Cuida de tudo que envolve salas neste computador.
 
 - **Hospedagem.** `createRoom()` gera o PIN (salas privadas) e o token de anfitrião, carrega ou cria a identidade TLS, inicia um `RoomServer` e publica o anúncio mDNS. `updateRoom()` muda o nome, a privacidade ou o PIN com a sala no ar. `closeRoom()` encerra tudo.
 - **Identidade TLS.** Um certificado autoassinado EC P-256 é gerado uma vez e guardado em `host-identity.json` (pasta de dados do usuário) por dois anos, para que a impressão digital (*fingerprint*) não mude e os espectadores possam fixá-la.
-- **Descoberta.** Mantém uma lista de salas vindas do mDNS e de endereços manuais, consulta o `GET /info` de cada uma a cada 3 s (`PROBE_INTERVAL_MS`) e remove as salas que não respondem há 10 s (`ROOM_STALE_MS`).
+- **Descoberta.** O anúncio e a busca por mDNS rodam uma vez por interface IPv4 (LAN, Wi-Fi, adaptadores de VPN), reconferidas a cada 5 s, porque um único socket só envia multicast pela interface padrão do sistema. Mantém uma lista de salas vindas do mDNS e de endereços manuais, consulta o `GET /info` de cada uma a cada 3 s (`PROBE_INTERVAL_MS`) e remove as salas que não respondem há 10 s (`ROOM_STALE_MS`).
 - **Confiança no certificado.** Lembra quais impressões digitais pertencem a qual host (vindas do registro TXT do mDNS ou da primeira consulta). O `index.ts` pede a ele para aprovar certificados autoassinados em `setCertificateVerifyProc`.
 
 ### RoomServer (`src/main/server.ts`)
@@ -205,7 +206,7 @@ A lista completa de mensagens está na [referência do protocolo](protocol.md).
 ### ScreenCapture e NativeLoopback
 
 - `ScreenCapture` lista telas e janelas com miniaturas para o seletor do próprio app e depois responde ao pedido `getDisplayMedia()` do Chromium com a fonte escolhida (`setDisplayMediaRequestHandler`), com ou sem áudio de loopback.
-- `NativeLoopback` roda o `win-audio-capture.exe` quando o Chromium não consegue capturar o áudio que precisamos (dispositivos surround, tudo menos o Discord, ou só o app da janela compartilhada) e repassa o PCM para o renderer via IPC. Veja [pipeline de mídia → áudio](media-pipeline.md#áudio-do-sistema).
+- `NativeLoopback` sempre roda o `mac-audio-capture` no macOS (lá a faixa de loopback do Chromium termina assim que é criada) e, no Windows, roda o `win-audio-capture.exe` quando o Chromium não consegue capturar o áudio que precisamos (dispositivos surround, tudo menos o Discord, ou só o app da janela compartilhada) e repassa o PCM para o renderer via IPC. Veja [pipeline de mídia → áudio](media-pipeline.md#áudio-do-sistema).
 - `CursorWatch` roda o `win-cursor-watch.exe` durante o compartilhamento no Windows e avisa se o cursor está escondido e qual janela está na frente (em tela cheia ou não, em qual monitor). O renderer divide isso entre quem usa (`foregroundWatch.ts`): no Windows anterior ao 11 24H2, a janela de um jogo em tela cheia é compartilhada no lugar da tela enquanto ele esconde o cursor (veja [pipeline de mídia → jogos que escondem o cursor](media-pipeline.md#jogos-que-escondem-o-cursor-windows)); e o **Optimize for: Automatic** escolhe entre movimento suave e texto nítido (veja [captura](media-pipeline.md#captura)).
 
 ## Renderer: os objetos da sessão

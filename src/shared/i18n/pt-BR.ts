@@ -370,14 +370,14 @@ export const ptBR: Messages = {
     'Deixa de fora todo o resto, como o Discord, música e notificações. Precisa do Windows 10 versão 2004 ou mais novo.',
   'audio.leaveOutDiscord': 'Deixar o Discord de fora',
   'audio.leaveOutDiscordDetail':
-    'Quem está na sua chamada do Discord não vai se ouvir pela sua transmissão. Precisa do Windows 10 versão 2004 ou mais novo.',
+    'Quem está na sua chamada do Discord não vai se ouvir pela sua transmissão. Precisa do Windows 10 versão 2004 ou mais novo, ou do macOS 14.2 ou mais novo.',
   'audio.surround':
     'Não foi possível capturar o áudio do sistema do dispositivo de saída padrão. Se ele está em modo surround (5.1/7.1), mudar para estéreo costuma resolver (Configurações de som → dispositivo → Propriedades → Avançado → 2 canais); depois use Trocar fonte. Compartilhando só o vídeo por enquanto.',
   'audio.unavailableMac':
     'Não foi possível capturar o áudio do sistema (no macOS isso precisa do macOS 13+ e da permissão de Gravação de Tela). Compartilhando só o vídeo.',
   'audio.unavailable': 'O áudio do sistema não está disponível aqui; compartilhando só o vídeo.',
   'audio.discordNotExcluded':
-    'Não foi possível deixar o Discord fora do áudio compartilhado (isso precisa do Windows 10 versão 2004 ou mais novo), então os espectadores também vão ouvir sua chamada do Discord. Use Silenciar áudio se for um problema.',
+    'Não foi possível deixar o Discord fora do áudio compartilhado (isso precisa do Windows 10 versão 2004 ou mais novo, ou do macOS 14.2 ou mais novo com a Gravação de Áudio do Sistema liberada), então os espectadores também vão ouvir sua chamada do Discord. Use Silenciar áudio se for um problema.',
   'audio.appFailed':
     'Não foi possível compartilhar só o som daquele app (isso precisa do Windows 10 versão 2004 ou mais novo), então os espectadores ouvem tudo o que toca no seu computador. Use Silenciar áudio se for um problema.',
 

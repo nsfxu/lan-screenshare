@@ -70,6 +70,12 @@
       "pt_BR"
     ],
     "category": "public.app-category.productivity",
+    "extraResources": [
+      {
+        "from": "native/bin/mac-audio-capture",
+        "to": "mac-audio-capture"
+      }
+    ],
     "identity": "-",
     "hardenedRuntime": false,
     "entitlements": "build/entitlements.mac.plist",

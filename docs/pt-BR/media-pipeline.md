@@ -216,13 +216,26 @@ flowchart TD
   Q -->|sim| H1["Auxiliar nativo, modo process loopback:<br/>tudo menos o Discord<br/>(ou menos o ScreenShare quando o Discord não está aberto)"]
   H1 -->|funcionou| OK["Trilha de áudio"]
   H1 -->|"sem suporte (saída 3)<br/>ou auxiliar ausente"| C
-  Q -->|não| C["Loopback do Chromium<br/>(WASAPI no Windows, ScreenCaptureKit no macOS 13+)"]
+  Q -->|não| C["Loopback do Chromium<br/>(WASAPI no Windows)"]
   C -->|funcionou| OK
   C -->|"NotReadableError no Windows<br/>(dispositivo surround 5.1/7.1)"| H2["Auxiliar nativo, modo dispositivo:<br/>captura no formato do mix e converte para estéreo"]
   H2 -->|funcionou| OK
   C -->|"outra falha"| NO["Só vídeo + um aviso"]
   H2 -->|falhou| NO
 ```
+
+### O auxiliar do macOS (`native/mac-audio-capture`)
+
+No macOS, a captura de loopback do Chromium não funciona: a faixa de áudio já chega encerrada, então a transmissão ficava sem som e sem erro. O `getAudioTracks()` ainda devolvia uma faixa, por isso o log dizia "+ audio". Em vez disso, o `publisher.ts` inicia um pequeno auxiliar em Swift (o `scripts/build-native.cjs` o compila com o `swiftc` num binário universal, e o electron-builder o inclui nos recursos do app). Ele abre um stream do ScreenCaptureKit da tela principal com áudio ligado (a imagem tem 2×2 pixels, uma vez por segundo, só porque um stream precisa de uma) e escreve o som no mesmo formato do auxiliar do Windows abaixo: cabeçalho `"SSA1"`, depois frames float32 estéreo intercalados a 48 kHz. Ele tem duas formas de capturar:
+
+| Modo | Argumentos | Como |
+|---|---|---|
+| Tudo | (nenhum) | O stream do ScreenCaptureKit acima. macOS 13+, permissão de Gravação de Tela. |
+| Tudo menos o Discord | `--exclude-bundle-prefix com.hnc.Discord --fallback-pid <pid do ScreenShare>` | Um **process tap** do Core Audio (`CATapDescription(stereoGlobalTapButExcludeProcesses:)`) que deixa de fora todo processo de áudio cujo bundle id começa com o prefixo, o que cobre o Discord, o Discord PTB/Canary e todos os processos auxiliares deles (`com.hnc.Discord.helper…`). Enquanto nenhum deles toca som, deixa de fora os processos do próprio ScreenShare, como o auxiliar do Windows. A lista é reconferida a cada segundo, então o Discord entrando numa chamada depois de a transmissão começar fica de fora em cerca de um segundo. macOS 14.2+ e a permissão de *Gravação de Áudio do Sistema* (um segundo pedido). |
+
+O tap é necessário porque o ScreenCaptureKit só deixa de fora *apps* inteiros, e o som dos apps Chromium/Electron (o Discord é um) vem dos processos auxiliares deles, que ele não atribui ao app: medido com um app Electron tocando um tom, excluir o app desse jeito deixou o tom em volume total, e o tap o silenciou.
+
+Quando o tap não pode ser usado (macOS antigo, ou a permissão foi negada), o `publisher.ts` inicia o primeiro modo e o usuário é avisado de que o Discord não ficou de fora (`audio.discordNotExcluded`). Códigos de saída: `2` a captura parou sozinha, `3` macOS antigo demais para o modo pedido, `5` não conseguiu iniciar (a Gravação de Tela, ou a Gravação de Áudio do Sistema no caso do tap, não está liberada). Como no auxiliar do Windows, tudo o que pode falhar é preparado primeiro, depois o cabeçalho é escrito, e só então a captura começa, com toda escrita no stdout passando por um único bloqueio, então o cabeçalho é sempre a primeira coisa que o app lê. Não há modo por app.
 
 ### O auxiliar do Windows (`native/win-audio-capture`)
 

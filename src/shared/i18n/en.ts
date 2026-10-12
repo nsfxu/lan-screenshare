@@ -376,14 +376,14 @@ export const en = {
     'Leaves out everything else, like Discord, music and notifications. Needs Windows 10 version 2004 or newer.',
   'audio.leaveOutDiscord': 'Leave out Discord',
   'audio.leaveOutDiscordDetail':
-    "People in your Discord call won't hear themselves through your stream. Needs Windows 10 version 2004 or newer.",
+    "People in your Discord call won't hear themselves through your stream. Needs Windows 10 version 2004 or newer, or macOS 14.2 or newer.",
   'audio.surround':
     "Couldn't capture system audio from the default output device. If it is in surround (5.1/7.1) mode, switching it to stereo usually helps (Sound settings → device → Properties → Advanced → 2 channel), then use Change source. Sharing video only for now.",
   'audio.unavailableMac':
     "Couldn't capture system audio (on macOS this needs macOS 13+ and Screen Recording permission). Sharing video only.",
   'audio.unavailable': 'System audio is not available here; sharing video only.',
   'audio.discordNotExcluded':
-    "Couldn't leave Discord out of the shared audio (this needs Windows 10 version 2004 or newer), so viewers will also hear your Discord call. Use Mute audio if that is a problem.",
+    "Couldn't leave Discord out of the shared audio (this needs Windows 10 version 2004 or newer, or macOS 14.2 or newer with System Audio Recording allowed), so viewers will also hear your Discord call. Use Mute audio if that is a problem.",
   'audio.appFailed':
     "Couldn't share only that app's sound (this needs Windows 10 version 2004 or newer), so viewers hear everything playing on your computer. Use Mute audio if that is a problem.",
 

@@ -454,7 +454,12 @@ export class Publisher extends Emitter<Events> {
       // Video first: if it fails, a share that is switching sources keeps its
       // current audio (starting the helper would stop the running one).
       // Once Chromium's loopback has failed on this device, go straight to the helper.
-      const chromiumAudio = withAudio && !this.preferNativeAudio
+      // macOS: Chromium's loopback track ends the moment it is created, so the helper is the only way.
+      const nativeFirst =
+        withAudio &&
+        (this.preferNativeAudio ||
+          (/Mac/.test(navigator.userAgent) && (await window.api.capture.nativeAudio.available())))
+      const chromiumAudio = withAudio && !nativeFirst
       await window.api.capture.select(sourceId, chromiumAudio)
       try {
         stream = await navigator.mediaDevices.getDisplayMedia({ video, audio: chromiumAudio ? audio : false })
@@ -488,18 +493,33 @@ export class Publisher extends Emitter<Events> {
         this.discordExclusionFailed = !discordExcluded
       }
       // Windows: Chromium can't open surround (5.1/7.1) devices for loopback, but
-      // the native helper can (it downmixes to stereo).
-      const needNative = withAudio && !native && (this.preferNativeAudio || this.audioError === 'NotReadableError')
+      // the native helper can (it downmixes to stereo). On macOS it is always the helper.
+      const needNative = withAudio && !native && (nativeFirst || this.audioError === 'NotReadableError')
       if (needNative && stream.getAudioTracks().length === 0 && (await window.api.capture.nativeAudio.available())) {
         this.nativeAudio?.stop() // the helper is a single process; free it first
         this.nativeAudio = null
+        // macOS: Discord is left out with a process tap; where that can't be done (macOS before 14.2,
+        // System Audio Recording not allowed) the whole mix is shared and the user is told.
+        const mac = /Mac/.test(navigator.userAgent)
+        const leaveDiscordOut = mac && excludeDiscord
         try {
-          native = await startNativeLoopback(log)
+          native = await startNativeLoopback(log, { excludeDiscord: leaveDiscordOut })
+          discordExcluded = leaveDiscordOut
           this.audioError = null
           this.preferNativeAudio = true
         } catch (err) {
           log(`native loopback failed: ${String(err)}`)
-          this.audioError ??= 'NotReadableError'
+          if (leaveDiscordOut) {
+            try {
+              native = await startNativeLoopback(log)
+              this.audioError = null
+              this.preferNativeAudio = true
+            } catch (err2) {
+              log(`native loopback failed: ${String(err2)}`)
+            }
+          }
+          if (leaveDiscordOut && native) this.discordExclusionFailed = true
+          if (!native) this.audioError ??= 'NotReadableError'
         }
       }
       if (native) stream.addTrack(native.track)

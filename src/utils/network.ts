@@ -25,6 +25,19 @@ export function getLocalAddresses(): string[] {
   return result.sort((a, b) => a.rank - b.rank).map((r) => r.address)
 }
 
+/**
+ * IPv4 addresses mDNS should run on: one per interface that can carry multicast
+ * (LAN, Wi-Fi and VPN adapters such as ZeroTier), without link-local ones.
+ */
+export function getMulticastAddresses(interfaces: NodeJS.Dict<os.NetworkInterfaceInfo[]> = os.networkInterfaces()): string[] {
+  const result: string[] = []
+  for (const list of Object.values(interfaces)) {
+    const addr = (list ?? []).find((a) => a.family === 'IPv4' && !a.internal && !a.address.startsWith('169.254.'))
+    if (addr) result.push(addr.address)
+  }
+  return result
+}
+
 export function addressRank(interfaceName: string, address: string): number {
   if (address.startsWith('169.254.')) return 4
   if (VIRTUAL_ADAPTER.test(interfaceName)) return 3
