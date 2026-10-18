@@ -46,8 +46,11 @@
     x: rnd(), y: rnd(), vx: (rnd() - 0.5) * 0.6, vy: (rnd() - 0.5) * 0.6, r: 20 + rnd() * 60, hue: Math.floor(rnd() * 360)
   }))
 
-  // A very quiet tone (about -50 dB), so a share with system audio has sound to send.
-  function startTone() {
+  // Sound for a share with system audio: a very quiet tone (about -50 dB), so there is always sound to
+  // send, and a short beep each time the clock reaches a multiple of BEEP.periodMs, timed to leave the
+  // speakers then (through getOutputTimestamp), for the viewers to measure the sound's own delay.
+  function startSound() {
+    const { BEEP, nextBeep } = window.TimeCode
     const audio = new AudioContext()
     const tone = audio.createOscillator()
     const gain = audio.createGain()
@@ -55,10 +58,31 @@
     gain.gain.value = 0.003
     tone.connect(gain).connect(audio.destination)
     tone.start()
+    let scheduled = 0
+    setInterval(() => {
+      // The clock time at which audio scheduled at context time c leaves the speakers: the audio clock
+      // read now, plus the output's latency. (getOutputTimestamp can be stale and misplace a beep.)
+      const now = performance.timeOrigin + performance.now()
+      const nowContext = audio.currentTime
+      const latency = (audio.outputLatency || 0) + (audio.baseLatency || 0)
+      const contextFor = (clock) => nowContext + (clock - now) / 1000 - latency
+      const at = nextBeep(now + 200)
+      if (at === scheduled) return
+      const start = contextFor(at)
+      if (start < audio.currentTime + 0.05) return
+      scheduled = at
+      const beep = audio.createOscillator()
+      const level = audio.createGain()
+      beep.frequency.value = BEEP.hz
+      level.gain.value = 0.03
+      beep.connect(level).connect(audio.destination)
+      beep.start(start)
+      beep.stop(start + BEEP.lengthMs / 1000)
+    }, 250)
   }
 
   function startPattern(sound) {
-    if (sound) startTone()
+    if (sound) startSound()
     const { TIME_CODE, encodeTimeCode } = window.TimeCode
     const { cell, x: codeX, y: codeY, columns, rows } = TIME_CODE
     let last = performance.now()

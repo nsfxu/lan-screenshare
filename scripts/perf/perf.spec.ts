@@ -231,17 +231,19 @@ async function startPattern(withSound: boolean): Promise<{ app: ElectronApplicat
  * (requestVideoFrameCallback's expectedDisplayTime), how old the code in it is. Readings are kept
  * from `measureFrom()` on.
  */
-async function startReading(viewer: Instance, screenWidth: number): Promise<void> {
+async function startReading(viewer: Instance, screenWidth: number, sound: boolean): Promise<void> {
   await viewer.win.evaluate(timeCodeScript())
-  await viewer.win.evaluate((width) => {
+  await viewer.win.evaluate(([width, listen]) => {
     type TC = typeof import('../../src/shared/timeCode')
-    const { TIME_CODE, decodeTimeCode, timeCodeAge, timeCodeCellCentre } = (window as unknown as { TimeCode: TC }).TimeCode
+    const { TIME_CODE, BEEP, beepAge, decodeTimeCode, timeCodeAge, timeCodeCellCentre } = (
+      window as unknown as { TimeCode: TC }
+    ).TimeCode
     const video = document.querySelector<HTMLVideoElement>('.tile video')
     if (!video) throw new Error('no video to read the time code from')
     const { cell, x, y, columns, rows } = TIME_CODE
     const canvas = new OffscreenCanvas(columns * cell + cell, rows * cell + cell)
     const ctx = canvas.getContext('2d', { willReadFrequently: true })!
-    const state = { active: false, ages: [] as number[], unreadable: 0 }
+    const state = { active: false, ages: [] as number[], unreadable: 0, beeps: [] as number[] }
     ;(window as unknown as { latencyReading: typeof state }).latencyReading = state
     const onFrame = (_now: number, meta: VideoFrameCallbackMetadata): void => {
       if (state.active && video.videoWidth > 0) {
@@ -272,7 +274,46 @@ async function startReading(viewer: Instance, screenWidth: number): Promise<void
       video.requestVideoFrameCallback(onFrame)
     }
     video.requestVideoFrameCallback(onFrame)
-  }, screenWidth)
+
+    // The sound: when each of the pattern's beeps arrives (after the viewer's audio jitter buffer, before
+    // its speakers), against the clock mark it was played at. A band-pass filter around the beep's pitch,
+    // then the loudness of every 256-sample block against the background.
+    const audioTrack = (video.srcObject as MediaStream | null)?.getAudioTracks()[0]
+    if (listen && audioTrack) {
+      const audio = new AudioContext()
+      const input = audio.createMediaStreamSource(new MediaStream([audioTrack]))
+      const band = audio.createBiquadFilter()
+      band.type = 'bandpass'
+      band.frequency.value = BEEP.hz
+      band.Q.value = 8
+      const block = 256
+      const meter = audio.createScriptProcessor(block, 1, 1)
+      let background = 1e-5
+      let lastBeep = 0
+      // A beep lasts ~11 blocks; a glitch or a click, a few. It counts once 8 loud blocks follow each other.
+      let loud: number[] = []
+      meter.onaudioprocess = (e) => {
+        const data = e.inputBuffer.getChannelData(0)
+        let sum = 0
+        for (let i = 0; i < data.length; i++) sum += data[i] * data[i]
+        const level = Math.sqrt(sum / data.length)
+        // The block just processed ended about now: its start is when its first samples arrived.
+        const at = performance.timeOrigin + performance.now() - (block / audio.sampleRate) * 1000
+        // A beep arrives at about 0.02 (it is played at 0.03); quieter 2 kHz sound isn't one.
+        if (level > Math.max(background * 10, 2e-3)) {
+          loud.push(at)
+          if (loud.length === 8 && loud[0] - lastBeep > BEEP.periodMs / 2) {
+            lastBeep = loud[0]
+            if (state.active) state.beeps.push(beepAge(loud[0]))
+          }
+        } else {
+          loud = []
+          if (level < background * 3) background = background * 0.99 + level * 0.01
+        }
+      }
+      input.connect(band).connect(meter).connect(audio.destination)
+    }
+  }, [screenWidth, sound] as const)
 }
 
 function setReading(viewer: Instance, active: boolean): Promise<void> {
@@ -284,9 +325,11 @@ function setReading(viewer: Instance, active: boolean): Promise<void> {
 
 async function readings(viewer: Instance): Promise<ScreenToScreen> {
   const state = await viewer.win.evaluate(
-    () => (window as unknown as { latencyReading?: { ages: number[]; unreadable: number } }).latencyReading ?? null
+    () =>
+      (window as unknown as { latencyReading?: { ages: number[]; unreadable: number; beeps: number[] } })
+        .latencyReading ?? null
   )
-  return { viewer: viewer.name, ages: state?.ages ?? [], unreadable: state?.unreadable ?? 0 }
+  return { viewer: viewer.name, ages: state?.ages ?? [], unreadable: state?.unreadable ?? 0, beeps: state?.beeps }
 }
 
 test('measure', async () => {
@@ -328,7 +371,7 @@ test('measure', async () => {
       await expect.poll(() => decodedFrames(viewer.win), { timeout: 60_000, message: `${viewer.name} gets no video` }).toBeGreaterThan(0)
     }
 
-    if (pattern) for (const viewer of viewers) await startReading(viewer, pattern.width)
+    if (pattern) for (const viewer of viewers) await startReading(viewer, pattern.width, opts.audio)
     say(`warming up for ${opts.warmup} s`)
     await new Promise((resolve) => setTimeout(resolve, opts.warmup * 1000))
     const from = Date.now()

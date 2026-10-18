@@ -221,6 +221,8 @@ export interface ScreenToScreen {
   ages: number[]
   /** Frames whose code couldn't be read (blurred, covered, or caught half-drawn). */
   unreadable: number
+  /** With sound (`--audio`): how long after its mark each of the pattern's beeps arrived, in ms. */
+  beeps?: number[]
 }
 
 /** The "Screen to screen" section of summary.md. */
@@ -240,6 +242,23 @@ export function screenToScreenMarkdown(rows: readonly ScreenToScreen[]): string 
     lines.push(
       `| ${r.viewer} | ${fmt(p?.p50)} ms | ${fmt(p?.p95)} ms | ${fmt(min)} ms | ${fmt(max)} ms | ${r.ages.length} | ${r.unreadable} |`
     )
+  }
+  if (rows.some((r) => r.beeps)) {
+    lines.push('', '### Sound (beeps)', '')
+    lines.push(
+      'From the moment a beep leaves the streamer\'s speakers to the moment it reaches the viewer\'s audio, after ' +
+        'its jitter buffer (same clock).',
+      ''
+    )
+    lines.push('| Viewer | p50 | p95 | Min | Max | Beeps heard |')
+    lines.push('|---|---|---|---|---|---|')
+    for (const r of rows) {
+      const beeps = r.beeps ?? []
+      const p = percentiles(beeps)
+      const min = beeps.length ? Math.min(...beeps) : undefined
+      const max = beeps.length ? Math.max(...beeps) : undefined
+      lines.push(`| ${r.viewer} | ${fmt(p?.p50)} ms | ${fmt(p?.p95)} ms | ${fmt(min)} ms | ${fmt(max)} ms | ${beeps.length} |`)
+    }
   }
   lines.push('')
   return lines.join('\n')

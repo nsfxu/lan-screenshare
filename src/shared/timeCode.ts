@@ -63,3 +63,23 @@ export function timeCodeCellCentre(index: number): { x: number; y: number } {
   const { cell, x, y, columns } = TIME_CODE
   return { x: x + (index % columns) * cell + cell / 2, y: y + Math.floor(index / columns) * cell + cell / 2 }
 }
+
+/**
+ * The sound side (`--latency --audio`): the pattern beeps when the clock reaches a multiple of
+ * `periodMs`, and a viewer measures how long after that mark it hears each beep.
+ */
+export const BEEP = {
+  periodMs: 4000,
+  hz: 2000,
+  lengthMs: 60
+} as const
+
+/** How long after its scheduled mark a beep was heard (delays up to one period can be told apart). */
+export function beepAge(heardMs: number): number {
+  return ((heardMs % BEEP.periodMs) + BEEP.periodMs) % BEEP.periodMs
+}
+
+/** The clock time of the next beep after `nowMs`. */
+export function nextBeep(nowMs: number): number {
+  return (Math.floor(nowMs / BEEP.periodMs) + 1) * BEEP.periodMs
+}
