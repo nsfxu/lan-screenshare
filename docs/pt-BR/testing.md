@@ -257,7 +257,6 @@ Para mandar os resultados, anexe a pasta (ou pelo menos `summary.md` e `run.json
 
 - `--perf-log=<arquivo>`: a cada segundo, o streamer grava o que envia a cada espectador (codificador, se é de hardware, fps, tamanho, taxa de bits, tempo de codificação, limitação, RTT, e contadores brutos: quadros-chave, quadros enormes, pedidos de quadro-chave e de reenvio, taxa alvo e disponível) com a CPU e a memória do app e do computador; o espectador grava o que recebe (fps, tamanho, latência estimada, atraso do jitter buffer naquele segundo, travadas, quadros descartados, decodificador, e contadores brutos: quadros-chave, pedidos de quadro-chave e de reenvio enviados, alvo do jitter buffer).
 - `--perf-view-height=<px>`: a altura forçada acima.
-- `--perf-separate-audio` (experimento): o áudio vai num fluxo só dele, para os espectadores não segurarem a imagem para sincronizá-la com o som.
 
 O resumo é calculado por funções puras em `src/shared/perfSummary.ts` (testadas em `tests/perf.test.ts`).
 

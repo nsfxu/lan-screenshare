@@ -200,6 +200,7 @@ Open Settings with the gear icon at the bottom of the rooms column. The list on 
 | Connection | Hosting port | 47800 | The first port tried when you host. |
 | Advanced | Video codec | Automatic | Automatic prefers hardware H.264. You can force H.264, H.265, VP9 or AV1 if both sides support it. The table below it shows what your computer supports. |
 | Advanced | Adaptive quality | on | Lowers resolution/frame rate per viewer when their network struggles. |
+| Advanced | Lowest latency (wired networks) | off | Shows the streams you watch as soon as each frame arrives: about 20 ms less delay on a wired network, but they can stutter on Wi-Fi or a VPN. Applies after restarting ScreenShare. |
 | About | Check for updates automatically | on | See [updates](#updates). |
 
 **About** shows the app version and has **Open logs**.

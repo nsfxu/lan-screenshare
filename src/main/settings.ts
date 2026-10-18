@@ -57,7 +57,8 @@ function defaults(): Settings {
     avatar: null,
     theme: DEFAULT_THEME,
     autoUpdate: true,
-    language: 'system'
+    language: 'system',
+    lowLatency: false
   }
 }
 
@@ -127,7 +128,7 @@ function sanitize(s: Settings, fallback: Settings, options: SettingsOptions): Se
   out.avatar = s.avatar === null || isAvatar(s.avatar) ? s.avatar : fallback.avatar
   out.theme = isThemeId(s.theme) ? s.theme : fallback.theme
   out.language = isLanguageSetting(s.language) ? s.language : fallback.language
-  for (const key of ['adaptiveQuality', 'forceTcp', 'useTls', 'autoRejoin', 'notifications', 'pauseOnMinimize', 'showStatsOverlay', 'shareAudio', 'excludeDiscordAudio', 'appAudioOnly', 'autoUpdate'] as const) {
+  for (const key of ['adaptiveQuality', 'forceTcp', 'useTls', 'autoRejoin', 'notifications', 'pauseOnMinimize', 'showStatsOverlay', 'shareAudio', 'excludeDiscordAudio', 'appAudioOnly', 'autoUpdate', 'lowLatency'] as const) {
     out[key] = typeof s[key] === 'boolean' ? s[key] : fallback[key]
   }
   return out
