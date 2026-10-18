@@ -297,6 +297,17 @@ Measured with `npm run perf -- --viewers=2 --view-height=1080 --seconds=60 --lat
 
 The estimate leaves out about 23 ms: the capture pipeline, the frames the viewer's browser and Windows queue before showing, and the pattern's own drawing to its screen (up to one refresh at 240 Hz). With adaptive quality on, the same detailed pattern dropped the stream to the software encoder at 30 fps (the controller steps down on "limited by bandwidth" and its lowest step's own bitrate cap keeps reporting it).
 
+### Faster capture (2.5.0)
+
+Two Chromium 152 features that copy each captured frame fewer times, tried on the RTX 4070 / Windows 10 PC (1080p60, 2 viewers at 1080p, NVIDIA HEVC). Neither is used:
+
+| Feature | Result |
+|---|---|
+| `ZeroCopyDesktopCapture` (screen frames straight into the capture buffer) | Capture alone works (57–58 fps), but the NVIDIA hardware encoders (H.264 and H.265) **hang** on its frames: sharing stops as soon as someone watches. Software VP8 kept working. |
+| `WebRtcAllowWgcUsingTexture` (Windows Graphics Capture frames kept on the GPU; windows on Windows 10, screens only from Windows 11 24H2) | Sharing a window: 57 fps, encode 3.3 vs 3.4 ms, app CPU 5 % either way. No measurable gain. |
+
+Capture costs this computer little already (the app's CPU ~5 % at 1080p60). Worth trying again on Windows 11 24H2, where the second one also covers whole screens.
+
 ### Sound and picture (2.4.1)
 
 Same computer, `--latency --audio --adaptive=off --hint=motion`, 1 viewer at 1080p (57 fps, NVIDIA HEVC):

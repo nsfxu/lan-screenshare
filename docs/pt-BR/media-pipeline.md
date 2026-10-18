@@ -297,6 +297,17 @@ Medido com `npm run perf -- --viewers=2 --view-height=1080 --seconds=60 --latenc
 
 A estimativa deixa de fora uns 23 ms: o caminho da captura, os quadros que o navegador do espectador e o Windows guardam antes de mostrar, e o desenho do próprio padrão na tela dele (até uma atualização a 240 Hz). Com a qualidade adaptativa ligada, o mesmo padrão detalhado derrubou a transmissão para o codificador por software a 30 fps (o controle desce quando aparece "limitado por banda", e o limite de bitrate do próprio degrau mais baixo continua causando isso).
 
+### Captura mais rápida (2.5.0)
+
+Dois recursos do Chromium 152 que copiam cada quadro capturado menos vezes, testados no PC com RTX 4070 / Windows 10 (1080p60, 2 espectadores em 1080p, HEVC da NVIDIA). Nenhum é usado:
+
+| Recurso | Resultado |
+|---|---|
+| `ZeroCopyDesktopCapture` (quadros da tela direto no buffer de captura) | A captura sozinha funciona (57–58 fps), mas os codificadores por hardware da NVIDIA (H.264 e H.265) **travam** com os quadros dele: o compartilhamento para assim que alguém assiste. O VP8 por software continuou funcionando. |
+| `WebRtcAllowWgcUsingTexture` (quadros do Windows Graphics Capture mantidos na GPU; janelas no Windows 10, telas só a partir do Windows 11 24H2) | Compartilhando uma janela: 57 fps, codificação 3,3 vs 3,4 ms, CPU do app 5 % nos dois casos. Nenhum ganho mensurável. |
+
+A captura já custa pouco a este computador (CPU do app ~5 % em 1080p60). Vale testar de novo no Windows 11 24H2, onde o segundo também cobre telas inteiras.
+
 ### Som e imagem (2.4.1)
 
 Mesmo computador, `--latency --audio --adaptive=off --hint=motion`, 1 espectador em 1080p (57 fps, HEVC da NVIDIA):

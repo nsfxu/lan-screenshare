@@ -18,13 +18,13 @@ Update this table when a task's pull request merges or results come back.
 |---|---|---|
 | 0. Measuring tool | **Done** (2.2.1): `npm run perf`, `--perf-log`, `--perf-view-height`, plus keyframe counters, `--source=fake-detailed` and `--hint` | #28, #29 |
 | 1. Encoder limit | **Done for NVIDIA RTX 4070**: hardware encoders for all 9 viewers, the most a room holds (`MAX_USERS` = 10 with the streamer). Intel and AMD graphics not measured. | "Encoder capacity" in `docs/*/media-pipeline.md` |
-| 2. Latency | **Partly done**: 31–35 ms p50 on a wired LAN (PC → PC and PC → Mac). It found a freeze at every keyframe (~52 s), fixed by pacing keyframes 10× faster (2.2.1). Not done: runs over Wi-Fi and ZeroTier; "Smoother playback" not built (no freezes left to justify it). | #29, "Keyframes without freezes" in `docs/*/media-pipeline.md` |
-| 3. Faster capture | **Built, waiting for measurements**: `--capture-experiment` turns on `ZeroCopyDesktopCapture` and, on Windows, `WebRtcAllowWgcUsingTexture` (both checked in Chromium 152, off by default). The runner gains `--source=window:<title>`. The owner measures and runs the stability checklist (`docs/*/testing.md`). | #38 |
+| 2. Latency | **Done on a wired LAN** (2.5.0): `npm run perf -- --latency` measures it screen to screen with a time code, and `--audio` the sound's own delay with beeps: 54 ms (the app's estimate said 31). With sound, the picture was held back ~1.4 s for a wrong audio/video sync, now fixed; **Lowest latency** (zero playout delay) gives 29 ms. Earlier: the keyframe freeze fixed in 2.2.1. Not done: Wi-Fi and ZeroTier (also before Lowest latency could be on by default). | #29, #42, #43, "Screen-to-screen latency" and "Sound and picture" in `docs/*/media-pipeline.md` |
+| 3. Faster capture | **Measured, dropped**: `ZeroCopyDesktopCapture` hangs the NVIDIA hardware encoders; `WebRtcAllowWgcUsingTexture` gives no measurable gain on Windows 10 (windows only there). The switch wasn't merged; the runner kept `--source=window:<title>`. Retry on Windows 11 24H2. | #38 (closed), "Faster capture" in `docs/*/media-pipeline.md` |
 | 4. Encoders running out | **Not needed on the measured card** (Task 1 never reached the limit). Revisit only if Intel/AMD graphics or a Mac streamer run out. | |
-| 5. 120/144 fps | **Built, waiting for measurements**: `--perf-high-fps` offers a 1080p @ 120 fps preset; perf runs report capture, sent and displayed fps. The owner measures with a high-refresh game and monitor. | #39 |
-| 6. No video for hidden TCP viewers | **Done** (in review): the server skips video to hidden TCP watchers and the streamer's TCP encoder idles when none can see. Also fixes TCP viewers that never got a picture on computers without a hardware decoder. | #37 |
+| 5. 120/144 fps | **Built (2.4.1), waiting for measurements**: a one-PC run collapsed to 320p30 through the adaptive-quality trap, fixed in 2.5.0 (#44), so it needs a new run, then a second PC with a high-refresh monitor. `--perf-high-fps` offers a 1080p @ 120 fps preset; perf runs report capture, sent and displayed fps. The owner measures with a high-refresh game and monitor. | #39 |
+| 6. No video for hidden TCP viewers | **Done** (2.4.1): the server skips video to hidden TCP watchers and the streamer's TCP encoder idles when none can see. Also fixes TCP viewers that never got a picture on computers without a hardware decoder. | #37 |
 
-Also seen, not yet a task: a few short freezes in the first ~15 s after a viewer starts watching (Mac viewer, 2.2.1).
+Also seen: a few short freezes in the first ~15 s after a viewer starts watching (Mac viewer, 2.2.1). Probably the slow ramp-up fixed in 2.5.0 (#44); recheck with a Mac viewer.
 
 ---
 
