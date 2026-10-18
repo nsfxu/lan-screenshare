@@ -205,9 +205,12 @@ describe('screenToScreenMarkdown', () => {
 
 describe('screenToScreenMarkdown with sound', () => {
   it('adds a table for the beeps when there was sound', () => {
-    const md = screenToScreenMarkdown([{ viewer: 'Viewer 1', ages: [30], unreadable: 0, beeps: [100, 102, 104] }])
+    const md = screenToScreenMarkdown([
+      { viewer: 'Viewer 1', ages: [30], unreadable: 0, beeps: [100, 2414, 102, 104, 3264] }
+    ])
     expect(md).toContain('### Sound (beeps)')
-    expect(md).toContain('| Viewer 1 | 102 ms | 104 ms | 100 ms | 104 ms | 3 |')
+    // The two stray beeps are left out of the figures, and counted.
+    expect(md).toContain('| Viewer 1 | 102 ms | 104 ms | 100 ms | 104 ms | 3 of 5 |')
     expect(screenToScreenMarkdown([{ viewer: 'Viewer 1', ages: [30], unreadable: 0 }])).not.toContain('Sound')
   })
 })

@@ -250,16 +250,33 @@ export function screenToScreenMarkdown(rows: readonly ScreenToScreen[]): string 
         'its jitter buffer (same clock).',
       ''
     )
-    lines.push('| Viewer | p50 | p95 | Min | Max | Beeps heard |')
+    lines.push('| Viewer | p50 | p95 | Min | Max | Beeps that agree |')
     lines.push('|---|---|---|---|---|---|')
     for (const r of rows) {
-      const beeps = r.beeps ?? []
+      const all = r.beeps ?? []
+      const beeps = agreeing(all)
       const p = percentiles(beeps)
       const min = beeps.length ? Math.min(...beeps) : undefined
       const max = beeps.length ? Math.max(...beeps) : undefined
-      lines.push(`| ${r.viewer} | ${fmt(p?.p50)} ms | ${fmt(p?.p95)} ms | ${fmt(min)} ms | ${fmt(max)} ms | ${beeps.length} |`)
+      lines.push(
+        `| ${r.viewer} | ${fmt(p?.p50)} ms | ${fmt(p?.p95)} ms | ${fmt(min)} ms | ${fmt(max)} ms | ${beeps.length} of ${all.length} |`
+      )
     }
   }
   lines.push('')
   return lines.join('\n')
+}
+
+/**
+ * The largest group of beep delays within `spreadMs` of each other. Real beeps arrive with the same delay;
+ * a stray one (the pattern's sound misplaced, or a click) lands anywhere, and is left out but counted.
+ */
+export function agreeing(values: readonly number[], spreadMs = 60): number[] {
+  const sorted = [...values].sort((a, b) => a - b)
+  let best: number[] = []
+  for (let i = 0, j = 0; i < sorted.length; i++) {
+    while (sorted[i] - sorted[j] > spreadMs) j++
+    if (i - j + 1 > best.length) best = sorted.slice(j, i + 1)
+  }
+  return best
 }
