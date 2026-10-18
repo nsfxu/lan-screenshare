@@ -10,6 +10,8 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-10-18
+
 ### Added
 
 - **Lowest latency** (Settings → Advanced): the streams you watch are shown as soon as each frame arrives, about 20 ms less delay on a wired network. Off by default, since streams can stutter on Wi-Fi or a VPN; it applies after restarting ScreenShare.
@@ -152,7 +154,8 @@ The first release.
 - Reconnects after short network drops, and switches to TCP when a network blocks WebRTC.
 - Encrypted connections, the PIN kept only in memory, and the window hidden from screenshots while you watch.
 
-[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.4.1...HEAD
+[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.4.1...v2.5.0
 [2.4.1]: https://github.com/nsfxu/lan-screenshare/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.2.1...v2.3.0
