@@ -75,6 +75,7 @@ export class Subscription extends Emitter<Events> {
     counters?: PerfReceiverCounters
   } = { jitterBufferMs: null, freezeCount: null, freezeSeconds: null }
   private prevJbTarget: { delay: number; count: number } | null = null
+  private prevAudioJb: { delay: number; count: number } | null = null
   /** Our own quality choice for this stream ('auto' follows the tile size). */
   quality: WatchQuality = getWatchQuality('auto')
   /** Stepped pixel height we display the stream at (null = full quality). */
@@ -253,6 +254,9 @@ export class Subscription extends Emitter<Events> {
     this.closePeer()
     const pc = new RTCPeerConnection({ iceServers: [], bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require' })
     this.pc = pc
+    // This connection's tracks. Audio and video normally come in one stream; when the audio has a stream
+    // of its own (`--perf-separate-audio`), they're kept together rather than the audio replacing the video.
+    let tracks: MediaStream | null = null
     pc.ontrack = (e) => {
       // Render frames as soon as they are decoded: this is a live screen, not a movie.
       const receiver = e.receiver as RTCRtpReceiver & { jitterBufferTarget?: number }
@@ -261,7 +265,12 @@ export class Subscription extends Emitter<Events> {
       } catch {
         // unsupported
       }
-      this.setStream(e.streams[0] ?? new MediaStream([e.track]))
+      const incoming = e.streams[0] ?? new MediaStream([e.track])
+      if (!tracks) tracks = incoming
+      else if (tracks !== incoming && !tracks.getTracks().includes(e.track)) {
+        tracks = new MediaStream([...tracks.getTracks().filter((t) => t.kind !== e.track.kind), e.track])
+      }
+      this.setStream(tracks)
     }
     pc.onicecandidate = (e) => this.signal({ kind: 'candidate', candidate: e.candidate?.toJSON() ?? null })
     pc.onconnectionstatechange = () => {
@@ -288,8 +297,17 @@ export class Subscription extends Emitter<Events> {
   }
 
   /** Raw counters for the --perf-log file. */
-  private receiverCounters(inb: Record<string, any>, emitted: number): PerfReceiverCounters | undefined {
+  private receiverCounters(
+    inb: Record<string, any>,
+    emitted: number,
+    audioIn: Record<string, any> | undefined
+  ): PerfReceiverCounters | undefined {
     if (!window.api.perf.options.logging) return undefined
+    const audioDelay = Number(audioIn?.jitterBufferDelay ?? NaN)
+    const audioCount = Number(audioIn?.jitterBufferEmittedCount ?? NaN)
+    const prevAudio = this.prevAudioJb
+    this.prevAudioJb = Number.isFinite(audioDelay) && Number.isFinite(audioCount) ? { delay: audioDelay, count: audioCount } : null
+    const audioEmitted = prevAudio && this.prevAudioJb ? audioCount - prevAudio.count : 0
     const target = Number(inb.jitterBufferTargetDelay ?? NaN)
     const prev = this.prevJbTarget
     this.prevJbTarget = Number.isFinite(target) ? { delay: target, count: emitted } : null
@@ -303,7 +321,9 @@ export class Subscription extends Emitter<Events> {
       framesDecoded: Number(inb.framesDecoded ?? 0),
       pauseCount: Number(inb.pauseCount ?? 0),
       jitterBufferTargetMs:
-        prev && count > 0 && Number.isFinite(target) ? Math.round(((target - prev.delay) / count) * 10000) / 10 : null
+        prev && count > 0 && Number.isFinite(target) ? Math.round(((target - prev.delay) / count) * 10000) / 10 : null,
+      audioJitterBufferMs:
+        prevAudio && audioEmitted > 0 ? Math.round(((audioDelay - prevAudio.delay) / audioEmitted) * 10000) / 10 : null
     }
   }
 
@@ -451,7 +471,7 @@ export class Subscription extends Emitter<Events> {
       jitterBufferMs: jbCount > 0 ? Math.round(jitterMs * 10) / 10 : null,
       freezeCount: typeof inb.freezeCount === 'number' ? inb.freezeCount : null,
       freezeSeconds: typeof inb.totalFreezesDuration === 'number' ? inb.totalFreezesDuration : null,
-      counters: this.receiverCounters(inb, cur.jbCount)
+      counters: this.receiverCounters(inb, cur.jbCount, audioIn)
     }
 
     return {

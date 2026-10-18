@@ -11,6 +11,8 @@ export interface PerfOptions {
   viewHeight: number | null
   /** `--perf-high-fps` (experiment): offer the 1080p @ 120 fps preset (HIGH_FPS_PRESET). */
   highFps: boolean
+  /** `--perf-separate-audio` (experiment): send the audio in a stream of its own, so viewers don't sync video to it. */
+  separateAudio: boolean
 }
 
 /** The part of PerfOptions the renderer needs (it never sees the file path). */
@@ -18,6 +20,7 @@ export interface PerfRendererOptions {
   logging: boolean
   viewHeight: number | null
   highFps: boolean
+  separateAudio: boolean
 }
 
 /** Same range the server accepts in `view-size`. */
@@ -33,7 +36,12 @@ export function parsePerfArgs(argv: readonly string[]): PerfOptions {
   const height = Number(value('perf-view-height'))
   const viewHeight =
     Number.isInteger(height) && height >= VIEW_HEIGHT_MIN && height <= VIEW_HEIGHT_MAX ? height : null
-  return { logFile, viewHeight, highFps: argv.includes('--perf-high-fps') }
+  return {
+    logFile,
+    viewHeight,
+    highFps: argv.includes('--perf-high-fps'),
+    separateAudio: argv.includes('--perf-separate-audio')
+  }
 }
 
 /** Cumulative counters from the sender's getStats, to see what happens around a freeze. */
@@ -65,6 +73,8 @@ export interface PerfReceiverCounters {
   pauseCount: number
   /** What the jitter buffer aimed for in the last second (not cumulative). */
   jitterBufferTargetMs: number | null
+  /** How long the audio waited in its jitter buffer, on average, in the last second (not cumulative). */
+  audioJitterBufferMs?: number | null
 }
 
 /** The streamer's side of one watcher's connection, in one second. */
@@ -87,6 +97,8 @@ export interface PerfSenderRow {
   hidden: boolean
   /** WebRTC only. */
   counters?: PerfSenderCounters
+  /** WebRTC only: the network path in use, e.g. "192.168.1.20 host/udp -> 192.168.1.30 host/udp". */
+  route?: string
 }
 
 export interface PerfStreamerSample {

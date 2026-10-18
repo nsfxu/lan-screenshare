@@ -4,16 +4,23 @@ import { parsePerfLog, percentiles, screenToScreenMarkdown, summarize, summaryMa
 
 describe('parsePerfArgs', () => {
   it('is off without the switches', () => {
-    expect(parsePerfArgs(['electron', '.', '--profile=a'])).toEqual({ logFile: null, viewHeight: null, highFps: false })
+    expect(parsePerfArgs(['electron', '.', '--profile=a'])).toEqual({
+      logFile: null,
+      viewHeight: null,
+      highFps: false,
+      separateAudio: false
+    })
   })
 
   it('reads the log file and a view height in the range the server accepts', () => {
     expect(parsePerfArgs(['--perf-log=C:\\perf\\a b.jsonl', '--perf-view-height=1080'])).toEqual({
       logFile: 'C:\\perf\\a b.jsonl',
       viewHeight: 1080,
-      highFps: false
+      highFps: false,
+      separateAudio: false
     })
     expect(parsePerfArgs(['--perf-high-fps']).highFps).toBe(true)
+    expect(parsePerfArgs(['--perf-separate-audio']).separateAudio).toBe(true)
     expect(parsePerfArgs(['--perf-view-height=89']).viewHeight).toBeNull()
     expect(parsePerfArgs(['--perf-view-height=8641']).viewHeight).toBeNull()
     expect(parsePerfArgs(['--perf-view-height=720.5']).viewHeight).toBeNull()

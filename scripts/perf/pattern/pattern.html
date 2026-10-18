@@ -46,7 +46,19 @@
     x: rnd(), y: rnd(), vx: (rnd() - 0.5) * 0.6, vy: (rnd() - 0.5) * 0.6, r: 20 + rnd() * 60, hue: Math.floor(rnd() * 360)
   }))
 
-  function startPattern() {
+  // A very quiet tone (about -50 dB), so a share with system audio has sound to send.
+  function startTone() {
+    const audio = new AudioContext()
+    const tone = audio.createOscillator()
+    const gain = audio.createGain()
+    tone.frequency.value = 440
+    gain.gain.value = 0.003
+    tone.connect(gain).connect(audio.destination)
+    tone.start()
+  }
+
+  function startPattern(sound) {
+    if (sound) startTone()
     const { TIME_CODE, encodeTimeCode } = window.TimeCode
     const { cell, x: codeX, y: codeY, columns, rows } = TIME_CODE
     let last = performance.now()

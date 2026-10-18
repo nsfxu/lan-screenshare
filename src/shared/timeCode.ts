@@ -49,9 +49,13 @@ export function decodeTimeCode(bits: readonly boolean[]): number | null {
   return check === checksum(value) ? value : null
 }
 
-/** How long ago (ms) a code was drawn, seen at `nowMs`; wraps like the code does. */
+/**
+ * How long ago (ms) a code was drawn, seen at `nowMs`, across the code's wrap. Negative when the
+ * code looks newer than `nowMs`, which can only be a misread (the reader counts it as unreadable).
+ */
 export function timeCodeAge(nowMs: number, code: number): number {
-  return ((Math.floor(nowMs) >>> 0) - code + 2 ** 32) % 2 ** 32
+  const age = ((Math.floor(nowMs) >>> 0) - code + 2 ** 32) % 2 ** 32
+  return age >= 2 ** 31 ? age - 2 ** 32 : age
 }
 
 /** Where to sample cell `index`: its centre, in pixels of the shared screen. */

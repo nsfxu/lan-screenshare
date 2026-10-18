@@ -54,6 +54,12 @@ function options() {
   const latency = raw.latency === true
   // The streamer's adaptive quality (Settings → Advanced); `off` keeps the chosen quality, to measure the pipeline itself.
   const adaptive = raw.adaptive === undefined ? null : String(raw.adaptive)
+  // Share system audio too (with --latency, the pattern plays a quiet tone so there is sound to send):
+  // `--audio` as the app does by default (on Windows, the helper without Discord), `--audio=chromium`
+  // with Chromium's own loopback (Leave out Discord off).
+  const audio = raw.audio === true || raw.audio === 'native' || raw.audio === 'chromium'
+  const audioPath = raw.audio === 'chromium' ? 'chromium' : 'default'
+  if (raw.audio !== undefined && !audio) throw new Error('--audio takes no value, or native or chromium')
   if (adaptive && !['on', 'off'].includes(adaptive)) throw new Error('--adaptive must be on or off')
   if (latency && (source !== 'screen' || join || hostOnly)) {
     throw new Error('--latency shares the real screen and needs the streamer and viewers on this computer (same clock)')
@@ -74,6 +80,8 @@ function options() {
     hostOnly,
     latency,
     adaptive,
+    audio,
+    audioPath,
     // The 120 fps preset only exists with --perf-high-fps.
     passthrough:
       quality === HIGH_FPS_PRESET.id && !raw.passthrough.includes('--perf-high-fps')
@@ -98,6 +106,8 @@ async function launch(name: string, opts: ReturnType<typeof options>, fakeSource
   // --lang: the runner finds buttons by their English names, whatever the computer's language.
   const args = [repo, `--profile=perf-${slug}-${process.pid}`, `--perf-log=${log}`, '--lang=en-US', ...opts.passthrough]
   if (opts.viewHeight) args.push(`--perf-view-height=${opts.viewHeight}`)
+  // Viewers play the stream's sound; muted, so the streamer's system audio doesn't capture it again.
+  if (opts.audio && name !== STREAMER) args.push('--mute-audio')
   // Chromium's sandbox needs unprivileged user namespaces, which containers and CI often lack.
   if (process.platform === 'linux') args.push('--no-sandbox')
   const app = await electron.launch({ args, cwd: repo })
@@ -112,10 +122,11 @@ async function launch(name: string, opts: ReturnType<typeof options>, fakeSource
   }
   await win.waitForSelector('.rooms-sidebar')
   await win.evaluate(
-    ([displayName, maxQuality, contentHint, adaptive]) =>
+    ([displayName, maxQuality, contentHint, adaptive, audio, audioPath]) =>
       window.api.settings.update({
         displayName,
-        shareAudio: false,
+        shareAudio: audio,
+        ...(audioPath === 'chromium' ? { excludeDiscordAudio: false, appAudioOnly: false } : {}),
         notifications: false,
         // No update checks from a measuring run.
         autoUpdate: false,
@@ -123,7 +134,7 @@ async function launch(name: string, opts: ReturnType<typeof options>, fakeSource
         ...(contentHint ? { contentHint: contentHint as never } : {}),
         ...(adaptive ? { adaptiveQuality: adaptive === 'on' } : {})
       }),
-    [name, opts.quality, opts.hint, opts.adaptive] as const
+    [name, opts.quality, opts.hint, opts.adaptive, opts.audio, opts.audioPath] as const
   )
   await win.reload() // the UI reads the settings above at startup
   await win.waitForSelector('.rooms-sidebar')
@@ -203,12 +214,15 @@ function timeCodeScript(): string {
 }
 
 /** Opens the test pattern over the shared screen; resolves with it and the screen's size in pixels. */
-async function startPattern(): Promise<{ app: ElectronApplication; width: number }> {
+async function startPattern(withSound: boolean): Promise<{ app: ElectronApplication; width: number }> {
   const app = await electron.launch({ args: [path.join(__dirname, 'pattern', 'main.cjs')], cwd: repo })
   const page = await app.firstWindow()
   await page.waitForLoadState()
   await page.evaluate(timeCodeScript())
-  const size = await page.evaluate(() => (window as unknown as { startPattern(): { width: number } }).startPattern())
+  const size = await page.evaluate(
+    (sound) => (window as unknown as { startPattern(sound: boolean): { width: number } }).startPattern(sound),
+    withSound
+  )
   return { app, width: size.width }
 }
 
@@ -250,8 +264,10 @@ async function startReading(viewer: Instance, screenWidth: number): Promise<void
           bits.push(sum / n > 128)
         }
         const code = decodeTimeCode(bits)
-        if (code === null) state.unreadable++
-        else state.ages.push(timeCodeAge(performance.timeOrigin + meta.expectedDisplayTime, code))
+        const age = code === null ? null : timeCodeAge(performance.timeOrigin + meta.expectedDisplayTime, code)
+        // A code from the future, or one more than 10 s old, can only be misread.
+        if (age === null || age < 0 || age > 10_000) state.unreadable++
+        else state.ages.push(age)
       }
       video.requestVideoFrameCallback(onFrame)
     }
@@ -282,7 +298,7 @@ test('measure', async () => {
   try {
     // Before the streamer starts sharing, so the first screen already shows it.
     if (opts.latency) {
-      pattern = await startPattern()
+      pattern = await startPattern(opts.audio)
       say(`test pattern on the shared screen (${pattern.width} px wide)`)
     }
     let address = opts.join

@@ -5,6 +5,9 @@
 const { app, BrowserWindow, desktopCapturer, screen } = require('electron')
 const path = require('node:path')
 
+// The pattern's quiet tone (--audio) starts without a click.
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
+
 app.whenReady().then(async () => {
   // The display behind "Screen 1" in the source list: what the streamer shares by default.
   const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 0, height: 0 } })
