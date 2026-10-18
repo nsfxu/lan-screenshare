@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, desktopCapturer, ipcMain, screen, session, shell } from 'electron'
+import { app, BrowserWindow, clipboard, desktopCapturer, dialog, ipcMain, screen, session, shell } from 'electron'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -10,6 +10,7 @@ import type { AppInfo, CreateRoomRequest, NativeAudioOptions, Settings, SystemSt
 import { parseHostPort } from '../utils/network'
 import { resolveLanguage } from '../shared/i18n'
 import { createFileLogger } from './logger'
+import { gatherDiagnostics } from './diagnostics'
 import { fieldTrials } from './fieldTrials'
 import { mainT, setMainLanguage } from './i18n'
 import { CursorWatch } from './cursorWatch'
@@ -50,6 +51,8 @@ app.commandLine.appendSwitch('disable-renderer-backgrounding')
 app.commandLine.appendSwitch('disable-background-timer-throttling')
 app.commandLine.appendSwitch('disable-backgrounding-occluded-windows')
 
+/** Diagnostics are well under this; anything bigger isn't ours to save. */
+const MAX_SAVED_TEXT = 2 * 1024 * 1024
 const logDir = process.platform === 'win32' ? path.join(app.getPath('userData'), 'logs') : app.getPath('logs')
 /** Small enough to sit snapped beside a game on a laptop screen; the layout adapts below 1100 px. */
 const MIN_WINDOW_WIDTH = 640
@@ -275,6 +278,18 @@ function registerIpc(): void {
   )
   ipcMain.handle(IPC.copyText, (_e, text: string) => clipboard.writeText(String(text)))
   ipcMain.handle(IPC.openLogs, () => shell.openPath(log.dir))
+  ipcMain.handle(IPC.diagnostics, () => gatherDiagnostics(log.file, settings.get()))
+  ipcMain.handle(IPC.saveText, async (e, fileName: unknown, text: unknown) => {
+    if (typeof text !== 'string' || text.length > MAX_SAVED_TEXT) return false
+    // Only a plain file name as the suggestion: the person picks the folder.
+    const name = typeof fileName === 'string' ? fileName.replace(/[^\w.-]/g, '_').slice(0, 100) || 'screenshare.txt' : 'screenshare.txt'
+    const win = BrowserWindow.fromWebContents(e.sender)
+    const options = { defaultPath: path.join(app.getPath('downloads'), name) }
+    const result = win ? await dialog.showSaveDialog(win, options) : await dialog.showSaveDialog(options)
+    if (result.canceled || !result.filePath) return false
+    await fs.promises.writeFile(result.filePath, text, 'utf8')
+    return true
+  })
   ipcMain.handle(IPC.setTitleBarColors, (_e, color: unknown, symbolColor: unknown) => {
     const hex = /^#[0-9a-f]{6}$/i
     if (typeof color !== 'string' || typeof symbolColor !== 'string') return

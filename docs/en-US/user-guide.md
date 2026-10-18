@@ -102,7 +102,7 @@ Anyone in a room can share, not just the host, and several people can share at t
 |---|---|
 | Left | **ⓘ** room details, then, when a stream is focused, **Grid** (back to the grid) and **Hide others / Show others** (the strip) |
 | Middle | **Share screen** and **Share again** (or **Sharing** while you share), and the red **leave** button |
-| Right | **Volume** and **New window** (for the focused stream), and **Full screen** |
+| Right | **Volume**, **New window** and **Picture in picture** (for the focused stream), and **Full screen** |
 
 While you share, the button becomes a green screen icon. Click it (or right-click your own tile) for the sharing menu:
 
@@ -136,6 +136,7 @@ Everyone in the room has a **tile** in the middle: their picture and name. Tiles
 - The room's name is in the title bar, at the top of the window.
 - **Double-click a stream** to fill the screen with it, like a video player: the stream takes the whole screen, and the strip and the controls float over its bottom. After 2.5 s without moving the mouse everything but the picture hides (the strip, the controls, the name, the stats badges and the pointer); move the mouse to bring them back. **Esc** or the **Full screen** button brings the window back. The same button, in the grid, fills the screen with the grid.
 - **New window** (in the controls, or the stream's right-click menu) opens the focused stream in a window of its own, for example full size on a second monitor. It plays the same stream (no extra load on the person sharing), keeps playing when you minimize the room, and is hidden from screen recording like the room. Its tile says **Playing in another window**; **Bring back**, or closing the window, puts it back. The window has the app's title bar and colours, and the same controls as the room (volume, **Back to the room**, **Full screen**); double-click it for full screen.
+- **Picture in picture** (in the controls, or the stream's right-click menu) pops the stream into a small window that stays on top of other apps, so you can keep watching while you play or work. Move and resize it as you like; it keeps playing when you minimize the room. One stream at a time: choosing another moves it there. Its sound still comes from the room, at the stream's volume. Click the button again, close the small window, or stop watching to end it.
 - In the spotlight, **Hide others** puts the strip away so the focused tile gets the whole height; the streams in it stop sending you video until you show them again (you still hear them).
 - When you're alone in your room, an **Invite people** tile shows the address to give people on a VPN.
 
@@ -144,7 +145,7 @@ Everyone in the room has a **tile** in the middle: their picture and name. Tiles
 | Option | What it does |
 |---|---|
 | **Volume** (slider) and **Mute** | Each stream has its own volume and mute, remembered per person. |
-| **Stop watching**, **Focus**, **Full screen**, **Open in a new window** | As above. |
+| **Stop watching**, **Focus**, **Full screen**, **Open in a new window**, **Picture in picture** | As above. |
 | **Show only streams / Show everyone** | Leaves out the people who aren't sharing (any tile's menu). |
 | **Quality you receive** | **Auto** follows the size you watch at, so a small tile uses little bandwidth. You can also cap it at 1080p, 720p, or 720p/480p/360p at 30 fps. Remembered per person. |
 | **Try the faster connection again** | Only when the stream fell back to the slower TCP connection. |
@@ -156,7 +157,7 @@ The **stats badges** on a stream show its frame rate, latency, resolution, codec
 
 If a stream can't connect in 8 seconds (some VPNs and firewalls block it), the app switches to a TCP connection by itself. It adds a little latency but keeps working.
 
-While you **minimize** the app, or put one tile in full screen, the streams you can't see stop sending you video (you still hear them), which saves the streamer's upload and your network. The picture comes back within a second when you look again. The streamer sees you as "not looking" under your name.
+While you **minimize** the app, or put one tile in full screen, the streams you can't see stop sending you video (you still hear them), which saves the streamer's upload and your network. The picture comes back within a second when you look again. The streamer sees you as "not looking" under your name. A stream in picture-in-picture or in its own window keeps playing.
 
 ## Chat and people
 
@@ -205,7 +206,7 @@ Open Settings with the gear icon at the bottom of the rooms column. The list on 
 | Advanced | Lowest latency (wired networks) | off | Shows the streams you watch as soon as each frame arrives: about 20 ms less delay on a wired network, but they can stutter on Wi-Fi or a VPN. Applies after restarting ScreenShare. |
 | About | Check for updates automatically | on | See [updates](#updates). |
 
-**About** shows the app version and has **Open logs**.
+**About** shows the app version and has **Open logs**, and **Diagnostics**: **Copy diagnostics** copies what a bug report needs (versions, system, graphics and codecs, network addresses, your settings and the end of the log, never PINs or tokens) and **Save…** saves it to a file. See [collecting information for a bug report](troubleshooting.md#collecting-information-for-a-bug-report).
 
 ## Language
 

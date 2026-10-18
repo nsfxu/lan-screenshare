@@ -992,6 +992,13 @@ input[type='checkbox']:checked::after {
   justify-content: space-between;
   gap: 16px;
 }
+/* The description reads across the row; the buttons go under it, on the right. */
+.diagnostics-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
 .form-row.inline > label {
   text-transform: none;
   letter-spacing: 0;
@@ -1285,6 +1292,16 @@ input[type='checkbox']:checked::after {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+/* The video picture-in-picture plays from (lib/pip.ts): in the page, so it keeps playing, but out of sight. */
+.pip-source {
+  position: fixed;
+  left: -2px;
+  top: -2px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 .screen-placeholder {
   position: absolute;
