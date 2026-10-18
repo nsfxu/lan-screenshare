@@ -31,7 +31,7 @@ npm run perf -- --viewers=2   # measure a streamer and viewers (see docs/en-US/t
 | Updates (GitHub releases) | `src/main/updater.ts`, `publish` in `electron-builder.json`, `latest.yml` in `.github/workflows/release.yml` |
 | IPC surface (`window.api`) | `src/shared/ipc.ts`, `src/preload/index.ts`, `registerIpc()` in `src/main/index.ts` |
 | Sharing (capture, per-watcher connections, quality) | `src/renderer/lib/publisher.ts` |
-| Watching | `src/renderer/lib/subscription.ts`, `src/renderer/lib/watches.ts` |
+| Watching | `src/renderer/lib/subscription.ts`, `src/renderer/lib/watches.ts`, `src/renderer/lib/pip.ts` (picture-in-picture) |
 | Drawing on a stream | `src/shared/marks.ts` (limits, checks, the board), `src/renderer/lib/marks.ts`, `src/renderer/components/MarksLayer.tsx`, the streamer's window in `src/renderer/lib/marksWindow.ts` and `marksWindowOptions()` in `src/main/index.ts` |
 | TCP fallback | `src/renderer/lib/tcpStream.ts` |
 | Quality maths (pure, tested) | `src/shared/quality.ts` |

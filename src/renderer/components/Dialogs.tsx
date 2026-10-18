@@ -12,6 +12,7 @@ import {
   type CropView,
   type Point
 } from '../../shared/crop'
+import { formatDiagnostics } from '../../shared/diagnostics'
 import { qualityPresets } from '../../shared/quality'
 import { qualityLabel } from '../lib/quality'
 import { LANGUAGES, type LanguageSetting } from '../../shared/i18n'
@@ -581,6 +582,7 @@ export function SettingsPanel({
                 info?.platform === 'darwin' ? t('settings.autoUpdateHintMac') : t('settings.autoUpdateHint')
               )}
               <UpdateRow onRestart={onRestartToUpdate} />
+              <DiagnosticsRow encoders={encoders} decoders={decoders} />
             </section>
           </div>
         </div>
@@ -769,6 +771,59 @@ function CodecTable({ encoders, decoders }: { encoders: CodecSupport[]; decoders
 }
 
 /** The update status in Settings → About, with what can be done about it. */
+/**
+ * Copy (or save) what a bug report needs: versions, system, graphics and
+ * codecs, network addresses, settings and the end of the log, without PINs,
+ * tokens or our client id (see shared/diagnostics.ts).
+ */
+function DiagnosticsRow({ encoders, decoders }: { encoders: CodecSupport[]; decoders: CodecSupport[] }) {
+  const { t } = useT()
+  const [status, setStatus] = useState<'copied' | 'saved' | 'failed' | null>(null)
+  useEffect(() => {
+    if (!status) return
+    const timer = setTimeout(() => setStatus(null), 3000)
+    return () => clearTimeout(timer)
+  }, [status])
+  const report = async (): Promise<string> =>
+    formatDiagnostics({ ...(await window.api.system.diagnostics()), encoders, decoders })
+  const copy = async (): Promise<void> => {
+    try {
+      await window.api.system.copyText(await report())
+      setStatus('copied')
+    } catch {
+      setStatus('failed')
+    }
+  }
+  const save = async (): Promise<void> => {
+    try {
+      const name = `screenshare-diagnostics-${new Date().toISOString().slice(0, 10)}.txt`
+      if (await window.api.system.saveText(name, await report())) setStatus('saved')
+    } catch {
+      setStatus('failed')
+    }
+  }
+  const message = { copied: t('settings.diagnosticsCopied'), saved: t('settings.diagnosticsSaved'), failed: t('settings.diagnosticsFailed') }
+  return (
+    <div className="form-row diagnostics-row">
+      <div>
+        <span>{t('settings.diagnostics')}</span>
+        <span className="muted small block">{t('settings.diagnosticsHint')}</span>
+      </div>
+      <div className="diagnostics-actions">
+        <span className="muted small" role="status">
+          {status && message[status]}
+        </span>
+        <button className="btn ghost small" onClick={() => void copy()}>
+          <Icon name="copy" size={14} /> {t('settings.copyDiagnostics')}
+        </button>
+        <button className="btn ghost small" aria-label={t('settings.saveDiagnosticsLabel')} onClick={() => void save()}>
+          <Icon name="download" size={14} /> {t('settings.saveDiagnostics')}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function UpdateRow({ onRestart }: { onRestart(): void }) {
   const status = useUpdateStatus()
   const { t, time } = useT()

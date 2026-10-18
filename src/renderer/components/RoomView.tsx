@@ -32,6 +32,7 @@ import { useT } from '../lib/i18n'
 import { qualityLabel, watchQualityLabel } from '../lib/quality'
 import { useIdleControls } from '../lib/idleControls'
 import { openStreamWindow } from '../lib/streamWindow'
+import { closePip, pipSubscription, pipSupported, togglePip, usePipStreamer } from '../lib/pip'
 import { Marks } from '../lib/marks'
 import { openMarksWindow } from '../lib/marksWindow'
 import { noteSources, useLastShare } from '../lib/lastShare'
@@ -133,6 +134,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const idleControls = useIdleControls(CONTROLS_IDLE_MS)
   /** Streams playing in a window of their own, by streamer id. */
   const [streamWindows, setStreamWindows] = useState<ReadonlyMap<string, { win: Window; root: HTMLElement }>>(new Map())
+  const pip = usePipStreamer()
   const streamWindowsRef = useRef(streamWindows)
   streamWindowsRef.current = streamWindows
   const closeInfo = useCallback(() => setInfoOpen(false), [])
@@ -258,6 +260,18 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   }, [streamWindows.size])
   // Leaving the room closes them.
   useEffect(() => () => streamWindowsRef.current.forEach((w) => w.win.close()), [])
+
+  // --- picture-in-picture ------------------------------------------------------
+  const togglePipOf = (id: string): void => {
+    const sub = subs.get(id)
+    if (sub) void togglePip(sub).then((ok) => ok || onToast(t('room.pipFailed'), 'error'))
+  }
+  // It follows the stream: stopping watching closes it, and so does leaving the room.
+  useEffect(() => {
+    const sub = pipSubscription()
+    if (sub && subs.get(sub.streamerId) !== sub) void closePip()
+  }, [subs])
+  useEffect(() => () => void closePip(), [])
 
   // Keep the focus on someone who is still here; Esc leaves it (after leaving full screen).
   useEffect(() => {
@@ -597,6 +611,8 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           watchers={<Watchers people={watchersOf(p.id)} avatars={avatars} selfId={client.selfId} small={small} />}
           inWindow={streamWindows.has(p.id)}
           onToggleWindow={() => toggleWindow(p)}
+          inPip={pip === p.id}
+          onTogglePip={() => togglePipOf(p.id)}
           marks={marks}
           participants={participants}
           canDraw={marks.canDraw(p.id)}
@@ -797,6 +813,17 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
             onClick={() => toggleWindow(focusedStream)}
           >
             <Icon name={streamWindows.has(focusedStream.id) ? 'popIn' : 'popOut'} size={20} stroke={2.3} />
+          </button>
+        )}
+        {focusedStream && pipSupported() && (
+          <button
+            className={`bar-btn ${pip === focusedStream.id ? 'on' : ''}`}
+            data-tip={pip === focusedStream.id ? t('room.closePip') : t('room.pipTip')}
+            aria-label={pip === focusedStream.id ? t('room.closePip') : t('room.pip')}
+            aria-pressed={pip === focusedStream.id}
+            onClick={() => togglePipOf(focusedStream.id)}
+          >
+            <Icon name="pip" size={20} stroke={2.3} />
           </button>
         )}
         <button
@@ -1086,6 +1113,8 @@ function RemoteTile({
   watchers,
   inWindow,
   onToggleWindow,
+  inPip,
+  onTogglePip,
   marks,
   participants,
   canDraw,
@@ -1095,6 +1124,9 @@ function RemoteTile({
   /** Playing in its own window: the tile says so instead of playing it too. */
   inWindow: boolean
   onToggleWindow(): void
+  /** In picture-in-picture (lib/pip.ts). */
+  inPip: boolean
+  onTogglePip(): void
   marks: Marks
   /** Everyone in the room (marks are drawn in each person's colour, pointers with their name). */
   participants: Participant[]
@@ -1215,6 +1247,7 @@ function RemoteTile({
             icon: inWindow ? 'popIn' : 'popOut',
             onSelect: onToggleWindow
           },
+          ...(pipSupported() ? [{ label: inPip ? t('room.closePip') : t('room.pip'), icon: 'pip', onSelect: onTogglePip }] : []),
           ...(canDraw
             ? [
                 { label: pen ? t('marks.penOff') : t('marks.pen'), icon: 'pen', onSelect: onTogglePen },

@@ -13,6 +13,7 @@ import type {
   UpdateRoomRequest,
   UpdateStatus
 } from './types'
+import type { MainDiagnostics } from './diagnostics'
 import type { PerfRendererOptions, PerfSample } from './perf'
 
 export const IPC = {
@@ -52,6 +53,8 @@ export const IPC = {
   closeConfirmed: 'window:close-confirmed',
   copyText: 'clipboard:write',
   openLogs: 'system:open-logs',
+  diagnostics: 'system:diagnostics',
+  saveText: 'system:save-text',
   placeMarksWindow: 'window:place-marks',
   updateStatus: 'update:status',
   updateGet: 'update:get',
@@ -135,6 +138,10 @@ export interface ScreenShareApi {
     info(): Promise<AppInfo>
     copyText(text: string): Promise<void>
     openLogs(): Promise<void>
+    /** What a bug report needs, from the main process (shared/diagnostics.ts adds the codecs and formats it). */
+    diagnostics(): Promise<MainDiagnostics>
+    /** Save text to a file the person picks; false if they cancel. */
+    saveText(fileName: string, text: string): Promise<boolean>
     /** Lay the marks window (lib/marksWindow.ts) over the shared screen; hidden for a shared window. */
     placeMarksWindow(sourceId: string): Promise<void>
     setViewerProtection(enabled: boolean): Promise<void>
