@@ -267,7 +267,7 @@ O resumo é calculado por funções puras em `src/shared/perfSummary.ts` (testad
 npm run perf -- --viewers=2 --view-height=1080 --seconds=60 --latency --adaptive=off
 ```
 
-Com `--audio`, o padrão também apita (2 kHz, 60 ms, baixinho) cada vez que o relógio chega a um múltiplo de 4 s, no tempo certo para sair dos alto-falantes nessa marca. Cada espectador anota quando cada apito chega no som que recebe (depois do buffer de jitter do áudio, antes dos alto-falantes), e o resumo ganha uma tabela "Sound (beeps)" ao lado da da imagem.
+Com `--audio`, o padrão também apita (2 kHz, 60 ms, baixinho) cada vez que o relógio chega a um múltiplo de 4 s, no tempo certo para sair dos alto-falantes nessa marca. Cada espectador anota quando cada apito chega no som que recebe (depois do buffer de jitter do áudio, antes dos alto-falantes), e o resumo ganha uma tabela "Sound (beeps)" ao lado da da imagem. Os números vêm dos apitos que concordam entre si (dentro de 60 ms); um perdido, como um apito a mais do padrão, é contado mas fica de fora. O padrão deixa o cursor do mouse visível: uma janela em tela cheia que o esconde parece um jogo para o app, que passa a compartilhar essa janela no lugar (Windows 10).
 
 O padrão cobre a primeira tela (a que o streamer compartilha). Com vários monitores, ponha as janelas do app em outro com `--display=<n>` para não cobri-lo. Ele é uma janela comum em tela cheia de propósito: uma sem moldura e sempre por cima o Windows mostra sem passar pelo compositor da área de trabalho, e a captura de tela passa a receber só alguns quadros por segundo. Jogos em tela cheia podem fazer o mesmo.
 

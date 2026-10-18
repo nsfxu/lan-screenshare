@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <title>ScreenShare latency pattern</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #102030; cursor: none; }
+  /* The cursor stays visible: hiding it over a full-screen window looks like a game to the app, which then shares that window instead (Windows 10, see gameCursor.ts). */
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #102030; }
   canvas { display: block; width: 100vw; height: 100vh; }
 </style>
 </head>

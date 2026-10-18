@@ -267,7 +267,7 @@ The summary is computed by pure functions in `src/shared/perfSummary.ts` (tested
 npm run perf -- --viewers=2 --view-height=1080 --seconds=60 --latency --adaptive=off
 ```
 
-With `--audio`, the pattern also beeps (2 kHz, 60 ms, quiet) each time the clock reaches a multiple of 4 s, timed to leave the speakers on that mark. Each viewer notes when every beep arrives in the sound it receives (after its audio jitter buffer, before its speakers), and the summary gets a "Sound (beeps)" table next to the picture's.
+With `--audio`, the pattern also beeps (2 kHz, 60 ms, quiet) each time the clock reaches a multiple of 4 s, timed to leave the speakers on that mark. Each viewer notes when every beep arrives in the sound it receives (after its audio jitter buffer, before its speakers), and the summary gets a "Sound (beeps)" table next to the picture's. Its figures come from the beeps that agree with each other (within 60 ms); a stray one, such as an extra beep from the pattern, is counted but left out. The pattern keeps the mouse cursor visible: a full-screen window that hides it looks like a game to the app, which then shares that window instead (Windows 10).
 
 The pattern covers the first screen (the one the streamer shares). With several monitors, put the app's windows elsewhere with `--display=<n>` so they don't cover it. It's a plain full-screen window on purpose: a frameless, always-on-top one is shown by Windows without going through the desktop compositor, and the screen capture then gets only a few frames a second. Fullscreen games can do the same.
 
