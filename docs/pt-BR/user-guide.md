@@ -102,7 +102,7 @@ Qualquer pessoa na sala pode compartilhar, não só o anfitrião, e várias pess
 |---|---|
 | Esquerda | **ⓘ** detalhes da sala e, com uma transmissão em destaque, **Grade** (volta à grade) e **Esconder os outros / Mostrar os outros** (a faixa) |
 | Meio | **Compartilhar tela** (ou **Compartilhando** enquanto você compartilha), e o botão vermelho de **sair** |
-| Direita | **Volume** e **Abrir em nova janela** (da transmissão em destaque), e **Tela cheia** |
+| Direita | **Volume**, **Abrir em nova janela** e **Janela flutuante** (da transmissão em destaque), e **Tela cheia** |
 
 Enquanto você compartilha, o botão vira um ícone de tela verde. Clique nele (ou clique com o botão direito no seu próprio quadro) para o menu de compartilhamento:
 
@@ -136,6 +136,7 @@ Todos na sala têm um **quadro** no meio: a foto e o nome. Os quadros mantêm o 
 - O nome da sala fica na barra de título, no topo da janela.
 - **Dois cliques numa transmissão** a colocam em tela cheia, como num player de vídeo: a transmissão ocupa a tela toda, e a faixa e os controles ficam por cima da parte de baixo dela. Depois de 2,5 s sem mexer o mouse, tudo menos a imagem some (a faixa, os controles, o nome, os selos de estatística e o ponteiro); mexa o mouse para trazê-los de volta. **Esc** ou o botão **Tela cheia** volta à janela. O mesmo botão, na grade, coloca a grade em tela cheia.
 - **Abrir em nova janela** (nos controles, ou no menu do botão direito da transmissão) abre a transmissão em destaque numa janela só dela, por exemplo em tela cheia num segundo monitor. Ela toca a mesma transmissão (sem carga a mais para quem compartilha), continua tocando quando você minimiza a sala e fica oculta para gravadores de tela como a sala. O quadro dela diz **Passando em outra janela**; **Trazer de volta**, ou fechar a janela, traz de volta. A janela tem a barra de título e as cores do app, e os mesmos controles da sala (volume, **Voltar para a sala**, **Tela cheia**); dois cliques nela colocam em tela cheia.
+- **Janela flutuante** (nos controles, ou no menu do botão direito da transmissão) leva a transmissão para uma janelinha que fica por cima dos outros apps, para você continuar assistindo enquanto joga ou trabalha. Mova e redimensione como quiser; ela continua tocando quando você minimiza a sala. Uma transmissão por vez: escolher outra a leva para lá. O som continua vindo da sala, no volume da transmissão. Clique no botão de novo, feche a janelinha ou pare de assistir para encerrar.
 - No destaque, **Esconder os outros** guarda a faixa para o quadro em destaque ocupar toda a altura; as transmissões nela param de te mandar vídeo até você mostrá-las de novo (o som continua).
 - Quando você está sozinho na sua sala, um quadro **Convide pessoas** mostra o endereço para passar a quem está numa VPN.
 
@@ -144,7 +145,7 @@ Todos na sala têm um **quadro** no meio: a foto e o nome. Os quadros mantêm o 
 | Opção | O que faz |
 |---|---|
 | **Volume** (controle deslizante) e **Silenciar** | Cada transmissão tem seu próprio volume e mudo, guardados por pessoa. |
-| **Parar de assistir**, **Destacar**, **Tela cheia**, **Abrir em nova janela** | Como acima. |
+| **Parar de assistir**, **Destacar**, **Tela cheia**, **Abrir em nova janela**, **Janela flutuante** | Como acima. |
 | **Mostrar só transmissões / Mostrar todos** | Deixa de fora quem não está compartilhando (menu de qualquer quadro). |
 | **Qualidade que você recebe** | **Automática** acompanha o tamanho em que você assiste, então um quadro pequeno gasta pouca banda. Você também pode limitar em 1080p, 720p, ou 720p/480p/360p a 30 fps. Fica guardado por pessoa. |
 | **Tentar a conexão mais rápida de novo** | Só quando a transmissão caiu para a conexão TCP, mais lenta. |
@@ -156,7 +157,7 @@ Os **selos de estatística** numa transmissão mostram taxa de quadros, latênci
 
 Se uma transmissão não conectar em 8 segundos (algumas VPNs e firewalls bloqueiam), o app passa sozinho para uma conexão TCP. Ela acrescenta um pouco de atraso, mas continua funcionando.
 
-Enquanto você **minimiza** o app, ou deixa um quadro em tela cheia, as transmissões que você não consegue ver param de te mandar vídeo (o som continua), o que poupa o upload de quem transmite e a sua rede. A imagem volta em menos de um segundo quando você olha de novo. Quem transmite vê "não está olhando" embaixo do seu nome.
+Enquanto você **minimiza** o app, ou deixa um quadro em tela cheia, as transmissões que você não consegue ver param de te mandar vídeo (o som continua), o que poupa o upload de quem transmite e a sua rede. A imagem volta em menos de um segundo quando você olha de novo. Quem transmite vê "não está olhando" embaixo do seu nome. Uma transmissão na janela flutuante ou numa janela só dela continua tocando.
 
 ## Chat e pessoas
 

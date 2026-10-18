@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Added
+
+- **Picture in picture**: pop a stream you watch into a small window that stays on top of other apps, to keep watching while you play or work. It's next to the volume and full-screen buttons under a focused stream, and in the stream's right-click menu. It keeps playing when you minimize the room.
+
 ## [2.5.0] - 2026-10-18
 
 ### Added
