@@ -69,6 +69,8 @@ interface PeerSample {
   height: number
   /** Only for the --perf-log file. */
   counters: PerfSenderCounters
+  /** The selected candidate pair, for perf logs. */
+  route?: string
 }
 
 export interface SharingState {
@@ -737,9 +739,10 @@ export class Publisher extends Emitter<Events> {
     })
     // Always negotiate an audio line (in the same stream, so WebRTC keeps
     // lip-sync). Muting or switching sources then only swaps the track.
+    // `--perf-separate-audio` (experiment): a stream of its own, so viewers don't hold video back for it.
     const audioTransceiver = pc.addTransceiver('audio', {
       direction: 'sendonly',
-      streams: [this.stream],
+      streams: [window.api.perf.options.separateAudio ? new MediaStream() : this.stream],
       sendEncodings: [{ maxBitrate: AUDIO_MAX_BITRATE, priority: 'high', networkPriority: 'high' }]
     })
     await audioTransceiver.sender.replaceTrack(this.audioSendTrack())
@@ -1001,7 +1004,8 @@ export class Publisher extends Emitter<Events> {
         limitation: s.limitation,
         rttMs: s.rttMs,
         hidden: this.isHidden(id),
-        counters: s.counters
+        counters: s.counters,
+        route: s.route
       })
     }
     // One WebCodecs encoder serves every TCP watcher, so they share its numbers.
@@ -1036,8 +1040,10 @@ export class Publisher extends Emitter<Events> {
     let audioOut: Record<string, any> | undefined
     let remote: Record<string, any> | undefined
     let pair: Record<string, any> | undefined
+    let selectedPairId: string | undefined
     const codecs = new Map<string, string>()
     report.forEach((s: Record<string, any>) => {
+      if (s.type === 'transport' && typeof s.selectedCandidatePairId === 'string') selectedPairId = s.selectedCandidatePairId
       if (s.type === 'outbound-rtp' && s.kind === 'video') out = s
       else if (s.type === 'outbound-rtp' && s.kind === 'audio') audioOut = s
       else if (s.type === 'remote-inbound-rtp' && s.kind === 'video') remote = s
@@ -1045,6 +1051,14 @@ export class Publisher extends Emitter<Events> {
       else if (s.type === 'codec') codecs.set(s.id, s.mimeType)
     })
     if (!out) return
+    // The transport's selected pair is the one carrying the media (a nominated one may not be).
+    const selected = selectedPairId ? (report.get(selectedPairId) as Record<string, any> | undefined) : undefined
+    if (selected) pair = selected
+    const candidate = (id: unknown): string => {
+      const c = typeof id === 'string' ? (report.get(id) as Record<string, any> | undefined) : undefined
+      return c ? `${c.address ?? '?'} ${c.candidateType ?? '?'}/${c.protocol ?? '?'}` : '?'
+    }
+    const route = pair ? `${candidate(pair.localCandidateId)} -> ${candidate(pair.remoteCandidateId)}` : undefined
     const bytes = Number(out.bytesSent ?? 0)
     const audioBytes = Number(audioOut?.bytesSent ?? 0)
     const encodeTime = Number(out.totalEncodeTime ?? 0)
@@ -1078,7 +1092,8 @@ export class Publisher extends Emitter<Events> {
         targetKbps: typeof out.targetBitrate === 'number' ? Math.round(out.targetBitrate / 1000) : null,
         availableKbps:
           typeof pair?.availableOutgoingBitrate === 'number' ? Math.round(pair.availableOutgoingBitrate / 1000) : null
-      }
+      },
+      route
     }
   }
 }

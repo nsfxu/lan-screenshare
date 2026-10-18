@@ -27,6 +27,8 @@ describe('time code', () => {
     const code = decodeTimeCode(encodeTimeCode(drawn))!
     expect(timeCodeAge(drawn + 42, code)).toBe(42)
     expect(timeCodeAge(1_791_639_052_970, decodeTimeCode(encodeTimeCode(1_791_639_052_928))!)).toBe(42)
+    // A code from the future is a misread: negative, not four billion ms old.
+    expect(timeCodeAge(drawn, decodeTimeCode(encodeTimeCode(drawn + 75))!)).toBe(-75)
   })
 
   it('samples the middle of each cell, row by row', () => {
