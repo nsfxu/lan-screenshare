@@ -8,8 +8,11 @@ import {
   getWatchQuality,
   HIDDEN_VIEW,
   HIGH_FPS_PRESET,
+  limitedByOwnCap,
   lowerPreset,
   QUALITY_PRESETS,
+  RAMP_MAX_MS,
+  RampGuard,
   qualityPresets,
   isHiddenView,
   largestViewLimit,
@@ -122,6 +125,68 @@ describe('AdaptiveController', () => {
     const c = new AdaptiveController(qualityLadder('1080p60').slice(0, 1), 0)
     run(c, lossy, 0, 30_000)
     expect(c.preset.id).toBe('1080p60')
+  })
+
+  it("isn't held down by its own bitrate cap", () => {
+    const c = new AdaptiveController(qualityLadder('1080p60'), 0)
+    // A real bandwidth limit (the connection can't carry the cap) steps down to the bottom...
+    const network: NetworkSample = { lossPct: 0, rttMs: 5, limitation: 'bandwidth', availableKbps: 1500, capKbps: 15_000 }
+    let t = run(c, network, 11_000, 60_000)
+    expect(c.preset.id).toBe('480p30')
+    // ...but once the connection carries more than the bottom step's cap, "limited by bandwidth" is that
+    // cap (detailed content always hits it), and the controller climbs again.
+    const ownCap: NetworkSample = { lossPct: 0, rttMs: 5, limitation: 'bandwidth', availableKbps: 16_000, capKbps: 2_500 }
+    t = run(c, ownCap, t, t + 12_000)
+    expect(c.preset.id).toBe('720p30')
+    // Without the connection's numbers it stays as cautious as before.
+    const unknown: NetworkSample = { lossPct: 0, rttMs: 5, limitation: 'bandwidth' }
+    expect(limitedByOwnCap(unknown)).toBe(false)
+    expect(limitedByOwnCap({ ...ownCap, availableKbps: 2_000 })).toBe(false)
+  })
+})
+
+describe('RampGuard', () => {
+  const sample = { fps: 57, targetFps: 60, limitation: 'none' as const, availableKbps: 3_000, capKbps: 15_000 }
+
+  it('keeps the frame rate until the estimate covers the cap', () => {
+    const g = new RampGuard(0)
+    expect(g.active).toBe(true)
+    expect(g.update(sample, 1000)).toBe(false)
+    expect(g.active).toBe(true)
+    expect(g.update({ ...sample, availableKbps: 14_000 }, 6000)).toBe(true)
+    expect(g.active).toBe(false)
+  })
+
+  it('stops ramping after a while even without numbers', () => {
+    const g = new RampGuard(0)
+    g.update({ ...sample, availableKbps: null }, RAMP_MAX_MS - 1)
+    expect(g.active).toBe(true)
+    g.update({ ...sample, availableKbps: null }, RAMP_MAX_MS)
+    expect(g.active).toBe(false)
+  })
+
+  it('ramps again when a connection drops frames below what it could carry', () => {
+    const g = new RampGuard(0)
+    g.update({ ...sample, availableKbps: 15_000 }, 1000)
+    const stuck = { ...sample, fps: 8, availableKbps: 5_000 }
+    expect(g.update(stuck, 2000)).toBe(false)
+    expect(g.update(stuck, 3000)).toBe(false)
+    expect(g.update(stuck, 4000)).toBe(true)
+    expect(g.active).toBe(true)
+  })
+
+  it("doesn't mistake other drops for being stuck", () => {
+    // A CPU limit, a connection that carries the cap, or a viewer who asked for 30 fps: not stuck.
+    for (const other of [
+      { ...sample, fps: 8, limitation: 'cpu' as const, availableKbps: 5_000 },
+      { ...sample, fps: 8, availableKbps: 15_000 },
+      { ...sample, fps: 29, targetFps: 30, availableKbps: 5_000 }
+    ]) {
+      const g = new RampGuard(0)
+      g.update({ ...sample, availableKbps: 15_000 }, 1000)
+      for (let t = 2000; t < 10_000; t += 1000) g.update(other, t)
+      expect(g.active).toBe(false)
+    }
   })
 })
 
