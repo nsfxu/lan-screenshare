@@ -243,7 +243,8 @@ async function startReading(viewer: Instance, screenWidth: number, sound: boolea
     const { cell, x, y, columns, rows } = TIME_CODE
     const canvas = new OffscreenCanvas(columns * cell + cell, rows * cell + cell)
     const ctx = canvas.getContext('2d', { willReadFrequently: true })!
-    const state = { active: false, ages: [] as number[], unreadable: 0, beeps: [] as number[] }
+    // Beeps only when there is sound to listen to (otherwise there's no sound table at all).
+    const state = { active: false, ages: [] as number[], unreadable: 0, beeps: listen ? ([] as number[]) : undefined }
     ;(window as unknown as { latencyReading: typeof state }).latencyReading = state
     const onFrame = (_now: number, meta: VideoFrameCallbackMetadata): void => {
       if (state.active && video.videoWidth > 0) {
@@ -304,7 +305,7 @@ async function startReading(viewer: Instance, screenWidth: number, sound: boolea
           loud.push(at)
           if (loud.length === 8 && loud[0] - lastBeep > BEEP.periodMs / 2) {
             lastBeep = loud[0]
-            if (state.active) state.beeps.push(beepAge(loud[0]))
+            if (state.active) state.beeps?.push(beepAge(loud[0]))
           }
         } else {
           loud = []
@@ -326,7 +327,7 @@ function setReading(viewer: Instance, active: boolean): Promise<void> {
 async function readings(viewer: Instance): Promise<ScreenToScreen> {
   const state = await viewer.win.evaluate(
     () =>
-      (window as unknown as { latencyReading?: { ages: number[]; unreadable: number; beeps: number[] } })
+      (window as unknown as { latencyReading?: { ages: number[]; unreadable: number; beeps?: number[] } })
         .latencyReading ?? null
   )
   return { viewer: viewer.name, ages: state?.ages ?? [], unreadable: state?.unreadable ?? 0, beeps: state?.beeps }

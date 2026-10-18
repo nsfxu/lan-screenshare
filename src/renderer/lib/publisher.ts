@@ -1,6 +1,7 @@
 import { NO_PROCESS_LOOPBACK, SNAPSHOT_INTERVAL_MS, SNAPSHOT_MAX_CHARS, SNAPSHOT_WIDTH, STATS_INTERVAL_MS } from '../../shared/constants'
 import {
   AdaptiveController,
+  RampGuard,
   encodingFor,
   encodingForWatcher,
   getPreset,
@@ -53,6 +54,10 @@ interface Peer {
   sample: PeerSample | null
   /** Last parameters applied, to skip redundant setParameters calls. */
   applied: string
+  /** Trade resolution for frame rate while the connection's bandwidth estimate grows (see RampGuard). */
+  ramp: RampGuard
+  /** The encoding's maximum bitrate as last applied, in kbps (null while it sends no video). */
+  capKbps: number | null
 }
 
 interface PeerSample {
@@ -761,7 +766,9 @@ export class Publisher extends Emitter<Events> {
       remoteSet: false,
       prev: null,
       sample: null,
-      applied: ''
+      applied: '',
+      ramp: new RampGuard(Date.now()),
+      capKbps: null
     }
     this.peers.set(viewerId, peer)
     if (this.paused) await peer.sender.replaceTrack(null)
@@ -837,8 +844,11 @@ export class Publisher extends Emitter<Events> {
   ): Promise<void> {
     // An inactive encoding stops encoding and sending video to this watcher; audio is a separate sender.
     const enc = { ...encodingForWatcher(peer.controller.preset, source, limits), active }
-    // 'motion' content keeps the frame rate and trades resolution; 'detail' keeps text sharp.
-    const degradation = this.contentHint === 'motion' ? 'maintain-framerate' : 'maintain-resolution'
+    peer.capKbps = active ? Math.round(enc.maxBitrate / 1000) : null
+    // 'motion' content keeps the frame rate and trades resolution; 'detail' keeps text sharp, except while
+    // the connection's bandwidth estimate grows (RampGuard): keeping the resolution then gets it stuck.
+    const degradation =
+      this.contentHint === 'motion' || peer.ramp.active ? 'maintain-framerate' : 'maintain-resolution'
     const key = JSON.stringify([enc, degradation])
     if (key === peer.applied) return
     const params = peer.sender.getParameters()
@@ -900,15 +910,28 @@ export class Publisher extends Emitter<Events> {
     await Promise.all([...this.peers.values()].map((p) => this.samplePeer(p, now)))
 
     let changed = false
-    for (const peer of this.peers.values()) {
+    for (const [id, peer] of this.peers) {
       const s = peer.sample
-      if (!s || !this.settings.adaptiveQuality || this.paused) continue
-      const limitation = (['none', 'cpu', 'bandwidth'].includes(s.limitation) ? s.limitation : 'other') as
+      if (!s || this.paused) continue
+      const availableKbps = s.counters.availableKbps
+      const targetFps = Math.min(peer.controller.preset.fps, this.views.get(id)?.fps ?? Infinity)
+      const limit = (['none', 'cpu', 'bandwidth'].includes(s.limitation) ? s.limitation : 'other') as
         | 'none'
         | 'cpu'
         | 'bandwidth'
         | 'other'
-      const decision = peer.controller.update({ lossPct: s.lossPct, rttMs: s.rttMs, limitation }, Date.now())
+      if (
+        !this.isHidden(id) &&
+        peer.ramp.update({ fps: s.fps, targetFps, limitation: limit, availableKbps, capKbps: peer.capKbps }, Date.now())
+      ) {
+        log(`${peer.ramp.active ? 'ramping up' : 'ramped up'} (available ${availableKbps ?? '-'} kbps, cap ${peer.capKbps ?? '-'} kbps, ${Math.round(s.fps)} fps)`)
+        changed = true
+      }
+      if (!this.settings.adaptiveQuality) continue
+      const decision = peer.controller.update(
+        { lossPct: s.lossPct, rttMs: s.rttMs, limitation: limit, availableKbps, capKbps: peer.capKbps },
+        Date.now()
+      )
       if (decision !== 'hold') {
         log(`quality ${decision} -> ${peer.controller.preset.id} (loss ${s.lossPct.toFixed(1)}%, rtt ${s.rttMs ?? '-'}ms, limit ${s.limitation})`)
         changed = true

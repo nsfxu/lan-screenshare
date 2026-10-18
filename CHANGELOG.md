@@ -16,6 +16,7 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ### Fixed
 
+- **Smooth from the first second, sharp soon after.** Sharing a desktop or other detailed content could stay at about 8 frames a second for some viewers, or drop to a blurry low quality and never come back, even on a fast network. Every viewer now gets the full frame rate from the start (at a lower resolution for the first seconds, while the connection speeds up) and full quality within about half a minute.
 - **Picture and sound together again.** When a stream had sound, viewers saw the picture about 1.4 seconds after hearing it: the app held the picture back to keep the two in sync, and got the sync wrong. The picture now arrives as fast as without sound (about 50 ms on a wired network), with the sound a few hundredths of a second behind it. Viewers on older versions get the fix as soon as whoever shares updates.
 
 ## [2.4.1] - 2026-10-12

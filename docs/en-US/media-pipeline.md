@@ -142,7 +142,9 @@ stateDiagram-v2
   note right of Lower
     bad = loss over 5%, RTT over 200 ms,
     CPU limited, or bandwidth limited after the 10 s warm-up
+    (unless the connection carries the step's own cap)
     good = loss under 1%, RTT under 100 ms, no limitation
+    (or only the step's own cap)
     at most one change every 4 s
     time needed to step up starts at 10 s and doubles
     (up to 120 s) when a step up fails within 15 s
@@ -150,6 +152,10 @@ stateDiagram-v2
 ```
 
 Turning **Adaptive quality** off keeps each watcher at the maximum preset.
+
+**Its own cap isn't the network.** WebRTC says "limited by bandwidth" whenever the encoder can't reach the quality it wants within its maximum bitrate, and detailed content at a low step always hits that step's cap. Counted as the network, that kept the controller at the bottom for good (measured: 480p30 on the software encoder, a keyframe every second, with 16 Mbps available). So "limited by bandwidth" only counts as bad while the connection's estimate (`availableOutgoingBitrate`) is below the encoding's cap, and as good otherwise (`limitedByOwnCap`).
+
+**Ramping up a connection.** A new connection's bandwidth estimate starts at ~3 Mbps. Keeping the resolution (*Sharp text*), the encoder drops frames to fit; the connection then carries little, WebRTC sees it as limited by the app rather than the network and doesn't raise its estimate, and the watcher can stay at ~8 fps for good (measured, random per connection; it also happened with WebRTC's default pacing). Keeping the frame rate fills it and the estimate grows (11 Mbps within 12 s in 3 of 3 runs). So `RampGuard` (`src/shared/quality.ts`) has each connection keep the frame rate (`maintain-framerate`) until its estimate covers the encoding's cap, for at most 20 s, and again if it later drops below half its frame rate with no reason given while the estimate is below the cap. With both: detailed content, adaptive quality on, 2 viewers, measured from the first second, 57 fps (p5 56–57) and no freezes in 6 of 6 connections, at 720p/540p for the first ~25 s and 1080p from ~30 s.
 
 The same per-watcher samples feed `StruggleDetector` (`src/shared/struggle.ts`), which tells the streamer *why* quality drops: **cpu** (WebRTC reports a CPU limitation, or encoding takes longer than the frame budget), **bandwidth** (every visible watcher is bandwidth-limited, so it's our upload rather than one viewer's Wi-Fi) or **encoders** (some watchers got a hardware encoder and others a software one: the GPU ran out of encoder sessions). A condition must hold in 8 of the last 10 seconds; each kind is shown at most once every 10 minutes, and the notice goes away when the condition no longer holds. Hidden watchers are left out.
 
