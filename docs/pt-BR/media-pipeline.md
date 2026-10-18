@@ -291,6 +291,20 @@ Medido com `npm run perf -- --viewers=2 --view-height=1080 --seconds=60 --latenc
 
 A estimativa deixa de fora uns 23 ms: o caminho da captura, os quadros que o navegador do espectador e o Windows guardam antes de mostrar, e o desenho do próprio padrão na tela dele (até uma atualização a 240 Hz). Com a qualidade adaptativa ligada, o mesmo padrão detalhado derrubou a transmissão para o codificador por software a 30 fps (o controle desce quando aparece "limitado por banda", e o limite de bitrate do próprio degrau mais baixo continua causando isso).
 
+### Som e imagem (2.4.1)
+
+Mesmo computador, `--latency --audio --adaptive=off --hint=motion`, 1 espectador em 1080p (57 fps, HEVC da NVIDIA):
+
+| | Imagem, de tela a tela | Som (apitos) |
+|---|---|---|
+| Áudio e vídeo num fluxo só (2.4.1) | ~1.490 ms | ~102 ms |
+| Áudio num fluxo só dele | 50 ms | ~106 ms |
+| Atraso de reprodução zero (`WebRTC-ForcePlayoutDelay/min_ms:0,max_ms:0/`) | 29 ms | ~113 ms |
+
+- **Com som, a imagem ficava segurada ~1,4 s.** Áudio e vídeo iam num fluxo só, então o espectador os sincronizava, e o WebRTC achava o áudio ~1,4 s atrás do vídeo, mas ele não estava: o som chegava em ~100 ms (e o buffer de jitter do áudio do espectador ficava em 30 ms). O espectador ouvia tudo ~1,4 s antes de ver. O mesmo com a captura do Chromium e com o auxiliar. Mandar o áudio num fluxo só dele tira a espera.
+- **Atraso de reprodução zero** (a renderização de baixa latência do WebRTC: quadros mostrados assim que decodificados) levou transmissões só de vídeo de 54 para 29–33 ms de tela a tela, e o buffer de jitter do espectador de 9 para 1 ms.
+- **Uma conexão pode travar em ~8 fps** com conteúdo detalhado e *Texto nítido* (manter a resolução): ela começa com bitrate baixo (~2,5 Mbps), o codificador descarta quadros para caber, e com tão pouco enviado o WebRTC nunca aumenta a estimativa. *Movimento suave* baixa a resolução no lugar e não trava.
+
 ### Capacidade de codificação (`npm run perf`, 2.2.0)
 
 Windows 10 (19045), NVIDIA GeForce RTX 4070 (driver 32.0.16.1047), AMD Ryzen 9 7900X, a tela de verdade compartilhada em 1080p60, o streamer e todos os espectadores nesse mesmo computador. Os espectadores pediram 1080p (`--view-height=1080`), menos na primeira linha. Todo espectador recebeu um codificador de hardware: H.265 pelo `MediaFoundationVideoEncodeAccelerator (NVIDIA HEVC Encoder MFT)`.

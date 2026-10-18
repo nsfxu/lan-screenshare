@@ -238,6 +238,7 @@ npm run perf -- --viewers=2 --source=fake       # the animated canvas of the e2e
 | `--view-height=<px>` | Viewers ask for this height instead of their tile's, so a dozen small windows on one computer still ask for 1080p. |
 | `--latency` | Measure the real screen-to-screen latency (see below). Needs the real screen and everything on this computer. |
 | `--adaptive=on\|off` | The streamer's **Adaptive quality**. `off` keeps the chosen quality, to measure the pipeline rather than how it adapts. Default: the app's setting (on). |
+| `--audio`, `--audio=chromium` | Share system audio, as the app does by default (on Windows, the helper without Discord), or with Chromium's own loopback. The viewers are started with `--mute-audio`, so the sound they play isn't captured again. |
 | `--host-only` | Only the streamer: it prints the address and waits (up to 10 minutes) for a viewer from another computer. |
 | `--join=<address:port>` | Only viewers, joining a room hosted on another computer. |
 | anything else | Passed to every app instance (for Chromium switches being tested). |
@@ -256,6 +257,7 @@ To report results, attach the folder (or at least `summary.md` and `run.json`) t
 
 - `--perf-log=<file>`: every second, the streamer writes what it sends each watcher (encoder, hardware or not, fps, size, bitrate, encode time, limitation, RTT, and raw counters: keyframes, huge frames, keyframe and resend requests, target and available bitrate) with the app's and the computer's CPU and memory; a watcher writes what it receives (fps, size, latency estimate, jitter buffer delay of that second, freezes, dropped frames, decoder, and raw counters: keyframes, keyframe and resend requests sent, jitter buffer target).
 - `--perf-view-height=<px>`: the forced view height above.
+- `--perf-separate-audio` (experiment): the audio goes in a stream of its own, so viewers don't hold the picture back to sync it with the sound.
 
 The summary is computed by pure functions in `src/shared/perfSummary.ts` (tested in `tests/perf.test.ts`).
 
@@ -264,6 +266,8 @@ The summary is computed by pure functions in `src/shared/perfSummary.ts` (tested
 ```bash
 npm run perf -- --viewers=2 --view-height=1080 --seconds=60 --latency --adaptive=off
 ```
+
+With `--audio`, the pattern also beeps (2 kHz, 60 ms, quiet) each time the clock reaches a multiple of 4 s, timed to leave the speakers on that mark. Each viewer notes when every beep arrives in the sound it receives (after its audio jitter buffer, before its speakers), and the summary gets a "Sound (beeps)" table next to the picture's.
 
 The pattern covers the first screen (the one the streamer shares). With several monitors, put the app's windows elsewhere with `--display=<n>` so they don't cover it. It's a plain full-screen window on purpose: a frameless, always-on-top one is shown by Windows without going through the desktop compositor, and the screen capture then gets only a few frames a second. Fullscreen games can do the same.
 
