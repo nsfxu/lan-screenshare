@@ -29,13 +29,14 @@ test('watchers point and draw on a stream; everyone watching and the streamer se
     await expect(p.win.locator('.stream-tile video')).toHaveCount(1)
   }
 
-  // Alice's marks window: on top of everything, never focused, hidden from screen capture.
+  // Alice's marks window: on top of everything, never focused, hidden from screen capture (Windows and
+  // macOS: the system feature doesn't exist on Linux, where it reports false).
   const overlay = await marksWindow(alice)
   const props = await alice.app.evaluate(({ BrowserWindow }) => {
     const w = BrowserWindow.getAllWindows().find((x) => !x.isFocusable())
     return w ? { onTop: w.isAlwaysOnTop(), protectedFromCapture: w.isContentProtected() } : null
   })
-  expect(props).toEqual({ onTop: true, protectedFromCapture: true })
+  expect(props).toEqual({ onTop: true, protectedFromCapture: process.platform !== 'linux' })
 
   // Bob turns his pen on from the controls under the focused stream.
   const tile = bob.win.locator('.spotlight-main .stream-tile, .stage-grid .stream-tile').first()
