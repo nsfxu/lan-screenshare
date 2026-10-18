@@ -121,6 +121,9 @@ export const ptBR: Messages = {
 
   // --- The room ----------------------------------------------------------------------
   'room.streamWindowTitle': 'Transmissão de {name} · ScreenShare',
+  'room.shareAgain': 'Compartilhar de novo',
+  'room.shareAgainOf': 'Compartilhar “{name}” de novo',
+  'room.shareAgainGone': '“{name}” não está mais aberto: escolha o que compartilhar',
   'room.windowFailed': 'Não foi possível abrir uma nova janela',
   'room.captureFailed': 'Não foi possível capturar: {error}',
   'room.endTitle': 'Encerrar a sala para todo mundo?',

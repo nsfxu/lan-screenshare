@@ -33,6 +33,8 @@ import { qualityLabel, watchQualityLabel } from '../lib/quality'
 import { useIdleControls } from '../lib/idleControls'
 import { openStreamWindow } from '../lib/streamWindow'
 import { closePip, pipSubscription, pipSupported, togglePip, usePipStreamer } from '../lib/pip'
+import { noteSources, useLastShare } from '../lib/lastShare'
+import { findLastSource, type LastShare } from '../../shared/lastShare'
 import { audioDefaults, type SharingState } from '../lib/publisher'
 import type { ConnectionState } from '../lib/roomClient'
 import type { Session } from '../lib/session'
@@ -332,6 +334,20 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     } catch (err) {
       onToast(t('room.captureFailed', { error: errorMessage(err) }), 'error')
     }
+  }
+
+  // "Share again": the same screen or window as last time, with the same sound options.
+  const lastShare = useLastShare()
+  const shareAgain = async (last: LastShare): Promise<void> => {
+    const sources = await window.api.capture.listSources().catch(() => [])
+    noteSources(sources)
+    const found = findLastSource(last, sources)
+    if (found) {
+      await shareSource(found.id, last.audio)
+      return
+    }
+    onToast(t('room.shareAgainGone', { name: last.source.name }), 'error')
+    setPickSource(true)
   }
 
   const endRoom = (): void => {
@@ -694,9 +710,23 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
             <Icon name="chevronUp" size={14} stroke={2.3} />
           </button>
         ) : (
-          <button className="bar-btn share" data-tip={t('room.shareTip')} onClick={() => setPickSource(true)}>
-            <Icon name="shareScreen" size={22} stroke={2.3} /> {t('room.shareScreen')}
-          </button>
+          <>
+            <button className="bar-btn share" data-tip={t('room.shareTip')} onClick={() => setPickSource(true)}>
+              <Icon name="shareScreen" size={22} stroke={2.3} /> {t('room.shareScreen')}
+            </button>
+            {lastShare && (
+              <button
+                className="bar-btn share-again"
+                data-tip={t('room.shareAgainOf', { name: lastShare.source.name })}
+                aria-label={t('room.shareAgainOf', { name: lastShare.source.name })}
+                onClick={() => void shareAgain(lastShare)}
+              >
+                <Icon name="refresh" size={18} stroke={2.3} />
+                {/* A narrow stage keeps just the icon, so the controls still fit in one row. */}
+                {stageSize.width >= SHARE_AGAIN_LABEL_MIN_WIDTH && t('room.shareAgain')}
+              </button>
+            )}
+          </>
         )}
         <button
           className="bar-btn hang-up"
@@ -921,6 +951,9 @@ interface TileChrome {
   /** Who watches this stream, at the right of its name bar. */
   watchers: ReactNode
 }
+
+/** Narrower stages show Share again as an icon (its name is in the tooltip). */
+const SHARE_AGAIN_LABEL_MIN_WIDTH = 820
 
 /** A tile's own double-click: full screen (a single click focuses, see useClickToFocus). */
 function onDoubleClickOf(onFullscreen: () => void) {

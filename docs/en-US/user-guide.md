@@ -94,12 +94,14 @@ Your computer now runs the room. If you close ScreenShare, the app asks first, b
 
 Anyone in a room can share, not just the host, and several people can share at the same time. Click **Share screen** in the controls at the bottom of the room and choose a screen or window.
 
+**Share again**, next to it, shares the same screen or window as last time, with the same sound options, in one click (just its ↻ icon in a narrow window). It remembers your last share on this computer, also after a restart. A window is found again by its title, so if it's closed or its title changed, the picker opens instead.
+
 **The controls** float over the bottom of the room: they show when you move the mouse over it, and hide after 2.5 s without movement or when the mouse leaves it. From the left:
 
 | Where | Buttons |
 |---|---|
 | Left | **ⓘ** room details, then, when a stream is focused, **Grid** (back to the grid) and **Hide others / Show others** (the strip) |
-| Middle | **Share screen** (or **Sharing** while you share), and the red **leave** button |
+| Middle | **Share screen** and **Share again** (or **Sharing** while you share), and the red **leave** button |
 | Right | **Volume**, **New window** and **Picture in picture** (for the focused stream), and **Full screen** |
 
 While you share, the button becomes a green screen icon. Click it (or right-click your own tile) for the sharing menu:

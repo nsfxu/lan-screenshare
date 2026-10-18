@@ -96,12 +96,14 @@ Agora é o seu computador que roda a sala. Se você fechar o ScreenShare, o app 
 
 Qualquer pessoa na sala pode compartilhar, não só o anfitrião, e várias pessoas podem compartilhar ao mesmo tempo. Clique em **Compartilhar tela** nos controles na parte de baixo da sala e escolha uma tela ou janela.
 
+**Compartilhar de novo**, ao lado, compartilha a mesma tela ou janela da última vez, com as mesmas opções de som, num clique (numa janela estreita, só o ícone ↻). Ele lembra o seu último compartilhamento neste computador, também depois de reiniciar. Uma janela é encontrada de novo pelo título, então se ela foi fechada ou o título mudou, o seletor abre no lugar.
+
 **Os controles** ficam por cima da parte de baixo da sala: aparecem quando você mexe o mouse sobre ela, e somem depois de 2,5 s sem movimento ou quando o mouse sai dela. Da esquerda para a direita:
 
 | Onde | Botões |
 |---|---|
 | Esquerda | **ⓘ** detalhes da sala e, com uma transmissão em destaque, **Grade** (volta à grade) e **Esconder os outros / Mostrar os outros** (a faixa) |
-| Meio | **Compartilhar tela** (ou **Compartilhando** enquanto você compartilha), e o botão vermelho de **sair** |
+| Meio | **Compartilhar tela** e **Compartilhar de novo** (ou **Compartilhando** enquanto você compartilha), e o botão vermelho de **sair** |
 | Direita | **Volume**, **Abrir em nova janela** e **Janela flutuante** (da transmissão em destaque), e **Tela cheia** |
 
 Enquanto você compartilha, o botão vira um ícone de tela verde. Clique nele (ou clique com o botão direito no seu próprio quadro) para o menu de compartilhamento:

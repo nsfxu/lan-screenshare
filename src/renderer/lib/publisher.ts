@@ -39,6 +39,7 @@ import { Emitter } from './emitter'
 import { errorMessage } from './format'
 import { t } from './i18n'
 import { blobToDataUrl } from './images'
+import { rememberShare } from './lastShare'
 import { startNativeLoopback, type NativeAudioCapture } from './nativeAudio'
 import type { RoomClient } from './roomClient'
 import { TcpAudioEncoder, TcpEncoder } from './tcpStream'
@@ -306,6 +307,7 @@ export class Publisher extends Emitter<Events> {
     this.audioChoice = audio
     this.sourceId = sourceId
     this.chosenSourceId = sourceId
+    void rememberShare(sourceId, audio).catch(() => {}) // for "Share again"
 
     if (oldVideo) {
       // Source switch: swap tracks on every live connection.
