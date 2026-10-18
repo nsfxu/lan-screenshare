@@ -1,9 +1,8 @@
 import { STATS_INTERVAL_MS, WEBRTC_CONNECT_TIMEOUT_MS } from '../../shared/constants'
 import {
   getWatchQuality,
-  HIDDEN_VIEW,
   viewHeightStep,
-  watchLimit,
+  viewRequest,
   type WatchQuality,
   type WatchQualityId
 } from '../../shared/quality'
@@ -86,6 +85,8 @@ export class Subscription extends Emitter<Events> {
   private windowHidden = false
   /** Playing in its own window: it can be seen whatever happens to the room's window and tile. */
   private detached = false
+  /** Also in picture-in-picture (see pip.ts): that window's stepped height (null = full quality). */
+  private pip: number | null | undefined = undefined
   private tick = 0
   private readonly log: (msg: string) => void
 
@@ -135,7 +136,7 @@ export class Subscription extends Emitter<Events> {
 
   /**
    * Whether this stream can be seen at all. While it can't, the streamer
-   * pauses our video (see HIDDEN_VIEW) and sends only audio.
+   * pauses our video (see HIDDEN_VIEW in shared/quality.ts) and sends only audio.
    */
   setTileHidden(hidden: boolean): void {
     if (hidden === this.tileHidden) return
@@ -156,8 +157,15 @@ export class Subscription extends Emitter<Events> {
     this.sendViewHeight()
   }
 
-  get hidden(): boolean {
-    return !this.detached && (this.tileHidden || this.windowHidden)
+  /**
+   * Shown in picture-in-picture, which plays on top of everything (a minimized
+   * room included), at this many device pixels high; null when it closes.
+   */
+  setPip(pixels: number | null): void {
+    const pip = pixels === null ? undefined : viewHeightStep(pixels)
+    if (pip === this.pip) return
+    this.pip = pip
+    this.sendViewHeight()
   }
 
   /** Receive at most this quality, whatever the tile size. */
@@ -171,7 +179,15 @@ export class Subscription extends Emitter<Events> {
 
   private sendViewHeight(): void {
     if (this.state === 'ended') return
-    const { height, fps } = this.hidden ? HIDDEN_VIEW : watchLimit(this.viewHeight, this.quality)
+    const { height, fps } = viewRequest(
+      {
+        step: this.viewHeight,
+        hidden: this.tileHidden || this.windowHidden,
+        detached: this.detached,
+        pip: this.pip
+      },
+      this.quality
+    )
     this.client.send({ type: 'view-size', streamer: this.streamerId, height, fps })
   }
 

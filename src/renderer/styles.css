@@ -1293,6 +1293,16 @@ input[type='checkbox']:checked::after {
   height: 100%;
   object-fit: contain;
 }
+/* The video picture-in-picture plays from (lib/pip.ts): in the page, so it keeps playing, but out of sight. */
+.pip-source {
+  position: fixed;
+  left: -2px;
+  top: -2px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
 .screen-placeholder {
   position: absolute;
   inset: 0;
