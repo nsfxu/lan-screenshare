@@ -453,6 +453,15 @@ export const en = {
   'settings.decode': 'Decode',
   'settings.hardware': 'Hardware',
   'settings.software': 'Software',
+  'settings.diagnostics': 'Diagnostics',
+  'settings.diagnosticsHint':
+    'For a bug report: versions, system, graphics and codecs, network addresses, your settings and the end of the log. No PINs or passwords.',
+  'settings.copyDiagnostics': 'Copy diagnostics',
+  'settings.saveDiagnostics': 'Save…',
+  'settings.saveDiagnosticsLabel': 'Save diagnostics to a file',
+  'settings.diagnosticsCopied': 'Copied',
+  'settings.diagnosticsSaved': 'Saved',
+  'settings.diagnosticsFailed': 'Couldn’t collect them',
   'settings.openLogs': 'Open logs',
   'settings.autoUpdate': 'Check for updates automatically',
   'settings.autoUpdateHint':

@@ -13,6 +13,7 @@ Each change adds its line under **Unreleased** in the same pull request, written
 ### Added
 
 - **Picture in picture**: pop a stream you watch into a small window that stays on top of other apps, to keep watching while you play or work. It's next to the volume and full-screen buttons under a focused stream, and in the stream's right-click menu. It keeps playing when you minimize the room.
+- **Copy diagnostics** (Settings → About): one click copies what a bug report needs, or **Save…** saves it to a file. It has the app and system versions, the graphics card and codecs, network addresses, your settings and the end of the log, and never room PINs or tokens.
 
 ## [2.5.0] - 2026-10-18
 
