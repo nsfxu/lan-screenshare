@@ -259,7 +259,7 @@ A cada minuto (e 1,2 s depois de começar, trocar de fonte ou retomar) quem tran
 
 - **Quem transmite** (`Publisher.collectStats`, a cada segundo): por espectador, bitrate, fps, RTT, perda, tempo de codificação, implementação do codificador, codec e limitação de qualidade. Aparece no painel Stats e na sobreposição do próprio quadro, e é enviado aos espectadores como `publisher-stats` (tempo de codificação).
 - **Espectador** (`Subscription`, a cada segundo, enviado a cada 2 s): fps, resolução, bitrate, perda, codec, decodificador, quadros descartados, bitrate do áudio, transporte e uma medida de latência.
-- **A latência no WebRTC é uma estimativa**: captura + codificação + ½ RTT + buffer de jitter + decodificação + exibição. No caminho TCP ela é medida pelo horário de captura em cada pacote, corrigido pela diferença de relógio para o anfitrião (via `ping`/`pong`).
+- **A latência no WebRTC é uma estimativa**: captura + codificação + ½ RTT + buffer de jitter + decodificação + exibição. Ela fica uns 23 ms abaixo do real: veja [atraso de tela a tela](#atraso-de-tela-a-tela-241). No caminho TCP ela é medida pelo horário de captura em cada pacote, corrigido pela diferença de relógio para o anfitrião (via `ping`/`pong`).
 
 ## Resultados medidos
 
@@ -279,6 +279,17 @@ Windows 10, GPU NVIDIA, todas as instâncias no mesmo computador (rede de loopba
 A escolha automática de codec ficou com H.265 nessa máquina porque o driver informava a codificação HEVC em hardware como eficiente, mas não a H.264, embora a codificação H.264 em hardware funcionasse quando forçada.
 
 Perda de pacotes real ainda não foi simulada; o controlador adaptativo e a divisão de banda são cobertos por testes unitários.
+
+### Atraso de tela a tela (2.4.1)
+
+Medido com `npm run perf -- --viewers=2 --view-height=1080 --seconds=60 --latency --adaptive=off` no mesmo computador de cima (RTX 4070, Windows 10, tela real em 1080p60 com o padrão de teste), 2 espectadores em 1080p, 60 s, sem áudio, qualidade adaptativa desligada: 1920×1080 a 57 fps pelo codificador HEVC da NVIDIA, sem travadas.
+
+| | p50 | p95 |
+|---|---|---|
+| Real, de tela a tela (código de tempo) | 54 ms | 59–62 ms |
+| A estimativa do app para os mesmos quadros | 31 ms | 34 ms |
+
+A estimativa deixa de fora uns 23 ms: o caminho da captura, os quadros que o navegador do espectador e o Windows guardam antes de mostrar, e o desenho do próprio padrão na tela dele (até uma atualização a 240 Hz). Com a qualidade adaptativa ligada, o mesmo padrão detalhado derrubou a transmissão para o codificador por software a 30 fps (o controle desce quando aparece "limitado por banda", e o limite de bitrate do próprio degrau mais baixo continua causando isso).
 
 ### Capacidade de codificação (`npm run perf`, 2.2.0)
 

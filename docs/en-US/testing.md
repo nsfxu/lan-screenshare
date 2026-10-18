@@ -236,6 +236,8 @@ npm run perf -- --viewers=2 --source=fake       # the animated canvas of the e2e
 | `--hint=auto\|detail\|motion` | The streamer's **Optimize for**: `detail` (text, a desktop) is sent as screen content and `motion` (games) as video, which WebRTC paces differently. Default: the app's setting (Automatic). |
 | `--quality=<preset>` | The streamer's maximum quality: `native60`, `1080p60`, `720p60`, `720p30` or `480p30`, or the experimental `1080p120` (the runner then adds `--perf-high-fps`). |
 | `--view-height=<px>` | Viewers ask for this height instead of their tile's, so a dozen small windows on one computer still ask for 1080p. |
+| `--latency` | Measure the real screen-to-screen latency (see below). Needs the real screen and everything on this computer. |
+| `--adaptive=on\|off` | The streamer's **Adaptive quality**. `off` keeps the chosen quality, to measure the pipeline rather than how it adapts. Default: the app's setting (on). |
 | `--host-only` | Only the streamer: it prints the address and waits (up to 10 minutes) for a viewer from another computer. |
 | `--join=<address:port>` | Only viewers, joining a room hosted on another computer. |
 | anything else | Passed to every app instance (for Chromium switches being tested). |
@@ -256,6 +258,14 @@ To report results, attach the folder (or at least `summary.md` and `run.json`) t
 - `--perf-view-height=<px>`: the forced view height above.
 
 The summary is computed by pure functions in `src/shared/perfSummary.ts` (tested in `tests/perf.test.ts`).
+
+**Screen-to-screen latency** (`--latency`): the app's own latency figure is an estimate (see [media pipeline](media-pipeline.md#statistics-and-latency)); this measures the real one. A test pattern (`scripts/perf/pattern/`) fills the shared screen with moving, detailed content and, in its top-left corner, a block code with the time each frame was drawn (`src/shared/timeCode.ts`). Each viewer reads the code back from every frame it shows, at the moment the frame is due on its screen, and since everything runs on one computer, both use the same clock. The summary gets a "Screen to screen" table: p50, p95, min and max per viewer, and how many frames couldn't be read.
+
+```bash
+npm run perf -- --viewers=2 --view-height=1080 --seconds=60 --latency --adaptive=off
+```
+
+The pattern covers the first screen (the one the streamer shares). With several monitors, put the app's windows elsewhere with `--display=<n>` so they don't cover it. It's a plain full-screen window on purpose: a frameless, always-on-top one is shown by Windows without going through the desktop compositor, and the screen capture then gets only a few frames a second. Fullscreen games can do the same.
 
 **120 fps experiment** (`--perf-high-fps`, off by default): offers a **1080p @ 120 fps** maximum quality (25 Mbps) in Settings and the room's quality menu, and stepping down from it goes to 1080p @ 60 fps. With a 120/144 Hz game on a wired network, and the viewer on a second PC with a high-refresh monitor:
 

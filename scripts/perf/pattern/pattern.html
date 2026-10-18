@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>ScreenShare latency pattern</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #102030; cursor: none; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+  // Game-like content (a scrolling detailed background and moving sprites, redrawn every display
+  // refresh) with the time code in the top-left corner. startPattern() is called by the runner once
+  // it has injected window.TimeCode (src/shared/timeCode.ts).
+  const canvas = document.getElementById('c')
+  const ctx = canvas.getContext('2d')
+  // The canvas is in device pixels, so the code's cells are pixels of the captured screen.
+  const resize = () => {
+    canvas.width = Math.round(innerWidth * devicePixelRatio)
+    canvas.height = Math.round(innerHeight * devicePixelRatio)
+  }
+  resize()
+  addEventListener('resize', resize)
+
+  let seed = 7
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647
+  const tile = document.createElement('canvas')
+  tile.width = 512
+  tile.height = 512
+  const t = tile.getContext('2d')
+  for (let i = 0; i < 4000; i++) {
+    t.fillStyle = `hsl(${Math.floor(rnd() * 360)}, 50%, ${20 + rnd() * 30}%)`
+    t.fillRect(rnd() * 512, rnd() * 512, 2 + rnd() * 10, 2 + rnd() * 10)
+  }
+  t.font = '14px monospace'
+  for (let y = 16; y < 512; y += 18) {
+    t.fillStyle = `hsl(${Math.floor(rnd() * 360)}, 60%, 75%)`
+    let s = ''
+    for (let i = 0; i < 60; i++) s += String.fromCharCode(33 + Math.floor(rnd() * 90))
+    t.fillText(s, 0, y)
+  }
+  const pattern = ctx.createPattern(tile, 'repeat')
+  const sprites = Array.from({ length: 80 }, () => ({
+    x: rnd(), y: rnd(), vx: (rnd() - 0.5) * 0.6, vy: (rnd() - 0.5) * 0.6, r: 20 + rnd() * 60, hue: Math.floor(rnd() * 360)
+  }))
+
+  function startPattern() {
+    const { TIME_CODE, encodeTimeCode } = window.TimeCode
+    const { cell, x: codeX, y: codeY, columns, rows } = TIME_CODE
+    let last = performance.now()
+    let frame = 0
+    const draw = (ts) => {
+      const dt = Math.min(0.05, (ts - last) / 1000)
+      last = ts
+      const w = canvas.width
+      const h = canvas.height
+      ctx.save()
+      ctx.translate(-(ts * 0.12) % 512, -(ts * 0.05) % 512)
+      ctx.fillStyle = pattern
+      ctx.fillRect(0, 0, w + 512, h + 512)
+      ctx.restore()
+      for (const s of sprites) {
+        s.x += s.vx * dt
+        s.y += s.vy * dt
+        if (s.x < 0 || s.x > 1) s.vx = -s.vx
+        if (s.y < 0 || s.y > 1) s.vy = -s.vy
+        ctx.fillStyle = `hsl(${(s.hue + frame) % 360}, 80%, 55%)`
+        ctx.beginPath()
+        ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2)
+        ctx.fill()
+      }
+      frame++
+      // The time this frame was drawn, on the computer's clock (what the viewers compare with).
+      const bits = encodeTimeCode(performance.timeOrigin + ts)
+      ctx.fillStyle = '#808080'
+      ctx.fillRect(codeX - cell / 2, codeY - cell / 2, columns * cell + cell, rows * cell + cell)
+      bits.forEach((on, i) => {
+        ctx.fillStyle = on ? '#ffffff' : '#000000'
+        ctx.fillRect(codeX + (i % columns) * cell, codeY + Math.floor(i / columns) * cell, cell, cell)
+      })
+      requestAnimationFrame(draw)
+    }
+    requestAnimationFrame(draw)
+    return { width: canvas.width, height: canvas.height }
+  }
+</script>
+</body>
+</html>

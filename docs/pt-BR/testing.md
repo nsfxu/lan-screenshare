@@ -236,6 +236,8 @@ npm run perf -- --viewers=2 --source=fake       # o canvas animado dos testes e2
 | `--hint=auto\|detail\|motion` | O **Optimize for** do streamer: `detail` (texto, uma área de trabalho) vai como conteúdo de tela e `motion` (jogos) como vídeo, que o WebRTC cadencia de jeitos diferentes. Padrão: a configuração do app (Automático). |
 | `--quality=<preset>` | A qualidade máxima do streamer: `native60`, `1080p60`, `720p60`, `720p30` ou `480p30`, ou a experimental `1080p120` (o script então adiciona `--perf-high-fps`). |
 | `--view-height=<px>` | Os espectadores pedem essa altura em vez da do bloco deles, para que uma dúzia de janelas pequenas num computador ainda peça 1080p. |
+| `--latency` | Mede o atraso real de tela a tela (veja abaixo). Precisa da tela de verdade e de tudo neste computador. |
+| `--adaptive=on\|off` | A **Qualidade adaptativa** do streamer. `off` mantém a qualidade escolhida, para medir o caminho do vídeo e não a adaptação. Padrão: a configuração do app (ligada). |
 | `--host-only` | Só o streamer: mostra o endereço e espera (até 10 minutos) um espectador de outro computador. |
 | `--join=<endereço:porta>` | Só espectadores, entrando numa sala hospedada em outro computador. |
 | qualquer outra | Repassada a todas as instâncias do app (para chaves do Chromium em teste). |
@@ -256,6 +258,14 @@ Para mandar os resultados, anexe a pasta (ou pelo menos `summary.md` e `run.json
 - `--perf-view-height=<px>`: a altura forçada acima.
 
 O resumo é calculado por funções puras em `src/shared/perfSummary.ts` (testadas em `tests/perf.test.ts`).
+
+**Atraso de tela a tela** (`--latency`): o número de atraso do próprio app é uma estimativa (veja [pipeline de mídia](media-pipeline.md#estatísticas-e-latência)); isto mede o real. Um padrão de teste (`scripts/perf/pattern/`) enche a tela compartilhada com conteúdo detalhado em movimento e, no canto de cima à esquerda, um código em blocos com a hora em que cada quadro foi desenhado (`src/shared/timeCode.ts`). Cada espectador lê o código de cada quadro que mostra, no momento em que o quadro deve aparecer na tela dele, e como tudo roda num computador só, os dois usam o mesmo relógio. O resumo ganha uma tabela "Screen to screen": p50, p95, mínimo e máximo por espectador, e quantos quadros não deu para ler.
+
+```bash
+npm run perf -- --viewers=2 --view-height=1080 --seconds=60 --latency --adaptive=off
+```
+
+O padrão cobre a primeira tela (a que o streamer compartilha). Com vários monitores, ponha as janelas do app em outro com `--display=<n>` para não cobri-lo. Ele é uma janela comum em tela cheia de propósito: uma sem moldura e sempre por cima o Windows mostra sem passar pelo compositor da área de trabalho, e a captura de tela passa a receber só alguns quadros por segundo. Jogos em tela cheia podem fazer o mesmo.
 
 **Experimento de 120 fps** (`--perf-high-fps`, desligado por padrão): oferece a qualidade máxima **1080p @ 120 fps** (25 Mbps) em Settings e no menu de qualidade da sala, e baixar a partir dela vai para 1080p @ 60 fps. Com um jogo em 120/144 Hz numa rede cabeada, e o espectador num segundo PC com monitor de alta taxa de atualização:
 
