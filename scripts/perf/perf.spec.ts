@@ -5,8 +5,9 @@ import path from 'node:path'
 import { fakeScreenCapture } from '../../e2e/fixtures'
 import { MAX_USERS } from '../../src/shared/constants'
 import { IPC } from '../../src/shared/ipc'
-import { parsePerfLog, summarize, summaryMarkdown } from '../../src/shared/perfSummary'
+import { parsePerfLog, screenToScreenMarkdown, summarize, summaryMarkdown, type ScreenToScreen } from '../../src/shared/perfSummary'
 import { HIGH_FPS_PRESET, qualityPresets } from '../../src/shared/quality'
+import ts from 'typescript'
 
 // The measuring run behind `npm run perf` (options from scripts/perf/run.cjs).
 // See docs/en-US/testing.md#measuring-performance.
@@ -49,6 +50,14 @@ function options() {
   }
   const viewHeight = raw['view-height'] === undefined ? null : int('view-height', 0, 90)
   const viewers = hostOnly ? 0 : int('viewers', 1, 1)
+  // Screen-to-screen latency: a test pattern on the shared screen, read back by viewers on the same computer.
+  const latency = raw.latency === true
+  // The streamer's adaptive quality (Settings → Advanced); `off` keeps the chosen quality, to measure the pipeline itself.
+  const adaptive = raw.adaptive === undefined ? null : String(raw.adaptive)
+  if (adaptive && !['on', 'off'].includes(adaptive)) throw new Error('--adaptive must be on or off')
+  if (latency && (source !== 'screen' || join || hostOnly)) {
+    throw new Error('--latency shares the real screen and needs the streamer and viewers on this computer (same clock)')
+  }
   // A room holds MAX_USERS people, the streamer included: one more viewer would find it full.
   if (viewers > MAX_USERS - 1) {
     throw new Error(`--viewers can be at most ${MAX_USERS - 1}: a room holds ${MAX_USERS} people`)
@@ -63,6 +72,8 @@ function options() {
     viewHeight,
     join,
     hostOnly,
+    latency,
+    adaptive,
     // The 120 fps preset only exists with --perf-high-fps.
     passthrough:
       quality === HIGH_FPS_PRESET.id && !raw.passthrough.includes('--perf-high-fps')
@@ -84,7 +95,8 @@ interface Instance {
 async function launch(name: string, opts: ReturnType<typeof options>, fakeSource: boolean): Promise<Instance> {
   const slug = name.toLowerCase().replace(/\W+/g, '-')
   const log = path.join(opts.out, `${slug}.jsonl`)
-  const args = [repo, `--profile=perf-${slug}-${process.pid}`, `--perf-log=${log}`, ...opts.passthrough]
+  // --lang: the runner finds buttons by their English names, whatever the computer's language.
+  const args = [repo, `--profile=perf-${slug}-${process.pid}`, `--perf-log=${log}`, '--lang=en-US', ...opts.passthrough]
   if (opts.viewHeight) args.push(`--perf-view-height=${opts.viewHeight}`)
   // Chromium's sandbox needs unprivileged user namespaces, which containers and CI often lack.
   if (process.platform === 'linux') args.push('--no-sandbox')
@@ -100,7 +112,7 @@ async function launch(name: string, opts: ReturnType<typeof options>, fakeSource
   }
   await win.waitForSelector('.rooms-sidebar')
   await win.evaluate(
-    ([displayName, maxQuality, contentHint]) =>
+    ([displayName, maxQuality, contentHint, adaptive]) =>
       window.api.settings.update({
         displayName,
         shareAudio: false,
@@ -108,9 +120,10 @@ async function launch(name: string, opts: ReturnType<typeof options>, fakeSource
         // No update checks from a measuring run.
         autoUpdate: false,
         ...(maxQuality ? { maxQuality: maxQuality as never } : {}),
-        ...(contentHint ? { contentHint: contentHint as never } : {})
+        ...(contentHint ? { contentHint: contentHint as never } : {}),
+        ...(adaptive ? { adaptiveQuality: adaptive === 'on' } : {})
       }),
-    [name, opts.quality, opts.hint] as const
+    [name, opts.quality, opts.hint, opts.adaptive] as const
   )
   await win.reload() // the UI reads the settings above at startup
   await win.waitForSelector('.rooms-sidebar')
@@ -178,12 +191,100 @@ function streamerHasWatcher(log: string): boolean {
   }
 }
 
+// --- Screen-to-screen latency (--latency) -------------------------------------------
+
+/** src/shared/timeCode.ts as a page script that sets window.TimeCode: the pattern and the viewers share it. */
+function timeCodeScript(): string {
+  const source = fs.readFileSync(path.join(repo, 'src', 'shared', 'timeCode.ts'), 'utf8')
+  const { outputText } = ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 }
+  })
+  return `(() => { const exports = {}; ${outputText}; window.TimeCode = exports })()`
+}
+
+/** Opens the test pattern over the shared screen; resolves with it and the screen's size in pixels. */
+async function startPattern(): Promise<{ app: ElectronApplication; width: number }> {
+  const app = await electron.launch({ args: [path.join(__dirname, 'pattern', 'main.cjs')], cwd: repo })
+  const page = await app.firstWindow()
+  await page.waitForLoadState()
+  await page.evaluate(timeCodeScript())
+  const size = await page.evaluate(() => (window as unknown as { startPattern(): { width: number } }).startPattern())
+  return { app, width: size.width }
+}
+
+/**
+ * Starts reading the time code from every frame a viewer shows: when the frame is due on screen
+ * (requestVideoFrameCallback's expectedDisplayTime), how old the code in it is. Readings are kept
+ * from `measureFrom()` on.
+ */
+async function startReading(viewer: Instance, screenWidth: number): Promise<void> {
+  await viewer.win.evaluate(timeCodeScript())
+  await viewer.win.evaluate((width) => {
+    type TC = typeof import('../../src/shared/timeCode')
+    const { TIME_CODE, decodeTimeCode, timeCodeAge, timeCodeCellCentre } = (window as unknown as { TimeCode: TC }).TimeCode
+    const video = document.querySelector<HTMLVideoElement>('.tile video')
+    if (!video) throw new Error('no video to read the time code from')
+    const { cell, x, y, columns, rows } = TIME_CODE
+    const canvas = new OffscreenCanvas(columns * cell + cell, rows * cell + cell)
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })!
+    const state = { active: false, ages: [] as number[], unreadable: 0 }
+    ;(window as unknown as { latencyReading: typeof state }).latencyReading = state
+    const onFrame = (_now: number, meta: VideoFrameCallbackMetadata): void => {
+      if (state.active && video.videoWidth > 0) {
+        // The code's area of the shared screen, scaled to the size the video arrives in, drawn back at full size.
+        const scale = video.videoWidth / width
+        ctx.drawImage(video, x * scale, y * scale, columns * cell * scale, rows * cell * scale, 0, 0, columns * cell, rows * cell)
+        const pixels = ctx.getImageData(0, 0, columns * cell, rows * cell).data
+        const bits: boolean[] = []
+        for (let i = 0; i < columns * rows; i++) {
+          const c = timeCodeCellCentre(i)
+          let sum = 0
+          let n = 0
+          for (let dy = -3; dy <= 3; dy++) {
+            for (let dx = -3; dx <= 3; dx++) {
+              const at = ((c.y - y + dy) * columns * cell + (c.x - x + dx)) * 4
+              sum += pixels[at] + pixels[at + 1] + pixels[at + 2]
+              n += 3
+            }
+          }
+          bits.push(sum / n > 128)
+        }
+        const code = decodeTimeCode(bits)
+        if (code === null) state.unreadable++
+        else state.ages.push(timeCodeAge(performance.timeOrigin + meta.expectedDisplayTime, code))
+      }
+      video.requestVideoFrameCallback(onFrame)
+    }
+    video.requestVideoFrameCallback(onFrame)
+  }, screenWidth)
+}
+
+function setReading(viewer: Instance, active: boolean): Promise<void> {
+  return viewer.win.evaluate((on) => {
+    const state = (window as unknown as { latencyReading?: { active: boolean } }).latencyReading
+    if (state) state.active = on
+  }, active)
+}
+
+async function readings(viewer: Instance): Promise<ScreenToScreen> {
+  const state = await viewer.win.evaluate(
+    () => (window as unknown as { latencyReading?: { ages: number[]; unreadable: number } }).latencyReading ?? null
+  )
+  return { viewer: viewer.name, ages: state?.ages ?? [], unreadable: state?.unreadable ?? 0 }
+}
+
 test('measure', async () => {
   const opts = options()
   fs.mkdirSync(opts.out, { recursive: true })
   const instances: Instance[] = []
   const say = (msg: string): void => console.log(`[perf] ${msg}`)
+  let pattern: { app: ElectronApplication; width: number } | null = null
   try {
+    // Before the streamer starts sharing, so the first screen already shows it.
+    if (opts.latency) {
+      pattern = await startPattern()
+      say(`test pattern on the shared screen (${pattern.width} px wide)`)
+    }
     let address = opts.join
     let gpu: unknown = null
     if (!opts.join) {
@@ -211,13 +312,17 @@ test('measure', async () => {
       await expect.poll(() => decodedFrames(viewer.win), { timeout: 60_000, message: `${viewer.name} gets no video` }).toBeGreaterThan(0)
     }
 
+    if (pattern) for (const viewer of viewers) await startReading(viewer, pattern.width)
     say(`warming up for ${opts.warmup} s`)
     await new Promise((resolve) => setTimeout(resolve, opts.warmup * 1000))
     const from = Date.now()
     const shownAtStart = await Promise.all(viewers.map((v) => decodedFrames(v.win)))
+    await Promise.all(viewers.map((v) => setReading(v, true)))
     say(`measuring for ${opts.seconds} s`)
     await new Promise((resolve) => setTimeout(resolve, opts.seconds * 1000))
+    await Promise.all(viewers.map((v) => setReading(v, false)))
     const to = Date.now()
+    const screenToScreen = pattern ? await Promise.all(viewers.map(readings)) : null
     // Frames the viewers' <video> elements actually showed: what a high refresh rate is for.
     const shown = await Promise.all(viewers.map((v) => decodedFrames(v.win)))
     const displayedFps = Object.fromEntries(
@@ -238,7 +343,8 @@ test('measure', async () => {
           memoryGB: Math.round(os.totalmem() / 2 ** 30),
           gpu: gpuSummary(gpu),
           measured: { from: new Date(from).toISOString(), to: new Date(to).toISOString() },
-          displayedFps
+          displayedFps,
+          ...(screenToScreen ? { screenToScreen } : {})
         },
         null,
         2
@@ -260,12 +366,14 @@ test('measure', async () => {
     const md =
       summaryMarkdown(summarize(logs, from, to), title) +
       (shownLines.length ? `\n## Displayed by the viewers' video elements\n\n${shownLines.join('\n')}\n` : '') +
+      (screenToScreen ? `\n${screenToScreenMarkdown(screenToScreen)}` : '') +
       `\n\`${opts.command}\`, app ${appVersion}\n`
     fs.writeFileSync(path.join(opts.out, 'summary.md'), md)
     console.log(`\n${md}`)
     say(`results in ${path.relative(repo, opts.out)}`)
   } finally {
     await Promise.all(instances.map(quit))
+    await pattern?.app.close().catch(() => {})
   }
 })
 

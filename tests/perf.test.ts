@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parsePerfArgs, type PerfSenderRow, type PerfStreamerSample, type PerfWatcherSample } from '../src/shared/perf'
-import { parsePerfLog, percentiles, summarize, summaryMarkdown, type PerfLog } from '../src/shared/perfSummary'
+import { parsePerfLog, percentiles, screenToScreenMarkdown, summarize, summaryMarkdown, type PerfLog } from '../src/shared/perfSummary'
 
 describe('parsePerfArgs', () => {
   it('is off without the switches', () => {
@@ -182,5 +182,16 @@ describe('summarize', () => {
     expect(md).toContain('| Viewer 2 | Streamer | webrtc | libvpx (sw) |')
     expect(md).toContain('| Streamer | 12 % | 13 % | 40 % | 40 % |')
     expect(md).toContain('| Sent fps p50 | Capture fps |')
+  })
+})
+
+describe('screenToScreenMarkdown', () => {
+  it('reports each viewer’s screen-to-screen latency, and what it couldn’t read', () => {
+    const md = screenToScreenMarkdown([
+      { viewer: 'Viewer 1', ages: [40, 42, 44, 46, 100], unreadable: 2 },
+      { viewer: 'Viewer 2', ages: [], unreadable: 30 }
+    ])
+    expect(md).toContain('| Viewer 1 | 44 ms | 89 ms | 40 ms | 100 ms | 5 | 2 |')
+    expect(md).toContain('| Viewer 2 | – ms | – ms | – ms | – ms | 0 | 30 |')
   })
 })

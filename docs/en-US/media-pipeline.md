@@ -259,7 +259,7 @@ Every minute (and 1.2 s after starting, switching source or resuming) a streamer
 
 - **Streamer** (`Publisher.collectStats`, every second): per watcher, bitrate, fps, RTT, loss, encode time, encoder implementation, codec and quality limitation. Shown in the Stats panel and the self tile overlay, and sent to watchers as `publisher-stats` (encode time).
 - **Watcher** (`Subscription`, every second, sent every 2 s): fps, resolution, bitrate, loss, codec, decoder, dropped frames, audio bitrate, transport, and a latency figure.
-- **Latency on WebRTC is an estimate**: capture + encode + ½ RTT + jitter buffer + decode + display. On the TCP path it is measured from the capture timestamp in each packet, corrected by the clock offset to the host (from `ping`/`pong`).
+- **Latency on WebRTC is an estimate**: capture + encode + ½ RTT + jitter buffer + decode + display. It reads about 23 ms low: see [screen-to-screen latency](#screen-to-screen-latency-241). On the TCP path it is measured from the capture timestamp in each packet, corrected by the clock offset to the host (from `ping`/`pong`).
 
 ## Measured results
 
@@ -279,6 +279,17 @@ Windows 10, NVIDIA GPU, all instances on one machine (loopback network), before 
 Automatic codec selection picked H.265 on that machine because the driver reported hardware HEVC encoding as power-efficient but not H.264, even though hardware H.264 encoding worked when forced.
 
 Real packet loss has not been simulated yet; the adaptive controller and the budget split are covered by unit tests.
+
+### Screen-to-screen latency (2.4.1)
+
+Measured with `npm run perf -- --viewers=2 --view-height=1080 --seconds=60 --latency --adaptive=off` on the same computer as above (RTX 4070, Windows 10, real screen at 1080p60 with the test pattern), 2 viewers at 1080p, 60 s, no audio, adaptive quality off: 1920×1080 at 57 fps through the NVIDIA HEVC encoder, no freezes.
+
+| | p50 | p95 |
+|---|---|---|
+| Real, screen to screen (time code) | 54 ms | 59–62 ms |
+| The app's estimate for the same frames | 31 ms | 34 ms |
+
+The estimate leaves out about 23 ms: the capture pipeline, the frames the viewer's browser and Windows queue before showing, and the pattern's own drawing to its screen (up to one refresh at 240 Hz). With adaptive quality on, the same detailed pattern dropped the stream to the software encoder at 30 fps (the controller steps down on "limited by bandwidth" and its lowest step's own bitrate cap keeps reporting it).
 
 ### Encoder capacity (`npm run perf`, 2.2.0)
 

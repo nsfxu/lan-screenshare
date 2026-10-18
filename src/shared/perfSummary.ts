@@ -213,3 +213,34 @@ export function summaryMarkdown(summary: PerfSummary, title: string): string {
   lines.push('')
   return lines.join('\n')
 }
+
+/** Screen-to-screen latency one viewer read from the test pattern's time code (`--latency`). */
+export interface ScreenToScreen {
+  viewer: string
+  /** Age of each frame's time code when that frame was due on the viewer's screen, in ms. */
+  ages: number[]
+  /** Frames whose code couldn't be read (blurred, covered, or caught half-drawn). */
+  unreadable: number
+}
+
+/** The "Screen to screen" section of summary.md. */
+export function screenToScreenMarkdown(rows: readonly ScreenToScreen[]): string {
+  const lines = ['## Screen to screen (time code)', '']
+  lines.push(
+    'From the moment the test pattern draws a frame on the shared screen to the moment the viewer is due to show it ' +
+      '(same computer, same clock).',
+    ''
+  )
+  lines.push('| Viewer | p50 | p95 | Min | Max | Frames read | Unreadable |')
+  lines.push('|---|---|---|---|---|---|---|')
+  for (const r of rows) {
+    const p = percentiles(r.ages)
+    const min = r.ages.length ? Math.min(...r.ages) : undefined
+    const max = r.ages.length ? Math.max(...r.ages) : undefined
+    lines.push(
+      `| ${r.viewer} | ${fmt(p?.p50)} ms | ${fmt(p?.p95)} ms | ${fmt(min)} ms | ${fmt(max)} ms | ${r.ages.length} | ${r.unreadable} |`
+    )
+  }
+  lines.push('')
+  return lines.join('\n')
+}
