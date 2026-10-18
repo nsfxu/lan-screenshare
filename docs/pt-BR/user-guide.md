@@ -202,6 +202,7 @@ Abra as configurações pelo ícone de engrenagem embaixo da coluna de salas. A 
 | Conexão | Porta para hospedar | 47800 | A primeira porta tentada quando você hospeda. |
 | Avançado | Codec de vídeo | Automático | O automático prefere H.264 em hardware. Dá para forçar H.264, H.265, VP9 ou AV1 se os dois lados suportarem. A tabela abaixo dele mostra o que o seu computador suporta. |
 | Avançado | Qualidade adaptativa | ligado | Reduz resolução/taxa de quadros por espectador quando a rede dele sofre. |
+| Avançado | Menor atraso (rede cabeada) | desligado | Mostra as transmissões que você assiste assim que cada quadro chega: uns 20 ms a menos de atraso numa rede cabeada, mas elas podem engasgar no Wi-Fi ou numa VPN. Vale depois de reiniciar o ScreenShare. |
 | Sobre | Procurar atualizações automaticamente | ligado | Veja [atualizações](#atualizações). |
 
 **Sobre** mostra a versão do app e tem o botão **Abrir logs**.

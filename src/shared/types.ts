@@ -311,6 +311,8 @@ export interface Settings {
   autoUpdate: boolean
   /** The app's language, or 'system' to follow the computer's (src/shared/i18n). */
   language: LanguageSetting
+  /** Show watched streams' frames as soon as they're decoded (zero playout delay); applies after a restart. */
+  lowLatency: boolean
 }
 
 /**

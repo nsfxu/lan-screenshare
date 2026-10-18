@@ -562,6 +562,7 @@ export function SettingsPanel({
                 </select>
               </div>
               {toggle('adaptiveQuality', t('settings.adaptive'), t('settings.adaptiveHint'))}
+              {toggle('lowLatency', t('settings.lowLatency'), t('settings.lowLatencyHint'))}
               <CodecTable encoders={encoders} decoders={decoders} />
             </section>
 

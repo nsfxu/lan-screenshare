@@ -254,8 +254,8 @@ export class Subscription extends Emitter<Events> {
     this.closePeer()
     const pc = new RTCPeerConnection({ iceServers: [], bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require' })
     this.pc = pc
-    // This connection's tracks. Audio and video normally come in one stream; when the audio has a stream
-    // of its own (`--perf-separate-audio`), they're kept together rather than the audio replacing the video.
+    // This connection's tracks. The video comes in two streams and the audio in the second (so they aren't
+    // synced, see Publisher); older streamers send both in one. Either way, keep them together.
     let tracks: MediaStream | null = null
     pc.ontrack = (e) => {
       // Render frames as soon as they are decoded: this is a live screen, not a movie.
