@@ -109,6 +109,14 @@ test('click to focus, double-click for full screen; volume below a focused strea
   await expect.poll(() => opacity('.spotlight-main .tile-bar')).toBe('1')
   await win.getByRole('button', { name: 'Exit full screen' }).click()
   await expect.poll(() => win.evaluate(() => !!document.fullscreenElement)).toBe(false)
+  // macOS animates the window out of full screen. Asking again before that's over ends with the window
+  // full screen and the page not (the late "left full screen" reaches the page after the new request).
+  if (process.platform === 'darwin') {
+    await expect
+      .poll(() => bob.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isFullScreen()))
+      .toBe(false)
+    await win.waitForTimeout(1000)
+  }
 
   // Entering full screen with its button (which keeps focus after the click) still lets the controls hide.
   await win.locator('.stage-controls').getByRole('button', { name: 'Full screen' }).click()
