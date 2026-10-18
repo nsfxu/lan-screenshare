@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Added
+
+- **Share again**: next to **Share screen**, one click shares the same screen or window as last time, with the same sound options. It's remembered after a restart too; if that window is gone, the picker opens instead.
+
 ## [2.5.0] - 2026-10-18
 
 ### Added

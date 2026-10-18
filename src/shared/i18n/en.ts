@@ -127,6 +127,9 @@ export const en = {
 
   // --- The room ----------------------------------------------------------------------
   'room.streamWindowTitle': "{name}'s stream · ScreenShare",
+  'room.shareAgain': 'Share again',
+  'room.shareAgainOf': 'Share “{name}” again',
+  'room.shareAgainGone': '“{name}” isn’t there anymore: pick what to share',
   'room.windowFailed': "Couldn't open a new window",
   'room.captureFailed': 'Could not capture: {error}',
   'room.endTitle': 'End the room for everyone?',

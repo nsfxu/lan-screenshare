@@ -2026,11 +2026,13 @@ button.member-main {
   color: var(--bad-text);
 }
 .bar-btn.share svg,
+.bar-btn.share-again svg,
 .bar-btn.sharing svg,
 .bar-btn.hang-up svg {
   filter: none;
 }
 .bar-btn.share,
+.bar-btn.share-again,
 .bar-btn.sharing,
 .bar-btn.hang-up {
   height: 48px;
@@ -2044,6 +2046,17 @@ button.member-main {
 }
 .bar-btn.share:hover {
   background: var(--accent-hover);
+}
+/* Next to Share screen: the same source as last time, in one click. */
+.bar-btn.share-again {
+  gap: 6px;
+  padding: 0 14px;
+  font-size: 14px;
+  background: color-mix(in srgb, var(--accent) 22%, var(--bg-elev-2));
+  color: var(--accent);
+}
+.bar-btn.share-again:hover {
+  background: color-mix(in srgb, var(--accent) 34%, var(--bg-elev-2));
 }
 .bar-btn.sharing {
   gap: 2px;

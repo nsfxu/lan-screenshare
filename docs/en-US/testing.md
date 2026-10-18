@@ -90,6 +90,7 @@ Keep decision logic out of React and out of WebRTC callbacks, in `src/shared/*.t
 | Test | Covers |
 |---|---|
 | Public room (`room.spec.ts`) | Alice creates a room and shares; Bob joins with **Join by IP**; nothing plays until he chooses her stream; frames arrive and have the colour of her screen; chat both ways; when she stops sharing (Sharing menu), his stream goes away. |
+| Share again (`shareAgain.spec.ts`) | Someone who never shared sees only Share screen; after Alice stops, **Share again** names the fake screen, shrinks to its icon in a 700 px window with the controls still fitting, and one click shares it again with its sound. A remembered window that's gone shows a notice and opens the picker. |
 | Private room (`room.spec.ts`) | A wrong PIN is refused (error under the room, still outside); the right PIN lets Bob in. |
 | Automatic quality (`quality.spec.ts`) | Alice shares; the test reports what's in front as the Windows helper would. The Stats panel shows smooth motion before anything is known, sharp text for a normal window, smooth motion for a fullscreen app on the shared screen, sharp text for one on another screen; Automatic is the default and a fixed choice in Settings wins. The panel also shows the whole computer's CPU and memory. |
 | Hidden viewers (`hidden.spec.ts`) | Alice and Carol share, Bob watches both. Bob minimized: no frames from either, and Alice sees "not looking (video paused)"; restored: both play again. Alice's tile full screen (simulated): Carol's stream pauses, Alice's keeps playing. |
