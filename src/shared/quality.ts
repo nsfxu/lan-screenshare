@@ -94,6 +94,25 @@ export interface NetworkSample {
   rttMs: number | null
   /** WebRTC's outbound-rtp.qualityLimitationReason (or an equivalent). */
   limitation: 'none' | 'cpu' | 'bandwidth' | 'other'
+  /** What congestion control thinks the connection carries (candidate pair's availableOutgoingBitrate), kbps. */
+  availableKbps?: number | null
+  /** The encoding's maximum bitrate right now (this step, the view and the upload budget), kbps. */
+  capKbps?: number | null
+}
+
+/**
+ * "Limited by bandwidth" while the connection carries at least the encoding's own cap: that's the cap at
+ * work, not the network. On a low step, detailed content always hits its cap, so counting it as the network
+ * kept the controller from ever stepping up again (measured: stuck at 480p30 with 16 Mbps available).
+ */
+export function limitedByOwnCap(sample: NetworkSample): boolean {
+  return (
+    sample.limitation === 'bandwidth' &&
+    typeof sample.availableKbps === 'number' &&
+    typeof sample.capKbps === 'number' &&
+    sample.capKbps > 0 &&
+    sample.availableKbps >= sample.capKbps
+  )
 }
 
 export interface AdaptiveOptions {
@@ -161,15 +180,16 @@ export class AdaptiveController {
   update(sample: NetworkSample, now: number): AdaptiveDecision {
     const o = this.opts
     const warmingUp = now - this.lastChange < o.warmupMs
+    const ownCap = limitedByOwnCap(sample)
     const bad =
       sample.lossPct > o.lossBadPct ||
       (sample.rttMs !== null && sample.rttMs > o.rttBadMs) ||
       sample.limitation === 'cpu' ||
-      (sample.limitation === 'bandwidth' && !warmingUp)
+      (sample.limitation === 'bandwidth' && !ownCap && !warmingUp)
     const good =
       sample.lossPct < o.lossGoodPct &&
       (sample.rttMs === null || sample.rttMs < o.rttGoodMs) &&
-      sample.limitation === 'none'
+      (sample.limitation === 'none' || ownCap)
 
     if (bad) {
       this.badStreak++
@@ -229,6 +249,62 @@ export const VIEW_HEIGHT_STEPS = [360, 480, 720, 1080, 1440, 2160] as const
 
 /** Never ask an encoder for less than this. */
 export const MIN_VIDEO_BITRATE = 300_000
+
+/** What the ramp guard looks at, once a second per connection. */
+export interface RampSample {
+  /** Frames sent in the last second, and the frame rate this connection should get. */
+  fps: number
+  targetFps: number
+  limitation: NetworkSample['limitation']
+  availableKbps: number | null
+  capKbps: number | null
+}
+
+export const RAMP_MAX_MS = 20_000
+/** Seconds in a row a connection must look stuck before it ramps again. */
+const STUCK_SAMPLES = 3
+
+/**
+ * Whether a connection should trade resolution for frame rate (WebRTC's maintain-framerate) for now, even
+ * for sharp text. A connection starts with a low bandwidth estimate; keeping the resolution, the encoder then
+ * drops frames to fit, sends little, and WebRTC, seeing a connection that isn't full, doesn't raise its
+ * estimate: stuck at ~3 Mbps and ~8 fps (measured). Keeping the frame rate keeps it full, and the estimate
+ * grows (11 Mbps within 12 s, measured). So: ramp until the estimate covers the encoding's cap (at most
+ * RAMP_MAX_MS), and again whenever a connection looks stuck like that.
+ */
+export class RampGuard {
+  private ramping = true
+  private stuck = 0
+
+  constructor(private readonly startedAt: number) {}
+
+  get active(): boolean {
+    return this.ramping
+  }
+
+  /** Feed one sample; true when the answer changed. */
+  update(s: RampSample, now: number): boolean {
+    const known = s.availableKbps !== null && s.capKbps !== null && s.capKbps > 0
+    const covered = known && s.availableKbps! >= s.capKbps! * 0.9
+    if (this.ramping) {
+      if (covered || now - this.startedAt >= RAMP_MAX_MS) {
+        this.ramping = false
+        this.stuck = 0
+        return true
+      }
+      return false
+    }
+    // Frames dropped without WebRTC saying why, on a connection that can't carry the cap yet.
+    const looksStuck = s.limitation === 'none' && s.targetFps > 0 && s.fps < s.targetFps * 0.5 && known && !covered
+    this.stuck = looksStuck ? this.stuck + 1 : 0
+    if (this.stuck >= STUCK_SAMPLES) {
+      this.ramping = true
+      this.stuck = 0
+      return true
+    }
+    return false
+  }
+}
 
 /** Round a displayed pixel height up to the next step (null = full quality). */
 export function viewHeightStep(pixels: number | null): number | null {

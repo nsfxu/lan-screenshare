@@ -142,7 +142,9 @@ stateDiagram-v2
   note right of Lower
     ruim = perda acima de 5%, RTT acima de 200 ms,
     limitado pela CPU, ou pela banda depois dos 10 s de aquecimento
+    (a não ser que a conexão comporte o limite do próprio degrau)
     bom = perda abaixo de 1%, RTT abaixo de 100 ms, sem limitação
+    (ou só o limite do próprio degrau)
     no máximo uma mudança a cada 4 s
     o tempo para subir começa em 10 s e dobra
     (até 120 s) quando uma subida falha em até 15 s
@@ -150,6 +152,10 @@ stateDiagram-v2
 ```
 
 Desligar **Adaptive quality** mantém cada espectador no preset máximo.
+
+**O próprio limite não é a rede.** O WebRTC diz "limitado por banda" sempre que o codificador não alcança a qualidade que quer dentro do bitrate máximo, e conteúdo detalhado num degrau baixo sempre bate no limite desse degrau. Contado como rede, isso prendia o controle no degrau mais baixo para sempre (medido: 480p30 no codificador por software, um quadro-chave por segundo, com 16 Mbps disponíveis). Então "limitado por banda" só conta como ruim enquanto a estimativa da conexão (`availableOutgoingBitrate`) está abaixo do limite da codificação, e como bom no caso contrário (`limitedByOwnCap`).
+
+**Aquecendo uma conexão.** A estimativa de banda de uma conexão nova começa em ~3 Mbps. Mantendo a resolução (*Texto nítido*), o codificador descarta quadros para caber; a conexão passa a levar pouco, o WebRTC a vê como limitada pelo app e não pela rede e não aumenta a estimativa, e o espectador pode ficar em ~8 fps para sempre (medido, aleatório por conexão; aconteceu também com o ritmo de envio padrão do WebRTC). Mantendo a taxa de quadros ela enche e a estimativa cresce (11 Mbps em 12 s em 3 de 3 execuções). Então o `RampGuard` (`src/shared/quality.ts`) faz cada conexão manter a taxa de quadros (`maintain-framerate`) até a estimativa cobrir o limite da codificação, por no máximo 20 s, e de novo se depois ela cair abaixo da metade da taxa de quadros sem motivo informado enquanto a estimativa está abaixo do limite. Com os dois: conteúdo detalhado, qualidade adaptativa ligada, 2 espectadores, medido desde o primeiro segundo, 57 fps (p5 56–57) e nenhuma travada em 6 de 6 conexões, em 720p/540p nos primeiros ~25 s e 1080p a partir de ~30 s.
 
 As mesmas amostras por espectador alimentam o `StruggleDetector` (`src/shared/struggle.ts`), que diz a quem transmite *por que* a qualidade cai: **cpu** (o WebRTC relata limitação de CPU, ou codificar leva mais que o tempo de um quadro), **bandwidth** (todos os espectadores visíveis estão limitados por banda, então é o nosso upload e não o Wi-Fi de um espectador) ou **encoders** (alguns espectadores ganharam um codificador de hardware e outros um de software: a GPU ficou sem sessões de codificação). Uma condição precisa valer em 8 dos últimos 10 segundos; cada tipo aparece no máximo uma vez a cada 10 minutos, e o aviso some quando a condição deixa de valer. Espectadores ocultos ficam de fora.
 
