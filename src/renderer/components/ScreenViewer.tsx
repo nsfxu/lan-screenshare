@@ -14,6 +14,8 @@ interface Props {
   onViewHeight?(pixels: number): void
   /** Called with true while this viewer can't be seen because something else is full screen. */
   onHiddenChange?(hidden: boolean): void
+  /** Layers over the picture (marks drawn on the stream). */
+  children?: ReactNode
 }
 
 /**
@@ -22,7 +24,7 @@ interface Props {
  * streamer); our own preview is always muted. Full screen is the stage's
  * (RoomView), not the viewer's.
  */
-export function ScreenViewer({ stream, placeholder, overlay, local, volumeKey, onViewHeight, onHiddenChange }: Props) {
+export function ScreenViewer({ stream, placeholder, overlay, local, volumeKey, onViewHeight, onHiddenChange, children }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const level = useLevel(volumeKey ?? '')
@@ -100,6 +102,7 @@ export function ScreenViewer({ stream, placeholder, overlay, local, volumeKey, o
         data-local={local ? '1' : undefined}
       />
       {placeholder && <div className="screen-placeholder">{placeholder}</div>}
+      {children}
       {overlay && <div className="screen-overlay">{overlay}</div>}
     </div>
   )

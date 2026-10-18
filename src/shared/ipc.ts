@@ -55,6 +55,7 @@ export const IPC = {
   openLogs: 'system:open-logs',
   diagnostics: 'system:diagnostics',
   saveText: 'system:save-text',
+  placeMarksWindow: 'window:place-marks',
   updateStatus: 'update:status',
   updateGet: 'update:get',
   updateCheck: 'update:check',
@@ -141,6 +142,8 @@ export interface ScreenShareApi {
     diagnostics(): Promise<MainDiagnostics>
     /** Save text to a file the person picks; false if they cancel. */
     saveText(fileName: string, text: string): Promise<boolean>
+    /** Lay the marks window (lib/marksWindow.ts) over the shared screen; hidden for a shared window. */
+    placeMarksWindow(sourceId: string): Promise<void>
     setViewerProtection(enabled: boolean): Promise<void>
     /** Colours of the system's window buttons over our title bar (Windows, Linux), as #rrggbb. */
     setTitleBarColors(color: string, symbolColor: string): Promise<void>

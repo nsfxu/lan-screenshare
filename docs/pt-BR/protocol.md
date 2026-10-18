@@ -25,7 +25,7 @@ Tudo o que trafega entre os apps de uma sala: descoberta, a consulta HTTP, as me
 - Todo `hello` informa a versão. O servidor recusa uma versão diferente com o erro fatal `version_mismatch`, cuja mensagem diz quem precisa atualizar, por exemplo "This room runs ScreenShare 2.0.0, you have 1.2.0: update to join" (`incompatibleRoomMessage` em `src/shared/version.ts`; servidores anteriores ao 1.2.0 dizem "This room runs a different app version").
 - O `GET /info` e o registro TXT do mDNS também informam a versão, para a lista de salas poder mostrar salas incompatíveis. Desde o 1.2.0, o `/info` também traz a `appVersion` do anfitrião, e a lista de salas diz **Update to join** ou **Older version** com a mesma mensagem.
 - Desde o 1.2.0, `hello` e `Participant` trazem uma `appVersion` opcional (SemVer, por exemplo `1.2.0`). O servidor descarta uma malformada; apps antigos ignoram o campo. Os outros na sala a usam para sugerir atualizar quando alguém usa uma versão mais nova.
-- Histórico: a v3 trouxe várias transmissões (qualquer pessoa pode compartilhar). A v4 adicionou fotos de perfil (`set-avatar` / `avatar`) e a taxa de quadros escolhida pelo espectador em `view-size` / `watcher-view`.
+- Histórico: a v3 trouxe várias transmissões (qualquer pessoa pode compartilhar). A v4 adicionou fotos de perfil (`set-avatar` / `avatar`) e a taxa de quadros escolhida pelo espectador em `view-size` / `watcher-view`. A 2.6.0 adicionou desenhar numa transmissão (`pointer`, `stroke`, `clear-marks`, `allow-drawing`, `marks-cleared`, e os opcionais `drawingAllowed` e `stream.drawing`) sem versão nova: apps antigos nunca veem essas mensagens, porque um app novo só oferece a caneta quando o servidor do anfitrião e o app de quem transmite dizem que têm suporte.
 
 ## Transportes num relance
 
@@ -127,7 +127,7 @@ sequenceDiagram
 | `signal` | `to, stream, data` | Quem transmite ↔ um dos seus espectadores | Repassa como `signal` só se `to` e `stream` formarem um par transmissor↔espectador existente. |
 | `ping` | `t` | Qualquer um | Responde `pong`. |
 | `bye` | | Qualquer um | Libera o assento na hora. |
-| `stream-state` | `sharing, paused, audio` | Qualquer um | Inicia, atualiza ou encerra a transmissão desse participante. Avisa no chat quando começa ou termina. |
+| `stream-state` | `sharing, paused, audio, drawing?` | Qualquer um | Inicia, atualiza ou encerra a transmissão desse participante. Avisa no chat quando começa ou termina. |
 | `publisher-stats` | `encodeMs` | Quem transmite | Repassa aos seus espectadores como `publisher-stats`. |
 | `snapshot` | `image` | Só quem transmite | Valida (JPEG/WebP ≤ 96 000 caracteres, ≤ 1 por segundo), guarda e envia aos outros. |
 | `watch` | `streamer, transport` | Qualquer um | Registra a assinatura e envia `watch-request` a quem transmite. Reenviar troca o transporte. Erros: `bad_request`, `not_sharing`. |
@@ -135,10 +135,14 @@ sequenceDiagram
 | `stats` | `streamer, stats, mediaState` | Espectador | Repassa a quem transmite como `watcher-stats`. |
 | `keyframe-request` | `streamer` | Espectador TCP | Repassa a quem transmite (no máximo 1 por segundo por espectador). |
 | `view-size` | `streamer, height, fps` | Espectador | Valida (`height` 90–8640 ou null, `fps` 1–240 ou null) e repassa como `watcher-view`. Altura 90 a 1 fps quer dizer que o espectador não consegue ver a transmissão ([pipeline de mídia](media-pipeline.md#2-limite-de-exibição-só-enviar-o-que-aparece)). |
+| `pointer` | `streamer, x, y` (0–1, ou os dois null quando sai) | Espectador dessa transmissão | Só enquanto a sala (`drawingAllowed`) e quem transmite (`stream.drawing`) permitem desenhar; ≤ 30 por segundo. Repassado a quem transmite e aos outros espectadores. |
+| `stroke` | `streamer, id, points, done` | Espectador dessa transmissão | Mesmas condições; `id` ≤ 16 caracteres de palavra, `points` 1–64 pares de números 0–1; ≤ 30 por segundo. Repassado do mesmo jeito. |
+| `clear-marks` | `streamer` | Espectador dessa transmissão, ou quem transmite | ≤ 5 por segundo. Repassado como `marks-cleared` (`all: true` quando quem transmite apaga os de todos). |
 | `kick` | `userId` | Anfitrião | Bane aquele client id nesta sessão da sala, fecha o socket e avisa no chat. |
 | `stop-stream` | `userId` | Anfitrião | Encerra aquela transmissão e avisa quem transmitia (`stream-stopped`) e seus espectadores. |
 | `delete-message` | `id` | Anfitrião | Tira a mensagem do histórico e envia `chat-deleted` a todos. |
 | `mute-chat` | `muted` | Anfitrião | Liga/desliga o silêncio do chat e envia `room` a todos. |
+| `allow-drawing` | `allowed` | Anfitrião | Permite ou não desenhar nas transmissões da sala (`drawingAllowed`) e envia `room` a todos. |
 | `end-room` | | Anfitrião | Envia `room-ended` a todos e desliga o servidor. |
 
 Mensagens exclusivas do anfitrião enviadas por outra pessoa recebem o erro não fatal `host_only`.
@@ -149,7 +153,7 @@ Mensagens exclusivas do anfitrião enviadas por outra pessoa recebem o erro não
 |---|---|---|
 | `welcome` | `selfId, resumeToken, room, participants, history` | O cliente que acabou de entrar ou retomar |
 | `error` | `code, message, fatal, retryAfterMs?, attemptsLeft?` | O cliente envolvido (erros fatais fecham o socket) |
-| `room` | `room` (`RoomState`: info + `chatMuted`) | Todos, quando os dados da sala mudam |
+| `room` | `room` (`RoomState`: info + `chatMuted` + `drawingAllowed`, que anfitriões anteriores à 2.6.0 não enviam) | Todos, quando os dados da sala mudam |
 | `participants` | `participants` | Todos, quando presença, transmissões ou quem-assiste-quem mudam |
 | `chat` | `message` | Todos |
 | `chat-deleted` | `id` | Todos |
@@ -168,8 +172,11 @@ Mensagens exclusivas do anfitrião enviadas por outra pessoa recebem o erro não
 | `stream-ended` | `streamer` | Os espectadores de uma transmissão que terminou |
 | `snapshot` | `from, image \| null` | Todos menos quem transmite (null apaga) |
 | `avatar` | `from, image \| null` | Todos, inclusive quem enviou (null remove) |
+| `pointer` | `from, streamer, x, y` | Quem transmite e os espectadores da transmissão, menos quem enviou |
+| `stroke` | `from, streamer, id, points, done` | Os mesmos |
+| `marks-cleared` | `from, streamer, all` | Os mesmos |
 
-Um `Participant` (em `participants` e `welcome`) contém: `id`, `name`, `role` (`host` ou `viewer`), `color`, `joinedAt`, `status` (`connected` ou `reconnecting`), `slot` (0–255, usado no repasse TCP), `stream` (`{paused, audio, startedAt}` ou `null`) `watching` (ids das transmissões que essa pessoa assiste) e `appVersion` (a versão do app dela, quando o app a envia).
+Um `Participant` (em `participants` e `welcome`) contém: `id`, `name`, `role` (`host` ou `viewer`), `color`, `joinedAt`, `status` (`connected` ou `reconnecting`), `slot` (0–255, usado no repasse TCP), `stream` (`{paused, audio, startedAt, drawing?}` ou `null`; `drawing` só vem de apps da 2.6.0 em diante) `watching` (ids das transmissões que essa pessoa assiste) e `appVersion` (a versão do app dela, quando o app a envia).
 
 ### Linhas do chat
 
@@ -294,6 +301,8 @@ Os apps mostram os erros no próprio idioma pelo `code`; o `message` vem em ingl
 | Prévia: tamanho / intervalo / intervalo mínimo | ≤ 96 000 caracteres / 60 s / 1 s | `SNAPSHOT_*` |
 | Foto de perfil: tamanho / intervalo mínimo | ≤ 40 000 caracteres (JPEG de 128 px) / 1 s | `AVATAR_*` |
 | Maior mensagem no WebSocket | 16 MB | `MAX_PAYLOAD_BYTES` (servidor) |
+| Desenhos: ponteiro / pedaços de traço / apagar por segundo | 30 / 30 / 5 | `POINTER_RATE`, `STROKE_RATE`, `CLEAR_RATE` (`shared/marks.ts`) |
+| Desenhos: pontos por pedaço / por traço / id do traço | 64 / 2000 / 16 caracteres | `STROKE_MAX_POINTS`, `STROKE_TOTAL_POINTS`, `STROKE_ID_MAX` |
 | Fila do repasse TCP por espectador | 2 MB | `TCP_MAX_BUFFERED_BYTES` |
 
 ## Alterando o protocolo

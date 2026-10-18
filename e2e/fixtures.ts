@@ -283,7 +283,7 @@ export async function closeFloatingChat(person: Person): Promise<void> {
 /** Resize the window's content (what the page sees), e.g. to see the layout of a small or snapped window. */
 export async function resizeWindow(person: Person, width: number, height: number): Promise<void> {
   await person.app.evaluate(
-    ({ BrowserWindow }, [w, h]) => BrowserWindow.getAllWindows()[0].setContentSize(w, h),
+    ({ BrowserWindow }, [w, h]) => BrowserWindow.getAllWindows().find((x) => !x.webContents.getURL().startsWith('about:'))!.setContentSize(w, h),
     [width, height] as const
   )
   await expect.poll(() => person.win.evaluate(() => window.innerWidth)).toBe(width)
@@ -311,10 +311,13 @@ export async function framesDuring(win: Page, streamer: string, ms: number): Pro
   return (await framesOf(win, streamer)) - start
 }
 
+// The helpers below act on the room's window: a stream's own window and the streamer's marks
+// window are blank (about:) pages the room fills in, and may come first in getAllWindows().
+
 /** Tell the app its window was minimized or restored, as the main process does (works without a window manager). */
 export async function setWindowState(person: Person, state: 'minimized' | 'restored'): Promise<void> {
   await person.app.evaluate(
-    ({ BrowserWindow }, [channel, value]) => BrowserWindow.getAllWindows()[0].webContents.send(channel, value),
+    ({ BrowserWindow }, [channel, value]) => BrowserWindow.getAllWindows().find((w) => !w.webContents.getURL().startsWith('about:'))!.webContents.send(channel, value),
     [IPC.windowState, state] as const
   )
 }
@@ -322,7 +325,7 @@ export async function setWindowState(person: Person, state: 'minimized' | 'resto
 /** Report what's in front, as the Windows foreground helper would (main/cursorWatch.ts). */
 export async function setForeground(person: Person, state: CursorWatchState): Promise<void> {
   await person.app.evaluate(
-    ({ BrowserWindow }, [channel, value]) => BrowserWindow.getAllWindows()[0].webContents.send(channel, value),
+    ({ BrowserWindow }, [channel, value]) => BrowserWindow.getAllWindows().find((w) => !w.webContents.getURL().startsWith('about:'))!.webContents.send(channel, value),
     [IPC.hiddenCursorChanged, state] as const
   )
 }

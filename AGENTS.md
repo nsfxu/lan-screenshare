@@ -32,6 +32,7 @@ npm run perf -- --viewers=2   # measure a streamer and viewers (see docs/en-US/t
 | IPC surface (`window.api`) | `src/shared/ipc.ts`, `src/preload/index.ts`, `registerIpc()` in `src/main/index.ts` |
 | Sharing (capture, per-watcher connections, quality) | `src/renderer/lib/publisher.ts` |
 | Watching | `src/renderer/lib/subscription.ts`, `src/renderer/lib/watches.ts`, `src/renderer/lib/pip.ts` (picture-in-picture) |
+| Drawing on a stream | `src/shared/marks.ts` (limits, checks, the board), `src/renderer/lib/marks.ts`, `src/renderer/components/MarksLayer.tsx`, the streamer's window in `src/renderer/lib/marksWindow.ts` and `marksWindowOptions()` in `src/main/index.ts` |
 | TCP fallback | `src/renderer/lib/tcpStream.ts` |
 | Quality maths (pure, tested) | `src/shared/quality.ts` |
 | UI text, translations | `src/shared/i18n/` (`en.ts` is the reference), `useT()` in `src/renderer/lib/i18n.tsx`, `mainT()` in `src/main/i18n.ts`; see [translations](docs/en-US/development.md#translations) |

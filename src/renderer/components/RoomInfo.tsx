@@ -16,6 +16,7 @@ export function RoomInfo({
   rttMs,
   onToast,
   onEndRoom,
+  onAllowDrawing,
   onClose
 }: {
   room: RoomState | null
@@ -25,6 +26,8 @@ export function RoomInfo({
   rttMs: number | null
   onToast(message: string, tone?: 'error' | 'info'): void
   onEndRoom(): void
+  /** The host lets watchers draw on streams, or not (shown only to the host, on hosts that support it). */
+  onAllowDrawing(allowed: boolean): void
   onClose(): void
 }) {
   const { t } = useT()
@@ -90,6 +93,12 @@ export function RoomInfo({
         )}
       </dl>
       {hosted && <AccessPanel hosted={hosted} onToast={onToast} />}
+      {hosted && room?.drawingAllowed !== undefined && (
+        <label className="toggle-row">
+          <span>{t('info.allowDrawing')}</span>
+          <input type="checkbox" checked={room.drawingAllowed} onChange={(e) => onAllowDrawing(e.target.checked)} />
+        </label>
+      )}
       {hosted && (
         <button className="btn danger full" onClick={onEndRoom}>
           <Icon name="logout" /> {t('info.endForEveryone')}

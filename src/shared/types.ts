@@ -31,6 +31,11 @@ export interface RoomInfo {
 export interface RoomState extends RoomInfo {
   chatMuted: boolean
   allowRecording: boolean
+  /**
+   * Watchers may draw on streams (the host can turn it off, like muting the
+   * chat). Missing from hosts before 2.6.0, whose servers don't relay marks.
+   */
+  drawingAllowed?: boolean
 }
 
 /** A room as it appears in the home-screen list. */
@@ -63,6 +68,11 @@ export interface StreamInfo {
   /** System audio is being sent (captured and not muted). */
   audio: boolean
   startedAt: number
+  /**
+   * The streamer lets watchers draw on this stream (Settings → Allow drawing
+   * on my screen). Missing from apps before 2.6.0, which can't show marks.
+   */
+  drawing?: boolean
 }
 
 export interface Participant {
@@ -213,7 +223,8 @@ export type ClientMessage =
   | { type: 'ping'; t: number }
   | { type: 'bye' }
   // as a streamer
-  | { type: 'stream-state'; sharing: boolean; paused: boolean; audio: boolean }
+  /** `drawing`: watchers may draw on this stream (2.6.0+; see shared/marks.ts). */
+  | { type: 'stream-state'; sharing: boolean; paused: boolean; audio: boolean; drawing?: boolean }
   | { type: 'publisher-stats'; encodeMs: number | null }
   /** Small preview of the shared screen (JPEG/WebP data URL), sent periodically. */
   | { type: 'snapshot'; image: string }
@@ -227,11 +238,21 @@ export type ClientMessage =
    * the frame rate I chose (null = no limit), so the streamer can send less.
    */
   | { type: 'view-size'; streamer: string; height: number | null; fps: number | null }
+  /**
+   * Drawing on a stream I watch (2.6.0+, shared/marks.ts): my pointer at 0–1
+   * across the picture (null when it leaves), a piece of a stroke, or clearing
+   * my marks. The streamer may clear everyone's on its own stream.
+   */
+  | { type: 'pointer'; streamer: string; x: number | null; y: number | null }
+  | { type: 'stroke'; streamer: string; id: string; points: number[]; done: boolean }
+  | { type: 'clear-marks'; streamer: string }
   // host only
   | { type: 'kick'; userId: string }
   | { type: 'stop-stream'; userId: string }
   | { type: 'delete-message'; id: string }
   | { type: 'mute-chat'; muted: boolean }
+  /** Let watchers draw on streams in this room, or not (2.6.0+). */
+  | { type: 'allow-drawing'; allowed: boolean }
   | { type: 'end-room' }
 
 export type ServerMessage =
@@ -270,6 +291,11 @@ export type ServerMessage =
   | { type: 'snapshot'; from: string; image: string | null }
   /** Someone's profile picture (also our own, echoed); null when removed. */
   | { type: 'avatar'; from: string; image: string | null }
+  // delivered to a streamer and everyone watching it, about marks on that stream (2.6.0+)
+  | { type: 'pointer'; from: string; streamer: string; x: number | null; y: number | null }
+  | { type: 'stroke'; from: string; streamer: string; id: string; points: number[]; done: boolean }
+  /** `from`'s marks on that stream are gone; everyone's when the streamer cleared them. */
+  | { type: 'marks-cleared'; from: string; streamer: string; all: boolean }
 
 // ---------------------------------------------------------------------------
 // Local (IPC) types
@@ -313,6 +339,8 @@ export interface Settings {
   language: LanguageSetting
   /** Show watched streams' frames as soon as they're decoded (zero playout delay); applies after a restart. */
   lowLatency: boolean
+  /** Let people watching my stream point at it and draw on it (shared/marks.ts). */
+  allowDrawing: boolean
 }
 
 /**

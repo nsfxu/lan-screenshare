@@ -2,7 +2,7 @@ import { app, BrowserWindow, clipboard, desktopCapturer, dialog, ipcMain, screen
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { APP_NAME, DEFAULT_PORT, STREAM_WINDOW_PREFIX, TITLE_BAR_HEIGHT } from '../shared/constants'
+import { APP_NAME, DEFAULT_PORT, MARKS_WINDOW_NAME, STREAM_WINDOW_PREFIX, TITLE_BAR_HEIGHT } from '../shared/constants'
 import { IPC } from '../shared/ipc'
 import { parsePerfArgs, type PerfRendererOptions } from '../shared/perf'
 import { cpuBusyPercent, type CpuTimes } from '../shared/systemStats'
@@ -53,6 +53,46 @@ app.commandLine.appendSwitch('disable-backgrounding-occluded-windows')
 
 /** Diagnostics are well under this; anything bigger isn't ours to save. */
 const MAX_SAVED_TEXT = 2 * 1024 * 1024
+
+/** Ids of the streamer's marks windows (lib/marksWindow.ts): see-through, click-through, never captured. */
+const marksWindows = new Set<number>()
+
+/** Covers a whole screen (placed over the shared one by placeMarksWindow), with nothing of its own to see. */
+function marksWindowOptions(): Electron.BrowserWindowConstructorOptions {
+  return {
+    ...screen.getPrimaryDisplay().bounds,
+    transparent: true,
+    backgroundColor: '#00000000',
+    frame: false,
+    hasShadow: false,
+    focusable: false,
+    skipTaskbar: true,
+    resizable: false,
+    movable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    enableLargerThanScreen: true,
+    alwaysOnTop: true,
+    show: false
+  }
+}
+
+/**
+ * Clicks go through it to what's below; it stays over full-screen apps and
+ * on every desktop; and it's hidden from screen capture, so the marks don't
+ * show up a second time, late, in the stream itself.
+ */
+function setUpMarksWindow(child: BrowserWindow): void {
+  const id = child.id
+  marksWindows.add(id)
+  child.once('closed', () => marksWindows.delete(id))
+  child.setIgnoreMouseEvents(true)
+  child.setContentProtection(true)
+  child.setAlwaysOnTop(true, 'screen-saver')
+  child.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+}
+
 const logDir = process.platform === 'win32' ? path.join(app.getPath('userData'), 'logs') : app.getPath('logs')
 /** Small enough to sit snapped beside a game on a laptop screen; the layout adapts below 1100 px. */
 const MIN_WINDOW_WIDTH = 640
@@ -138,10 +178,13 @@ function createWindow(): void {
       win.showInactive()
     })
   })
-  // The only window the page may open is a stream's own window: a blank page the room
-  // fills in (same process, so it can play the stream it already receives).
+  // The only windows the page may open are a stream's own window, a blank page the room
+  // fills in (same process, so it can play the stream it already receives), and the
+  // streamer's see-through marks window.
   win.webContents.setWindowOpenHandler(({ url, frameName }) =>
-    url === 'about:blank' && frameName.startsWith(STREAM_WINDOW_PREFIX)
+    url === 'about:blank' && frameName === MARKS_WINDOW_NAME
+      ? { action: 'allow', overrideBrowserWindowOptions: marksWindowOptions() }
+      : url === 'about:blank' && frameName.startsWith(STREAM_WINDOW_PREFIX)
       ? {
           action: 'allow',
           overrideBrowserWindowOptions: {
@@ -163,8 +206,9 @@ function createWindow(): void {
         }
       : { action: 'deny' }
   )
-  win.webContents.on('did-create-window', (child) => {
-    child.setContentProtection(viewerProtection)
+  win.webContents.on('did-create-window', (child, { frameName }) => {
+    if (frameName === MARKS_WINDOW_NAME) setUpMarksWindow(child)
+    else child.setContentProtection(viewerProtection)
     child.setMenuBarVisibility(false)
     child.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
     child.webContents.on('will-navigate', (e) => e.preventDefault())
@@ -278,6 +322,21 @@ function registerIpc(): void {
   )
   ipcMain.handle(IPC.copyText, (_e, text: string) => clipboard.writeText(String(text)))
   ipcMain.handle(IPC.openLogs, () => shell.openPath(log.dir))
+  ipcMain.handle(IPC.placeMarksWindow, async (_e, sourceId: unknown) => {
+    const overlay = BrowserWindow.getAllWindows().find((w) => marksWindows.has(w.id))
+    if (!overlay || typeof sourceId !== 'string') return
+    // A shared window's place on screen isn't known yet: its marks show on the watchers' tiles only.
+    if (!/^screen:/.test(sourceId)) {
+      overlay.hide()
+      return
+    }
+    const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 0, height: 0 } })
+    const displayId = sources.find((s) => s.id === sourceId)?.display_id
+    const display = screen.getAllDisplays().find((d) => String(d.id) === displayId) ?? screen.getPrimaryDisplay()
+    if (overlay.isDestroyed()) return
+    overlay.setBounds(display.bounds)
+    overlay.showInactive()
+  })
   ipcMain.handle(IPC.diagnostics, () => gatherDiagnostics(log.file, settings.get()))
   ipcMain.handle(IPC.saveText, async (e, fileName: unknown, text: unknown) => {
     if (typeof text !== 'string' || text.length > MAX_SAVED_TEXT) return false
@@ -296,8 +355,9 @@ function registerIpc(): void {
     if (!hex.test(color) || !hex.test(symbolColor)) return
     titleBarColors = { color, symbolColor }
     if (process.platform === 'darwin') return
-    // Every window: the room's and any stream's own window.
+    // Every window: the room's and any stream's own window (the marks window has no title bar).
     for (const w of BrowserWindow.getAllWindows()) {
+      if (marksWindows.has(w.id)) continue
       try {
         w.setTitleBarOverlay({ color, symbolColor, height: TITLE_BAR_HEIGHT })
       } catch (err) {
@@ -313,8 +373,8 @@ function registerIpc(): void {
   // screen capture/screenshots while watching.
   ipcMain.handle(IPC.setViewerProtection, (_e, enabled: boolean) => {
     viewerProtection = !!enabled
-    // The room's window and any stream's own window.
-    for (const w of BrowserWindow.getAllWindows()) w.setContentProtection(viewerProtection)
+    // The room's window and any stream's own window (the marks window is always hidden from capture).
+    for (const w of BrowserWindow.getAllWindows()) w.setContentProtection(viewerProtection || marksWindows.has(w.id))
   })
   ipcMain.on(IPC.log, (_e, level: 'info' | 'warn' | 'error', message: string) => {
     const fn = log[level] ?? log.info

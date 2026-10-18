@@ -71,6 +71,7 @@ const api: ScreenShareApi = {
     openLogs: () => ipcRenderer.invoke(IPC.openLogs),
     diagnostics: () => ipcRenderer.invoke(IPC.diagnostics),
     saveText: (fileName, text) => ipcRenderer.invoke(IPC.saveText, fileName, text),
+    placeMarksWindow: (sourceId) => ipcRenderer.invoke(IPC.placeMarksWindow, sourceId),
     setViewerProtection: (enabled) => ipcRenderer.invoke(IPC.setViewerProtection, enabled),
     setTitleBarColors: (color, symbolColor) => ipcRenderer.invoke(IPC.setTitleBarColors, color, symbolColor),
     onWindowState: (cb) => subscribe<WindowState>(IPC.windowState, cb),

@@ -525,6 +525,7 @@ export function SettingsPanel({
               {(info?.platform === 'win32' || info?.platform === 'darwin') &&
                 toggle('excludeDiscordAudio', t('settings.excludeDiscord'), t('settings.excludeDiscordHint'))}
               {toggle('pauseOnMinimize', t('settings.pauseOnMinimize'), t('settings.pauseOnMinimizeHint'))}
+              {toggle('allowDrawing', t('settings.allowDrawing'), t('settings.allowDrawingHint'))}
             </section>
 
             <section data-section="notifications">
