@@ -291,6 +291,20 @@ Measured with `npm run perf -- --viewers=2 --view-height=1080 --seconds=60 --lat
 
 The estimate leaves out about 23 ms: the capture pipeline, the frames the viewer's browser and Windows queue before showing, and the pattern's own drawing to its screen (up to one refresh at 240 Hz). With adaptive quality on, the same detailed pattern dropped the stream to the software encoder at 30 fps (the controller steps down on "limited by bandwidth" and its lowest step's own bitrate cap keeps reporting it).
 
+### Sound and picture (2.4.1)
+
+Same computer, `--latency --audio --adaptive=off --hint=motion`, 1 viewer at 1080p (57 fps, NVIDIA HEVC):
+
+| | Picture, screen to screen | Sound (beeps) |
+|---|---|---|
+| Audio and video in one stream (2.4.1) | ~1,490 ms | ~102 ms |
+| Audio in a stream of its own | 50 ms | ~106 ms |
+| Zero playout delay (`WebRTC-ForcePlayoutDelay/min_ms:0,max_ms:0/`) | 29 ms | ~113 ms |
+
+- **With sound, the picture was held back ~1.4 s.** Audio and video were in one stream, so the viewer synced them, and WebRTC judged the audio ~1.4 s behind the video, but it wasn't: the sound arrived in ~100 ms (and the viewer's audio jitter buffer stayed at 30 ms). The viewer heard everything ~1.4 s before seeing it. The same with Chromium's loopback and with the helper. Sending the audio in a stream of its own removes the wait.
+- **Zero playout delay** (WebRTC's low-latency rendering: frames shown as soon as they're decoded) took video-only streams from 54 to 29–33 ms screen to screen, and the viewer's jitter buffer from 9 to 1 ms.
+- **A connection can get stuck at ~8 fps** with detailed content and *Sharp text* (keep resolution): it starts at a low bitrate (~2.5 Mbps), the encoder drops frames to fit, and with so little sent WebRTC never raises its estimate. *Smooth motion* lowers the resolution instead and doesn't get stuck.
+
 ### Encoder capacity (`npm run perf`, 2.2.0)
 
 Windows 10 (19045), NVIDIA GeForce RTX 4070 (driver 32.0.16.1047), AMD Ryzen 9 7900X, the real screen shared at 1080p60, the streamer and every viewer on that one computer. Viewers asked for 1080p (`--view-height=1080`) except in the first row. Every viewer got a hardware encoder: H.265 through `MediaFoundationVideoEncodeAccelerator (NVIDIA HEVC Encoder MFT)`.

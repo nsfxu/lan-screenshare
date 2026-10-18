@@ -238,6 +238,7 @@ npm run perf -- --viewers=2 --source=fake       # o canvas animado dos testes e2
 | `--view-height=<px>` | Os espectadores pedem essa altura em vez da do bloco deles, para que uma dúzia de janelas pequenas num computador ainda peça 1080p. |
 | `--latency` | Mede o atraso real de tela a tela (veja abaixo). Precisa da tela de verdade e de tudo neste computador. |
 | `--adaptive=on\|off` | A **Qualidade adaptativa** do streamer. `off` mantém a qualidade escolhida, para medir o caminho do vídeo e não a adaptação. Padrão: a configuração do app (ligada). |
+| `--audio`, `--audio=chromium` | Compartilha o áudio do sistema, como o app faz por padrão (no Windows, o auxiliar sem o Discord), ou pela captura do próprio Chromium. Os espectadores abrem com `--mute-audio`, para o som que tocam não ser capturado de novo. |
 | `--host-only` | Só o streamer: mostra o endereço e espera (até 10 minutos) um espectador de outro computador. |
 | `--join=<endereço:porta>` | Só espectadores, entrando numa sala hospedada em outro computador. |
 | qualquer outra | Repassada a todas as instâncias do app (para chaves do Chromium em teste). |
@@ -256,6 +257,7 @@ Para mandar os resultados, anexe a pasta (ou pelo menos `summary.md` e `run.json
 
 - `--perf-log=<arquivo>`: a cada segundo, o streamer grava o que envia a cada espectador (codificador, se é de hardware, fps, tamanho, taxa de bits, tempo de codificação, limitação, RTT, e contadores brutos: quadros-chave, quadros enormes, pedidos de quadro-chave e de reenvio, taxa alvo e disponível) com a CPU e a memória do app e do computador; o espectador grava o que recebe (fps, tamanho, latência estimada, atraso do jitter buffer naquele segundo, travadas, quadros descartados, decodificador, e contadores brutos: quadros-chave, pedidos de quadro-chave e de reenvio enviados, alvo do jitter buffer).
 - `--perf-view-height=<px>`: a altura forçada acima.
+- `--perf-separate-audio` (experimento): o áudio vai num fluxo só dele, para os espectadores não segurarem a imagem para sincronizá-la com o som.
 
 O resumo é calculado por funções puras em `src/shared/perfSummary.ts` (testadas em `tests/perf.test.ts`).
 
@@ -264,6 +266,8 @@ O resumo é calculado por funções puras em `src/shared/perfSummary.ts` (testad
 ```bash
 npm run perf -- --viewers=2 --view-height=1080 --seconds=60 --latency --adaptive=off
 ```
+
+Com `--audio`, o padrão também apita (2 kHz, 60 ms, baixinho) cada vez que o relógio chega a um múltiplo de 4 s, no tempo certo para sair dos alto-falantes nessa marca. Cada espectador anota quando cada apito chega no som que recebe (depois do buffer de jitter do áudio, antes dos alto-falantes), e o resumo ganha uma tabela "Sound (beeps)" ao lado da da imagem.
 
 O padrão cobre a primeira tela (a que o streamer compartilha). Com vários monitores, ponha as janelas do app em outro com `--display=<n>` para não cobri-lo. Ele é uma janela comum em tela cheia de propósito: uma sem moldura e sempre por cima o Windows mostra sem passar pelo compositor da área de trabalho, e a captura de tela passa a receber só alguns quadros por segundo. Jogos em tela cheia podem fazer o mesmo.
 
