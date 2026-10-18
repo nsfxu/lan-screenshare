@@ -339,8 +339,9 @@ function registerIpc(): void {
     if (!hex.test(color) || !hex.test(symbolColor)) return
     titleBarColors = { color, symbolColor }
     if (process.platform === 'darwin') return
-    // Every window: the room's and any stream's own window.
+    // Every window: the room's and any stream's own window (the marks window has no title bar).
     for (const w of BrowserWindow.getAllWindows()) {
+      if (marksWindows.has(w.id)) continue
       try {
         w.setTitleBarOverlay({ color, symbolColor, height: TITLE_BAR_HEIGHT })
       } catch (err) {
