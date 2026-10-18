@@ -12,6 +12,7 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ### Added
 
+- **Draw on a stream**: turn on the pen under a stream you watch to point at it (others see a dot with your name) and draw quick marks that fade after a few seconds. Everyone watching sees them, and so does the person sharing, on their own screen, without the marks showing up in the stream. Sharers can turn it off in **Settings → Sharing**, and hosts for the whole room. Needs the host and the sharer on this version.
 - **Share again**: next to **Share screen**, one click shares the same screen or window as last time, with the same sound options. It's remembered after a restart too; if that window is gone, the picker opens instead.
 
 ## [2.5.0] - 2026-10-18

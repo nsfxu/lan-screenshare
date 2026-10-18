@@ -159,6 +159,15 @@ Os **selos de estatística** numa transmissão mostram taxa de quadros, latênci
 Se uma transmissão não conectar em 8 segundos (algumas VPNs e firewalls bloqueiam), o app passa sozinho para uma conexão TCP. Ela acrescenta um pouco de atraso, mas continua funcionando.
 
 Enquanto você **minimiza** o app, ou deixa um quadro em tela cheia, as transmissões que você não consegue ver param de te mandar vídeo (o som continua), o que poupa o upload de quem transmite e a sua rede. A imagem volta em menos de um segundo quando você olha de novo. Quem transmite vê "não está olhando" embaixo do seu nome.
+### Desenhar numa transmissão
+
+Para apontar algo numa transmissão que você assiste, ligue a caneta: **Desenhar na transmissão** (a caneta embaixo de uma transmissão em destaque, ou no menu do botão direito da transmissão). Enquanto ela está ligada, o seu mouse sobre a transmissão aparece para todo mundo que assiste, e para quem compartilha, como um ponto na sua cor com o seu nome. Clique e arraste para fazer um desenho rápido; os desenhos somem depois de alguns segundos. **Apagar meus desenhos** (a borracha ao lado da caneta, ou o menu do botão direito) tira os seus. Clique na caneta de novo para parar.
+
+Quando outras pessoas desenham na **sua** transmissão, você vê os desenhos na sua própria tela, por cima do que compartilha, numa janela transparente que deixa os cliques passarem e fica fora da sua transmissão (para os desenhos não aparecerem duas vezes). **Apagar os desenhos na minha tela**, no menu Compartilhando, tira os de todos. Os desenhos somem quando você para de compartilhar, e nada é gravado.
+
+- Desligue para a sua transmissão em **Configurações → Compartilhamento → Permitir desenhar na minha tela**. O anfitrião pode desligar para a sala toda nos detalhes da sala (**ⓘ → Permitir desenhar nas transmissões**).
+- A caneta só aparece quando o app do anfitrião e o de quem compartilha são da 2.6.0 em diante.
+- Compartilhando uma única janela: os espectadores veem os desenhos uns dos outros, mas eles ainda não aparecem na sua tela.
 
 ## Chat e pessoas
 
@@ -197,6 +206,7 @@ Abra as configurações pelo ícone de engrenagem embaixo da coluna de salas. A 
 | Compartilhamento | Só o som do app compartilhado por padrão | ligado | Só no Windows. Deixa **Só o som deste app** pré-marcado quando você compartilha uma janela. |
 | Compartilhamento | Deixar o Discord de fora por padrão | ligado | Windows e macOS. Deixa o interruptor do Discord pré-marcado. |
 | Compartilhamento | Pausar o compartilhamento ao minimizar | desligado | Retoma quando você restaura a janela. |
+| Compartilhamento | Permitir desenhar na minha tela | ligado | Quem assiste pode apontar e desenhar na sua transmissão ([desenhar numa transmissão](#desenhar-numa-transmissão)). |
 | Notificações | Notificações do chat | ligado | Quando a janela está em segundo plano. |
 | Conexão | Voltar para a última sala ao abrir | desligado | Entra automaticamente na última sala quando o app abre. |
 | Conexão | Criptografar conexões (TLS) | ligado | Cifra o chat e a sinalização. O vídeo é sempre cifrado. |

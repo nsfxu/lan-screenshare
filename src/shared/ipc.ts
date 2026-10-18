@@ -52,6 +52,7 @@ export const IPC = {
   closeConfirmed: 'window:close-confirmed',
   copyText: 'clipboard:write',
   openLogs: 'system:open-logs',
+  placeMarksWindow: 'window:place-marks',
   updateStatus: 'update:status',
   updateGet: 'update:get',
   updateCheck: 'update:check',
@@ -134,6 +135,8 @@ export interface ScreenShareApi {
     info(): Promise<AppInfo>
     copyText(text: string): Promise<void>
     openLogs(): Promise<void>
+    /** Lay the marks window (lib/marksWindow.ts) over the shared screen; hidden for a shared window. */
+    placeMarksWindow(sourceId: string): Promise<void>
     setViewerProtection(enabled: boolean): Promise<void>
     /** Colours of the system's window buttons over our title bar (Windows, Linux), as #rrggbb. */
     setTitleBarColors(color: string, symbolColor: string): Promise<void>

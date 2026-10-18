@@ -2,6 +2,8 @@ export const APP_NAME = 'ScreenShare'
 
 /** Name prefix of a stream's own window (window.open), the only kind of window the room may open. */
 export const STREAM_WINDOW_PREFIX = 'screenshare-stream-'
+/** The streamer's see-through window showing marks drawn on its stream (shared/marks.ts). */
+export const MARKS_WINDOW_NAME = 'screenshare-marks'
 
 /** Where releases are published: the only place the app contacts on the internet (update checks). */
 export const RELEASES_REPO = 'nsfxu/lan-screenshare'

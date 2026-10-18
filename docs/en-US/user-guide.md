@@ -157,6 +157,15 @@ The **stats badges** on a stream show its frame rate, latency, resolution, codec
 If a stream can't connect in 8 seconds (some VPNs and firewalls block it), the app switches to a TCP connection by itself. It adds a little latency but keeps working.
 
 While you **minimize** the app, or put one tile in full screen, the streams you can't see stop sending you video (you still hear them), which saves the streamer's upload and your network. The picture comes back within a second when you look again. The streamer sees you as "not looking" under your name.
+### Drawing on a stream
+
+To point at something on a stream you watch, turn on the pen: **Draw on the stream** (the pen under a focused stream, or in the stream's right-click menu). While it's on, your mouse over the stream shows to everyone watching, and to the person sharing, as a dot in your colour with your name. Click and drag to draw a quick mark; marks fade after a few seconds. **Clear my marks** (the eraser next to the pen, or the right-click menu) removes yours. Click the pen again to stop.
+
+When others draw on **your** stream, you see their marks on your own screen, over what you share, in a see-through window that clicks go through and that's left out of your stream (so marks don't show up twice). **Clear marks on my screen** in the Sharing menu removes everyone's. Marks go away when you stop sharing, and nothing is recorded.
+
+- Turn it off for your stream with **Settings → Sharing → Allow drawing on my screen**. The host can turn it off for the whole room in the room details (**ⓘ → Allow drawing on streams**).
+- The pen only shows when the host's app and the sharer's app are on 2.6.0 or later.
+- Sharing a single window: watchers see each other's marks, but they don't show on your screen yet.
 
 ## Chat and people
 
@@ -195,6 +204,7 @@ Open Settings with the gear icon at the bottom of the rooms column. The list on 
 | Sharing | Only the shared app's sound by default | on | Windows only. Pre-selects **Only this app's sound** when you share a window. |
 | Sharing | Leave out Discord by default | on | Windows and macOS. Pre-selects the Discord switch. |
 | Sharing | Pause sharing while minimized | off | Resumes when you restore the window. |
+| Sharing | Allow drawing on my screen | on | People watching can point at your stream and draw marks on it ([drawing on a stream](#drawing-on-a-stream)). |
 | Notifications | Chat notifications | on | When the window is in the background. |
 | Connection | Rejoin last room on startup | off | Joins your last room automatically when the app starts. |
 | Connection | Encrypt connections (TLS) | on | Encrypts chat and signaling. Video is always encrypted. |

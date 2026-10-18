@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { WATCH_QUALITIES, qualityPresets, getWatchQuality, lowerPreset, type WatchQualityId } from '../../shared/quality'
 import { countUnread } from '../../shared/chat'
@@ -32,6 +32,8 @@ import { useT } from '../lib/i18n'
 import { qualityLabel, watchQualityLabel } from '../lib/quality'
 import { useIdleControls } from '../lib/idleControls'
 import { openStreamWindow } from '../lib/streamWindow'
+import { Marks } from '../lib/marks'
+import { openMarksWindow } from '../lib/marksWindow'
 import { noteSources, useLastShare } from '../lib/lastShare'
 import { findLastSource, type LastShare } from '../../shared/lastShare'
 import { audioDefaults, type SharingState } from '../lib/publisher'
@@ -47,6 +49,7 @@ import { Icon } from './Icon'
 import { RoomInfo } from './RoomInfo'
 import { InviteTile, PersonTile, useClickToFocus } from './RoomStage'
 import { ScreenViewer } from './ScreenViewer'
+import { MarksLayer } from './MarksLayer'
 
 /** Who the stage shows: everyone, or only the people sharing (remembered). */
 const STAGE_FILTERS = ['everyone', 'streams'] as const
@@ -93,6 +96,9 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const [sharing, setSharing] = useState<SharingState>(publisher.state)
   const [ownStats, setOwnStats] = useState<HostStats | null>(null)
   const [subs, setSubs] = useState<ReadonlyMap<string, Subscription>>(new Map(watches.all))
+  /** Marks drawn on the streams we see, ours and everyone's (lib/marks.ts). */
+  const marks = useMemo(() => new Marks(client), [client])
+  useEffect(() => () => marks.dispose(), [marks])
   const [focus, setFocus] = useState<string | null>(null)
   const focusRef = useRef(focus)
   focusRef.current = focus
@@ -336,6 +342,34 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     setPickSource(true)
   }
 
+  // --- drawing on streams (lib/marks.ts) ------------------------------------------
+  /** The stream our pen is on, if any: the mouse points and draws over it. */
+  const [pen, setPen] = useState<string | null>(null)
+  // The pen goes off when we stop watching, or drawing is no longer allowed there.
+  useEffect(() => {
+    if (pen && (!subs.has(pen) || !marks.canDraw(pen))) setPen(null)
+  }, [pen, subs, participants, room, marks])
+  const togglePen = (id: string): void => setPen((current) => (current === id ? null : id))
+  /** Others may draw on our stream: we're sharing, allow it, and the host's room does too. */
+  const drawnOn = sharing.sharing && settings.allowDrawing && room?.drawingAllowed === true
+  // Their marks show on our own screen, in a see-through window over what we share.
+  const [marksWindow, setMarksWindow] = useState<{ win: Window; root: HTMLElement } | null>(null)
+  useEffect(() => {
+    if (!drawnOn) return
+    const opened = openMarksWindow()
+    if (!opened) return
+    setMarksWindow(opened)
+    return () => {
+      opened.win.close()
+      setMarksWindow(null)
+    }
+  }, [drawnOn])
+  // Over the shared screen (it moves when the source changes).
+  const sharedSource = sharing.sharing ? publisher.chosenSourceId : null
+  useEffect(() => {
+    if (marksWindow && sharedSource) void window.api.system.placeMarksWindow(sharedSource)
+  }, [marksWindow, sharedSource])
+
   const endRoom = (): void => {
     void askConfirm({
       title: t('room.endTitle'),
@@ -405,6 +439,9 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
       icon: 'chart',
       onSelect: () => setShowStats((v) => !v)
     },
+    ...(drawnOn
+      ? [{ kind: 'separator' } as MenuItem, { label: t('marks.clearAll'), icon: 'eraser', onSelect: () => marks.clear(client.selfId) }]
+      : []),
     { kind: 'separator' },
     { label: t('room.stopSharing'), icon: 'stopShare', danger: true, onSelect: () => publisher.stopSharing() }
   ]
@@ -560,6 +597,11 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           watchers={<Watchers people={watchersOf(p.id)} avatars={avatars} selfId={client.selfId} small={small} />}
           inWindow={streamWindows.has(p.id)}
           onToggleWindow={() => toggleWindow(p)}
+          marks={marks}
+          participants={participants}
+          canDraw={marks.canDraw(p.id)}
+          pen={pen === p.id}
+          onTogglePen={() => togglePen(p.id)}
         />
       )
     }
@@ -639,6 +681,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           rttMs={client.rttMs}
           onToast={onToast}
           onEndRoom={endRoom}
+          onAllowDrawing={(allowed) => client.send({ type: 'allow-drawing', allowed })}
           onClose={closeInfo}
         />
       )}
@@ -723,6 +766,29 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
       </div>
       <div className="controls-side end">
         {focusedStream?.stream?.audio && <VolumeControl name={focusedStream.name} />}
+        {focusedStream && marks.canDraw(focusedStream.id) && (
+          <>
+            <button
+              className={`bar-btn ${pen === focusedStream.id ? 'on' : ''}`}
+              data-tip={pen === focusedStream.id ? t('marks.penOff') : t('marks.penOf', { name: focusedStream.name })}
+              aria-label={pen === focusedStream.id ? t('marks.penOff') : t('marks.pen')}
+              aria-pressed={pen === focusedStream.id}
+              onClick={() => togglePen(focusedStream.id)}
+            >
+              <Icon name="pen" size={20} stroke={2.3} />
+            </button>
+            {pen === focusedStream.id && (
+              <button
+                className="bar-btn"
+                data-tip={t('marks.clearMine')}
+                aria-label={t('marks.clearMine')}
+                onClick={() => marks.clear(focusedStream.id)}
+              >
+                <Icon name="eraser" size={20} stroke={2.3} />
+              </button>
+            )}
+          </>
+        )}
         {focusedStream && (
           <button
             className={`bar-btn ${streamWindows.has(focusedStream.id) ? 'on' : ''}`}
@@ -881,6 +947,12 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
 
       {menu && <Menu items={menu.items} at={menu.at} label={menu.label} onClose={closeMenu} />}
 
+      {marksWindow &&
+        createPortal(
+          <MarksLayer marks={marks} streamer={client.selfId} participants={participants} fit="fill" />,
+          marksWindow.root
+        )}
+
       {[...streamWindows].map(([id, { win, root }]) => {
         const sub = subs.get(id)
         const p = participants.find((x) => x.id === id)
@@ -1013,11 +1085,24 @@ function RemoteTile({
   onMenu,
   watchers,
   inWindow,
-  onToggleWindow
+  onToggleWindow,
+  marks,
+  participants,
+  canDraw,
+  pen,
+  onTogglePen
 }: TileChrome & {
   /** Playing in its own window: the tile says so instead of playing it too. */
   inWindow: boolean
   onToggleWindow(): void
+  marks: Marks
+  /** Everyone in the room (marks are drawn in each person's colour, pointers with their name). */
+  participants: Participant[]
+  /** We may draw on this stream (lib/marks.ts canDraw). */
+  canDraw: boolean
+  /** Our pen is on over this stream. */
+  pen: boolean
+  onTogglePen(): void
   sub: Subscription
   participant: Participant | undefined
   avatar: string | null
@@ -1129,7 +1214,13 @@ function RemoteTile({
             label: inWindow ? t('room.backToThisWindow') : t('room.openInWindow'),
             icon: inWindow ? 'popIn' : 'popOut',
             onSelect: onToggleWindow
-          }
+          },
+          ...(canDraw
+            ? [
+                { label: pen ? t('marks.penOff') : t('marks.pen'), icon: 'pen', onSelect: onTogglePen },
+                { label: t('marks.clearMine'), icon: 'eraser', onSelect: () => marks.clear(sub.streamerId) }
+              ]
+            : [])
         ]
         const qualities: MenuItem[] = [
           { kind: 'heading', label: t('room.qualityYouReceive') },
@@ -1169,7 +1260,9 @@ function RemoteTile({
           volumeKey={participant?.name}
           onViewHeight={(px) => sub.setViewHeight(px)}
           onHiddenChange={setBehindFullscreen}
-        />
+        >
+          <MarksLayer marks={marks} streamer={sub.streamerId} participants={participants} pen={pen} fit="video" />
+        </ScreenViewer>
       )}
       <div className="tile-bar">
         <span className="tile-name">
