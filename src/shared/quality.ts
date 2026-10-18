@@ -260,6 +260,21 @@ export interface RampSample {
   capKbps: number | null
 }
 
+/**
+ * WebRTC's degradation preference for a connection: 'motion' keeps the frame rate and trades resolution,
+ * 'detail' keeps text sharp, except while a screen's connection ramps up (RampGuard). Not for a window:
+ * scaled down, its odd size (e.g. 1586×892 → 1188×669) makes the NVIDIA hardware encoders fail, and WebRTC
+ * then encodes in software for the rest of the session (measured: 11–27 fps instead of 57).
+ */
+export function degradationFor(
+  hint: 'motion' | 'detail',
+  ramping: boolean,
+  sourceId: string | null
+): 'maintain-framerate' | 'maintain-resolution' {
+  if (hint === 'motion') return 'maintain-framerate'
+  return ramping && !sourceId?.startsWith('window:') ? 'maintain-framerate' : 'maintain-resolution'
+}
+
 export const RAMP_MAX_MS = 20_000
 /** Seconds in a row a connection must look stuck before it ramps again. */
 const STUCK_SAMPLES = 3

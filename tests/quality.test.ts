@@ -13,6 +13,7 @@ import {
   QUALITY_PRESETS,
   RAMP_MAX_MS,
   RampGuard,
+  degradationFor,
   qualityPresets,
   isHiddenView,
   largestViewLimit,
@@ -142,6 +143,20 @@ describe('AdaptiveController', () => {
     const unknown: NetworkSample = { lossPct: 0, rttMs: 5, limitation: 'bandwidth' }
     expect(limitedByOwnCap(unknown)).toBe(false)
     expect(limitedByOwnCap({ ...ownCap, availableKbps: 2_000 })).toBe(false)
+  })
+})
+
+describe('degradationFor', () => {
+  it('keeps the frame rate for motion, and for a screen while it ramps up', () => {
+    expect(degradationFor('motion', false, 'screen:0:0')).toBe('maintain-framerate')
+    expect(degradationFor('detail', true, 'screen:0:0')).toBe('maintain-framerate')
+    expect(degradationFor('detail', false, 'screen:0:0')).toBe('maintain-resolution')
+  })
+
+  it("doesn't scale a window down to ramp up: its odd sizes make hardware encoders fail", () => {
+    expect(degradationFor('detail', true, 'window:1181390:0')).toBe('maintain-resolution')
+    // Motion content still trades resolution, as before 2.5.0.
+    expect(degradationFor('motion', true, 'window:1181390:0')).toBe('maintain-framerate')
   })
 })
 
