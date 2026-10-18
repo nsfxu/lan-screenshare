@@ -205,7 +205,7 @@ Abra as configurações pelo ícone de engrenagem embaixo da coluna de salas. A 
 | Avançado | Menor atraso (rede cabeada) | desligado | Mostra as transmissões que você assiste assim que cada quadro chega: uns 20 ms a menos de atraso numa rede cabeada, mas elas podem engasgar no Wi-Fi ou numa VPN. Vale depois de reiniciar o ScreenShare. |
 | Sobre | Procurar atualizações automaticamente | ligado | Veja [atualizações](#atualizações). |
 
-**Sobre** mostra a versão do app e tem o botão **Abrir logs**.
+**Sobre** mostra a versão do app e tem o botão **Abrir logs**, e **Diagnóstico**: **Copiar diagnóstico** copia o que um relato de bug precisa (versões, sistema, placa de vídeo e codecs, endereços de rede, suas configurações e o fim do log, nunca PINs nem tokens) e **Salvar…** grava num arquivo. Veja [reunindo informações para relatar um bug](troubleshooting.md#reunindo-informações-para-relatar-um-bug).
 
 ## Idioma
 

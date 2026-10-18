@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Added
+
+- **Copy diagnostics** (Settings → About): one click copies what a bug report needs, or **Save…** saves it to a file. It has the app and system versions, the graphics card and codecs, network addresses, your settings and the end of the log, and never room PINs or tokens.
+
 ## [2.5.0] - 2026-10-18
 
 ### Added

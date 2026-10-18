@@ -203,7 +203,7 @@ Open Settings with the gear icon at the bottom of the rooms column. The list on 
 | Advanced | Lowest latency (wired networks) | off | Shows the streams you watch as soon as each frame arrives: about 20 ms less delay on a wired network, but they can stutter on Wi-Fi or a VPN. Applies after restarting ScreenShare. |
 | About | Check for updates automatically | on | See [updates](#updates). |
 
-**About** shows the app version and has **Open logs**.
+**About** shows the app version and has **Open logs**, and **Diagnostics**: **Copy diagnostics** copies what a bug report needs (versions, system, graphics and codecs, network addresses, your settings and the end of the log, never PINs or tokens) and **Save…** saves it to a file. See [collecting information for a bug report](troubleshooting.md#collecting-information-for-a-bug-report).
 
 ## Language
 

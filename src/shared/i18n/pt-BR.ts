@@ -443,6 +443,15 @@ export const ptBR: Messages = {
   'settings.decode': 'Decodificar',
   'settings.hardware': 'Hardware',
   'settings.software': 'Software',
+  'settings.diagnostics': 'Diagnóstico',
+  'settings.diagnosticsHint':
+    'Para relatar um bug: versões, sistema, placa de vídeo e codecs, endereços de rede, suas configurações e o fim do log. Sem PINs nem senhas.',
+  'settings.copyDiagnostics': 'Copiar diagnóstico',
+  'settings.saveDiagnostics': 'Salvar…',
+  'settings.saveDiagnosticsLabel': 'Salvar o diagnóstico em arquivo',
+  'settings.diagnosticsCopied': 'Copiado',
+  'settings.diagnosticsSaved': 'Salvo',
+  'settings.diagnosticsFailed': 'Não foi possível reunir',
   'settings.openLogs': 'Abrir logs',
   'settings.autoUpdate': 'Procurar atualizações automaticamente',
   'settings.autoUpdateHint':

@@ -113,7 +113,7 @@ On Windows 10 (and 11 before 24H2), sharing a whole screen shows the cursor even
 
 Please include:
 
-1. App version (**Settings → About**) and operating system on each computer involved.
+1. **Settings → About → Copy diagnostics** from each computer involved, pasted into the report (or **Save…** to attach it as a file). It has the app and protocol version, the operating system, the graphics card and which codecs run in hardware, the computer's network addresses, your settings and the end of the log. It never includes room PINs, host tokens or the id rooms know you by, but it does have your name, room names and addresses: look it over before posting it publicly.
 2. What you did, what you expected, what happened.
-3. The relevant part of `screenshare.log` from each computer (**Settings → About → Open logs**). Remove anything private first.
+3. If the problem happened a while ago, the relevant part of `screenshare.log` (**Settings → About → Open logs**): the diagnostics only have the last 300 lines. Remove anything private first.
 4. For quality problems: a screenshot of the tile's stats badges and of the streamer's **Stream stats**.
