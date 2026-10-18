@@ -29,6 +29,14 @@ describe('settings', () => {
     expect(store.update({ language: 'xx' as never }).language).toBe('pt-BR')
   })
 
+  it('keeps Lowest latency off until it is chosen', () => {
+    const dir = tempDir()
+    expect(new SettingsStore(dir).get().lowLatency).toBe(false)
+    new SettingsStore(dir).update({ lowLatency: true })
+    expect(new SettingsStore(dir).get().lowLatency).toBe(true)
+    expect(new SettingsStore(dir).update({ lowLatency: 'yes' as never }).lowLatency).toBe(true)
+  })
+
   it('starts new installs on automatic content hint', () => {
     const store = new SettingsStore(tempDir())
     expect(store.get().contentHint).toBe('auto')

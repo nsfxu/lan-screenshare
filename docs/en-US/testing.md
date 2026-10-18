@@ -257,7 +257,6 @@ To report results, attach the folder (or at least `summary.md` and `run.json`) t
 
 - `--perf-log=<file>`: every second, the streamer writes what it sends each watcher (encoder, hardware or not, fps, size, bitrate, encode time, limitation, RTT, and raw counters: keyframes, huge frames, keyframe and resend requests, target and available bitrate) with the app's and the computer's CPU and memory; a watcher writes what it receives (fps, size, latency estimate, jitter buffer delay of that second, freezes, dropped frames, decoder, and raw counters: keyframes, keyframe and resend requests sent, jitter buffer target).
 - `--perf-view-height=<px>`: the forced view height above.
-- `--perf-separate-audio` (experiment): the audio goes in a stream of its own, so viewers don't hold the picture back to sync it with the sound.
 
 The summary is computed by pure functions in `src/shared/perfSummary.ts` (tested in `tests/perf.test.ts`).
 

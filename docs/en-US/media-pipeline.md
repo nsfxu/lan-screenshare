@@ -94,11 +94,11 @@ A codec the watcher can't decode is never offered. The Settings panel shows the 
 
 1. Creates an `RTCPeerConnection` with **no ICE servers** (LAN only), `max-bundle`, `rtcp-mux`.
 2. Adds the video track with `priority: high` and an initial encoding from the adaptive preset.
-3. Always adds an audio transceiver in the **same stream** (keeps lip-sync), so muting or switching sources only swaps the track.
+3. Always adds an audio transceiver, so muting or switching sources only swaps the track. **Audio and video aren't synced**: the video belongs to two streams (the share's and an audio one) and the audio only to the second, and viewers sync tracks by their first stream. Synced, WebRTC held the picture back ~1.4 s for sound that arrived in ~100 ms (see [sound and picture](#sound-and-picture-241)); now the sound arrives a few hundredths of a second after the picture. Apps before 2.5.0 switch to the stream of the last track they receive, the audio's, which carries both tracks.
 4. Applies the codec order, creates the offer and sends it through the server.
 5. When the answer arrives, raises WebRTC's start/min bitrate hints (`mungeBitrates`) so a LAN stream reaches full quality in a second or two, and tunes Opus for music (`mungeOpus`: stereo, 128 kbps average, in-band FEC, no DTX).
 
-Chromium is started with switches that matter here (`src/main/index.ts`): real host ICE candidates instead of mDNS names (they don't resolve across VPNs), H.265 send/receive allowed, no background throttling of a minimized window, and **faster pacing of big frames**.
+Chromium is started with switches that matter here (`src/main/index.ts`): real host ICE candidates instead of mDNS names (they don't resolve across VPNs), H.265 send/receive allowed, no background throttling of a minimized window, **faster pacing of big frames**, and with **Lowest latency** (Settings → Advanced, read at startup) a playout delay of 0 (`WebRTC-ForcePlayoutDelay/min_ms:0,max_ms:0/`, `src/main/fieldTrials.ts`): the viewer shows each frame as soon as it's decoded instead of smoothing over network jitter, 54 → 29–33 ms screen to screen on a wired LAN.
 
 ### Keyframes without freezes
 

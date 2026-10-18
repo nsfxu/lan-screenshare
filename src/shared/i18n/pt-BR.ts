@@ -435,6 +435,9 @@ export const ptBR: Messages = {
   'settings.codecAuto': 'Automático (H.264 por hardware de preferência)',
   'settings.adaptive': 'Qualidade adaptativa',
   'settings.adaptiveHint': 'Baixa a resolução/taxa de quadros por espectador quando a rede piora',
+  'settings.lowLatency': 'Menor atraso (rede cabeada)',
+  'settings.lowLatencyHint':
+    'Mostra as transmissões que você assiste assim que cada quadro chega: uns 20 ms a menos de atraso, mas elas podem engasgar no Wi-Fi ou numa VPN. Vale depois de reiniciar o ScreenShare.',
   'settings.codecName': 'Codec',
   'settings.encode': 'Codificar',
   'settings.decode': 'Decodificar',

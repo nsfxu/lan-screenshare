@@ -94,11 +94,11 @@ Um codec que o espectador não consegue decodificar nunca é oferecido. A tela d
 
 1. Cria um `RTCPeerConnection` **sem servidores ICE** (só rede local), com `max-bundle` e `rtcp-mux`.
 2. Adiciona a trilha de vídeo com `priority: high` e uma codificação inicial vinda do preset adaptativo.
-3. Sempre adiciona um transceiver de áudio no **mesmo stream** (mantém a sincronia labial), então silenciar ou trocar de fonte só troca a trilha.
+3. Sempre adiciona um transceiver de áudio, então silenciar ou trocar de fonte só troca a trilha. **Áudio e vídeo não são sincronizados**: o vídeo pertence a dois streams (o do compartilhamento e um de áudio) e o áudio só ao segundo, e os espectadores sincronizam trilhas pelo primeiro stream delas. Sincronizado, o WebRTC segurava a imagem ~1,4 s por um som que chegava em ~100 ms (veja [som e imagem](#som-e-imagem-241)); agora o som chega alguns centésimos de segundo depois da imagem. Apps anteriores ao 2.5.0 trocam para o stream da última trilha que recebem, a do áudio, que leva as duas trilhas.
 4. Aplica a ordem de codecs, cria a oferta e envia pelo servidor.
 5. Quando a resposta chega, aumenta as dicas de bitrate inicial/mínimo do WebRTC (`mungeBitrates`) para uma transmissão na rede local chegar à qualidade total em um ou dois segundos, e ajusta o Opus para música (`mungeOpus`: estéreo, média de 128 kbps, FEC embutido, sem DTX).
 
-O Chromium é iniciado com flags importantes aqui (`src/main/index.ts`): candidatos ICE com o IP real em vez de nomes mDNS (que não resolvem através de VPNs), envio e recebimento de H.265 permitidos, nada de reduzir o ritmo de uma janela minimizada, e **envio mais rápido de quadros grandes**.
+O Chromium é iniciado com flags importantes aqui (`src/main/index.ts`): candidatos ICE com o IP real em vez de nomes mDNS (que não resolvem através de VPNs), envio e recebimento de H.265 permitidos, nada de reduzir o ritmo de uma janela minimizada, **envio mais rápido de quadros grandes** e, com **Menor atraso** (Configurações → Avançado, lido ao abrir), atraso de reprodução zero (`WebRTC-ForcePlayoutDelay/min_ms:0,max_ms:0/`, `src/main/fieldTrials.ts`): o espectador mostra cada quadro assim que é decodificado em vez de suavizar a variação da rede, de 54 para 29–33 ms de tela a tela numa rede local cabeada.
 
 ### Quadros-chave sem travadas
 

@@ -136,6 +136,8 @@ const log = (msg: string): void => {
  */
 export class Publisher extends Emitter<Events> {
   stream: MediaStream | null = null
+  /** Only an id for the audio's stream on the wire (see the transceivers in addWatcher's WebRTC path). */
+  private readonly audioStreamId = new MediaStream()
   paused = false
   audioMuted = false
   /** Why system audio could not be captured with the current source (DOMException name). */
@@ -732,17 +734,19 @@ export class Publisher extends Emitter<Events> {
     const controller = this.newController()
     const pc = new RTCPeerConnection({ iceServers: [], bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require' })
     const enc = encodingFor(controller.preset, this.track.getSettings().height ?? 1080)
+    // The video belongs to two streams and the audio only to the second. Viewers sync audio and video that share
+    // their first stream, and here they don't: synced, WebRTC held the picture back ~1.4 s for audio that arrived
+    // in ~100 ms (measured, see docs/en-US/media-pipeline.md). Apps before 2.5.0 switch to the stream of the
+    // last track they receive, the audio's, which has both tracks, so they keep the picture.
     const transceiver = pc.addTransceiver(this.track, {
       direction: 'sendonly',
-      streams: [this.stream],
+      streams: [this.stream, this.audioStreamId],
       sendEncodings: [{ ...enc, priority: 'high', networkPriority: 'high' }]
     })
-    // Always negotiate an audio line (in the same stream, so WebRTC keeps
-    // lip-sync). Muting or switching sources then only swaps the track.
-    // `--perf-separate-audio` (experiment): a stream of its own, so viewers don't hold video back for it.
+    // Always negotiate an audio line: muting or switching sources then only swaps the track.
     const audioTransceiver = pc.addTransceiver('audio', {
       direction: 'sendonly',
-      streams: [window.api.perf.options.separateAudio ? new MediaStream() : this.stream],
+      streams: [this.audioStreamId],
       sendEncodings: [{ maxBitrate: AUDIO_MAX_BITRATE, priority: 'high', networkPriority: 'high' }]
     })
     await audioTransceiver.sender.replaceTrack(this.audioSendTrack())

@@ -11,8 +11,6 @@ export interface PerfOptions {
   viewHeight: number | null
   /** `--perf-high-fps` (experiment): offer the 1080p @ 120 fps preset (HIGH_FPS_PRESET). */
   highFps: boolean
-  /** `--perf-separate-audio` (experiment): send the audio in a stream of its own, so viewers don't sync video to it. */
-  separateAudio: boolean
 }
 
 /** The part of PerfOptions the renderer needs (it never sees the file path). */
@@ -20,7 +18,6 @@ export interface PerfRendererOptions {
   logging: boolean
   viewHeight: number | null
   highFps: boolean
-  separateAudio: boolean
 }
 
 /** Same range the server accepts in `view-size`. */
@@ -36,12 +33,7 @@ export function parsePerfArgs(argv: readonly string[]): PerfOptions {
   const height = Number(value('perf-view-height'))
   const viewHeight =
     Number.isInteger(height) && height >= VIEW_HEIGHT_MIN && height <= VIEW_HEIGHT_MAX ? height : null
-  return {
-    logFile,
-    viewHeight,
-    highFps: argv.includes('--perf-high-fps'),
-    separateAudio: argv.includes('--perf-separate-audio')
-  }
+  return { logFile, viewHeight, highFps: argv.includes('--perf-high-fps') }
 }
 
 /** Cumulative counters from the sender's getStats, to see what happens around a freeze. */

@@ -441,6 +441,9 @@ export const en = {
   'settings.codecAuto': 'Automatic (hardware H.264 preferred)',
   'settings.adaptive': 'Adaptive quality',
   'settings.adaptiveHint': 'Lower resolution/frame rate per viewer when the network degrades',
+  'settings.lowLatency': 'Lowest latency (wired networks)',
+  'settings.lowLatencyHint':
+    'Shows the streams you watch as soon as each frame arrives: about 20 ms less delay, but they can stutter on Wi-Fi or a VPN. Applies after restarting ScreenShare.',
   'settings.codecName': 'Codec',
   'settings.encode': 'Encode',
   'settings.decode': 'Decode',
