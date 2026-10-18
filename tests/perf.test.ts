@@ -202,3 +202,12 @@ describe('screenToScreenMarkdown', () => {
     expect(md).toContain('| Viewer 2 | – ms | – ms | – ms | – ms | 0 | 30 |')
   })
 })
+
+describe('screenToScreenMarkdown with sound', () => {
+  it('adds a table for the beeps when there was sound', () => {
+    const md = screenToScreenMarkdown([{ viewer: 'Viewer 1', ages: [30], unreadable: 0, beeps: [100, 102, 104] }])
+    expect(md).toContain('### Sound (beeps)')
+    expect(md).toContain('| Viewer 1 | 102 ms | 104 ms | 100 ms | 104 ms | 3 |')
+    expect(screenToScreenMarkdown([{ viewer: 'Viewer 1', ages: [30], unreadable: 0 }])).not.toContain('Sound')
+  })
+})

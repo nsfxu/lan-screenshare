@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { decodeTimeCode, encodeTimeCode, TIME_CODE, timeCodeAge, timeCodeCellCentre } from '../src/shared/timeCode'
+import { BEEP, beepAge, decodeTimeCode, encodeTimeCode, nextBeep, TIME_CODE, timeCodeAge, timeCodeCellCentre } from '../src/shared/timeCode'
 
 describe('time code', () => {
   it('fills every cell and reads back the time it was drawn with', () => {
@@ -35,5 +35,16 @@ describe('time code', () => {
     const { cell, x, y, columns } = TIME_CODE
     expect(timeCodeCellCentre(0)).toEqual({ x: x + cell / 2, y: y + cell / 2 })
     expect(timeCodeCellCentre(columns)).toEqual({ x: x + cell / 2, y: y + cell + cell / 2 })
+  })
+})
+
+describe('beeps', () => {
+  it('are scheduled on the clock’s marks, and heard an age after them', () => {
+    const mark = 1_791_639_052_000
+    expect(nextBeep(mark - 1)).toBe(mark)
+    expect(nextBeep(mark)).toBe(mark + BEEP.periodMs)
+    expect(beepAge(mark + 35)).toBe(35)
+    expect(beepAge(mark + 1500)).toBe(1500)
+    expect(beepAge(mark - 10)).toBe(BEEP.periodMs - 10)
   })
 })
