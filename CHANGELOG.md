@@ -10,6 +10,8 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-10-19
+
 ### Added
 
 - **Six more themes** in **Settings → Appearance**, now grouped as dark and light. Dark: **Black** (true black, for OLED screens), **Forest** and **Ember**. Light, for bright rooms: **Light**, **Paper** and **Mist**; the room's stage stays dark in them, so streams and the controls over them look as usual.
@@ -175,7 +177,8 @@ The first release.
 - Reconnects after short network drops, and switches to TCP when a network blocks WebRTC.
 - Encrypted connections, the PIN kept only in memory, and the window hidden from screenshots while you watch.
 
-[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.6.0...HEAD
+[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.7.0...HEAD
+[2.7.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.4.1...v2.5.0
 [2.4.1]: https://github.com/nsfxu/lan-screenshare/compare/v2.4.0...v2.4.1
