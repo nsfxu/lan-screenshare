@@ -2279,7 +2279,7 @@ button.member-main {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 12px;
-  padding: 40px 16px 14px;
+  padding: 40px 16px 24px;
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.72));
   /* Only the buttons catch the mouse: clicks on the shade reach the tiles. */
   pointer-events: none;
@@ -2305,8 +2305,17 @@ button.member-main {
 .stage-area.idle .stage-controls {
   opacity: 0;
 }
+/* A stream's name bar hides with the controls (and comes back with them). */
+.stage-area .tile-bar {
+  transition: opacity 0.2s;
+}
+.stage-area.idle .tile-bar {
+  opacity: 0;
+  pointer-events: none;
+}
+/* Room for the controls under the strip, and a gap between the two. */
 .stage-spotlight:not(.strip-closed) .spotlight-strip {
-  margin-bottom: 62px;
+  margin-bottom: 82px;
 }
 .spotlight-strip {
   transition: opacity 0.2s;
@@ -2465,7 +2474,6 @@ button.member-main {
   position: relative;
   z-index: 1;
 }
-.stage-area.fullscreen .tile-bar,
 .stage-area.fullscreen .screen-overlay {
   transition: opacity 0.2s;
 }
@@ -2473,7 +2481,6 @@ button.member-main {
   cursor: none;
 }
 .stage-area.fullscreen.idle .spotlight-strip,
-.stage-area.fullscreen.idle .tile-bar,
 .stage-area.fullscreen.idle .screen-overlay {
   opacity: 0;
   pointer-events: none;
@@ -2517,13 +2524,14 @@ button.member-main {
 }
 .spotlight-strip {
   display: flex;
-  gap: 6px;
-  height: 130px;
+  justify-content: safe center;
+  gap: 8px;
+  height: 96px;
   flex-shrink: 0;
   overflow-x: auto;
 }
 .spotlight-strip > .tile {
-  width: 230px;
+  width: 168px;
   flex-shrink: 0;
 }
 

@@ -98,7 +98,7 @@ Anyone in a room can share, not just the host, and several people can share at t
 
 **Share again**, next to it, shares the same screen or window as last time, with the same sound options, in one click (just its ↻ icon in a narrow window). It remembers your last share on this computer, also after a restart. A window is found again by its title, so if it's closed or its title changed, the picker opens instead.
 
-**The controls** float over the bottom of the room: they show when you move the mouse over it, and hide after 2.5 s without movement or when the mouse leaves it. From the left:
+**The controls** float over the bottom of the room: they show when you move the mouse over it, and hide after 2.5 s without movement or when the mouse leaves it. The name bar at the top of each stream hides and comes back with them. From the left:
 
 | Where | Buttons |
 |---|---|

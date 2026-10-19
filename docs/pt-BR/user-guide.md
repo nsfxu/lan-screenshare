@@ -100,7 +100,7 @@ Qualquer pessoa na sala pode compartilhar, não só o anfitrião, e várias pess
 
 **Compartilhar de novo**, ao lado, compartilha a mesma tela ou janela da última vez, com as mesmas opções de som, num clique (numa janela estreita, só o ícone ↻). Ele lembra o seu último compartilhamento neste computador, também depois de reiniciar. Uma janela é encontrada de novo pelo título, então se ela foi fechada ou o título mudou, o seletor abre no lugar.
 
-**Os controles** ficam por cima da parte de baixo da sala: aparecem quando você mexe o mouse sobre ela, e somem depois de 2,5 s sem movimento ou quando o mouse sai dela. Da esquerda para a direita:
+**Os controles** ficam por cima da parte de baixo da sala: aparecem quando você mexe o mouse sobre ela, e somem depois de 2,5 s sem movimento ou quando o mouse sai dela. A barra com o nome no topo de cada transmissão some e volta junto com eles. Da esquerda para a direita:
 
 | Onde | Botões |
 |---|---|
