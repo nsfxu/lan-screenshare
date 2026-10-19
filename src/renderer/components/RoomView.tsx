@@ -47,7 +47,7 @@ import { Avatar } from './Avatar'
 import { HostStatsPanel } from './HostControls'
 import { Menu, menuAbove, type MenuAt, type MenuItem } from './Menu'
 import { Icon } from './Icon'
-import { RoomInfo } from './RoomInfo'
+import { RoomInfo, RoomSettings } from './RoomInfo'
 import { InviteTile, PersonTile, useClickToFocus } from './RoomStage'
 import { ScreenViewer } from './ScreenViewer'
 import { MarksLayer } from './MarksLayer'
@@ -119,6 +119,8 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const toggleChat = (): void =>
     chatDocked ? setSidePanel(sidePanel === 'open' ? 'closed' : 'open') : setChatFloating((v) => !v)
   const [infoOpen, setInfoOpen] = useState(false)
+  /** The host's room settings, from the cog next to ⓘ. */
+  const [settingsOpen, setSettingsOpen] = useState(false)
   /** In focus view, the strip of everyone else can be put away; its streams then pause their video. */
   const [strip, setStrip] = useRemembered('focus-strip', 'open', PANEL_STATES)
   /** The open popup menu: the sharing menu, or a tile's right-click menu. */
@@ -138,6 +140,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const streamWindowsRef = useRef(streamWindows)
   streamWindowsRef.current = streamWindows
   const closeInfo = useCallback(() => setInfoOpen(false), [])
+  const closeSettings = useCallback(() => setSettingsOpen(false), [])
   const [, setNow] = useState(Date.now())
   const gameCursor = useGameCursor(publisher, sharing.sharing ? publisher.chosenSourceId : null)
   useAutoContentHint(publisher, sharing.sharing ? publisher.chosenSourceId : null, settings.contentHint)
@@ -683,7 +686,10 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
         data-tip={t('room.details')}
         aria-label={t('room.details')}
         aria-expanded={infoOpen}
-        onClick={() => setInfoOpen((v) => !v)}
+        onClick={() => {
+          setSettingsOpen(false)
+          setInfoOpen((v) => !v)
+        }}
       >
         <Icon name="info" size={20} stroke={2.3} />
       </button>
@@ -694,9 +700,34 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           endpoint={session.endpoint}
           rttMs={client.rttMs}
           onToast={onToast}
+          onClose={closeInfo}
+        />
+      )}
+    </div>
+  )
+  const roomSettings = isHost && hosted && (
+    <div className="room-info-anchor">
+      <button
+        className={`bar-btn room-settings-button ${settingsOpen ? 'on' : ''}`}
+        data-tip={t('room.settings')}
+        aria-label={t('room.settings')}
+        aria-expanded={settingsOpen}
+        onClick={() => {
+          setInfoOpen(false)
+          setSettingsOpen((v) => !v)
+        }}
+      >
+        <Icon name="settings" size={20} stroke={2.1} />
+      </button>
+      {settingsOpen && (
+        <RoomSettings
+          room={room}
+          hosted={hosted}
+          onToast={onToast}
           onEndRoom={endRoom}
           onAllowDrawing={(allowed) => client.send({ type: 'allow-drawing', allowed })}
-          onClose={closeInfo}
+          onAllowChat={(allowed) => client.send({ type: 'mute-chat', muted: !allowed })}
+          onClose={closeSettings}
         />
       )}
     </div>
@@ -705,11 +736,12 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   // The focused stream you watch: the volume and "new window" act on it.
   const focusedStream = focused && subs.has(focused.id) ? focused : null
   const sharingMenuOpen = !!menu?.sharing
-  const controlsShown = idleControls.shown || infoOpen || showStats || sharingMenuOpen
+  const controlsShown = idleControls.shown || infoOpen || settingsOpen || showStats || sharingMenuOpen
   const controls = (
     <div className="stage-controls" {...idleControls.controls}>
       <div className="controls-side">
         {roomDetails}
+        {roomSettings}
         {focused && shown.length > 1 && (
           <>
             <button
@@ -965,7 +997,6 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
             muted={!!room?.chatMuted}
             onSend={(text) => client.send({ type: 'chat', text })}
             onDelete={(id) => client.send({ type: 'delete-message', id })}
-            onToggleMute={(muted) => client.send({ type: 'mute-chat', muted })}
           />
         </aside>
       </div>

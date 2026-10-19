@@ -76,7 +76,7 @@ Enquanto você não está numa sala, o meio mostra as salas da sua rede como car
 
 O botão no topo de cada coluna lateral a esconde (a coluna de salas vira uma faixa com as iniciais das salas; o botão do chat fica no canto de cima à direita da sala, embaixo dos botões da própria janela). O app lembra quais colunas você escondeu. Numa janela pequena (por exemplo encaixada ao lado de um jogo) as colunas abrem espaço para os quadros sozinhas: abaixo de 1100 px de largura o chat fica fechado, e abaixo de 760 px a coluna de salas vira uma faixa. Os botões delas então as abrem por cima da sala, e clicar ao lado as fecha.
 
-**Entrar por IP**: se você está numa VPN ou em outra sub-rede, as salas podem não aparecer sozinhas. Clique em **Entrar por IP** (ao lado de **Criar sala**) e digite o endereço do anfitrião, por exemplo `10.8.0.5` ou `192.168.1.20:47800`. O anfitrião vê os endereços dele no **ⓘ** dos controles na parte de baixo da sala. A porta padrão é 47800. O link embaixo da lista de salas abre a mesma caixa.
+**Entrar por IP**: se você está numa VPN ou em outra sub-rede, as salas podem não aparecer sozinhas. Clique em **Entrar por IP** (ao lado de **Criar sala**) e digite o endereço do anfitrião, por exemplo `10.8.0.5` ou `192.168.1.20:47800`. Qualquer pessoa na sala vê o endereço dela no **ⓘ** dos controles na parte de baixo da sala. A porta padrão é 47800. O link embaixo da lista de salas abre a mesma caixa.
 
 **Amigos em outras redes**: coloque todos numa rede do [ZeroTier](zerotier.md). Leva poucos minutos, e as salas passam a aparecer na lista como se todos estivessem em casa.
 
@@ -104,7 +104,7 @@ Qualquer pessoa na sala pode compartilhar, não só o anfitrião, e várias pess
 
 | Onde | Botões |
 |---|---|
-| Esquerda | **ⓘ** detalhes da sala e, com uma transmissão em destaque, **Grade** (volta à grade) e **Esconder os outros / Mostrar os outros** (a faixa) |
+| Esquerda | **ⓘ** detalhes da sala, a **engrenagem** com as configurações da sala (só o anfitrião) e, com uma transmissão em destaque, **Grade** (volta à grade) e **Esconder os outros / Mostrar os outros** (a faixa) |
 | Meio | **Compartilhar tela** e **Compartilhar de novo** (ou **Compartilhando** enquanto você compartilha), e o botão vermelho de **sair** |
 | Direita | **Volume**, **Abrir em nova janela** e **Janela flutuante** (da transmissão em destaque), e **Tela cheia** |
 
@@ -169,7 +169,7 @@ Para apontar algo numa transmissão que você assiste, ligue a caneta: **Desenha
 
 Quando outras pessoas desenham na **sua** transmissão, você vê os desenhos na sua própria tela, por cima do que compartilha, numa janela transparente que deixa os cliques passarem e fica fora da sua transmissão (para os desenhos não aparecerem duas vezes). Os desenhos somem quando você para de compartilhar, e nada é gravado.
 
-- Desligue para a sua transmissão em **Configurações → Compartilhamento → Permitir desenhar na minha tela**. O anfitrião pode desligar para a sala toda nos detalhes da sala (**ⓘ → Permitir desenhar nas transmissões**).
+- Desligue para a sua transmissão em **Configurações → Compartilhamento → Permitir desenhar na minha tela**. O anfitrião pode desligar para a sala toda nas configurações da sala (**engrenagem → Permitir desenhar nas transmissões**).
 - A caneta só aparece quando o app do anfitrião e o de quem compartilha são da 2.6.0 em diante.
 - Compartilhando uma única janela: os espectadores veem os desenhos uns dos outros, mas eles ainda não aparecem na sua tela.
 
@@ -182,15 +182,19 @@ Se a sua rede cair por um instante, o app reconecta sozinho e te coloca de volta
 
 ## Se você é o anfitrião
 
-O **ⓘ** à esquerda dos controles mostra os detalhes dela: privacidade, há quanto tempo está aberta, quem hospeda e o tempo de ida e volta até ela (e, para convidados, o endereço para copiar). Para o anfitrião, ele também permite:
+O **ⓘ** à esquerda dos controles mostra os detalhes da sala, iguais para todos: privacidade, há quanto tempo está aberta, quem hospeda, o tempo de ida e volta até ela e o endereço que as pessoas podem usar no **Entrar por IP** (clique para copiar; aponte para ver todos os seus).
+
+A **engrenagem** ao lado abre as **configurações da sala**, que só o anfitrião tem:
 
 - alternar entre **Pública** e **Privada** a qualquer momento; quem já está dentro continua conectado;
 - mostrar ou esconder o **PIN**, **copiar**, **gerar um novo** ou **definir o seu**;
-- ver os endereços que as pessoas podem usar no **Entrar por IP**.
+- **Permitir desenhar nas transmissões** para todos, ou não;
+- **Deixar os espectadores conversarem**: desligado, só você escreve (as pessoas continuam vendo o histórico), e o seu chat diz *Espectadores não podem conversar*;
+- **Encerrar a sala para todo mundo**.
 
-Clicar com o botão direito numa pessoa (no quadro dela, ou no nome dela na coluna de salas, onde também aparece um botão **⋯** ao passar o mouse) permite **parar a transmissão** dela ou **removê-la** da sala (a pessoa não consegue voltar nesta sessão da sala). No chat você pode **apagar mensagens** e **silenciar o chat** (as pessoas continuam vendo o histórico).
+Clicar com o botão direito numa pessoa (no quadro dela, ou no nome dela na coluna de salas, onde também aparece um botão **⋯** ao passar o mouse) permite **parar a transmissão** dela ou **removê-la** da sala (a pessoa não consegue voltar nesta sessão da sala). No chat você pode **apagar mensagens**.
 
-**Encerrar a sala para todo mundo** (também no **ⓘ**, ou o botão vermelho no fim dos controles) encerra a sala para todos.
+**Encerrar a sala para todo mundo** (nas configurações da sala, ou o botão vermelho no meio dos controles) encerra a sala para todos.
 
 ## Configurações
 

@@ -20,10 +20,9 @@ interface Props {
   muted: boolean
   onSend(text: string): boolean
   onDelete(id: string): void
-  onToggleMute(muted: boolean): void
 }
 
-export function ChatPanel({ messages, roomName, avatars, selfId, isHost, muted, onSend, onDelete, onToggleMute }: Props) {
+export function ChatPanel({ messages, roomName, avatars, selfId, isHost, muted, onSend, onDelete }: Props) {
   const { t } = useT()
   const [text, setText] = useState('')
   const [emojiOpen, setEmojiOpen] = useState(false)
@@ -61,14 +60,11 @@ export function ChatPanel({ messages, roomName, avatars, selfId, isHost, muted, 
         <h3>
           <Icon name="chat" size={14} /> {t('chat.title')}
         </h3>
-        {isHost && (
-          <button
-            className={`btn ghost small ${muted ? 'active' : ''}`}
-            onClick={() => onToggleMute(!muted)}
-            title={muted ? t('chat.allowTip') : t('chat.stopTip')}
-          >
-            <Icon name="mute" size={14} /> {muted ? t('chat.unmute') : t('chat.mute')}
-          </button>
+        {/* The host turns the chat off in the room settings (the cog); this says it's off. */}
+        {isHost && muted && (
+          <span className="chat-off muted small">
+            <Icon name="mute" size={13} /> {t('chat.offForViewers')}
+          </span>
         )}
       </div>
       <div

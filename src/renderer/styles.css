@@ -2917,6 +2917,23 @@ button.member-main {
   border-top: 1px solid var(--border);
   border-bottom: none;
 }
+/* the host's room settings: the cog next to ⓘ */
+.room-settings-head,
+.room-settings-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.room-settings .toggle-row {
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.chat-off {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
 .btn.full {
   width: 100%;
   justify-content: center;

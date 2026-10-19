@@ -74,7 +74,7 @@ While you're not in a room, the middle shows the rooms on your network as cards,
 
 The button at the top of each side column hides it (the rooms column shrinks to a strip of room initials; the chat button floats at the top right of the room, under the window's own buttons). The app remembers which columns you hid. In a small window (for example snapped next to a game) the columns make room for the tiles by themselves: below 1100 px wide the chat is closed, and below 760 px the rooms column is a strip. Their buttons then open them over the room, and clicking next to them puts them away.
 
-**Join by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click **Join by IP** (next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses behind the **ⓘ** in the controls at the bottom of the room. The default port is 47800. The link under the room list opens the same box.
+**Join by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click **Join by IP** (next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. Anyone in the room can see its address behind the **ⓘ** in the controls at the bottom of the room. The default port is 47800. The link under the room list opens the same box.
 
 **Friends on other networks**: put everyone on a [ZeroTier](zerotier.md) network. It takes a few minutes, and rooms then show up in the list as if you were all at home.
 
@@ -102,7 +102,7 @@ Anyone in a room can share, not just the host, and several people can share at t
 
 | Where | Buttons |
 |---|---|
-| Left | **ⓘ** room details, then, when a stream is focused, **Grid** (back to the grid) and **Hide others / Show others** (the strip) |
+| Left | **ⓘ** room details, the **cog** with the room settings (host only), then, when a stream is focused, **Grid** (back to the grid) and **Hide others / Show others** (the strip) |
 | Middle | **Share screen** and **Share again** (or **Sharing** while you share), and the red **leave** button |
 | Right | **Volume**, **New window** and **Picture in picture** (for the focused stream), and **Full screen** |
 
@@ -167,7 +167,7 @@ To point at something on a stream you watch, turn on the pen: **Draw on the stre
 
 When others draw on **your** stream, you see their marks on your own screen, over what you share, in a see-through window that clicks go through and that's left out of your stream (so marks don't show up twice). Marks go away when you stop sharing, and nothing is recorded.
 
-- Turn it off for your stream with **Settings → Sharing → Allow drawing on my screen**. The host can turn it off for the whole room in the room details (**ⓘ → Allow drawing on streams**).
+- Turn it off for your stream with **Settings → Sharing → Allow drawing on my screen**. The host can turn it off for the whole room in the room settings (**cog → Allow drawing on streams**).
 - The pen only shows when the host's app and the sharer's app are on 2.6.0 or later.
 - Sharing a single window: watchers see each other's marks, but they don't show on your screen yet.
 
@@ -180,15 +180,19 @@ If your network drops for a moment, the app reconnects on its own and puts you b
 
 ## If you are the host
 
-The **ⓘ** at the left of the controls shows the room's details: privacy, how long it has been open, who hosts it and the round trip to it (and, for guests, the address to copy). For the host, it also lets you:
+The **ⓘ** at the left of the controls shows the room's details, the same for everyone: privacy, how long it has been open, who hosts it, the round trip to it, and the address people can use with **Join by IP** (click to copy it; point at it for all of yours).
+
+The **cog** next to it opens the **room settings**, which only the host has:
 
 - switch between **Public** and **Private** at any time; people already inside stay connected;
 - show or hide the **PIN**, **copy** it, **generate a new one**, or **set your own**;
-- see the addresses people can use with **Join by IP**.
+- **Allow drawing on streams** for everyone, or not;
+- **Let viewers chat**: off, only you can write (people still see the history), and your chat says *Viewers can't chat*;
+- **End room for everyone**.
 
-Right-clicking a person (their tile, or their name in the rooms column, where a **⋯** button also appears on hover) lets you **stop their stream** or **remove** them from the room (they can't come back to this room session). In the chat you can **delete messages** and **mute the chat** (people still see the history).
+Right-clicking a person (their tile, or their name in the rooms column, where a **⋯** button also appears on hover) lets you **stop their stream** or **remove** them from the room (they can't come back to this room session). In the chat you can **delete messages**.
 
-**End room for everyone** (also behind the **ⓘ**, or the red button at the end of the controls) closes the room for everyone.
+**End room for everyone** (in the room settings, or the red button in the middle of the controls) closes the room for everyone.
 
 ## Settings
 
