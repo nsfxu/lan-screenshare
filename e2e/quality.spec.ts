@@ -28,7 +28,8 @@ test('automatic quality follows a fullscreen app in front of the shared screen',
   await expect(mode).toHaveText('Sharp text (automatic)')
 
   // Automatic is the default; a fixed choice in Settings wins.
-  await alice.win.getByRole('button', { name: 'Settings' }).click()
+  await alice.win.getByRole('button', { name: 'Settings', exact: true }).click()
+  await alice.win.getByRole('navigation', { name: 'Settings sections' }).getByRole('button', { name: 'Sharing' }).click()
   await expect(alice.win.locator('#content-hint')).toHaveValue('auto')
   await alice.win.locator('#content-hint').selectOption('detail')
   await alice.win.keyboard.press('Escape')

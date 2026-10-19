@@ -73,7 +73,7 @@ test('watchers point and draw on a stream; everyone watching and the streamer se
   await expect(overlay.locator('.marks-layer')).toHaveAttribute('data-strokes', '0')
 
   // The host turns drawing off for the room: Bob's pen goes away.
-  await alice.win.locator('.room-info-button').click()
+  await alice.win.locator('.room-settings-button').click()
   // (It shows the room's state, so it flips when the room server confirms.)
   const allow = alice.win.getByRole('checkbox', { name: 'Allow drawing on streams' })
   await expect(allow).toBeChecked()

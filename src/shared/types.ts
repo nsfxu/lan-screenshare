@@ -25,6 +25,13 @@ export interface RoomInfo {
   /** The host's app version (e.g. "1.2.0"); missing for hosts before 1.2.0. */
   appVersion?: string
   startedAt: number
+  /** The host's colour (#rrggbb), for their initials in the room list. Missing for hosts before 2.7.0. */
+  hostColor?: string
+  /**
+   * A short hash of the host's profile picture, when they have one (GET /host-picture serves it), so
+   * the list fetches the picture only when it changes. Missing for hosts before 2.7.0.
+   */
+  hostPicture?: string
 }
 
 /** Full room state pushed to connected participants. */
@@ -50,6 +57,8 @@ export interface DiscoveredRoom extends RoomInfo {
   lastSeen: number
   /** Ping to the room's /info endpoint in ms. */
   probeMs?: number
+  /** The host's profile picture (data URL), fetched once per `hostPicture` hash. */
+  hostImage?: string
 }
 
 /** Where to connect: enough to build a wss:// URL. */
@@ -58,6 +67,12 @@ export interface RoomEndpoint {
   port: number
   tls: boolean
   name?: string
+}
+
+/** A room under "Recent" in the room list. */
+export interface RecentRoom extends RoomEndpoint {
+  /** When you last joined it (ms since 1970); missing for rooms remembered before 2.7.0. */
+  lastVisited?: number
 }
 
 export type MediaState = 'idle' | 'negotiating' | 'streaming' | 'failed'
@@ -314,7 +329,7 @@ export interface Settings {
   autoRejoin: boolean
   lastRoom: RoomEndpoint | null
   /** Rooms joined lately, newest first (see shared/roomList.ts). */
-  recentRooms: RoomEndpoint[]
+  recentRooms: RecentRoom[]
   manualServers: RoomEndpoint[]
   notifications: boolean
   pauseOnMinimize: boolean

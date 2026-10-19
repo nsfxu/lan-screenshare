@@ -65,14 +65,16 @@ The window has three columns: **rooms** on the left, the room you're in (or a we
 
 The rooms column lists:
 
-- **Recent rooms**: the last 5 rooms you joined, newest first, with the one you're in highlighted. Click one to go back to it, even if it's on a VPN and not found by itself. Rooms that don't answer show as *offline*. The **×** on a row forgets it.
-- **Rooms on your network**: everything else found on your network. It updates by itself (look for the green dot).
+- **Recent**: the last 5 rooms you joined, newest first, with the one you're in marked by a blue edge and its people under it. Click one to go back to it, even if it's on a VPN and not found by itself. Rooms that don't answer are folded under **Offline**, which says when you were last there. The **×** on a row forgets it.
+- **On your network**: everything else found on your network. It updates by itself; the round arrow searches again right away.
 
-Each row shows a lock for private rooms, how many streams are live, and how many people are inside; hover over it for who hosts it, for how long, and its address. A room on an incompatible version says *Update to join* or *Older version* (hover for who needs to update). Rooms you added by IP have a **×** to remove them from the list. Click a room to join it. If you're already in a room, you leave it first; the app asks before that ends a room you host or stops your share.
+Each room shows its host's profile picture (or their initials, or the room's first letter for hosts before 2.7.0), with a red dot while someone shares and a lock for private rooms. Under its name: how many people are inside; hover over it for who hosts it, how long it has been open and its address. A room on an incompatible version says *Update to join* or *Older version* (hover for who needs to update). Rooms you added by IP have a **×** to remove them from the list. Click a room to join it. If you're already in a room, you leave it first; the app asks before that ends a room you host or stops your share.
+
+While you're not in a room, the middle shows the rooms on your network as cards, each with a **Join** button, next to a card to create your own.
 
 The button at the top of each side column hides it (the rooms column shrinks to a strip of room initials; the chat button floats at the top right of the room, under the window's own buttons). The app remembers which columns you hid. In a small window (for example snapped next to a game) the columns make room for the tiles by themselves: below 1100 px wide the chat is closed, and below 760 px the rooms column is a strip. Their buttons then open them over the room, and clicking next to them puts them away.
 
-**Join by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click **Join by IP** (next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses behind the **ⓘ** in the controls at the bottom of the room. The default port is 47800.
+**Join by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click **Join by IP** (next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. Anyone in the room can see its address behind the **ⓘ** in the controls at the bottom of the room. The default port is 47800. The link under the room list opens the same box.
 
 **Friends on other networks**: put everyone on a [ZeroTier](zerotier.md) network. It takes a few minutes, and rooms then show up in the list as if you were all at home.
 
@@ -96,11 +98,11 @@ Anyone in a room can share, not just the host, and several people can share at t
 
 **Share again**, next to it, shares the same screen or window as last time, with the same sound options, in one click (just its ↻ icon in a narrow window). It remembers your last share on this computer, also after a restart. A window is found again by its title, so if it's closed or its title changed, the picker opens instead.
 
-**The controls** float over the bottom of the room: they show when you move the mouse over it, and hide after 2.5 s without movement or when the mouse leaves it. From the left:
+**The controls** float over the bottom of the room: they show when you move the mouse over it, and hide after 2.5 s without movement or when the mouse leaves it. The name bar at the top of each stream hides and comes back with them. From the left:
 
 | Where | Buttons |
 |---|---|
-| Left | **ⓘ** room details, then, when a stream is focused, **Grid** (back to the grid) and **Hide others / Show others** (the strip) |
+| Left | **ⓘ** room details, the **cog** with the room settings (host only), then, when a stream is focused, **Grid** (back to the grid) and **Hide others / Show others** (the strip) |
 | Middle | **Share screen** and **Share again** (or **Sharing** while you share), and the red **leave** button |
 | Right | **Volume**, **New window** and **Picture in picture** (for the focused stream), and **Full screen** |
 
@@ -140,18 +142,18 @@ Everyone in the room has a **tile** in the middle: their picture and name. Tiles
 - In the spotlight, **Hide others** puts the strip away so the focused tile gets the whole height; the streams in it stop sending you video until you show them again (you still hear them).
 - When you're alone in your room, an **Invite people** tile shows the address to give people on a VPN.
 
-**Right-click a stream** for everything about it:
+**Right-click a stream** for everything about it, in sections:
 
 | Option | What it does |
 |---|---|
-| **Volume** (slider) and **Mute** | Each stream has its own volume and mute, remembered per person. |
-| **Stop watching**, **Focus**, **Full screen**, **Open in a new window**, **Picture in picture** | As above. |
-| **Show only streams / Show everyone** | Leaves out the people who aren't sharing (any tile's menu). |
+| **View**: **Focus**, **Show only streams / Show everyone**, **Full screen**, **Open in a new window**, **Picture in picture** | As above. **Show only streams** leaves out the people who aren't sharing (any tile's menu). |
+| **Volume** (slider) | Each stream has its own volume, remembered per person; the speaker before the slider mutes and unmutes it. |
 | **Quality you receive** | **Auto** follows the size you watch at, so a small tile uses little bandwidth. You can also cap it at 1080p, 720p, or 720p/480p/360p at 30 fps. Remembered per person. |
 | **Try the faster connection again** | Only when the stream fell back to the slower TCP connection. |
+| **Stop watching** | At the end, in red. |
 | **Stop *name*'s stream**, **Remove from room** | Host only. |
 
-**In the controls**, while a stream is focused, the speaker mutes it, or unmutes it back to the last volume; point at the speaker for its volume slider.
+**In the controls**, while a stream is focused, the speaker mutes it, or unmutes it back to the last volume; point at the speaker for its volume, on a slider that goes up and down.
 
 The **stats badges** on a stream show its frame rate, latency, resolution, codec and connection type; turn them off in **Settings → Appearance**.
 
@@ -161,11 +163,11 @@ While you **minimize** the app, or put one tile in full screen, the streams you 
 
 ### Drawing on a stream
 
-To point at something on a stream you watch, turn on the pen: **Draw on the stream** (the pen under a focused stream, or in the stream's right-click menu). While it's on, your mouse over the stream shows to everyone watching, and to the person sharing, as a dot in your colour with your name. Click and drag to draw a quick mark; marks fade after a few seconds. **Clear my marks** (the eraser next to the pen, or the right-click menu) removes yours. Click the pen again to stop.
+To point at something on a stream you watch, turn on the pen: **Draw on the stream** (the pen under a focused stream). While it's on, your mouse over the stream shows to everyone watching, and to the person sharing, as a dot in your colour with your name. Click and drag to draw a quick mark; marks fade after a few seconds. **Clear my marks** (the eraser next to the pen) removes yours. Click the pen again to stop.
 
-When others draw on **your** stream, you see their marks on your own screen, over what you share, in a see-through window that clicks go through and that's left out of your stream (so marks don't show up twice). **Clear marks on my screen** in the Sharing menu removes everyone's. Marks go away when you stop sharing, and nothing is recorded.
+When others draw on **your** stream, you see their marks on your own screen, over what you share, in a see-through window that clicks go through and that's left out of your stream (so marks don't show up twice). Marks go away when you stop sharing, and nothing is recorded.
 
-- Turn it off for your stream with **Settings → Sharing → Allow drawing on my screen**. The host can turn it off for the whole room in the room details (**ⓘ → Allow drawing on streams**).
+- Turn it off for your stream with **Settings → Sharing → Allow drawing on my screen**. The host can turn it off for the whole room in the room settings (**cog → Allow drawing on streams**).
 - The pen only shows when the host's app and the sharer's app are on 2.6.0 or later.
 - Sharing a single window: watchers see each other's marks, but they don't show on your screen yet.
 
@@ -178,26 +180,30 @@ If your network drops for a moment, the app reconnects on its own and puts you b
 
 ## If you are the host
 
-The **ⓘ** at the left of the controls shows the room's details: privacy, how long it has been open, who hosts it and the round trip to it (and, for guests, the address to copy). For the host, it also lets you:
+The **ⓘ** at the left of the controls shows the room's details, the same for everyone: privacy, how long it has been open, who hosts it, the round trip to it, and the address people can use with **Join by IP** (click to copy it; point at it for all of yours).
+
+The **cog** next to it opens the **room settings**, which only the host has:
 
 - switch between **Public** and **Private** at any time; people already inside stay connected;
 - show or hide the **PIN**, **copy** it, **generate a new one**, or **set your own**;
-- see the addresses people can use with **Join by IP**.
+- **Allow drawing on streams** for everyone, or not;
+- **Let viewers chat**: off, only you can write (people still see the history), and your chat says *Viewers can't chat*;
+- **End room for everyone**.
 
-Right-clicking a person (their tile, or their name in the rooms column, where a **⋯** button also appears on hover) lets you **stop their stream** or **remove** them from the room (they can't come back to this room session). In the chat you can **delete messages** and **mute the chat** (people still see the history).
+Right-clicking a person (their tile, or their name in the rooms column, where a **⋯** button also appears on hover) lets you **stop their stream** or **remove** them from the room (they can't come back to this room session). In the chat you can **delete messages**.
 
-**End room for everyone** (also behind the **ⓘ**, or the red button at the end of the controls) closes the room for everyone.
+**End room for everyone** (in the room settings, or the red button in the middle of the controls) closes the room for everyone.
 
 ## Settings
 
-Open Settings with the gear icon at the bottom of the rooms column. The list on its left jumps to a section, and follows as you scroll.
+Open Settings with the gear icon at the bottom of the rooms column. The list on its left picks the section to show; each one groups its settings in boxes, with what each does under its name.
 
 | Section | Setting | Default | Meaning |
 |---|---|---|---|
 | Profile | Profile picture | none | Shown instead of your initials. |
 | Profile | Display name | your computer user name | Up to 32 characters. |
 | Appearance | Language | Same as the computer | See [language](#language). |
-| Appearance | Theme | Classic | The app's colours: **Classic** (blue on blue-grey), **Graphite** (neutral greys and indigo, so streams look true to colour), **Midnight** (blue-black and teal) or **Charcoal** (warm greys and violet). Applies immediately. |
+| Appearance | Theme | Classic | The app's colours. Dark: **Classic** (blue on blue-grey), **Graphite** (neutral greys and indigo, so streams look true to colour), **Midnight** (blue-black and teal), **Charcoal** (warm greys and violet), **Black** (true black, for OLED screens), **Forest** (deep green and emerald) or **Ember** (warm browns and amber). Light: **Light** (white and blue), **Paper** (warm cream and terracotta) or **Mist** (cool grey-blue and teal); in these the room's stage stays dark, so streams and the controls over them read as usual. Applies immediately. |
 | Appearance | Show FPS and latency on streams | on | The badges on each stream. |
 | Sharing | Maximum quality | 1080p @ 60 fps | The most you send when sharing. Applies immediately. |
 | Sharing | Optimize for | Automatic | *Smooth motion* keeps 60 fps. *Sharp text* keeps the resolution. *Automatic* (Windows) uses smooth motion while a fullscreen game or video is in front of what you share, and sharp text on the desktop; on macOS it means smooth motion. The Stats panel shows which one is in use. |
@@ -207,17 +213,17 @@ Open Settings with the gear icon at the bottom of the rooms column. The list on 
 | Sharing | Leave out Discord by default | on | Windows and macOS. Pre-selects the Discord switch. |
 | Sharing | Pause sharing while minimized | off | Resumes when you restore the window. |
 | Sharing | Allow drawing on my screen | on | People watching can point at your stream and draw marks on it ([drawing on a stream](#drawing-on-a-stream)). |
-| Notifications | Chat notifications | on | When the window is in the background. |
-| Connection | Rejoin last room on startup | off | Joins your last room automatically when the app starts. |
-| Connection | Encrypt connections (TLS) | on | Encrypts chat and signaling. Video is always encrypted. |
-| Connection | Always use TCP transport | off | For networks that block UDP. Adds some latency. |
-| Connection | Hosting port | 47800 | The first port tried when you host. |
-| Advanced | Video codec | Automatic | Automatic prefers hardware H.264. You can force H.264, H.265, VP9 or AV1 if both sides support it. The table below it shows what your computer supports. |
+| General | Chat notifications | on | When the window is in the background. |
+| General | Rejoin last room on startup | off | Joins your last room automatically when the app starts. |
+| General | Encrypt connections (TLS) | on | Encrypts chat and signaling. Video is always encrypted. |
+| General | Always use TCP transport | off | For networks that block UDP. Adds some latency. |
+| General | Hosting port | 47800 | The first port tried when you host. |
+| Advanced | Video codec | Automatic | Automatic prefers H.264 when your graphics card encodes it, then H.265 when both graphics cards handle it; the line under it says what it usually sends on your computer. You can force H.264, H.265, VP9 or AV1 if both sides support it. **Codec support** below it shows which codecs your graphics card or processor handles. |
 | Advanced | Adaptive quality | on | Lowers resolution/frame rate per viewer when their network struggles. |
-| Advanced | Lowest latency (wired networks) | off | Shows the streams you watch as soon as each frame arrives: about 20 ms less delay on a wired network, but they can stutter on Wi-Fi or a VPN. Applies after restarting ScreenShare. |
+| Advanced | Lowest latency (wired networks) | off | Shows the streams you watch as soon as each frame arrives: about 20 ms less delay on a wired network, but they can stutter on Wi-Fi or a VPN. Applies after restarting ScreenShare (**Restart needed**). |
 | About | Check for updates automatically | on | See [updates](#updates). |
 
-**About** shows the app version and has **Open logs**, and **Diagnostics**: **Copy diagnostics** copies what a bug report needs (versions, system, graphics and codecs, network addresses, your settings and the end of the log, never PINs or tokens) and **Save…** saves it to a file. See [collecting information for a bug report](troubleshooting.md#collecting-information-for-a-bug-report).
+**About** shows the app version and your system, the update status with **Check now**, and **Troubleshooting**: **Copy diagnostics** copies what a bug report needs (versions, system, graphics and codecs, network addresses, your settings and the end of the log, never PINs or tokens), **Save to file…** saves it to a file and **Open logs** opens the folder with the logs. See [collecting information for a bug report](troubleshooting.md#collecting-information-for-a-bug-report).
 
 ## Language
 

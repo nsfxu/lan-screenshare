@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { systemText, chatText } from '../src/shared/chat'
 import {
+  agoUnit,
   createTranslator,
   isLanguageSetting,
   LANGUAGES,
@@ -118,5 +119,26 @@ describe('system lines in the chat', () => {
     expect(chatText(line({ kind: 'joined', name: 42 }), pt)).toBe('Alice joined')
     // Only system lines: someone's message is never replaced.
     expect(chatText({ ...line({ kind: 'joined', name: 'Alice' }), system: false, text: 'hi' }, pt)).toBe('hi')
+  })
+})
+
+describe('how long ago', () => {
+  const now = Date.UTC(2026, 9, 18, 12)
+  const hour = 3_600_000
+
+  it('picks a unit from minutes to years', () => {
+    expect(agoUnit(30_000)).toEqual({ value: -0, unit: 'minute' })
+    expect(agoUnit(5 * hour)).toEqual({ value: -5, unit: 'hour' })
+    expect(agoUnit(50 * hour)).toEqual({ value: -2, unit: 'day' })
+    expect(agoUnit(90 * 24 * hour)).toEqual({ value: -3, unit: 'month' })
+    expect(agoUnit(800 * 24 * hour)).toEqual({ value: -2, unit: 'year' })
+    // A clock that went back doesn't make it the future.
+    expect(agoUnit(-hour)).toEqual({ value: -0, unit: 'minute' })
+  })
+
+  it('says it in each language', () => {
+    expect(createTranslator('en').ago(now - 50 * hour, now)).toBe('2 days ago')
+    expect(createTranslator('en').ago(now - 24 * hour, now)).toBe('yesterday')
+    expect(createTranslator('pt-BR').ago(now - 3 * hour, now)).toBe('há 3 horas')
   })
 })

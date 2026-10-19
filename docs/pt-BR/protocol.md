@@ -81,11 +81,15 @@ Devolve um `RoomInfo` em JSON, sem segredos:
   "streams": 2,
   "protocol": 4,
   "appVersion": "1.2.0",
-  "startedAt": 1790000000000
+  "startedAt": 1790000000000,
+  "hostColor": "#64b5f6",
+  "hostPicture": "3f9a0c1d2e4b5a69"
 }
 ```
 
-Quem consulta confere a impressão digital do certificado com a anunciada no mDNS, se houver (`probeRoom` em `src/utils/network.ts`). Qualquer outro caminho devolve 404.
+Quem consulta confere a impressão digital do certificado com a anunciada no mDNS, se houver (`probeRoom` em `src/utils/network.ts`), e descarta valores malformados de `appVersion`, `hostColor` e `hostPicture`.
+
+Desde o 2.7.0 a lista de salas mostra o anfitrião de cada sala: `hostColor` é a cor do anfitrião (`#rrggbb`) para as iniciais dele, e `hostPicture`, presente quando o anfitrião tem foto de perfil, são os 16 primeiros dígitos hexadecimais do SHA-256 dela. Quando o hash muda, a lista de salas busca a foto uma vez em `GET /host-picture` (`{"image": "data:image/…"}`, 404 sem foto) e a confere como qualquer foto de perfil (`isAvatar`). Os dois campos não vêm de anfitriões mais antigos, cujas salas mostram as iniciais ou a primeira letra da sala. Qualquer outro caminho devolve 404.
 
 ## WebSocket: ciclo de vida da conexão
 

@@ -7,7 +7,7 @@ import { isAvatar } from '../shared/images'
 import { qualityPresets } from '../shared/quality'
 import { RECENT_ROOMS_MAX } from '../shared/roomList'
 import { DEFAULT_THEME, isThemeId } from '../shared/themes'
-import type { RoomEndpoint, Settings } from '../shared/types'
+import type { RecentRoom, RoomEndpoint, Settings } from '../shared/types'
 import { randomId } from '../utils/crypto'
 
 /** Format version of settings.json written by this app; see migrate(). */
@@ -123,7 +123,15 @@ function sanitize(s: Settings, fallback: Settings, options: SettingsOptions): Se
   out.preferredPort = Number.isInteger(port) && port >= 0 && port <= 65535 ? port : fallback.preferredPort
   out.manualServers = Array.isArray(s.manualServers) ? s.manualServers.filter(isEndpoint).slice(0, 50) : []
   out.lastRoom = isEndpoint(s.lastRoom) ? s.lastRoom : null
-  out.recentRooms = Array.isArray(s.recentRooms) ? s.recentRooms.filter(isEndpoint).slice(0, RECENT_ROOMS_MAX) : []
+  out.recentRooms = Array.isArray(s.recentRooms)
+    ? s.recentRooms
+        .filter(isEndpoint)
+        .slice(0, RECENT_ROOMS_MAX)
+        .map((room): RecentRoom => {
+          const { lastVisited, ...ep } = room as RecentRoom
+          return typeof lastVisited === 'number' && Number.isFinite(lastVisited) && lastVisited > 0 ? { ...ep, lastVisited } : ep
+        })
+    : []
   const budget = Number(s.uploadBudgetMbps)
   out.uploadBudgetMbps = Number.isInteger(budget) && budget >= 0 && budget <= 10_000 ? budget : fallback.uploadBudgetMbps
   out.avatar = s.avatar === null || isAvatar(s.avatar) ? s.avatar : fallback.avatar

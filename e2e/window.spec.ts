@@ -52,6 +52,7 @@ test('a stream opens in its own window, keeps playing when the room is minimized
 
   // Changing the theme changes it there too.
   await win.getByRole('button', { name: 'Settings' }).first().click()
+  await win.getByRole('button', { name: 'Appearance' }).click()
   await win.locator('.theme-option', { hasText: 'Midnight' }).click()
   await win.keyboard.press('Escape')
   await expect.poll(() => themeOf(popup)).toBe('midnight')

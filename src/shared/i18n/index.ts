@@ -83,6 +83,20 @@ export interface Translator {
   number(n: number, digits?: number): string
   /** A time of day, hours and minutes. */
   time(ts: number): string
+  /** How long ago `ts` was, the language's way: "2 days ago", "yesterday", "há 3 horas". */
+  ago(ts: number, now?: number): string
+}
+
+/** The unit and (negative) amount to say how long ago something was, from minutes to years. */
+export function agoUnit(ms: number): { value: number; unit: Intl.RelativeTimeFormatUnit } {
+  const minutes = Math.max(0, Math.floor(ms / 60_000))
+  if (minutes < 60) return { value: -minutes, unit: 'minute' }
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return { value: -hours, unit: 'hour' }
+  const days = Math.floor(hours / 24)
+  if (days < 30) return { value: -days, unit: 'day' }
+  if (days < 365) return { value: -Math.floor(days / 30), unit: 'month' }
+  return { value: -Math.floor(days / 365), unit: 'year' }
 }
 
 export function createTranslator(language: LanguageId): Translator {
@@ -100,6 +114,7 @@ export function createTranslator(language: LanguageId): Translator {
     return format.format(n)
   }
   const timeFormat = new Intl.DateTimeFormat(entry.id, { hour: '2-digit', minute: '2-digit' })
+  const agoFormat = new Intl.RelativeTimeFormat(entry.id, { numeric: 'auto' })
 
   /** The template for a key: its plural form for `count`; English if this language lacks it. */
   const template = (key: Key, params: Record<string, unknown> | undefined): string => {
@@ -130,7 +145,12 @@ export function createTranslator(language: LanguageId): Translator {
     return text.replace(PLACEHOLDER, (whole, name: string) => (name in params ? String(show(params[name])) : whole))
   }) as TFunction
 
-  return { language: entry.id, t, parts, number, time: (ts) => timeFormat.format(ts) }
+  const ago = (ts: number, now = Date.now()): string => {
+    const { value, unit } = agoUnit(now - ts)
+    return agoFormat.format(value, unit)
+  }
+
+  return { language: entry.id, t, parts, number, time: (ts) => timeFormat.format(ts), ago }
 }
 
 const translators = new Map<LanguageId, Translator>()

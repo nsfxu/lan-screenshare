@@ -47,7 +47,7 @@ import { Avatar } from './Avatar'
 import { HostStatsPanel } from './HostControls'
 import { Menu, menuAbove, type MenuAt, type MenuItem } from './Menu'
 import { Icon } from './Icon'
-import { RoomInfo } from './RoomInfo'
+import { RoomInfo, RoomSettings } from './RoomInfo'
 import { InviteTile, PersonTile, useClickToFocus } from './RoomStage'
 import { ScreenViewer } from './ScreenViewer'
 import { MarksLayer } from './MarksLayer'
@@ -119,6 +119,8 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const toggleChat = (): void =>
     chatDocked ? setSidePanel(sidePanel === 'open' ? 'closed' : 'open') : setChatFloating((v) => !v)
   const [infoOpen, setInfoOpen] = useState(false)
+  /** The host's room settings, from the cog next to ⓘ. */
+  const [settingsOpen, setSettingsOpen] = useState(false)
   /** In focus view, the strip of everyone else can be put away; its streams then pause their video. */
   const [strip, setStrip] = useRemembered('focus-strip', 'open', PANEL_STATES)
   /** The open popup menu: the sharing menu, or a tile's right-click menu. */
@@ -138,6 +140,7 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   const streamWindowsRef = useRef(streamWindows)
   streamWindowsRef.current = streamWindows
   const closeInfo = useCallback(() => setInfoOpen(false), [])
+  const closeSettings = useCallback(() => setSettingsOpen(false), [])
   const [, setNow] = useState(Date.now())
   const gameCursor = useGameCursor(publisher, sharing.sharing ? publisher.chosenSourceId : null)
   useAutoContentHint(publisher, sharing.sharing ? publisher.chosenSourceId : null, settings.contentHint)
@@ -453,9 +456,6 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
       icon: 'chart',
       onSelect: () => setShowStats((v) => !v)
     },
-    ...(drawnOn
-      ? [{ kind: 'separator' } as MenuItem, { label: t('marks.clearAll'), icon: 'eraser', onSelect: () => marks.clear(client.selfId) }]
-      : []),
     { kind: 'separator' },
     { label: t('room.stopSharing'), icon: 'stopShare', danger: true, onSelect: () => publisher.stopSharing() }
   ]
@@ -472,15 +472,15 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
       : [{ label: t('room.shareScreenMenu'), icon: 'screen', onSelect: () => setPickSource(true) }]
 
   /** Someone else's tile: watching and focus. */
-  const personItems = (p: Participant): MenuItem[] => {
+  const watchItem = (p: Participant): MenuItem[] =>
+    !p.stream
+      ? []
+      : subs.has(p.id)
+        ? [{ label: t('room.stopWatching'), icon: 'x', danger: true, onSelect: () => watches.unwatch(p.id) }]
+        : [{ label: t('room.watchStream'), icon: 'eye', onSelect: () => watches.watch(p.id) }]
+  const personItems = (p: Participant): MenuItem[] => [...watchItem(p), ...viewItems(p)]
+  const viewItems = (p: Participant): MenuItem[] => {
     const items: MenuItem[] = []
-    if (p.stream) {
-      items.push(
-        subs.has(p.id)
-          ? { label: t('room.stopWatching'), icon: 'x', onSelect: () => watches.unwatch(p.id) }
-          : { label: t('room.watchStream'), icon: 'eye', onSelect: () => watches.watch(p.id) }
-      )
-    }
     if (shown.length > 1) {
       items.push({
         label: focus === p.id ? t('room.backToGrid') : t('room.focus'),
@@ -605,7 +605,8 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           onFullscreen={() => toggleFullscreen(p.id)}
           fullscreen={stageFullscreen}
           collapsed={collapsed}
-          menuItems={personItems(p)}
+          menuItems={viewItems(p)}
+          stopItems={watchItem(p)}
           moderation={moderationItems(p)}
           onMenu={(at, groups) => openMenu(at, t('room.streamOf', { name: p.name }), groups)}
           watchers={<Watchers people={watchersOf(p.id)} avatars={avatars} selfId={client.selfId} small={small} />}
@@ -685,7 +686,10 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
         data-tip={t('room.details')}
         aria-label={t('room.details')}
         aria-expanded={infoOpen}
-        onClick={() => setInfoOpen((v) => !v)}
+        onClick={() => {
+          setSettingsOpen(false)
+          setInfoOpen((v) => !v)
+        }}
       >
         <Icon name="info" size={20} stroke={2.3} />
       </button>
@@ -696,9 +700,34 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
           endpoint={session.endpoint}
           rttMs={client.rttMs}
           onToast={onToast}
+          onClose={closeInfo}
+        />
+      )}
+    </div>
+  )
+  const roomSettings = isHost && hosted && (
+    <div className="room-info-anchor">
+      <button
+        className={`bar-btn room-settings-button ${settingsOpen ? 'on' : ''}`}
+        data-tip={t('room.settings')}
+        aria-label={t('room.settings')}
+        aria-expanded={settingsOpen}
+        onClick={() => {
+          setInfoOpen(false)
+          setSettingsOpen((v) => !v)
+        }}
+      >
+        <Icon name="settings" size={20} stroke={2.1} />
+      </button>
+      {settingsOpen && (
+        <RoomSettings
+          room={room}
+          hosted={hosted}
+          onToast={onToast}
           onEndRoom={endRoom}
           onAllowDrawing={(allowed) => client.send({ type: 'allow-drawing', allowed })}
-          onClose={closeInfo}
+          onAllowChat={(allowed) => client.send({ type: 'mute-chat', muted: !allowed })}
+          onClose={closeSettings}
         />
       )}
     </div>
@@ -707,11 +736,12 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
   // The focused stream you watch: the volume and "new window" act on it.
   const focusedStream = focused && subs.has(focused.id) ? focused : null
   const sharingMenuOpen = !!menu?.sharing
-  const controlsShown = idleControls.shown || infoOpen || showStats || sharingMenuOpen
+  const controlsShown = idleControls.shown || infoOpen || settingsOpen || showStats || sharingMenuOpen
   const controls = (
     <div className="stage-controls" {...idleControls.controls}>
       <div className="controls-side">
         {roomDetails}
+        {roomSettings}
         {focused && shown.length > 1 && (
           <>
             <button
@@ -967,7 +997,6 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
             muted={!!room?.chatMuted}
             onSend={(text) => client.send({ type: 'chat', text })}
             onDelete={(id) => client.send({ type: 'delete-message', id })}
-            onToggleMute={(muted) => client.send({ type: 'mute-chat', muted })}
           />
         </aside>
       </div>
@@ -1108,6 +1137,7 @@ function RemoteTile({
   snapshot,
   collapsed,
   menuItems,
+  stopItems,
   moderation,
   onMenu,
   watchers,
@@ -1144,7 +1174,10 @@ function RemoteTile({
   /** In the put-away strip of the focus view: not visible, so the streamer pauses our video. */
   collapsed: boolean
   /** The start of the right-click menu (stop watching, focus) and the host's actions at its end. */
+  /** The view items of its menu (focus, filter); the tile adds its own. */
   menuItems: MenuItem[]
+  /** Stop watching, at the end of its menu. */
+  stopItems: MenuItem[]
   moderation: MenuItem[]
   onMenu(at: MenuAt, groups: MenuItem[][]): void
 }) {
@@ -1221,21 +1254,26 @@ function RemoteTile({
         const key = participant?.name ?? ''
         const sound: MenuItem[] = participant?.stream?.audio
           ? [
+              { kind: 'heading', label: t('room.menuVolume') },
               {
                 kind: 'slider',
                 label: t('volume.of', { name }),
                 icon: 'volume',
                 value: isSilent(getLevel(key)) ? 0 : getLevel(key).volume,
-                onChange: (v) => setVolume(key, v)
-              },
-              {
-                label: isSilent(getLevel(key)) ? t('volume.unmute') : t('volume.mute'),
-                icon: isSilent(getLevel(key)) ? 'volume' : 'volumeOff',
-                onSelect: () => toggleMute(key)
+                onChange: (v) => setVolume(key, v),
+                mute: {
+                  muteLabel: t('volume.muteName', { name }),
+                  unmuteLabel: t('volume.unmuteName', { name }),
+                  onToggle: () => {
+                    toggleMute(key)
+                    return isSilent(getLevel(key)) ? 0 : getLevel(key).volume
+                  }
+                }
               }
             ]
           : []
         const view: MenuItem[] = [
+          { kind: 'heading', label: t('room.menuView') },
           ...menuItems,
           {
             label: fullscreen ? t('room.exitFullscreen') : t('room.fullscreen'),
@@ -1247,13 +1285,7 @@ function RemoteTile({
             icon: inWindow ? 'popIn' : 'popOut',
             onSelect: onToggleWindow
           },
-          ...(pipSupported() ? [{ label: inPip ? t('room.closePip') : t('room.pip'), icon: 'pip', onSelect: onTogglePip }] : []),
-          ...(canDraw
-            ? [
-                { label: pen ? t('marks.penOff') : t('marks.pen'), icon: 'pen', onSelect: onTogglePen },
-                { label: t('marks.clearMine'), icon: 'eraser', onSelect: () => marks.clear(sub.streamerId) }
-              ]
-            : [])
+          ...(pipSupported() ? [{ label: inPip ? t('room.closePip') : t('room.pip'), icon: 'pip', onSelect: onTogglePip }] : [])
         ]
         const qualities: MenuItem[] = [
           { kind: 'heading', label: t('room.qualityYouReceive') },
@@ -1268,7 +1300,8 @@ function RemoteTile({
         if (sub.transport === 'tcp') {
           qualities.push({ label: t('room.tryFaster'), icon: 'refresh', onSelect: () => sub.retry('webrtc') })
         }
-        onMenu({ x: e.clientX, y: e.clientY }, [sound, view, qualities, moderation])
+        // Drawing is in the controls under the stream (the pen, and the eraser while drawing).
+        onMenu({ x: e.clientX, y: e.clientY }, [view, sound, qualities, stopItems, moderation])
       }}
     >
       {inWindow ? (
@@ -1494,6 +1527,7 @@ function VolumeControl({ name }: { name: string }) {
         <Icon name={silent ? 'volumeOff' : 'volume'} size={20} stroke={2.3} />
       </button>
       <div className="volume-pop">
+        <span>{silent ? 0 : Math.round(level.volume * 100)}%</span>
         <input
           type="range"
           min={0}
@@ -1503,8 +1537,6 @@ function VolumeControl({ name }: { name: string }) {
           aria-label={t('volume.of', { name })}
           onChange={(e) => setVolume(name, Number(e.target.value))}
         />
-        <span>{silent ? 0 : Math.round(level.volume * 100)}%</span>
-        <span className="volume-pop-hint">{silent ? t('volume.hintUnmute') : t('volume.hintMute')}</span>
       </div>
     </div>
   )

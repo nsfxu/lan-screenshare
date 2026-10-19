@@ -81,11 +81,15 @@ Returns `RoomInfo` as JSON, with no secrets:
   "streams": 2,
   "protocol": 4,
   "appVersion": "1.2.0",
-  "startedAt": 1790000000000
+  "startedAt": 1790000000000,
+  "hostColor": "#64b5f6",
+  "hostPicture": "3f9a0c1d2e4b5a69"
 }
 ```
 
-The probing side checks the certificate fingerprint against the one advertised over mDNS, if any (`probeRoom` in `src/utils/network.ts`). Any other path returns 404.
+The probing side checks the certificate fingerprint against the one advertised over mDNS, if any (`probeRoom` in `src/utils/network.ts`), and drops malformed `appVersion`, `hostColor` and `hostPicture` values.
+
+Since 2.7.0 the room list shows each room's host: `hostColor` is the host's colour (`#rrggbb`) for their initials, and `hostPicture`, present when the host has a profile picture, is the first 16 hex digits of its SHA-256. When the hash changes, the room list fetches the picture once from `GET /host-picture` (`{"image": "data:image/…"}`, 404 without one) and checks it like any profile picture (`isAvatar`). Both fields are missing from older hosts, whose rooms show initials or the room's first letter. Any other path returns 404.
 
 ## WebSocket: connection lifecycle
 

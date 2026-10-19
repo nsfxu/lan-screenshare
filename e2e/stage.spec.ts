@@ -1,4 +1,4 @@
-import { createRoom, decodedFrames, expect, joinByIp, test } from './fixtures'
+import { createRoom, decodedFrames, expect, joinByIp, openChat, test } from './fixtures'
 
 const shots = process.env.E2E_SHOTS
 
@@ -36,18 +36,34 @@ test('everyone has a tile: watch from it, focus it, and find the room details be
   await expect(bob.win.locator('.spotlight-main video')).toHaveCount(1)
   await bob.win.keyboard.press('Escape')
 
-  // ⓘ, now in the control bar: the address for everyone; privacy, PIN and End room for the host.
+  // ⓘ, in the control bar: the same details for everyone, nothing to change there.
   await expect(bob.win.locator('.stage-controls').getByRole('button', { name: 'Room details' })).toBeVisible()
   await bob.win.getByRole('button', { name: 'Room details' }).click()
   await expect(bob.win.locator('.room-info')).toContainText(`127.0.0.1:${port}`)
   await expect(bob.win.locator('.room-info').getByRole('button', { name: /End room/ })).toHaveCount(0)
   await bob.win.keyboard.press('Escape')
   await expect(bob.win.locator('.room-info')).toHaveCount(0)
+  // The room settings (the cog) are the host's only.
+  await expect(bob.win.getByRole('button', { name: 'Room settings' })).toHaveCount(0)
 
   await alice.win.getByRole('button', { name: 'Room details' }).click()
-  const info = alice.win.locator('.room-info')
-  await info.getByRole('button', { name: 'Private' }).click()
-  await expect(info.locator('.pin-box')).toBeVisible()
-  if (shots) await alice.win.screenshot({ path: `${shots}/4-room-info.png` })
-  await expect(info.getByRole('button', { name: 'End room for everyone' })).toBeVisible()
+  await expect(alice.win.locator('.room-info').getByRole('button', { name: /End room/ })).toHaveCount(0)
+  await alice.win.getByRole('button', { name: 'Room settings' }).click()
+  const settings = alice.win.getByRole('dialog', { name: 'Room settings' })
+  await expect(alice.win.getByRole('dialog', { name: 'Room details' })).toHaveCount(0)
+  await settings.getByRole('button', { name: 'Private' }).click()
+  await expect(settings.locator('.pin-box')).toBeVisible()
+  if (shots) await alice.win.screenshot({ path: `${shots}/4-room-settings.png` })
+  await expect(settings.getByRole('button', { name: 'End room for everyone' })).toBeVisible()
+
+  // Turning the chat off: Bob can't write any more, and Alice's chat says so.
+  await openChat(bob)
+  const letChat = settings.getByRole('checkbox', { name: /Let viewers chat/ })
+  await expect(letChat).toBeChecked()
+  await letChat.click()
+  await expect(letChat).not.toBeChecked()
+  await expect(bob.win.getByLabel('Chat message')).toHaveAttribute('placeholder', 'The host has muted the chat')
+  await alice.win.keyboard.press('Escape')
+  await openChat(alice)
+  await expect(alice.win.locator('.chat-off')).toHaveText("Viewers can't chat")
 })

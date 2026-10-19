@@ -67,14 +67,16 @@ A janela tem três colunas: as **salas** à esquerda, a sala em que você está 
 
 A coluna de salas mostra:
 
-- **Salas recentes**: as últimas 5 salas em que você entrou, da mais recente para a mais antiga, com a sala atual em destaque. Clique numa para voltar a ela, mesmo que esteja numa VPN e não apareça sozinha. Salas que não respondem aparecem como *offline*. O **×** de uma linha a esquece.
-- **Salas na sua rede**: todas as outras salas encontradas na sua rede. A lista se atualiza sozinha (repare no ponto verde).
+- **Recentes**: as últimas 5 salas em que você entrou, da mais recente para a mais antiga, com a sala atual marcada por uma borda azul e as pessoas dela embaixo. Clique numa para voltar a ela, mesmo que esteja numa VPN e não apareça sozinha. Salas que não respondem ficam recolhidas em **Offline**, que diz quando você esteve lá pela última vez. O **×** de uma linha a esquece.
+- **Na sua rede**: todas as outras salas encontradas na sua rede. A lista se atualiza sozinha; a seta redonda procura de novo na hora.
 
-Cada linha mostra um cadeado para salas privadas, quantas transmissões estão ao vivo e quantas pessoas estão dentro; passe o mouse por cima para ver quem hospeda, há quanto tempo e o endereço. Uma sala numa versão incompatível diz *Atualize para entrar* ou *Versão antiga* (passe o mouse para ver quem precisa atualizar). Salas adicionadas pelo IP têm um **×** para tirá-las da lista. Clique numa sala para entrar. Se você já está numa sala, sai dela antes; o app pergunta antes quando isso encerra uma sala que você hospeda ou para o seu compartilhamento.
+Cada sala mostra a foto de perfil do anfitrião (ou as iniciais dele, ou a primeira letra da sala para anfitriões antes do 2.7.0), com um ponto vermelho enquanto alguém compartilha e um cadeado nas salas privadas. Embaixo do nome: quantas pessoas estão dentro; passe o mouse por cima para ver quem hospeda, há quanto tempo está aberta e o endereço. Uma sala numa versão incompatível diz *Atualize para entrar* ou *Versão antiga* (passe o mouse para ver quem precisa atualizar). Salas adicionadas pelo IP têm um **×** para tirá-las da lista. Clique numa sala para entrar. Se você já está numa sala, sai dela antes; o app pergunta antes quando isso encerra uma sala que você hospeda ou para o seu compartilhamento.
+
+Enquanto você não está numa sala, o meio mostra as salas da sua rede como cartões, cada um com um botão **Entrar**, ao lado de um cartão para criar a sua.
 
 O botão no topo de cada coluna lateral a esconde (a coluna de salas vira uma faixa com as iniciais das salas; o botão do chat fica no canto de cima à direita da sala, embaixo dos botões da própria janela). O app lembra quais colunas você escondeu. Numa janela pequena (por exemplo encaixada ao lado de um jogo) as colunas abrem espaço para os quadros sozinhas: abaixo de 1100 px de largura o chat fica fechado, e abaixo de 760 px a coluna de salas vira uma faixa. Os botões delas então as abrem por cima da sala, e clicar ao lado as fecha.
 
-**Entrar por IP**: se você está numa VPN ou em outra sub-rede, as salas podem não aparecer sozinhas. Clique em **Entrar por IP** (ao lado de **Criar sala**) e digite o endereço do anfitrião, por exemplo `10.8.0.5` ou `192.168.1.20:47800`. O anfitrião vê os endereços dele no **ⓘ** dos controles na parte de baixo da sala. A porta padrão é 47800.
+**Entrar por IP**: se você está numa VPN ou em outra sub-rede, as salas podem não aparecer sozinhas. Clique em **Entrar por IP** (ao lado de **Criar sala**) e digite o endereço do anfitrião, por exemplo `10.8.0.5` ou `192.168.1.20:47800`. Qualquer pessoa na sala vê o endereço dela no **ⓘ** dos controles na parte de baixo da sala. A porta padrão é 47800. O link embaixo da lista de salas abre a mesma caixa.
 
 **Amigos em outras redes**: coloque todos numa rede do [ZeroTier](zerotier.md). Leva poucos minutos, e as salas passam a aparecer na lista como se todos estivessem em casa.
 
@@ -98,11 +100,11 @@ Qualquer pessoa na sala pode compartilhar, não só o anfitrião, e várias pess
 
 **Compartilhar de novo**, ao lado, compartilha a mesma tela ou janela da última vez, com as mesmas opções de som, num clique (numa janela estreita, só o ícone ↻). Ele lembra o seu último compartilhamento neste computador, também depois de reiniciar. Uma janela é encontrada de novo pelo título, então se ela foi fechada ou o título mudou, o seletor abre no lugar.
 
-**Os controles** ficam por cima da parte de baixo da sala: aparecem quando você mexe o mouse sobre ela, e somem depois de 2,5 s sem movimento ou quando o mouse sai dela. Da esquerda para a direita:
+**Os controles** ficam por cima da parte de baixo da sala: aparecem quando você mexe o mouse sobre ela, e somem depois de 2,5 s sem movimento ou quando o mouse sai dela. A barra com o nome no topo de cada transmissão some e volta junto com eles. Da esquerda para a direita:
 
 | Onde | Botões |
 |---|---|
-| Esquerda | **ⓘ** detalhes da sala e, com uma transmissão em destaque, **Grade** (volta à grade) e **Esconder os outros / Mostrar os outros** (a faixa) |
+| Esquerda | **ⓘ** detalhes da sala, a **engrenagem** com as configurações da sala (só o anfitrião) e, com uma transmissão em destaque, **Grade** (volta à grade) e **Esconder os outros / Mostrar os outros** (a faixa) |
 | Meio | **Compartilhar tela** e **Compartilhar de novo** (ou **Compartilhando** enquanto você compartilha), e o botão vermelho de **sair** |
 | Direita | **Volume**, **Abrir em nova janela** e **Janela flutuante** (da transmissão em destaque), e **Tela cheia** |
 
@@ -142,18 +144,18 @@ Todos na sala têm um **quadro** no meio: a foto e o nome. Os quadros mantêm o 
 - No destaque, **Esconder os outros** guarda a faixa para o quadro em destaque ocupar toda a altura; as transmissões nela param de te mandar vídeo até você mostrá-las de novo (o som continua).
 - Quando você está sozinho na sua sala, um quadro **Convide pessoas** mostra o endereço para passar a quem está numa VPN.
 
-**Clique com o botão direito numa transmissão** para tudo sobre ela:
+**Clique com o botão direito numa transmissão** para tudo sobre ela, em seções:
 
 | Opção | O que faz |
 |---|---|
-| **Volume** (controle deslizante) e **Silenciar** | Cada transmissão tem seu próprio volume e mudo, guardados por pessoa. |
-| **Parar de assistir**, **Destacar**, **Tela cheia**, **Abrir em nova janela**, **Janela flutuante** | Como acima. |
-| **Mostrar só transmissões / Mostrar todos** | Deixa de fora quem não está compartilhando (menu de qualquer quadro). |
+| **Exibição**: **Destacar**, **Mostrar só transmissões / Mostrar todos**, **Tela cheia**, **Abrir em nova janela**, **Janela flutuante** | Como acima. **Mostrar só transmissões** deixa de fora quem não está compartilhando (menu de qualquer quadro). |
+| **Volume** (controle deslizante) | Cada transmissão tem seu próprio volume, guardado por pessoa; o alto-falante antes do controle silencia e volta o som. |
 | **Qualidade que você recebe** | **Automática** acompanha o tamanho em que você assiste, então um quadro pequeno gasta pouca banda. Você também pode limitar em 1080p, 720p, ou 720p/480p/360p a 30 fps. Fica guardado por pessoa. |
 | **Tentar a conexão mais rápida de novo** | Só quando a transmissão caiu para a conexão TCP, mais lenta. |
+| **Parar de assistir** | No fim, em vermelho. |
 | **Parar a transmissão de *nome***, **Remover da sala** | Só o anfitrião. |
 
-**Nos controles**, com uma transmissão em destaque, o alto-falante a silencia, ou volta ao último volume; aponte para ele para ver o controle de volume.
+**Nos controles**, com uma transmissão em destaque, o alto-falante a silencia, ou volta ao último volume; aponte para ele para ver o volume, num controle que sobe e desce.
 
 Os **selos de estatística** numa transmissão mostram taxa de quadros, latência, resolução, codec e tipo de conexão; dá para desligar em **Configurações → Aparência**.
 
@@ -163,11 +165,11 @@ Enquanto você **minimiza** o app, ou deixa um quadro em tela cheia, as transmis
 
 ### Desenhar numa transmissão
 
-Para apontar algo numa transmissão que você assiste, ligue a caneta: **Desenhar na transmissão** (a caneta embaixo de uma transmissão em destaque, ou no menu do botão direito da transmissão). Enquanto ela está ligada, o seu mouse sobre a transmissão aparece para todo mundo que assiste, e para quem compartilha, como um ponto na sua cor com o seu nome. Clique e arraste para fazer um desenho rápido; os desenhos somem depois de alguns segundos. **Apagar meus desenhos** (a borracha ao lado da caneta, ou o menu do botão direito) tira os seus. Clique na caneta de novo para parar.
+Para apontar algo numa transmissão que você assiste, ligue a caneta: **Desenhar na transmissão** (a caneta embaixo de uma transmissão em destaque). Enquanto ela está ligada, o seu mouse sobre a transmissão aparece para todo mundo que assiste, e para quem compartilha, como um ponto na sua cor com o seu nome. Clique e arraste para fazer um desenho rápido; os desenhos somem depois de alguns segundos. **Apagar meus desenhos** (a borracha ao lado da caneta) tira os seus. Clique na caneta de novo para parar.
 
-Quando outras pessoas desenham na **sua** transmissão, você vê os desenhos na sua própria tela, por cima do que compartilha, numa janela transparente que deixa os cliques passarem e fica fora da sua transmissão (para os desenhos não aparecerem duas vezes). **Apagar os desenhos na minha tela**, no menu Compartilhando, tira os de todos. Os desenhos somem quando você para de compartilhar, e nada é gravado.
+Quando outras pessoas desenham na **sua** transmissão, você vê os desenhos na sua própria tela, por cima do que compartilha, numa janela transparente que deixa os cliques passarem e fica fora da sua transmissão (para os desenhos não aparecerem duas vezes). Os desenhos somem quando você para de compartilhar, e nada é gravado.
 
-- Desligue para a sua transmissão em **Configurações → Compartilhamento → Permitir desenhar na minha tela**. O anfitrião pode desligar para a sala toda nos detalhes da sala (**ⓘ → Permitir desenhar nas transmissões**).
+- Desligue para a sua transmissão em **Configurações → Compartilhamento → Permitir desenhar na minha tela**. O anfitrião pode desligar para a sala toda nas configurações da sala (**engrenagem → Permitir desenhar nas transmissões**).
 - A caneta só aparece quando o app do anfitrião e o de quem compartilha são da 2.6.0 em diante.
 - Compartilhando uma única janela: os espectadores veem os desenhos uns dos outros, mas eles ainda não aparecem na sua tela.
 
@@ -180,26 +182,30 @@ Se a sua rede cair por um instante, o app reconecta sozinho e te coloca de volta
 
 ## Se você é o anfitrião
 
-O **ⓘ** à esquerda dos controles mostra os detalhes dela: privacidade, há quanto tempo está aberta, quem hospeda e o tempo de ida e volta até ela (e, para convidados, o endereço para copiar). Para o anfitrião, ele também permite:
+O **ⓘ** à esquerda dos controles mostra os detalhes da sala, iguais para todos: privacidade, há quanto tempo está aberta, quem hospeda, o tempo de ida e volta até ela e o endereço que as pessoas podem usar no **Entrar por IP** (clique para copiar; aponte para ver todos os seus).
+
+A **engrenagem** ao lado abre as **configurações da sala**, que só o anfitrião tem:
 
 - alternar entre **Pública** e **Privada** a qualquer momento; quem já está dentro continua conectado;
 - mostrar ou esconder o **PIN**, **copiar**, **gerar um novo** ou **definir o seu**;
-- ver os endereços que as pessoas podem usar no **Entrar por IP**.
+- **Permitir desenhar nas transmissões** para todos, ou não;
+- **Deixar os espectadores conversarem**: desligado, só você escreve (as pessoas continuam vendo o histórico), e o seu chat diz *Espectadores não podem conversar*;
+- **Encerrar a sala para todo mundo**.
 
-Clicar com o botão direito numa pessoa (no quadro dela, ou no nome dela na coluna de salas, onde também aparece um botão **⋯** ao passar o mouse) permite **parar a transmissão** dela ou **removê-la** da sala (a pessoa não consegue voltar nesta sessão da sala). No chat você pode **apagar mensagens** e **silenciar o chat** (as pessoas continuam vendo o histórico).
+Clicar com o botão direito numa pessoa (no quadro dela, ou no nome dela na coluna de salas, onde também aparece um botão **⋯** ao passar o mouse) permite **parar a transmissão** dela ou **removê-la** da sala (a pessoa não consegue voltar nesta sessão da sala). No chat você pode **apagar mensagens**.
 
-**Encerrar a sala para todo mundo** (também no **ⓘ**, ou o botão vermelho no fim dos controles) encerra a sala para todos.
+**Encerrar a sala para todo mundo** (nas configurações da sala, ou o botão vermelho no meio dos controles) encerra a sala para todos.
 
 ## Configurações
 
-Abra as configurações pelo ícone de engrenagem embaixo da coluna de salas. A lista à esquerda pula para uma seção e acompanha a rolagem.
+Abra as configurações pelo ícone de engrenagem embaixo da coluna de salas. A lista à esquerda escolhe a seção mostrada; cada uma agrupa as configurações em caixas, com o que cada uma faz embaixo do nome.
 
 | Seção | Configuração | Padrão | Significado |
 |---|---|---|---|
 | Perfil | Foto de perfil | nenhuma | Aparece no lugar das suas iniciais. |
 | Perfil | Nome | seu usuário do computador | Até 32 caracteres. |
 | Aparência | Idioma | Igual ao computador | Veja [idioma](#idioma). |
-| Aparência | Tema | Clássico | As cores do app: **Clássico** (azul sobre cinza-azulado), **Grafite** (cinzas neutros e índigo, para as transmissões manterem as cores reais), **Meia-noite** (preto-azulado e verde-água) ou **Carvão** (cinzas quentes e violeta). Vale na hora. |
+| Aparência | Tema | Clássico | As cores do app. Escuros: **Clássico** (azul sobre cinza-azulado), **Grafite** (cinzas neutros e índigo, para as transmissões manterem as cores reais), **Meia-noite** (preto-azulado e verde-água), **Carvão** (cinzas quentes e violeta), **Preto** (preto de verdade, para telas OLED), **Floresta** (verde-escuro e esmeralda) ou **Brasa** (marrons quentes e âmbar). Claros: **Claro** (branco e azul), **Papel** (creme quente e terracota) ou **Névoa** (cinza-azulado frio e verde-azulado); neles o palco da sala continua escuro, para as transmissões e os controles por cima delas ficarem como sempre. Vale na hora. |
 | Aparência | Mostrar FPS e atraso nas transmissões | ligado | Os selos em cada transmissão. |
 | Compartilhamento | Qualidade máxima | 1080p @ 60 fps | O máximo que você envia ao compartilhar. Vale na hora. |
 | Compartilhamento | Otimizar para | Automático | *Movimento suave* mantém 60 fps. *Texto nítido* mantém a resolução. *Automático* (Windows) usa movimento suave enquanto um jogo ou vídeo em tela cheia está na frente do que você compartilha, e texto nítido na área de trabalho; no macOS quer dizer movimento suave. As estatísticas da transmissão mostram qual está em uso. |
@@ -209,17 +215,17 @@ Abra as configurações pelo ícone de engrenagem embaixo da coluna de salas. A 
 | Compartilhamento | Deixar o Discord de fora por padrão | ligado | Windows e macOS. Deixa o interruptor do Discord pré-marcado. |
 | Compartilhamento | Pausar o compartilhamento ao minimizar | desligado | Retoma quando você restaura a janela. |
 | Compartilhamento | Permitir desenhar na minha tela | ligado | Quem assiste pode apontar e desenhar na sua transmissão ([desenhar numa transmissão](#desenhar-numa-transmissão)). |
-| Notificações | Notificações do chat | ligado | Quando a janela está em segundo plano. |
-| Conexão | Voltar para a última sala ao abrir | desligado | Entra automaticamente na última sala quando o app abre. |
-| Conexão | Criptografar conexões (TLS) | ligado | Cifra o chat e a sinalização. O vídeo é sempre cifrado. |
-| Conexão | Sempre usar transporte TCP | desligado | Para redes que bloqueiam UDP. Acrescenta um pouco de atraso. |
-| Conexão | Porta para hospedar | 47800 | A primeira porta tentada quando você hospeda. |
-| Avançado | Codec de vídeo | Automático | O automático prefere H.264 em hardware. Dá para forçar H.264, H.265, VP9 ou AV1 se os dois lados suportarem. A tabela abaixo dele mostra o que o seu computador suporta. |
+| Geral | Notificações do chat | ligado | Quando a janela está em segundo plano. |
+| Geral | Voltar para a última sala ao abrir | desligado | Entra automaticamente na última sala quando o app abre. |
+| Geral | Criptografar conexões (TLS) | ligado | Cifra o chat e a sinalização. O vídeo é sempre cifrado. |
+| Geral | Sempre usar transporte TCP | desligado | Para redes que bloqueiam UDP. Acrescenta um pouco de atraso. |
+| Geral | Porta para hospedar | 47800 | A primeira porta tentada quando você hospeda. |
+| Avançado | Codec de vídeo | Automático | O automático prefere H.264 quando a sua placa de vídeo o codifica, depois H.265 quando as duas placas de vídeo dão conta; a linha embaixo dele diz o que ele normalmente envia no seu computador. Dá para forçar H.264, H.265, VP9 ou AV1 se os dois lados suportarem. **Codecs suportados** embaixo dele mostra quais codecs a sua placa de vídeo ou o processador processam. |
 | Avançado | Qualidade adaptativa | ligado | Reduz resolução/taxa de quadros por espectador quando a rede dele sofre. |
-| Avançado | Menor atraso (rede cabeada) | desligado | Mostra as transmissões que você assiste assim que cada quadro chega: uns 20 ms a menos de atraso numa rede cabeada, mas elas podem engasgar no Wi-Fi ou numa VPN. Vale depois de reiniciar o ScreenShare. |
+| Avançado | Menor atraso (rede cabeada) | desligado | Mostra as transmissões que você assiste assim que cada quadro chega: uns 20 ms a menos de atraso numa rede cabeada, mas elas podem engasgar no Wi-Fi ou numa VPN. Vale depois de reiniciar o ScreenShare (**Precisa reiniciar**). |
 | Sobre | Procurar atualizações automaticamente | ligado | Veja [atualizações](#atualizações). |
 
-**Sobre** mostra a versão do app e tem o botão **Abrir logs**, e **Diagnóstico**: **Copiar diagnóstico** copia o que um relato de bug precisa (versões, sistema, placa de vídeo e codecs, endereços de rede, suas configurações e o fim do log, nunca PINs nem tokens) e **Salvar…** grava num arquivo. Veja [reunindo informações para relatar um bug](troubleshooting.md#reunindo-informações-para-relatar-um-bug).
+**Sobre** mostra a versão do app e o seu sistema, a situação das atualizações com **Verificar agora**, e **Solução de problemas**: **Copiar diagnóstico** copia o que um relato de bug precisa (versões, sistema, placa de vídeo e codecs, endereços de rede, suas configurações e o fim do log, nunca PINs nem tokens), **Salvar em arquivo…** grava num arquivo e **Abrir logs** abre a pasta com os logs. Veja [reunindo informações para relatar um bug](troubleshooting.md#reunindo-informações-para-relatar-um-bug).
 
 ## Idioma
 

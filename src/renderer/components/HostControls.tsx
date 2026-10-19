@@ -5,7 +5,7 @@ import { errorMessage, formatBitrate, latencyClass } from '../lib/format'
 import { useT } from '../lib/i18n'
 import { Icon } from './Icon'
 
-/** Privacy, PIN and "how to reach me" panel for the host. */
+/** Privacy and PIN, in the host's room settings. */
 export function AccessPanel({ hosted, onToast }: { hosted: HostedRoom; onToast(msg: string, tone?: 'error' | 'info'): void }) {
   const { t } = useT()
   const [editing, setEditing] = useState(false)
@@ -28,8 +28,6 @@ export function AccessPanel({ hosted, onToast }: { hosted: HostedRoom; onToast(m
   const setPrivacy = (p: Privacy): void => {
     if (p !== privacy) void update({ privacy: p })
   }
-
-  const address = hosted.addresses[0] ? `${hosted.addresses[0]}:${hosted.port}` : t('access.portOnly', { port: String(hosted.port) })
 
   return (
     <div className="access-panel">
@@ -93,16 +91,6 @@ export function AccessPanel({ hosted, onToast }: { hosted: HostedRoom; onToast(m
       <p className="muted small">
         {privacy === 'private' ? t('access.privateHint') : t('access.publicHint')}
       </p>
-      <div className="address-row">
-        <span className="muted small">{t('access.address')}</span>
-        <button
-          className="link mono small"
-          title={t('access.addressTip', { list: hosted.addresses.map((a) => `${a}:${hosted.port}`).join('\n') })}
-          onClick={() => copy(address, t('common.addressCopied'))}
-        >
-          {address} <Icon name="copy" size={12} />
-        </button>
-      </div>
     </div>
   )
 }
