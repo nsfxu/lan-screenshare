@@ -447,41 +447,48 @@ export function SettingsPanel({
         </SettingsGroup>
         <div className="settings-group">
           <h3 className="settings-group-title">{t('settings.theme')}</h3>
-          <div className="theme-picker" role="radiogroup" aria-label={t('settings.theme')}>
-            {THEMES.map((theme) => {
-              const [background, panel, accent, live] = theme.swatches
-              const selected = settings.theme === theme.id
-              return (
-                <button
-                  key={theme.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  className={`theme-option ${selected ? 'selected' : ''}`}
-                  onClick={() => onChange({ theme: theme.id })}
-                >
-                  {/* The app in miniature: the room list, a stream with its live mark, a button. */}
-                  <span className="theme-preview" aria-hidden="true" style={{ background }}>
-                    <span className="theme-preview-side" style={{ background: panel }}>
-                      <span style={{ background: accent }} />
-                      <span />
-                      <span />
-                    </span>
-                    <span className="theme-preview-stage">
-                      <span className="theme-preview-tile">
-                        <span style={{ background: live }} />
-                      </span>
-                      <span className="theme-preview-button" style={{ background: accent }} />
-                    </span>
-                  </span>
-                  <span className="theme-label">
-                    {t(`theme.${theme.id}`)}
-                    {selected && <Icon name="check" size={14} stroke={2.6} />}
-                  </span>
-                  <span className="muted small">{t(`theme.${theme.id}.description`)}</span>
-                </button>
-              )
-            })}
+          <div className="theme-groups" role="radiogroup" aria-label={t('settings.theme')}>
+            {(['dark', 'light'] as const).map((kind) => (
+              <div key={kind} className="theme-group">
+                <span className="muted small">{kind === 'dark' ? t('settings.themesDark') : t('settings.themesLight')}</span>
+                <div className="theme-picker">
+                  {THEMES.filter((theme) => theme.kind === kind).map((theme) => {
+                    const [background, panel, accent, live] = theme.swatches
+                    const selected = settings.theme === theme.id
+                    return (
+                      <button
+                        key={theme.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        className={`theme-option ${selected ? 'selected' : ''}`}
+                        onClick={() => onChange({ theme: theme.id })}
+                      >
+                        {/* The app in miniature: the room list, a stream with its live mark, a button. */}
+                        <span className="theme-preview" aria-hidden="true" style={{ background }}>
+                          <span className="theme-preview-side" style={{ background: panel }}>
+                            <span style={{ background: accent }} />
+                            <span />
+                            <span />
+                          </span>
+                          <span className="theme-preview-stage">
+                            <span className="theme-preview-tile">
+                              <span style={{ background: live }} />
+                            </span>
+                            <span className="theme-preview-button" style={{ background: accent }} />
+                          </span>
+                        </span>
+                        <span className="theme-label">
+                          {t(`theme.${theme.id}`)}
+                          {selected && <Icon name="check" size={14} stroke={2.6} />}
+                        </span>
+                        <span className="muted small">{t(`theme.${theme.id}.description`)}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
         <SettingsGroup title={t('settings.groupStreams')}>

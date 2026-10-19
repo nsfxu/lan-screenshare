@@ -203,7 +203,7 @@ Open Settings with the gear icon at the bottom of the rooms column. The list on 
 | Profile | Profile picture | none | Shown instead of your initials. |
 | Profile | Display name | your computer user name | Up to 32 characters. |
 | Appearance | Language | Same as the computer | See [language](#language). |
-| Appearance | Theme | Classic | The app's colours: **Classic** (blue on blue-grey), **Graphite** (neutral greys and indigo, so streams look true to colour), **Midnight** (blue-black and teal) or **Charcoal** (warm greys and violet). Applies immediately. |
+| Appearance | Theme | Classic | The app's colours. Dark: **Classic** (blue on blue-grey), **Graphite** (neutral greys and indigo, so streams look true to colour), **Midnight** (blue-black and teal), **Charcoal** (warm greys and violet), **Black** (true black, for OLED screens), **Forest** (deep green and emerald) or **Ember** (warm browns and amber). Light: **Light** (white and blue), **Paper** (warm cream and terracotta) or **Mist** (cool grey-blue and teal); in these the room's stage stays dark, so streams and the controls over them read as usual. Applies immediately. |
 | Appearance | Show FPS and latency on streams | on | The badges on each stream. |
 | Sharing | Maximum quality | 1080p @ 60 fps | The most you send when sharing. Applies immediately. |
 | Sharing | Optimize for | Automatic | *Smooth motion* keeps 60 fps. *Sharp text* keeps the resolution. *Automatic* (Windows) uses smooth motion while a fullscreen game or video is in front of what you share, and sharp text on the desktop; on macOS it means smooth motion. The Stats panel shows which one is in use. |

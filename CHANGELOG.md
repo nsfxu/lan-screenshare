@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Added
+
+- **Six more themes** in **Settings → Appearance**, now grouped as dark and light. Dark: **Black** (true black, for OLED screens), **Forest** and **Ember**. Light, for bright rooms: **Light**, **Paper** and **Mist**; the room's stage stays dark in them, so streams and the controls over them look as usual.
+
 ### Changed
 
 - **A clearer room list.** Each room shows its host's profile picture (or initials), with a red dot while someone shares and a lock when it's private, and a second line with how many people are inside, so long names fit. Rooms you've been in that don't answer are folded under **Offline**, with when you were last there, and while you're not in a room the middle shows the rooms on your network as cards to join. Pictures need the host on this version; older hosts show initials.

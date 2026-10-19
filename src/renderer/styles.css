@@ -88,6 +88,153 @@
   --scrollbar: #3a3346;
 }
 
+/* More dark themes. */
+:root[data-theme='black'] {
+  --bg: #000000;
+  --bg-elev: #0b0b0c;
+  --bg-elev-2: #141416;
+  --bg-hover: #1c1c1f;
+  --border: #232327;
+  --text: #ececef;
+  --text-muted: #8d8d96;
+  --accent: #8ab4f8;
+  --accent-hover: #a8c7fa;
+  --accent-soft: rgba(138, 180, 248, 0.14);
+  --good: #4ade80;
+  --ok: #fbbf24;
+  --bad: #f87171;
+  --bad-text: #fca5a5;
+  --on-accent: #0b1220;
+  --stage: #000000;
+  --scrollbar: #2a2a2e;
+}
+:root[data-theme='forest'] {
+  --bg: #0d1410;
+  --bg-elev: #131c17;
+  --bg-elev-2: #1a251f;
+  --bg-hover: #213027;
+  --border: #26362c;
+  --text: #e4efe8;
+  --text-muted: #8ea596;
+  --accent: #34d399;
+  --accent-hover: #6ee7b7;
+  --accent-soft: rgba(52, 211, 153, 0.14);
+  --good: #4ade80;
+  --ok: #facc15;
+  --bad: #ff6b6b;
+  --bad-text: #ffa8a8;
+  --on-accent: #052e1c;
+  --stage: #070b09;
+  --scrollbar: #2b3d32;
+}
+:root[data-theme='ember'] {
+  --bg: #15110e;
+  --bg-elev: #1d1814;
+  --bg-elev-2: #261f1a;
+  --bg-hover: #302720;
+  --border: #3a2f27;
+  --text: #f1e9e2;
+  --text-muted: #a8998b;
+  --accent: #f59e0b;
+  --accent-hover: #fbbf24;
+  --accent-soft: rgba(245, 158, 11, 0.15);
+  --good: #4ade80;
+  --ok: #facc15;
+  --bad: #ff5d5d;
+  --bad-text: #ff9a9a;
+  --on-accent: #1c1203;
+  --stage: #0b0907;
+  --scrollbar: #42362c;
+}
+
+/* Light themes: light panels and dark text. The stage behind the tiles stays dark, since the
+   controls over it are white; reds, ambers and greens are deeper so they read on white. */
+:root[data-theme='light'],
+:root[data-theme='paper'],
+:root[data-theme='mist'] {
+  color-scheme: light;
+  --shadow: 0 12px 40px rgba(15, 23, 42, 0.16);
+}
+:root[data-theme='light'] {
+  --bg: #f5f6f8;
+  --bg-elev: #ffffff;
+  --bg-elev-2: #eef0f4;
+  --bg-hover: #e4e7ed;
+  --border: #d9dde5;
+  --text: #1b1f27;
+  --text-muted: #5f6878;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-soft: rgba(37, 99, 235, 0.12);
+  --good: #15803d;
+  --ok: #b45309;
+  --bad: #dc2626;
+  --bad-text: #b91c1c;
+  --on-accent: #ffffff;
+  --stage: #1a1d24;
+  --scrollbar: #c5cad4;
+}
+:root[data-theme='paper'] {
+  --bg: #f6f1e9;
+  --bg-elev: #fffaf3;
+  --bg-elev-2: #efe7da;
+  --bg-hover: #e7ddcc;
+  --border: #ddd1bf;
+  --text: #2b2520;
+  --text-muted: #75695b;
+  --accent: #c2410c;
+  --accent-hover: #9a3412;
+  --accent-soft: rgba(194, 65, 12, 0.12);
+  --good: #3f7d3a;
+  --ok: #a16207;
+  --bad: #c0392b;
+  --bad-text: #a12a1d;
+  --on-accent: #ffffff;
+  --stage: #1f1b17;
+  --scrollbar: #cdbfa9;
+}
+:root[data-theme='mist'] {
+  --bg: #eef2f5;
+  --bg-elev: #f9fbfc;
+  --bg-elev-2: #e3e9ee;
+  --bg-hover: #d9e1e8;
+  --border: #cfd8e0;
+  --text: #17232d;
+  --text-muted: #56656f;
+  --accent: #0f766e;
+  --accent-hover: #115e59;
+  --accent-soft: rgba(15, 118, 110, 0.12);
+  --good: #15803d;
+  --ok: #a16207;
+  --bad: #d6334a;
+  --bad-text: #b4233a;
+  --on-accent: #ffffff;
+  --stage: #141b22;
+  --scrollbar: #bccad5;
+}
+/* In a light theme the stage stays dark (video reads best on dark, and the controls over it are
+   white), so everything on it — people's tiles, stats badges, the panels over the controls — takes
+   dark colours too, keeping the theme's accent. */
+:root[data-theme='light'] .stage-area,
+:root[data-theme='paper'] .stage-area,
+:root[data-theme='mist'] .stage-area {
+  color-scheme: dark;
+  --bg: #14171d;
+  --bg-elev: #1b1f27;
+  --bg-elev-2: #232833;
+  --bg-hover: #2b313d;
+  --border: #333a47;
+  --text: #e7e9ee;
+  --text-muted: #9aa3b2;
+  --good: #3ecf8e;
+  --ok: #f5b942;
+  --bad: #ff6b6b;
+  --bad-text: #ff9a9a;
+  --scrollbar: #3a4150;
+  --shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  color: var(--text);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -1995,7 +2142,7 @@ button.member-main {
   padding-top: 0;
 }
 .chat-message:hover {
-  background: rgba(255, 255, 255, 0.025);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
 }
 .chat-body {
   min-width: 0;
@@ -2948,6 +3095,16 @@ button.member-main {
 }
 
 /* theme picker (Settings → Appearance): the app in miniature, in each theme's colours */
+.theme-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.theme-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 .theme-picker {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2977,7 +3134,7 @@ button.member-main {
   margin-bottom: 2px;
   border-radius: 6px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(128, 128, 128, 0.25);
 }
 .theme-preview-side {
   width: 34%;
@@ -2989,7 +3146,7 @@ button.member-main {
 .theme-preview-side span {
   height: 5px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(128, 128, 128, 0.3);
 }
 .theme-preview-side span:first-child {
   width: 70%;

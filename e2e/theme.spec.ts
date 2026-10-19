@@ -19,6 +19,7 @@ test('themes are chosen in Settings, apply at once and stay after a restart', as
     ['Graphite', 'rgb(17, 18, 20)'],
     ['Midnight', 'rgb(11, 18, 32)'],
     ['Charcoal', 'rgb(18, 16, 22)'],
+    ['Light', 'rgb(245, 246, 248)'],
     ['Classic', 'rgb(15, 17, 21)']
   ] as const) {
     await win.getByRole('button', { name: 'Settings' }).click()
