@@ -142,18 +142,18 @@ Everyone in the room has a **tile** in the middle: their picture and name. Tiles
 - In the spotlight, **Hide others** puts the strip away so the focused tile gets the whole height; the streams in it stop sending you video until you show them again (you still hear them).
 - When you're alone in your room, an **Invite people** tile shows the address to give people on a VPN.
 
-**Right-click a stream** for everything about it:
+**Right-click a stream** for everything about it, in sections:
 
 | Option | What it does |
 |---|---|
-| **Volume** (slider) and **Mute** | Each stream has its own volume and mute, remembered per person. |
-| **Stop watching**, **Focus**, **Full screen**, **Open in a new window**, **Picture in picture** | As above. |
-| **Show only streams / Show everyone** | Leaves out the people who aren't sharing (any tile's menu). |
+| **View**: **Focus**, **Show only streams / Show everyone**, **Full screen**, **Open in a new window**, **Picture in picture** | As above. **Show only streams** leaves out the people who aren't sharing (any tile's menu). |
+| **Volume** (slider) | Each stream has its own volume, remembered per person; the speaker before the slider mutes and unmutes it. |
 | **Quality you receive** | **Auto** follows the size you watch at, so a small tile uses little bandwidth. You can also cap it at 1080p, 720p, or 720p/480p/360p at 30 fps. Remembered per person. |
 | **Try the faster connection again** | Only when the stream fell back to the slower TCP connection. |
+| **Stop watching** | At the end, in red. |
 | **Stop *name*'s stream**, **Remove from room** | Host only. |
 
-**In the controls**, while a stream is focused, the speaker mutes it, or unmutes it back to the last volume; point at the speaker for its volume slider.
+**In the controls**, while a stream is focused, the speaker mutes it, or unmutes it back to the last volume; point at the speaker for its volume, on a slider that goes up and down.
 
 The **stats badges** on a stream show its frame rate, latency, resolution, codec and connection type; turn them off in **Settings → Appearance**.
 
@@ -163,9 +163,9 @@ While you **minimize** the app, or put one tile in full screen, the streams you 
 
 ### Drawing on a stream
 
-To point at something on a stream you watch, turn on the pen: **Draw on the stream** (the pen under a focused stream, or in the stream's right-click menu). While it's on, your mouse over the stream shows to everyone watching, and to the person sharing, as a dot in your colour with your name. Click and drag to draw a quick mark; marks fade after a few seconds. **Clear my marks** (the eraser next to the pen, or the right-click menu) removes yours. Click the pen again to stop.
+To point at something on a stream you watch, turn on the pen: **Draw on the stream** (the pen under a focused stream). While it's on, your mouse over the stream shows to everyone watching, and to the person sharing, as a dot in your colour with your name. Click and drag to draw a quick mark; marks fade after a few seconds. **Clear my marks** (the eraser next to the pen) removes yours. Click the pen again to stop.
 
-When others draw on **your** stream, you see their marks on your own screen, over what you share, in a see-through window that clicks go through and that's left out of your stream (so marks don't show up twice). **Clear marks on my screen** in the Sharing menu removes everyone's. Marks go away when you stop sharing, and nothing is recorded.
+When others draw on **your** stream, you see their marks on your own screen, over what you share, in a see-through window that clicks go through and that's left out of your stream (so marks don't show up twice). Marks go away when you stop sharing, and nothing is recorded.
 
 - Turn it off for your stream with **Settings → Sharing → Allow drawing on my screen**. The host can turn it off for the whole room in the room details (**ⓘ → Allow drawing on streams**).
 - The pen only shows when the host's app and the sharer's app are on 2.6.0 or later.

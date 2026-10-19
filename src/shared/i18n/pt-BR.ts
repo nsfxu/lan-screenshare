@@ -194,7 +194,6 @@ export const ptBR: Messages = {
   'marks.penOf': 'Aponte e desenhe na tela de {name}: todo mundo que assiste vê',
   'marks.penOff': 'Parar de desenhar',
   'marks.clearMine': 'Apagar meus desenhos',
-  'marks.clearAll': 'Apagar os desenhos na minha tela',
   'room.fullscreen': 'Tela cheia',
   'room.exitFullscreen': 'Sair da tela cheia',
   'room.exitFullscreenTip': 'Sair da tela cheia (Esc)',
@@ -217,6 +216,8 @@ export const ptBR: Messages = {
   'room.pausedBy': 'Pausado por {name}',
   'room.connectingTo': 'Conectando a {name}…',
   'room.qualityYouReceive': 'Qualidade que você recebe',
+  'room.menuView': 'Exibição',
+  'room.menuVolume': 'Volume',
   'room.tryFaster': 'Tentar a conexão mais rápida de novo',
   'room.playingElsewhere': 'Passando em outra janela',
   'room.bringBack': 'Trazer de volta',
@@ -237,12 +238,8 @@ export const ptBR: Messages = {
 
   // --- Volume ----------------------------------------------------------------------
   'volume.of': 'Volume de {name}',
-  'volume.mute': 'Silenciar',
-  'volume.unmute': 'Ativar som',
   'volume.muteName': 'Silenciar {name}',
   'volume.unmuteName': 'Ativar o som de {name}',
-  'volume.hintMute': 'Clique no alto-falante para silenciar',
-  'volume.hintUnmute': 'Clique no alto-falante para ativar o som',
 
   // --- Room details (ⓘ) and the host's access panel ---------------------------------------
   'info.privacy': 'Privacidade',

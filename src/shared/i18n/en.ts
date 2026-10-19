@@ -200,7 +200,6 @@ export const en = {
   'marks.penOf': 'Point and draw on {name}’s screen: everyone watching sees it',
   'marks.penOff': 'Stop drawing',
   'marks.clearMine': 'Clear my marks',
-  'marks.clearAll': 'Clear marks on my screen',
   'room.fullscreen': 'Full screen',
   'room.exitFullscreen': 'Exit full screen',
   'room.exitFullscreenTip': 'Leave full screen (Esc)',
@@ -223,6 +222,8 @@ export const en = {
   'room.pausedBy': 'Paused by {name}',
   'room.connectingTo': 'Connecting to {name}…',
   'room.qualityYouReceive': 'Quality you receive',
+  'room.menuView': 'View',
+  'room.menuVolume': 'Volume',
   'room.tryFaster': 'Try the faster connection again',
   'room.playingElsewhere': 'Playing in another window',
   'room.bringBack': 'Bring back',
@@ -243,12 +244,8 @@ export const en = {
 
   // --- Volume ----------------------------------------------------------------------
   'volume.of': 'Volume of {name}',
-  'volume.mute': 'Mute',
-  'volume.unmute': 'Unmute',
   'volume.muteName': 'Mute {name}',
   'volume.unmuteName': 'Unmute {name}',
-  'volume.hintMute': 'Click the speaker to mute',
-  'volume.hintUnmute': 'Click the speaker to unmute',
 
   // --- Room details (ⓘ) and the host's access panel ---------------------------------------
   'info.privacy': 'Privacy',

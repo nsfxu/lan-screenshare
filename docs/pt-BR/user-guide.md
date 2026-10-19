@@ -144,18 +144,18 @@ Todos na sala têm um **quadro** no meio: a foto e o nome. Os quadros mantêm o 
 - No destaque, **Esconder os outros** guarda a faixa para o quadro em destaque ocupar toda a altura; as transmissões nela param de te mandar vídeo até você mostrá-las de novo (o som continua).
 - Quando você está sozinho na sua sala, um quadro **Convide pessoas** mostra o endereço para passar a quem está numa VPN.
 
-**Clique com o botão direito numa transmissão** para tudo sobre ela:
+**Clique com o botão direito numa transmissão** para tudo sobre ela, em seções:
 
 | Opção | O que faz |
 |---|---|
-| **Volume** (controle deslizante) e **Silenciar** | Cada transmissão tem seu próprio volume e mudo, guardados por pessoa. |
-| **Parar de assistir**, **Destacar**, **Tela cheia**, **Abrir em nova janela**, **Janela flutuante** | Como acima. |
-| **Mostrar só transmissões / Mostrar todos** | Deixa de fora quem não está compartilhando (menu de qualquer quadro). |
+| **Exibição**: **Destacar**, **Mostrar só transmissões / Mostrar todos**, **Tela cheia**, **Abrir em nova janela**, **Janela flutuante** | Como acima. **Mostrar só transmissões** deixa de fora quem não está compartilhando (menu de qualquer quadro). |
+| **Volume** (controle deslizante) | Cada transmissão tem seu próprio volume, guardado por pessoa; o alto-falante antes do controle silencia e volta o som. |
 | **Qualidade que você recebe** | **Automática** acompanha o tamanho em que você assiste, então um quadro pequeno gasta pouca banda. Você também pode limitar em 1080p, 720p, ou 720p/480p/360p a 30 fps. Fica guardado por pessoa. |
 | **Tentar a conexão mais rápida de novo** | Só quando a transmissão caiu para a conexão TCP, mais lenta. |
+| **Parar de assistir** | No fim, em vermelho. |
 | **Parar a transmissão de *nome***, **Remover da sala** | Só o anfitrião. |
 
-**Nos controles**, com uma transmissão em destaque, o alto-falante a silencia, ou volta ao último volume; aponte para ele para ver o controle de volume.
+**Nos controles**, com uma transmissão em destaque, o alto-falante a silencia, ou volta ao último volume; aponte para ele para ver o volume, num controle que sobe e desce.
 
 Os **selos de estatística** numa transmissão mostram taxa de quadros, latência, resolução, codec e tipo de conexão; dá para desligar em **Configurações → Aparência**.
 
@@ -165,9 +165,9 @@ Enquanto você **minimiza** o app, ou deixa um quadro em tela cheia, as transmis
 
 ### Desenhar numa transmissão
 
-Para apontar algo numa transmissão que você assiste, ligue a caneta: **Desenhar na transmissão** (a caneta embaixo de uma transmissão em destaque, ou no menu do botão direito da transmissão). Enquanto ela está ligada, o seu mouse sobre a transmissão aparece para todo mundo que assiste, e para quem compartilha, como um ponto na sua cor com o seu nome. Clique e arraste para fazer um desenho rápido; os desenhos somem depois de alguns segundos. **Apagar meus desenhos** (a borracha ao lado da caneta, ou o menu do botão direito) tira os seus. Clique na caneta de novo para parar.
+Para apontar algo numa transmissão que você assiste, ligue a caneta: **Desenhar na transmissão** (a caneta embaixo de uma transmissão em destaque). Enquanto ela está ligada, o seu mouse sobre a transmissão aparece para todo mundo que assiste, e para quem compartilha, como um ponto na sua cor com o seu nome. Clique e arraste para fazer um desenho rápido; os desenhos somem depois de alguns segundos. **Apagar meus desenhos** (a borracha ao lado da caneta) tira os seus. Clique na caneta de novo para parar.
 
-Quando outras pessoas desenham na **sua** transmissão, você vê os desenhos na sua própria tela, por cima do que compartilha, numa janela transparente que deixa os cliques passarem e fica fora da sua transmissão (para os desenhos não aparecerem duas vezes). **Apagar os desenhos na minha tela**, no menu Compartilhando, tira os de todos. Os desenhos somem quando você para de compartilhar, e nada é gravado.
+Quando outras pessoas desenham na **sua** transmissão, você vê os desenhos na sua própria tela, por cima do que compartilha, numa janela transparente que deixa os cliques passarem e fica fora da sua transmissão (para os desenhos não aparecerem duas vezes). Os desenhos somem quando você para de compartilhar, e nada é gravado.
 
 - Desligue para a sua transmissão em **Configurações → Compartilhamento → Permitir desenhar na minha tela**. O anfitrião pode desligar para a sala toda nos detalhes da sala (**ⓘ → Permitir desenhar nas transmissões**).
 - A caneta só aparece quando o app do anfitrião e o de quem compartilha são da 2.6.0 em diante.
