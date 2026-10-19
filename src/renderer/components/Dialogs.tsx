@@ -18,14 +18,14 @@ import { qualityLabel } from '../lib/quality'
 import { LANGUAGES, type LanguageSetting } from '../../shared/i18n'
 import { THEMES } from '../../shared/themes'
 import type { AppInfo, AudioChoice, CodecSupport, DiscoveredRoom, Privacy, Settings } from '../../shared/types'
-import { shortCodecName } from '../lib/codecs'
+import { autoCodec, codecDisplayName } from '../../shared/codecs'
 import { errorMessage } from '../lib/format'
 import { loadPicture, renderAvatar } from '../lib/images'
 import { useConfirmRequest } from '../lib/confirm'
 import { systemLanguage, useT } from '../lib/i18n'
 import { useUpdateStatus } from '../lib/update'
 import { Avatar } from './Avatar'
-import { Icon } from './Icon'
+import { Icon, type IconName } from './Icon'
 import { SourcePicker } from './SourcePicker'
 
 export function Modal({ title, onClose, children, wide }: { title: string; onClose(): void; children: ReactNode; wide?: boolean }) {
@@ -269,8 +269,44 @@ export function ChangeSourceDialog({
 
 // ---------------------------------------------------------------------------
 
-const SETTINGS_SECTIONS = ['profile', 'appearance', 'sharing', 'notifications', 'connection', 'advanced', 'about'] as const
+const SETTINGS_SECTIONS = ['profile', 'appearance', 'sharing', 'general', 'advanced', 'about'] as const
 type SettingsSection = (typeof SETTINGS_SECTIONS)[number]
+const SECTION_ICONS: Record<SettingsSection, IconName> = {
+  profile: 'user',
+  appearance: 'palette',
+  sharing: 'screen',
+  general: 'sliders',
+  advanced: 'code',
+  about: 'info'
+}
+const PLATFORM_NAMES: Record<string, string> = { win32: 'Windows', darwin: 'macOS', linux: 'Linux' }
+
+/** A titled box of settings, one per row. */
+function SettingsGroup({ title, children }: { title?: string; children: ReactNode }) {
+  return (
+    <div className="settings-group">
+      {title && <h3 className="settings-group-title">{title}</h3>}
+      <div className="settings-card">{children}</div>
+    </div>
+  )
+}
+
+/** A setting chosen from a list: its name and what it does on the left, the list on the right. */
+function SelectRow({ id, label, hint, children }: { id: string; label: string; hint?: string; children: ReactNode }) {
+  return (
+    <div className="settings-row">
+      <div className="settings-row-text">
+        <label htmlFor={id}>{label}</label>
+        {hint && (
+          <span id={`${id}-hint`} className="muted small">
+            {hint}
+          </span>
+        )}
+      </div>
+      <div className="settings-row-control">{children}</div>
+    </div>
+  )
+}
 
 export function SettingsPanel({
   settings,
@@ -291,6 +327,7 @@ export function SettingsPanel({
   const [info, setInfo] = useState<AppInfo | null>(null)
   const [avatarError, setAvatarError] = useState<string | null>(null)
   const [cropping, setCropping] = useState<{ picture: ImageBitmap; url: string } | null>(null)
+  const [section, setSection] = useState<SettingsSection>('profile')
   useEffect(() => {
     void window.api.system.info().then(setInfo)
   }, [])
@@ -323,49 +360,275 @@ export function SettingsPanel({
     closeCropper()
   }
 
-  const toggle = (key: keyof Settings, label: string, hint?: string) => (
-    <label className="toggle-row">
-      <div>
-        <span>{label}</span>
-        {hint && <span className="muted small block">{hint}</span>}
-      </div>
+  const toggle = (key: keyof Settings, label: string, hint?: string, tag?: string) => (
+    <label className="toggle-row settings-row">
+      <span className="settings-row-text">
+        <span>
+          {label}
+          {tag && <span className="settings-tag">{tag}</span>}
+        </span>
+        {hint && <span className="muted small">{hint}</span>}
+      </span>
       <input type="checkbox" checked={!!settings[key]} onChange={(e) => onChange({ [key]: e.target.checked })} />
     </label>
   )
 
-  // The section list on the left jumps to a section and follows the scrolling.
-  const bodyRef = useRef<HTMLDivElement>(null)
-  const [active, setActive] = useState<SettingsSection>('profile')
-  const sectionTops = (): [SettingsSection, number][] => {
-    const body = bodyRef.current
-    if (!body) return []
-    return SETTINGS_SECTIONS.map((id) => {
-      const el = body.querySelector<HTMLElement>(`[data-section="${id}"]`)
-      return [id, el ? el.offsetTop - body.offsetTop : 0]
-    })
-  }
-  // After a click in the list, that section stays current while the page scrolls to it (and if it
-  // can't reach the top, near the end of a short window); scrolling by hand takes over afterwards.
-  const jumping = useRef<number | null>(null)
-  const followScroll = (): void => {
-    const body = bodyRef.current
-    if (!body || jumping.current !== null) return
-    const tops = sectionTops()
-    // At the very bottom, the last section counts even if it's short.
-    if (body.scrollTop + body.clientHeight >= body.scrollHeight - 4) return setActive(tops[tops.length - 1][0])
-    const current = tops.filter(([, top]) => top <= body.scrollTop + 24).pop()
-    if (current) setActive(current[0])
-  }
-  const jumpTo = (id: SettingsSection): void => {
-    const body = bodyRef.current
-    const top = sectionTops().find(([s]) => s === id)?.[1]
-    if (!body || top === undefined) return
-    body.scrollTo({ top, behavior: 'smooth' })
-    setActive(id)
-    if (jumping.current !== null) clearTimeout(jumping.current)
-    jumping.current = window.setTimeout(() => {
-      jumping.current = null
-    }, 700)
+  const presets = qualityPresets(window.api.perf.options.highFps)
+  const preset = presets.find((p) => p.id === settings.maxQuality)
+  const optimizeHint = {
+    auto: t('settings.optimizeAutoHint'),
+    motion: t('settings.optimizeMotionHint'),
+    detail: t('settings.optimizeDetailHint')
+  }[settings.contentHint]
+  const auto = autoCodec(encoders)
+
+  const pages: Record<SettingsSection, ReactNode> = {
+    profile: (
+      <SettingsGroup>
+        <div className="settings-row">
+          <div className="settings-row-text">
+            <span>{t('settings.picture')}</span>
+            <span className="muted small">{t('settings.pictureHint')}</span>
+          </div>
+          <div className="avatar-picker">
+            <Avatar name={settings.displayName} color="var(--accent)" image={settings.avatar} size="large" />
+            <label className="btn small">
+              {settings.avatar ? t('settings.pictureChange') : t('settings.pictureChoose')}
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif,image/bmp"
+                hidden
+                onChange={(e) => {
+                  void chooseAvatar(e.target.files?.[0])
+                  e.target.value = '' // choosing the same file again still fires
+                }}
+              />
+            </label>
+            {settings.avatar && (
+              <button className="btn ghost small" onClick={() => onChange({ avatar: null })}>
+                {t('common.remove')}
+              </button>
+            )}
+          </div>
+        </div>
+        {avatarError && <div className="notice error">{avatarError}</div>}
+        <SelectRow id="display-name" label={t('settings.displayName')}>
+          <input
+            id="display-name"
+            maxLength={32}
+            defaultValue={settings.displayName}
+            onBlur={(e) => e.target.value.trim() && onChange({ displayName: e.target.value.trim() })}
+          />
+        </SelectRow>
+      </SettingsGroup>
+    ),
+    appearance: (
+      <>
+        <SettingsGroup>
+          <SelectRow id="language" label={t('settings.language')}>
+            <select
+              id="language"
+              value={settings.language}
+              onChange={(e) => onChange({ language: e.target.value as LanguageSetting })}
+            >
+              <option value="system">
+                {t('settings.languageSystem', {
+                  language: LANGUAGES.find((l) => l.id === systemLanguage())?.name ?? ''
+                })}
+              </option>
+              {LANGUAGES.map((l) => (
+                // Each language in its own words, so anyone can find theirs.
+                <option key={l.id} value={l.id} lang={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+          </SelectRow>
+        </SettingsGroup>
+        <div className="settings-group">
+          <h3 className="settings-group-title">{t('settings.theme')}</h3>
+          <div className="theme-picker" role="radiogroup" aria-label={t('settings.theme')}>
+            {THEMES.map((theme) => {
+              const [background, panel, accent, live] = theme.swatches
+              const selected = settings.theme === theme.id
+              return (
+                <button
+                  key={theme.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  className={`theme-option ${selected ? 'selected' : ''}`}
+                  onClick={() => onChange({ theme: theme.id })}
+                >
+                  {/* The app in miniature: the room list, a stream with its live mark, a button. */}
+                  <span className="theme-preview" aria-hidden="true" style={{ background }}>
+                    <span className="theme-preview-side" style={{ background: panel }}>
+                      <span style={{ background: accent }} />
+                      <span />
+                      <span />
+                    </span>
+                    <span className="theme-preview-stage">
+                      <span className="theme-preview-tile">
+                        <span style={{ background: live }} />
+                      </span>
+                      <span className="theme-preview-button" style={{ background: accent }} />
+                    </span>
+                  </span>
+                  <span className="theme-label">
+                    {t(`theme.${theme.id}`)}
+                    {selected && <Icon name="check" size={14} stroke={2.6} />}
+                  </span>
+                  <span className="muted small">{t(`theme.${theme.id}.description`)}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        <SettingsGroup title={t('settings.groupStreams')}>
+          {toggle('showStatsOverlay', t('settings.showStats'), t('settings.showStatsHint'))}
+        </SettingsGroup>
+      </>
+    ),
+    sharing: (
+      <>
+        <SettingsGroup title={t('settings.groupPicture')}>
+          <SelectRow
+            id="max-quality"
+            label={t('settings.maxQuality')}
+            hint={preset && t('settings.maxQualityHint', { mbps: preset.maxBitrate / 1_000_000 })}
+          >
+            <select
+              id="max-quality"
+              aria-describedby="max-quality-hint"
+              value={settings.maxQuality}
+              onChange={(e) => onChange({ maxQuality: e.target.value as Settings['maxQuality'] })}
+            >
+              {presets.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {qualityLabel(p)}
+                </option>
+              ))}
+            </select>
+          </SelectRow>
+          <SelectRow id="content-hint" label={t('settings.optimizeFor')} hint={optimizeHint}>
+            <select
+              id="content-hint"
+              aria-describedby="content-hint-hint"
+              value={settings.contentHint}
+              onChange={(e) => onChange({ contentHint: e.target.value as Settings['contentHint'] })}
+            >
+              <option value="auto">{t('settings.optimizeAuto')}</option>
+              <option value="motion">{t('settings.optimizeMotion')}</option>
+              <option value="detail">{t('settings.optimizeDetail')}</option>
+            </select>
+          </SelectRow>
+          <SelectRow id="upload-budget" label={t('settings.uploadLimit')} hint={t('settings.uploadLimitHint')}>
+            <select
+              id="upload-budget"
+              aria-describedby="upload-budget-hint"
+              value={settings.uploadBudgetMbps}
+              onChange={(e) => onChange({ uploadBudgetMbps: Number(e.target.value) })}
+            >
+              <option value={0}>{t('settings.uploadUnlimited')}</option>
+              <option value={200}>{t('common.mbps', { value: 200 })}</option>
+              <option value={100}>{t('settings.uploadDefault', { mbps: 100 })}</option>
+              <option value={60}>{t('settings.uploadGoodWifi', { mbps: 60 })}</option>
+              <option value={30}>{t('common.mbps', { value: 30 })}</option>
+              <option value={15}>{t('settings.uploadSlow', { mbps: 15 })}</option>
+            </select>
+          </SelectRow>
+        </SettingsGroup>
+        <SettingsGroup title={t('settings.groupSound')}>
+          {toggle('shareAudio', t('settings.shareAudio'), t('settings.shareAudioHint'))}
+          {info?.platform === 'win32' && toggle('appAudioOnly', t('settings.appAudioOnly'), t('settings.appAudioOnlyHint'))}
+          {(info?.platform === 'win32' || info?.platform === 'darwin') &&
+            toggle('excludeDiscordAudio', t('settings.excludeDiscord'), t('settings.excludeDiscordHint'))}
+        </SettingsGroup>
+        <SettingsGroup title={t('settings.groupWhileSharing')}>
+          {toggle('pauseOnMinimize', t('settings.pauseOnMinimize'), t('settings.pauseOnMinimizeHint'))}
+          {toggle('allowDrawing', t('settings.allowDrawing'), t('settings.allowDrawingHint'))}
+        </SettingsGroup>
+      </>
+    ),
+    general: (
+      <>
+        <SettingsGroup>
+          {toggle('notifications', t('settings.chatNotifications'))}
+          {toggle('autoRejoin', t('settings.autoRejoin'))}
+        </SettingsGroup>
+        <SettingsGroup title={t('settings.groupNetwork')}>
+          {toggle('useTls', t('settings.useTls'), t('settings.useTlsHint'))}
+          {toggle('forceTcp', t('settings.forceTcp'), t('settings.forceTcpHint'))}
+          <SelectRow id="port" label={t('settings.port')}>
+            <input
+              id="port"
+              type="number"
+              min={0}
+              max={65535}
+              defaultValue={settings.preferredPort}
+              onBlur={(e) => onChange({ preferredPort: Number(e.target.value) })}
+            />
+          </SelectRow>
+        </SettingsGroup>
+      </>
+    ),
+    advanced: (
+      <>
+        <SettingsGroup>
+          <SelectRow
+            id="codec"
+            label={t('settings.codec')}
+            hint={
+              auto
+                ? t(auto.hardware ? 'settings.codecAutoHardware' : 'settings.codecAutoSoftware', {
+                    codec: codecDisplayName(auto.mimeType)
+                  })
+                : undefined
+            }
+          >
+            <select
+              id="codec"
+              aria-describedby="codec-hint"
+              value={settings.codec}
+              onChange={(e) => onChange({ codec: e.target.value as Settings['codec'] })}
+            >
+              <option value="auto">{t('settings.codecAuto')}</option>
+              <option value="h264">H.264</option>
+              <option value="h265">H.265 / HEVC</option>
+              <option value="vp9">VP9</option>
+              <option value="av1">AV1</option>
+            </select>
+          </SelectRow>
+          {toggle('adaptiveQuality', t('settings.adaptive'), t('settings.adaptiveHint'))}
+          {toggle('lowLatency', t('settings.lowLatency'), t('settings.lowLatencyHint'), t('settings.restartNeeded'))}
+        </SettingsGroup>
+        <CodecTable encoders={encoders} decoders={decoders} />
+      </>
+    ),
+    about: (
+      <>
+        <div className="about-header">
+          <span className="about-mark">
+            <Icon name="screen" size={28} stroke={2} />
+          </span>
+          <span className="about-text">
+            <span className="about-name">{info ? `ScreenShare ${info.version}` : 'ScreenShare'}</span>
+            <span className="muted">{info ? (PLATFORM_NAMES[info.platform] ?? info.platform) : ''}</span>
+          </span>
+        </div>
+        <SettingsGroup>
+          {toggle(
+            'autoUpdate',
+            t('settings.autoUpdate'),
+            info?.platform === 'darwin' ? t('settings.autoUpdateHintMac') : t('settings.autoUpdateHint')
+          )}
+          <UpdateRow onRestart={onRestartToUpdate} />
+        </SettingsGroup>
+        <SettingsGroup title={t('settings.groupTroubleshooting')}>
+          <DiagnosticsRow encoders={encoders} decoders={decoders} />
+        </SettingsGroup>
+      </>
+    )
   }
 
   return (
@@ -376,213 +639,22 @@ export function SettingsPanel({
             {SETTINGS_SECTIONS.map((id) => (
               <button
                 key={id}
-                className={active === id ? 'active' : ''}
-                aria-current={active === id ? 'true' : undefined}
-                onClick={() => jumpTo(id)}
+                className={section === id ? 'active' : ''}
+                aria-current={section === id ? 'true' : undefined}
+                onClick={() => setSection(id)}
               >
+                <Icon name={SECTION_ICONS[id]} size={16} />
                 {t(`settings.${id}`)}
               </button>
             ))}
           </nav>
-          <div className="modal-body settings" ref={bodyRef} onScroll={followScroll}>
-            <section data-section="profile">
-              <h3>{t('settings.profile')}</h3>
-              <div className="form-row inline">
-                <label>
-                  {t('settings.picture')}
-                  <span className="muted small block">{t('settings.pictureHint')}</span>
-                </label>
-                <div className="avatar-picker">
-                  <Avatar name={settings.displayName} color="var(--accent)" image={settings.avatar} size="large" />
-                  <label className="btn small">
-                    {settings.avatar ? t('settings.pictureChange') : t('settings.pictureChoose')}
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp,image/gif,image/bmp"
-                      hidden
-                      onChange={(e) => {
-                        void chooseAvatar(e.target.files?.[0])
-                        e.target.value = '' // choosing the same file again still fires
-                      }}
-                    />
-                  </label>
-                  {settings.avatar && (
-                    <button className="btn ghost small" onClick={() => onChange({ avatar: null })}>
-                      {t('common.remove')}
-                    </button>
-                  )}
-                </div>
-              </div>
-              {avatarError && <div className="notice error">{avatarError}</div>}
-              <div className="form-row inline">
-                <label htmlFor="display-name">{t('settings.displayName')}</label>
-                <input
-                  id="display-name"
-                  maxLength={32}
-                  defaultValue={settings.displayName}
-                  onBlur={(e) => e.target.value.trim() && onChange({ displayName: e.target.value.trim() })}
-                />
-              </div>
-            </section>
-
-            <section data-section="appearance">
-              <h3>{t('settings.appearance')}</h3>
-              <div className="form-row inline">
-                <label htmlFor="language">{t('settings.language')}</label>
-                <select
-                  id="language"
-                  value={settings.language}
-                  onChange={(e) => onChange({ language: e.target.value as LanguageSetting })}
-                >
-                  <option value="system">
-                    {t('settings.languageSystem', {
-                      language: LANGUAGES.find((l) => l.id === systemLanguage())?.name ?? ''
-                    })}
-                  </option>
-                  {LANGUAGES.map((l) => (
-                    // Each language in its own words, so anyone can find theirs.
-                    <option key={l.id} value={l.id} lang={l.id}>
-                      {l.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="theme-picker" role="radiogroup" aria-label={t('settings.theme')}>
-                {THEMES.map((theme) => (
-                  <button
-                    key={theme.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={settings.theme === theme.id}
-                    className={`theme-option ${settings.theme === theme.id ? 'selected' : ''}`}
-                    onClick={() => onChange({ theme: theme.id })}
-                  >
-                    <span className="theme-preview" aria-hidden="true">
-                      {theme.swatches.map((c, i) => (
-                        <span key={i} style={{ background: c }} />
-                      ))}
-                    </span>
-                    <span className="theme-label">{t(`theme.${theme.id}`)}</span>
-                    <span className="muted small">{t(`theme.${theme.id}.description`)}</span>
-                  </button>
-                ))}
-              </div>
-              {toggle('showStatsOverlay', t('settings.showStats'))}
-            </section>
-
-            <section data-section="sharing">
-              <h3>{t('settings.sharing')}</h3>
-              <div className="form-row inline">
-                <label htmlFor="max-quality">
-                  {t('settings.maxQuality')}
-                  <span className="muted small block">{t('settings.maxQualityHint')}</span>
-                </label>
-                <select
-                  id="max-quality"
-                  value={settings.maxQuality}
-                  onChange={(e) => onChange({ maxQuality: e.target.value as Settings['maxQuality'] })}
-                >
-                  {qualityPresets(window.api.perf.options.highFps).map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {t('settings.qualityOption', { quality: qualityLabel(p), mbps: p.maxBitrate / 1_000_000 })}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-row inline">
-                <label htmlFor="content-hint">{t('settings.optimizeFor')}</label>
-                <select
-                  id="content-hint"
-                  value={settings.contentHint}
-                  onChange={(e) => onChange({ contentHint: e.target.value as Settings['contentHint'] })}
-                >
-                  <option value="auto">{t('settings.optimizeAuto')}</option>
-                  <option value="motion">{t('settings.optimizeMotion')}</option>
-                  <option value="detail">{t('settings.optimizeDetail')}</option>
-                </select>
-              </div>
-              <div className="form-row inline">
-                <label htmlFor="upload-budget">
-                  {t('settings.uploadLimit')}
-                  <span className="muted small block">{t('settings.uploadLimitHint')}</span>
-                </label>
-                <select
-                  id="upload-budget"
-                  value={settings.uploadBudgetMbps}
-                  onChange={(e) => onChange({ uploadBudgetMbps: Number(e.target.value) })}
-                >
-                  <option value={0}>{t('settings.uploadUnlimited')}</option>
-                  <option value={200}>{t('common.mbps', { value: 200 })}</option>
-                  <option value={100}>{t('settings.uploadDefault', { mbps: 100 })}</option>
-                  <option value={60}>{t('settings.uploadGoodWifi', { mbps: 60 })}</option>
-                  <option value={30}>{t('common.mbps', { value: 30 })}</option>
-                  <option value={15}>{t('settings.uploadSlow', { mbps: 15 })}</option>
-                </select>
-              </div>
-              {toggle('shareAudio', t('settings.shareAudio'), t('settings.shareAudioHint'))}
-              {info?.platform === 'win32' &&
-                toggle('appAudioOnly', t('settings.appAudioOnly'), t('settings.appAudioOnlyHint'))}
-              {(info?.platform === 'win32' || info?.platform === 'darwin') &&
-                toggle('excludeDiscordAudio', t('settings.excludeDiscord'), t('settings.excludeDiscordHint'))}
-              {toggle('pauseOnMinimize', t('settings.pauseOnMinimize'), t('settings.pauseOnMinimizeHint'))}
-              {toggle('allowDrawing', t('settings.allowDrawing'), t('settings.allowDrawingHint'))}
-            </section>
-
-            <section data-section="notifications">
-              <h3>{t('settings.notifications')}</h3>
-              {toggle('notifications', t('settings.chatNotifications'))}
-            </section>
-
-            <section data-section="connection">
-              <h3>{t('settings.connection')}</h3>
-              {toggle('autoRejoin', t('settings.autoRejoin'))}
-              {toggle('useTls', t('settings.useTls'), t('settings.useTlsHint'))}
-              {toggle('forceTcp', t('settings.forceTcp'), t('settings.forceTcpHint'))}
-              <div className="form-row inline">
-                <label htmlFor="port">{t('settings.port')}</label>
-                <input
-                  id="port"
-                  type="number"
-                  min={0}
-                  max={65535}
-                  defaultValue={settings.preferredPort}
-                  onBlur={(e) => onChange({ preferredPort: Number(e.target.value) })}
-                />
-              </div>
-            </section>
-
-            <section data-section="advanced">
-              <h3>{t('settings.advanced')}</h3>
-              <div className="form-row inline">
-                <label htmlFor="codec">{t('settings.codec')}</label>
-                <select id="codec" value={settings.codec} onChange={(e) => onChange({ codec: e.target.value as Settings['codec'] })}>
-                  <option value="auto">{t('settings.codecAuto')}</option>
-                  <option value="h264">H.264</option>
-                  <option value="h265">H.265 / HEVC</option>
-                  <option value="vp9">VP9</option>
-                  <option value="av1">AV1</option>
-                </select>
-              </div>
-              {toggle('adaptiveQuality', t('settings.adaptive'), t('settings.adaptiveHint'))}
-              {toggle('lowLatency', t('settings.lowLatency'), t('settings.lowLatencyHint'))}
-              <CodecTable encoders={encoders} decoders={decoders} />
-            </section>
-
-            <section data-section="about">
-              <h3>{t('settings.about')}</h3>
-              <div className="form-row inline">
-                <span>{info ? `ScreenShare ${info.version} · ${info.platform}` : ''}</span>
-                <button className="btn ghost small" onClick={() => void window.api.system.openLogs()}>
-                  <Icon name="folder" size={14} /> {t('settings.openLogs')}
-                </button>
-              </div>
-              {toggle(
-                'autoUpdate',
-                t('settings.autoUpdate'),
-                info?.platform === 'darwin' ? t('settings.autoUpdateHintMac') : t('settings.autoUpdateHint')
-              )}
-              <UpdateRow onRestart={onRestartToUpdate} />
-              <DiagnosticsRow encoders={encoders} decoders={decoders} />
+          <div className="modal-body settings">
+            <section data-section={section} key={section}>
+              <header className="settings-page-header">
+                <h3>{t(`settings.${section}`)}</h3>
+                <p className="muted">{t(`settings.${section}Intro`)}</p>
+              </header>
+              {pages[section]}
             </section>
           </div>
         </div>
@@ -748,25 +820,37 @@ function CodecTable({ encoders, decoders }: { encoders: CodecSupport[]; decoders
     if (!c) return { text: '—', hardware: false }
     return { text: c.hardware ? t('settings.hardware') : t('settings.software'), hardware: c.hardware }
   }
+  const onCard = encoders.filter((c) => c.hardware).map((c) => codecDisplayName(c.mimeType))
   return (
-    <table className="codec-table">
-      <thead>
-        <tr>
-          <th>{t('settings.codecName')}</th>
-          <th>{t('settings.encode')}</th>
-          <th>{t('settings.decode')}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {mimes.map((m) => (
-          <tr key={m}>
-            <td>{shortCodecName(m)}</td>
-            <td className={cell(encoders, m).hardware ? 'good' : ''}>{cell(encoders, m).text}</td>
-            <td className={cell(decoders, m).hardware ? 'good' : ''}>{cell(decoders, m).text}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <SettingsGroup title={t('settings.groupThisComputer')}>
+      <details className="codec-details">
+        <summary>
+          <Icon name="chevronRight" size={14} />
+          <span className="codec-details-title">{t('settings.codecSupport')}</span>
+          <span className="muted small">
+            {onCard.length > 0 ? t('settings.codecSummary', { codecs: onCard.join(', ') }) : t('settings.codecSummaryNone')}
+          </span>
+        </summary>
+        <table className="codec-table">
+          <thead>
+            <tr>
+              <th>{t('settings.codecName')}</th>
+              <th>{t('settings.encode')}</th>
+              <th>{t('settings.decode')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {mimes.map((m) => (
+              <tr key={m}>
+                <td>{codecDisplayName(m)}</td>
+                <td className={cell(encoders, m).hardware ? 'good' : ''}>{cell(encoders, m).text}</td>
+                <td className={cell(decoders, m).hardware ? 'good' : ''}>{cell(decoders, m).text}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
+    </SettingsGroup>
   )
 }
 
@@ -804,21 +888,24 @@ function DiagnosticsRow({ encoders, decoders }: { encoders: CodecSupport[]; deco
   }
   const message = { copied: t('settings.diagnosticsCopied'), saved: t('settings.diagnosticsSaved'), failed: t('settings.diagnosticsFailed') }
   return (
-    <div className="form-row diagnostics-row">
-      <div>
-        <span>{t('settings.diagnostics')}</span>
-        <span className="muted small block">{t('settings.diagnosticsHint')}</span>
+    <div className="diagnostics-row">
+      <div className="settings-row-text">
+        <span>{t('settings.troubleshooting')}</span>
+        <span className="muted small">{t('settings.diagnosticsHint')}</span>
       </div>
       <div className="diagnostics-actions">
+        <button className="btn primary small" onClick={() => void copy()}>
+          <Icon name="copy" size={14} /> {t('settings.copyDiagnostics')}
+        </button>
+        <button className="btn small" aria-label={t('settings.saveDiagnosticsLabel')} onClick={() => void save()}>
+          <Icon name="download" size={14} /> {t('settings.saveDiagnostics')}
+        </button>
+        <button className="btn small" onClick={() => void window.api.system.openLogs()}>
+          <Icon name="folder" size={14} /> {t('settings.openLogs')}
+        </button>
         <span className="muted small" role="status">
           {status && message[status]}
         </span>
-        <button className="btn ghost small" onClick={() => void copy()}>
-          <Icon name="copy" size={14} /> {t('settings.copyDiagnostics')}
-        </button>
-        <button className="btn ghost small" aria-label={t('settings.saveDiagnosticsLabel')} onClick={() => void save()}>
-          <Icon name="download" size={14} /> {t('settings.saveDiagnostics')}
-        </button>
       </div>
     </div>
   )
@@ -847,7 +934,7 @@ function UpdateRow({ onRestart }: { onRestart(): void }) {
     }
   })()
   return (
-    <div className="form-row inline update-row" role="status">
+    <div className="settings-row update-row" role="status">
       <span className={`small ${status.state === 'error' ? 'bad-text' : 'muted'}`}>{text}</span>
       {status.state === 'ready' ? (
         <button className="btn primary small" onClick={onRestart}>

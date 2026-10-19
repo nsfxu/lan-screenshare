@@ -194,7 +194,7 @@ Clicar com o botão direito numa pessoa (no quadro dela, ou no nome dela na colu
 
 ## Configurações
 
-Abra as configurações pelo ícone de engrenagem embaixo da coluna de salas. A lista à esquerda pula para uma seção e acompanha a rolagem.
+Abra as configurações pelo ícone de engrenagem embaixo da coluna de salas. A lista à esquerda escolhe a seção mostrada; cada uma agrupa as configurações em caixas, com o que cada uma faz embaixo do nome.
 
 | Seção | Configuração | Padrão | Significado |
 |---|---|---|---|
@@ -211,17 +211,17 @@ Abra as configurações pelo ícone de engrenagem embaixo da coluna de salas. A 
 | Compartilhamento | Deixar o Discord de fora por padrão | ligado | Windows e macOS. Deixa o interruptor do Discord pré-marcado. |
 | Compartilhamento | Pausar o compartilhamento ao minimizar | desligado | Retoma quando você restaura a janela. |
 | Compartilhamento | Permitir desenhar na minha tela | ligado | Quem assiste pode apontar e desenhar na sua transmissão ([desenhar numa transmissão](#desenhar-numa-transmissão)). |
-| Notificações | Notificações do chat | ligado | Quando a janela está em segundo plano. |
-| Conexão | Voltar para a última sala ao abrir | desligado | Entra automaticamente na última sala quando o app abre. |
-| Conexão | Criptografar conexões (TLS) | ligado | Cifra o chat e a sinalização. O vídeo é sempre cifrado. |
-| Conexão | Sempre usar transporte TCP | desligado | Para redes que bloqueiam UDP. Acrescenta um pouco de atraso. |
-| Conexão | Porta para hospedar | 47800 | A primeira porta tentada quando você hospeda. |
-| Avançado | Codec de vídeo | Automático | O automático prefere H.264 em hardware. Dá para forçar H.264, H.265, VP9 ou AV1 se os dois lados suportarem. A tabela abaixo dele mostra o que o seu computador suporta. |
+| Geral | Notificações do chat | ligado | Quando a janela está em segundo plano. |
+| Geral | Voltar para a última sala ao abrir | desligado | Entra automaticamente na última sala quando o app abre. |
+| Geral | Criptografar conexões (TLS) | ligado | Cifra o chat e a sinalização. O vídeo é sempre cifrado. |
+| Geral | Sempre usar transporte TCP | desligado | Para redes que bloqueiam UDP. Acrescenta um pouco de atraso. |
+| Geral | Porta para hospedar | 47800 | A primeira porta tentada quando você hospeda. |
+| Avançado | Codec de vídeo | Automático | O automático prefere H.264 quando a sua placa de vídeo o codifica, depois H.265 quando as duas placas de vídeo dão conta; a linha embaixo dele diz o que ele normalmente envia no seu computador. Dá para forçar H.264, H.265, VP9 ou AV1 se os dois lados suportarem. **Codecs suportados** embaixo dele mostra quais codecs a sua placa de vídeo ou o processador processam. |
 | Avançado | Qualidade adaptativa | ligado | Reduz resolução/taxa de quadros por espectador quando a rede dele sofre. |
-| Avançado | Menor atraso (rede cabeada) | desligado | Mostra as transmissões que você assiste assim que cada quadro chega: uns 20 ms a menos de atraso numa rede cabeada, mas elas podem engasgar no Wi-Fi ou numa VPN. Vale depois de reiniciar o ScreenShare. |
+| Avançado | Menor atraso (rede cabeada) | desligado | Mostra as transmissões que você assiste assim que cada quadro chega: uns 20 ms a menos de atraso numa rede cabeada, mas elas podem engasgar no Wi-Fi ou numa VPN. Vale depois de reiniciar o ScreenShare (**Precisa reiniciar**). |
 | Sobre | Procurar atualizações automaticamente | ligado | Veja [atualizações](#atualizações). |
 
-**Sobre** mostra a versão do app e tem o botão **Abrir logs**, e **Diagnóstico**: **Copiar diagnóstico** copia o que um relato de bug precisa (versões, sistema, placa de vídeo e codecs, endereços de rede, suas configurações e o fim do log, nunca PINs nem tokens) e **Salvar…** grava num arquivo. Veja [reunindo informações para relatar um bug](troubleshooting.md#reunindo-informações-para-relatar-um-bug).
+**Sobre** mostra a versão do app e o seu sistema, a situação das atualizações com **Verificar agora**, e **Solução de problemas**: **Copiar diagnóstico** copia o que um relato de bug precisa (versões, sistema, placa de vídeo e codecs, endereços de rede, suas configurações e o fim do log, nunca PINs nem tokens), **Salvar em arquivo…** grava num arquivo e **Abrir logs** abre a pasta com os logs. Veja [reunindo informações para relatar um bug](troubleshooting.md#reunindo-informações-para-relatar-um-bug).
 
 ## Idioma
 

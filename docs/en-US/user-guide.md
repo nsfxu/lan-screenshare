@@ -192,7 +192,7 @@ Right-clicking a person (their tile, or their name in the rooms column, where a 
 
 ## Settings
 
-Open Settings with the gear icon at the bottom of the rooms column. The list on its left jumps to a section, and follows as you scroll.
+Open Settings with the gear icon at the bottom of the rooms column. The list on its left picks the section to show; each one groups its settings in boxes, with what each does under its name.
 
 | Section | Setting | Default | Meaning |
 |---|---|---|---|
@@ -209,17 +209,17 @@ Open Settings with the gear icon at the bottom of the rooms column. The list on 
 | Sharing | Leave out Discord by default | on | Windows and macOS. Pre-selects the Discord switch. |
 | Sharing | Pause sharing while minimized | off | Resumes when you restore the window. |
 | Sharing | Allow drawing on my screen | on | People watching can point at your stream and draw marks on it ([drawing on a stream](#drawing-on-a-stream)). |
-| Notifications | Chat notifications | on | When the window is in the background. |
-| Connection | Rejoin last room on startup | off | Joins your last room automatically when the app starts. |
-| Connection | Encrypt connections (TLS) | on | Encrypts chat and signaling. Video is always encrypted. |
-| Connection | Always use TCP transport | off | For networks that block UDP. Adds some latency. |
-| Connection | Hosting port | 47800 | The first port tried when you host. |
-| Advanced | Video codec | Automatic | Automatic prefers hardware H.264. You can force H.264, H.265, VP9 or AV1 if both sides support it. The table below it shows what your computer supports. |
+| General | Chat notifications | on | When the window is in the background. |
+| General | Rejoin last room on startup | off | Joins your last room automatically when the app starts. |
+| General | Encrypt connections (TLS) | on | Encrypts chat and signaling. Video is always encrypted. |
+| General | Always use TCP transport | off | For networks that block UDP. Adds some latency. |
+| General | Hosting port | 47800 | The first port tried when you host. |
+| Advanced | Video codec | Automatic | Automatic prefers H.264 when your graphics card encodes it, then H.265 when both graphics cards handle it; the line under it says what it usually sends on your computer. You can force H.264, H.265, VP9 or AV1 if both sides support it. **Codec support** below it shows which codecs your graphics card or processor handles. |
 | Advanced | Adaptive quality | on | Lowers resolution/frame rate per viewer when their network struggles. |
-| Advanced | Lowest latency (wired networks) | off | Shows the streams you watch as soon as each frame arrives: about 20 ms less delay on a wired network, but they can stutter on Wi-Fi or a VPN. Applies after restarting ScreenShare. |
+| Advanced | Lowest latency (wired networks) | off | Shows the streams you watch as soon as each frame arrives: about 20 ms less delay on a wired network, but they can stutter on Wi-Fi or a VPN. Applies after restarting ScreenShare (**Restart needed**). |
 | About | Check for updates automatically | on | See [updates](#updates). |
 
-**About** shows the app version and has **Open logs**, and **Diagnostics**: **Copy diagnostics** copies what a bug report needs (versions, system, graphics and codecs, network addresses, your settings and the end of the log, never PINs or tokens) and **Save…** saves it to a file. See [collecting information for a bug report](troubleshooting.md#collecting-information-for-a-bug-report).
+**About** shows the app version and your system, the update status with **Check now**, and **Troubleshooting**: **Copy diagnostics** copies what a bug report needs (versions, system, graphics and codecs, network addresses, your settings and the end of the log, never PINs or tokens), **Save to file…** saves it to a file and **Open logs** opens the folder with the logs. See [collecting information for a bug report](troubleshooting.md#collecting-information-for-a-bug-report).
 
 ## Language
 

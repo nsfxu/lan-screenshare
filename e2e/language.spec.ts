@@ -9,6 +9,7 @@ test('the app speaks Portuguese when chosen, at once and after a restart, the ro
   // The tests start in English ("System" on an English computer).
   await expect(win.getByRole('button', { name: 'Create room' }).first()).toBeVisible()
   await win.getByRole('button', { name: 'Settings' }).first().click()
+  await win.getByRole('button', { name: 'Appearance' }).click()
   await expect(win.getByLabel('Language')).toHaveValue('system')
   await expect(win.getByLabel('Language').locator('option[value="system"]')).toHaveText('Same as the computer (English)')
 
@@ -52,6 +53,7 @@ test('the app speaks Portuguese when chosen, at once and after a restart, the ro
 
   // Back to "System": English again.
   await win.getByRole('button', { name: 'Configurações' }).first().click()
+  await win.getByRole('button', { name: 'Aparência' }).click()
   await win.getByLabel('Idioma').selectOption('system')
   await expect(win.getByRole('dialog', { name: 'Settings' })).toBeVisible()
   await expect(win.locator('.chat-system', { hasText: 'Bob joined' })).toBeAttached()

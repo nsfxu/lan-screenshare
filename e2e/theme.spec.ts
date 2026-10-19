@@ -22,6 +22,7 @@ test('themes are chosen in Settings, apply at once and stay after a restart', as
     ['Classic', 'rgb(15, 17, 21)']
   ] as const) {
     await win.getByRole('button', { name: 'Settings' }).click()
+    await win.getByRole('button', { name: 'Appearance' }).click()
     await win.getByRole('radio', { name: new RegExp(`^${theme}`) }).click()
     await expect(win.getByRole('radio', { name: new RegExp(`^${theme}`) })).toHaveAttribute('aria-checked', 'true')
     if (shots && theme === 'Graphite') await win.screenshot({ path: `${shots}/settings.png` })
@@ -35,6 +36,7 @@ test('themes are chosen in Settings, apply at once and stay after a restart', as
 
   // Remembered: a new window starts in the chosen theme.
   await win.getByRole('button', { name: 'Settings' }).click()
+  await win.getByRole('button', { name: 'Appearance' }).click()
   await win.getByRole('radio', { name: /^Midnight/ }).click()
   await win.keyboard.press('Escape')
   await win.reload()

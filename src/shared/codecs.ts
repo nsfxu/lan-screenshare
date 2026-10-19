@@ -76,6 +76,22 @@ export function mungeBitrates(sdp: string, startKbps: number, minKbps: number): 
   return result.join('\r\n')
 }
 
+/**
+ * What Automatic sends with on this computer, as Settings describes it: the codec chooseCodecOrder
+ * puts first before knowing the viewer, and whether the graphics card encodes it. (With a viewer
+ * whose graphics card can't decode H.265, H.264 is used instead.)
+ */
+export function autoCodec(encoders: CodecSupport[]): CodecSupport | null {
+  const first = chooseCodecOrder('auto', encoders, [])[0]
+  return encoders.find((e) => e.mimeType.toLowerCase() === first?.toLowerCase()) ?? null
+}
+
+/** A codec as people know it: "H.264", "H.265", "VP9". */
+export function codecDisplayName(mime: string): string {
+  const short = shortCodecName(mime)
+  return /^H26[45]$/.test(short) ? `H.${short.slice(1)}` : short
+}
+
 export function shortCodecName(mime: string): string {
   return mime.replace(/^video\//i, '').toUpperCase()
 }
