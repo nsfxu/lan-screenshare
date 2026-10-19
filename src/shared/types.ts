@@ -69,6 +69,12 @@ export interface RoomEndpoint {
   name?: string
 }
 
+/** A room under "Recent" in the room list. */
+export interface RecentRoom extends RoomEndpoint {
+  /** When you last joined it (ms since 1970); missing for rooms remembered before 2.7.0. */
+  lastVisited?: number
+}
+
 export type MediaState = 'idle' | 'negotiating' | 'streaming' | 'failed'
 
 /** What a participant is sharing. Anyone in a room may share their screen. */
@@ -323,7 +329,7 @@ export interface Settings {
   autoRejoin: boolean
   lastRoom: RoomEndpoint | null
   /** Rooms joined lately, newest first (see shared/roomList.ts). */
-  recentRooms: RoomEndpoint[]
+  recentRooms: RecentRoom[]
   manualServers: RoomEndpoint[]
   notifications: boolean
   pauseOnMinimize: boolean

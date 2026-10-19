@@ -65,14 +65,16 @@ The window has three columns: **rooms** on the left, the room you're in (or a we
 
 The rooms column lists:
 
-- **Recent rooms**: the last 5 rooms you joined, newest first, with the one you're in highlighted. Click one to go back to it, even if it's on a VPN and not found by itself. Rooms that don't answer show as *offline*. The **×** on a row forgets it.
-- **Rooms on your network**: everything else found on your network. It updates by itself (look for the green dot).
+- **Recent**: the last 5 rooms you joined, newest first, with the one you're in marked by a blue edge and its people under it. Click one to go back to it, even if it's on a VPN and not found by itself. Rooms that don't answer are folded under **Offline**, which says when you were last there. The **×** on a row forgets it.
+- **On your network**: everything else found on your network. It updates by itself; the round arrow searches again right away.
 
-Each row shows a lock for private rooms, how many streams are live, and how many people are inside; hover over it for who hosts it, for how long, and its address. A room on an incompatible version says *Update to join* or *Older version* (hover for who needs to update). Rooms you added by IP have a **×** to remove them from the list. Click a room to join it. If you're already in a room, you leave it first; the app asks before that ends a room you host or stops your share.
+Each room shows its host's profile picture (or their initials, or the room's first letter for hosts before 2.7.0), with a red dot while someone shares and a lock for private rooms. Under its name: *Live* or *Private*, who hosts it and how many people are inside; hover over it for how long it has been open and its address. A room on an incompatible version says *Update to join* or *Older version* (hover for who needs to update). Rooms you added by IP have a **×** to remove them from the list. Click a room to join it. If you're already in a room, you leave it first; the app asks before that ends a room you host or stops your share.
+
+While you're not in a room, the middle shows the rooms on your network as cards, each with a **Join** button, next to a card to create your own.
 
 The button at the top of each side column hides it (the rooms column shrinks to a strip of room initials; the chat button floats at the top right of the room, under the window's own buttons). The app remembers which columns you hid. In a small window (for example snapped next to a game) the columns make room for the tiles by themselves: below 1100 px wide the chat is closed, and below 760 px the rooms column is a strip. Their buttons then open them over the room, and clicking next to them puts them away.
 
-**Join by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click **Join by IP** (next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses behind the **ⓘ** in the controls at the bottom of the room. The default port is 47800.
+**Join by IP**: if you are on a VPN or a different subnet, rooms may not appear automatically. Click **Join by IP** (next to **Create room**) and type the host's address, for example `10.8.0.5` or `192.168.1.20:47800`. The host can see its addresses behind the **ⓘ** in the controls at the bottom of the room. The default port is 47800. The link under the room list opens the same box.
 
 **Friends on other networks**: put everyone on a [ZeroTier](zerotier.md) network. It takes a few minutes, and rooms then show up in the list as if you were all at home.
 

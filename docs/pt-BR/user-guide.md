@@ -67,14 +67,16 @@ A janela tem três colunas: as **salas** à esquerda, a sala em que você está 
 
 A coluna de salas mostra:
 
-- **Salas recentes**: as últimas 5 salas em que você entrou, da mais recente para a mais antiga, com a sala atual em destaque. Clique numa para voltar a ela, mesmo que esteja numa VPN e não apareça sozinha. Salas que não respondem aparecem como *offline*. O **×** de uma linha a esquece.
-- **Salas na sua rede**: todas as outras salas encontradas na sua rede. A lista se atualiza sozinha (repare no ponto verde).
+- **Recentes**: as últimas 5 salas em que você entrou, da mais recente para a mais antiga, com a sala atual marcada por uma borda azul e as pessoas dela embaixo. Clique numa para voltar a ela, mesmo que esteja numa VPN e não apareça sozinha. Salas que não respondem ficam recolhidas em **Offline**, que diz quando você esteve lá pela última vez. O **×** de uma linha a esquece.
+- **Na sua rede**: todas as outras salas encontradas na sua rede. A lista se atualiza sozinha; a seta redonda procura de novo na hora.
 
-Cada linha mostra um cadeado para salas privadas, quantas transmissões estão ao vivo e quantas pessoas estão dentro; passe o mouse por cima para ver quem hospeda, há quanto tempo e o endereço. Uma sala numa versão incompatível diz *Atualize para entrar* ou *Versão antiga* (passe o mouse para ver quem precisa atualizar). Salas adicionadas pelo IP têm um **×** para tirá-las da lista. Clique numa sala para entrar. Se você já está numa sala, sai dela antes; o app pergunta antes quando isso encerra uma sala que você hospeda ou para o seu compartilhamento.
+Cada sala mostra a foto de perfil do anfitrião (ou as iniciais dele, ou a primeira letra da sala para anfitriões antes do 2.7.0), com um ponto vermelho enquanto alguém compartilha e um cadeado nas salas privadas. Embaixo do nome: *Ao vivo* ou *Privada*, quem hospeda e quantas pessoas estão dentro; passe o mouse por cima para ver há quanto tempo está aberta e o endereço. Uma sala numa versão incompatível diz *Atualize para entrar* ou *Versão antiga* (passe o mouse para ver quem precisa atualizar). Salas adicionadas pelo IP têm um **×** para tirá-las da lista. Clique numa sala para entrar. Se você já está numa sala, sai dela antes; o app pergunta antes quando isso encerra uma sala que você hospeda ou para o seu compartilhamento.
+
+Enquanto você não está numa sala, o meio mostra as salas da sua rede como cartões, cada um com um botão **Entrar**, ao lado de um cartão para criar a sua.
 
 O botão no topo de cada coluna lateral a esconde (a coluna de salas vira uma faixa com as iniciais das salas; o botão do chat fica no canto de cima à direita da sala, embaixo dos botões da própria janela). O app lembra quais colunas você escondeu. Numa janela pequena (por exemplo encaixada ao lado de um jogo) as colunas abrem espaço para os quadros sozinhas: abaixo de 1100 px de largura o chat fica fechado, e abaixo de 760 px a coluna de salas vira uma faixa. Os botões delas então as abrem por cima da sala, e clicar ao lado as fecha.
 
-**Entrar por IP**: se você está numa VPN ou em outra sub-rede, as salas podem não aparecer sozinhas. Clique em **Entrar por IP** (ao lado de **Criar sala**) e digite o endereço do anfitrião, por exemplo `10.8.0.5` ou `192.168.1.20:47800`. O anfitrião vê os endereços dele no **ⓘ** dos controles na parte de baixo da sala. A porta padrão é 47800.
+**Entrar por IP**: se você está numa VPN ou em outra sub-rede, as salas podem não aparecer sozinhas. Clique em **Entrar por IP** (ao lado de **Criar sala**) e digite o endereço do anfitrião, por exemplo `10.8.0.5` ou `192.168.1.20:47800`. O anfitrião vê os endereços dele no **ⓘ** dos controles na parte de baixo da sala. A porta padrão é 47800. O link embaixo da lista de salas abre a mesma caixa.
 
 **Amigos em outras redes**: coloque todos numa rede do [ZeroTier](zerotier.md). Leva poucos minutos, e as salas passam a aparecer na lista como se todos estivessem em casa.
 

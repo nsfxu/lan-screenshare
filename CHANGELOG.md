@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Changed
+
+- **A clearer room list.** Each room shows its host's profile picture (or initials), with a red dot while someone shares, and a second line with who hosts it and how many people are inside, so long names fit. Rooms you've been in that don't answer are folded under **Offline**, with when you were last there, and while you're not in a room the middle shows the rooms on your network as cards to join. Pictures need the host on this version; older hosts show initials.
+
 ## [2.6.0] - 2026-10-18
 
 ### Added

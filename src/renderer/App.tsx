@@ -103,7 +103,8 @@ export function App() {
         const s = await joinRoom(endpoint, settings, codecs, pin)
         setPinPrompt(null)
         setSession(s)
-        void updateSettings({ lastRoom: endpoint, recentRooms: pushRecentRoom(settingsRef.current?.recentRooms ?? [], endpoint) })
+        const recentRooms = pushRecentRoom(settingsRef.current?.recentRooms ?? [], { ...endpoint, lastVisited: Date.now() })
+        void updateSettings({ lastRoom: endpoint, recentRooms })
       } catch (err) {
         if (err instanceof JoinError) {
           const d = err.detail
@@ -339,7 +340,7 @@ export function App() {
               onToast={toast}
             />
           ) : (
-            <Welcome hasRooms={rooms.length > 0} onCreate={openCreate} />
+            <Welcome rooms={rooms} busyKey={busyKey} onJoin={switchTo} onCreate={openCreate} />
           )}
         </main>
       </div>
@@ -383,9 +384,18 @@ export function App() {
 /** The room we're in, kept up to date for the sidebar. */
 function useCurrentRoom(session: Session | null): CurrentRoom | null {
   const [room, setRoom] = useState<RoomState | null>(session?.client.room ?? null)
+  const [host, setHost] = useState<CurrentRoom['host']>(null)
   useEffect(() => {
     setRoom(session?.client.room ?? null)
-    return session?.client.on('room', setRoom)
+    if (!session) return
+    const { client } = session
+    const update = (): void => {
+      const p = client.participants.find((x) => x.role === 'host')
+      setHost(p ? { name: p.name, color: p.color, image: client.avatars.get(p.id) ?? null } : null)
+    }
+    update()
+    const offs = [client.on('room', setRoom), client.on('participants', update), client.on('avatars', update)]
+    return () => offs.forEach((off) => off())
   }, [session])
   if (!session) return null
   return {
@@ -393,6 +403,7 @@ function useCurrentRoom(session: Session | null): CurrentRoom | null {
     name: room?.name ?? session.endpoint.name ?? translator().t('common.room'),
     endpoint: session.role === 'host' ? null : session.endpoint,
     people: room ? room.viewerCount + 1 : 1,
-    live: room?.streams ?? 0
+    live: room?.streams ?? 0,
+    host
   }
 }

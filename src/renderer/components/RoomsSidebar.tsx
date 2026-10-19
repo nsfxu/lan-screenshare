@@ -1,13 +1,12 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { PIN_MAX_LENGTH, PIN_MIN_LENGTH, PROTOCOL_VERSION } from '../../shared/constants'
-import { onePerRoom, sameEndpoint } from '../../shared/roomList'
+import { roomListRows, sameEndpoint, type RoomRow as Row } from '../../shared/roomList'
 import type { DiscoveredRoom, RoomEndpoint, Settings } from '../../shared/types'
-import { incompatibleRoomMessage } from '../../shared/version'
-import { useAppVersion } from '../lib/appVersion'
 import { errorMessage, formatDuration } from '../lib/format'
 import { useT } from '../lib/i18n'
 import { Avatar } from './Avatar'
 import { Icon } from './Icon'
+import { RoomAvatar, RoomDetails, useRoomStatus } from './RoomIdentity'
 
 /** The room you're in, as the sidebar shows it. */
 export interface CurrentRoom {
@@ -18,6 +17,8 @@ export interface CurrentRoom {
   endpoint: RoomEndpoint | null
   people: number
   live: number
+  /** Who hosts it, for its picture; null until the room says. */
+  host: { name: string; color: string; image: string | null } | null
 }
 
 /** A private room asking for its PIN, shown as a small form under the room's row. */
@@ -54,43 +55,51 @@ interface Props {
   onRename(name: string): void
 }
 
-/** One line of the room list: a discovered room, or a remembered one that isn't answering. */
-interface Row {
-  key: string
-  name: string
-  room: DiscoveredRoom | null
-  endpoint: RoomEndpoint
-}
-
 /**
- * The left column: create or find rooms (recent ones first, then the rest of
- * the network), and who you are at the bottom.
+ * The left column: create or find rooms (the ones you've been in first, then the rest of the
+ * network), and who you are at the bottom.
  */
 export function RoomsSidebar(props: Props) {
   const { settings, rooms, current, collapsed, onToggle } = props
-  const { t } = useT()
+  const { t, rich } = useT()
   const [manualOpen, setManualOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [offlineOpen, setOfflineOpen] = useState(false)
 
   const isCurrent = (ep: RoomEndpoint): boolean => !!current?.endpoint && sameEndpoint(current.endpoint, ep)
-  const recent: Row[] = settings.recentRooms.map((ep) => {
-    const room = rooms.find((r) => sameEndpoint(r, ep)) ?? null
-    return { key: `${ep.address}:${ep.port}`, name: room?.name || ep.name || `${ep.address}:${ep.port}`, room, endpoint: ep }
-  })
-  // One row per room, even when it answers on several addresses; recent and current rooms aren't repeated.
-  const shown = new Set([current?.id, ...recent.map((row) => row.room?.id)].filter(Boolean))
-  const network: Row[] = onePerRoom(rooms)
-    .filter((r) => !settings.recentRooms.some((ep) => sameEndpoint(r, ep)) && !(r.id && shown.has(r.id)))
-    .map((r) => ({ key: r.key, name: r.name, room: r, endpoint: { address: r.address, port: r.port, tls: r.tls, name: r.name } }))
+  const groups = roomListRows(
+    settings.recentRooms,
+    rooms,
+    current?.id ?? null,
+    (row) => !isCurrent(row.endpoint) && isOffline(row.room)
+  )
+  const all = [...groups.recent, ...groups.offline, ...groups.network]
 
   const pinForm = props.pin && (
     <PinForm prompt={props.pin} busy={props.busyKey === props.pin.key} onSubmit={props.onPinSubmit} onCancel={props.onPinCancel} />
   )
+  const join = (row: Row<DiscoveredRoom>): void =>
+    row.room?.reachable ? props.onJoin(row.room) : props.onJoinEndpoint(row.endpoint)
+  const recentRow = (row: Row<DiscoveredRoom>) =>
+    isCurrent(row.endpoint) && current ? (
+      <CurrentRow key={row.key} current={current} members={props.members} />
+    ) : (
+      <div key={row.key}>
+        <RoomRow
+          row={row}
+          busy={props.busyKey === row.key}
+          onJoin={() => join(row)}
+          onRemove={() => props.onForgetRecent(row.endpoint)}
+          removeLabel={t('rooms.forget')}
+        />
+        {props.pin?.key === row.key && pinForm}
+      </div>
+    )
 
   const refresh = async (): Promise<void> => {
     setRefreshing(true)
     await window.api.rooms.refresh().catch(() => {})
-    setTimeout(() => setRefreshing(false), 600)
+    setTimeout(() => setRefreshing(false), 1200)
   }
 
   if (collapsed) {
@@ -109,13 +118,13 @@ export function RoomsSidebar(props: Props) {
         </button>
         <div className="rooms-strip">
           {current && !current.endpoint && <RoomBadge name={current.name} active onClick={() => {}} />}
-          {[...recent, ...network].map((row) => (
+          {all.map((row) => (
             <RoomBadge
               key={row.key}
               name={row.name}
               active={isCurrent(row.endpoint)}
               live={(row.room?.reachable && row.room.streams > 0) || false}
-              onClick={() => (row.room?.reachable ? props.onJoin(row.room) : props.onJoinEndpoint(row.endpoint))}
+              onClick={() => join(row)}
             />
           ))}
         </div>
@@ -148,63 +157,71 @@ export function RoomsSidebar(props: Props) {
 
       <div className="rooms-scroll">
         {/* A room that asks for a PIN but isn't in the list (e.g. rejoining the last room at startup). */}
-        {props.pin && ![...recent, ...network].some((row) => row.key === props.pin!.key) && pinForm}
-        {(current || recent.length > 0) && (
+        {props.pin && !all.some((row) => row.key === props.pin!.key) && pinForm}
+        {(current || settings.recentRooms.length > 0) && (
           <section className="rooms-group">
             <h3 className="rooms-group-title">{t('rooms.recent')}</h3>
             {/* Your own room, or one just joined that isn't in the recent rooms yet. */}
-            {current && !recent.some((row) => isCurrent(row.endpoint)) && (
+            {current && !groups.recent.some((row) => isCurrent(row.endpoint)) && (
               <CurrentRow current={current} members={props.members} />
             )}
-            {recent.map((row) =>
-              isCurrent(row.endpoint) && current ? (
-                <CurrentRow key={row.key} current={current} members={props.members} />
-              ) : (
-                <div key={row.key}>
-                  <RoomRow
-                    row={row}
-                    busy={props.busyKey === row.key}
-                    onJoin={() => (row.room?.reachable ? props.onJoin(row.room) : props.onJoinEndpoint(row.endpoint))}
-                    onRemove={() => props.onForgetRecent(row.endpoint)}
-                    removeLabel={t('rooms.forget')}
-                  />
-                  {props.pin?.key === row.key && pinForm}
-                </div>
-              )
+            {groups.recent.map(recentRow)}
+            {groups.offline.length > 0 && (
+              <>
+                <button
+                  className="rooms-offline-toggle"
+                  aria-expanded={offlineOpen}
+                  onClick={() => setOfflineOpen((v) => !v)}
+                >
+                  <Icon name={offlineOpen ? 'chevronDown' : 'chevronRight'} size={14} />
+                  {t('rooms.offlineGroup', { count: groups.offline.length })}
+                  {!offlineOpen && (
+                    <span className="rooms-offline-names">· {groups.offline.map((row) => row.name).join(', ')}</span>
+                  )}
+                </button>
+                {/* A room asking for its PIN stays visible while the group is folded. */}
+                {groups.offline.filter((row) => offlineOpen || props.pin?.key === row.key).map(recentRow)}
+              </>
             )}
           </section>
         )}
 
         <section className="rooms-group">
           <h3 className="rooms-group-title">
-            {t('rooms.onNetwork')} <span className="live-dot" title={t('rooms.listening')} />
+            {t('rooms.onNetwork')}
             <button
-              className="icon-btn rooms-refresh"
+              className="rooms-refresh"
               title={t('rooms.scanAgain')}
               aria-label={t('rooms.refresh')}
+              disabled={refreshing}
               onClick={() => void refresh()}
             >
               <Icon name="refresh" size={13} className={refreshing ? 'spin' : ''} />
+              {refreshing && t('rooms.scanning')}
             </button>
           </h3>
-          {network.length === 0 ? (
-            <p className="muted small rooms-empty">
-              {rooms.length === 0 ? t('rooms.emptyNetwork') : t('rooms.noOthers')}
-            </p>
-          ) : (
-            network.map((row) => (
-              <div key={row.key}>
-                <RoomRow
-                  row={row}
-                  busy={props.busyKey === row.key}
-                  onJoin={() => row.room && props.onJoin(row.room)}
-                  onRemove={row.room?.source === 'manual' ? () => void window.api.rooms.removeManual(row.key) : undefined}
-                  removeLabel={t('rooms.removeFromList')}
-                />
-                {props.pin?.key === row.key && pinForm}
-              </div>
-            ))
-          )}
+          {groups.network.length === 0 && <p className="muted small rooms-empty">{t('rooms.noneFound')}</p>}
+          {groups.network.map((row) => (
+            <div key={row.key}>
+              <RoomRow
+                row={row}
+                busy={props.busyKey === row.key}
+                onJoin={() => row.room && props.onJoin(row.room)}
+                onRemove={row.room?.source === 'manual' ? () => void window.api.rooms.removeManual(row.key) : undefined}
+                removeLabel={t('rooms.removeFromList')}
+              />
+              {props.pin?.key === row.key && pinForm}
+            </div>
+          ))}
+          <p className="muted small rooms-hint">
+            {rich('rooms.hint', {
+              joinByIp: (
+                <button className="link-btn" onClick={() => setManualOpen(true)}>
+                  {t('rooms.hintJoinByIp')}
+                </button>
+              )
+            })}
+          </p>
         </section>
       </div>
 
@@ -218,18 +235,29 @@ export function RoomsSidebar(props: Props) {
   )
 }
 
+/**
+ * A remembered room that doesn't answer right now. Rooms on another version do answer (they're
+ * listed with what to update instead), so they aren't offline.
+ */
+function isOffline(room: DiscoveredRoom | null): boolean {
+  return !room || (!room.reachable && (room.protocol === 0 || room.protocol === PROTOCOL_VERSION))
+}
+
 function CurrentRow({ current, members }: { current: CurrentRoom; members: ReactNode }) {
   const { t } = useT()
   return (
     <div className="current-room">
       <div className="room-row current" aria-current="true">
-        <Icon name="screen" size={15} />
-        <span className="room-row-name" title={current.name}>
-          {current.name}
-        </span>
-        <span className="room-row-meta">
-          {current.live > 0 && <span className="room-row-live">{t('rooms.live', { count: current.live })}</span>}
-          <Icon name="users" size={13} /> {current.people}
+        <RoomAvatar name={current.name} host={current.host} live={current.live > 0} />
+        <span className="room-row-text">
+          <span className="room-row-name" title={current.name}>
+            {current.name}
+          </span>
+          <span className="room-details">
+            {current.live > 0 && <span className="room-details-live">{t('rooms.liveTag')}</span>}
+            {current.live > 0 && ' · '}
+            {t('rooms.people', { count: current.people })} · {t('rooms.youreHere')}
+          </span>
         </span>
       </div>
       {members}
@@ -312,60 +340,55 @@ function RoomRow({
   onRemove,
   removeLabel
 }: {
-  row: Row
+  row: Row<DiscoveredRoom>
   busy: boolean
   onJoin(): void
   onRemove?: () => void
   removeLabel: string
 }) {
-  const ours = useAppVersion()
-  const { t } = useT()
+  const { t, ago } = useT()
   const { room } = row
-  // Rooms on another protocol answer probes but can't be joined: say who has to update.
-  const versionProblem = room ? incompatibleRoomMessage(room, { protocol: PROTOCOL_VERSION, appVersion: ours }, t) : null
-  const full = !!room && room.maxUsers > 0 && room.viewerCount + 1 >= room.maxUsers
-  const offline = !room || (!room.reachable && !versionProblem)
-  const people = room ? room.viewerCount + 1 : 0
+  const status = useRoomStatus(room)
   const title = [
     row.name,
     room?.hostName && t('rooms.hostedBy', { name: room.hostName }),
     room?.startedAt && room.reachable ? t('rooms.openFor', { duration: formatDuration(Date.now() - room.startedAt) }) : null,
     `${row.endpoint.address}:${row.endpoint.port}${row.endpoint.tls ? ' · TLS' : ''}`,
-    versionProblem
+    status.versionProblem
   ]
     .filter(Boolean)
     .join('\n')
-
-  let meta
-  if (busy) meta = <span className="muted">{t('rooms.joining')}</span>
-  else if (versionProblem)
-    meta = (
-      <span className="room-row-warn">
-        {room!.protocol > PROTOCOL_VERSION ? t('rooms.updateToJoin') : t('rooms.olderVersion')}
+  const answering = room && !status.offline ? room : null
+  let details: ReactNode
+  if (answering) details = <RoomDetails room={answering} status={status} busy={busy} />
+  else {
+    const when = row.endpoint.lastVisited
+    details = (
+      <span className="room-details">
+        {busy ? t('rooms.joining') : when ? t('rooms.lastVisited', { when: ago(when) }) : t('rooms.offline')}
       </span>
     )
-  else if (offline) meta = <span className="muted">{t('rooms.offline')}</span>
-  else if (full) meta = <span className="muted">{t('rooms.full')}</span>
-  else
-    meta = (
-      <>
-        {room!.streams > 0 && <span className="room-row-live">{t('rooms.live', { count: room!.streams })}</span>}
-        <Icon name="users" size={13} /> {people}
-      </>
-    )
+  }
 
   return (
-    <div className={`room-row ${offline ? 'offline' : ''}`}>
+    <div className={`room-row ${status.offline ? 'offline' : ''}`}>
       <button
         className="room-row-main"
         title={title}
-        disabled={busy || full || !!versionProblem}
+        disabled={busy || status.full || !!status.versionProblem}
         onClick={onJoin}
         aria-label={t('rooms.join', { name: row.name })}
       >
-        <Icon name={room?.privacy === 'private' ? 'lock' : 'screen'} size={15} />
-        <span className="room-row-name">{row.name}</span>
-        <span className="room-row-meta">{meta}</span>
+        <RoomAvatar
+          name={row.name}
+          host={answering && { name: answering.hostName, color: answering.hostColor, image: answering.hostImage }}
+          live={!!answering && answering.streams > 0}
+          locked={answering?.privacy === 'private'}
+        />
+        <span className="room-row-text">
+          <span className="room-row-name">{row.name}</span>
+          {details}
+        </span>
       </button>
       {onRemove && (
         <button className="icon-btn room-row-remove" title={removeLabel} aria-label={removeLabel} onClick={onRemove}>
