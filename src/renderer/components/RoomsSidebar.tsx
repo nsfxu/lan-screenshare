@@ -175,9 +175,6 @@ export function RoomsSidebar(props: Props) {
                 >
                   <Icon name={offlineOpen ? 'chevronDown' : 'chevronRight'} size={14} />
                   {t('rooms.offlineGroup', { count: groups.offline.length })}
-                  {!offlineOpen && (
-                    <span className="rooms-offline-names">· {groups.offline.map((row) => row.name).join(', ')}</span>
-                  )}
                 </button>
                 {/* A room asking for its PIN stays visible while the group is folded. */}
                 {groups.offline.filter((row) => offlineOpen || props.pin?.key === row.key).map(recentRow)}

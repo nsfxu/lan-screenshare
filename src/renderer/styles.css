@@ -914,12 +914,6 @@ input[type='checkbox']:checked::after {
   background: var(--bg-hover);
   color: var(--text);
 }
-.rooms-offline-names {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  opacity: 0.75;
-}
 .room-row-remove {
   display: none;
   width: 24px;
