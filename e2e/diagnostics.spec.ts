@@ -15,7 +15,7 @@ test('diagnostics copy and save what a bug report needs, without secrets', async
   const settings = await win.evaluate(() => window.api.settings.get())
   expect(host?.pin).toMatch(/^\d{4,6}$/)
 
-  await win.getByRole('button', { name: 'Settings' }).click()
+  await win.getByRole('button', { name: 'Settings', exact: true }).click()
   await win.getByRole('navigation', { name: 'Settings sections' }).getByRole('button', { name: 'About' }).click()
   await win.getByRole('button', { name: 'Copy diagnostics' }).click()
   await expect(win.locator('.diagnostics-row [role="status"]')).toHaveText('Copied')
