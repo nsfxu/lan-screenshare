@@ -4,6 +4,7 @@ import { HIDDEN_VIEW } from '../src/shared/quality'
 import { BINARY_FLAG_KEY, BINARY_KIND_AUDIO, BINARY_KIND_VIDEO } from '../src/shared/constants'
 import { RoomServer } from '../src/main/server'
 import type { Participant, ViewerStats } from '../src/shared/types'
+import { fetchHostPicture, probeRoom } from '../src/utils/network'
 import { TestClient } from './helpers'
 
 const HOST_TOKEN = 'host-secret-token'
@@ -546,6 +547,39 @@ describe('profile pictures', () => {
 
     const bob = await join(port, 'Bob')
     await bob.c.wait('avatar', (m) => m.from === alice.id && m.image === JPEG)
+  })
+
+  it("puts the host's colour and picture in the room list: a hash in /info, the picture behind it", async () => {
+    const port = await startServer()
+    const room = { address: '127.0.0.1', port, tls: false }
+    // No host connected yet: nothing to show but the name.
+    let { info } = await probeRoom(room)
+    expect(info.hostColor).toBeUndefined()
+    expect(info.hostPicture).toBeUndefined()
+    await expect(fetchHostPicture(room)).rejects.toThrow('HTTP 404')
+
+    const host = await join(port, 'Host', true)
+    ;({ info } = await probeRoom(room))
+    expect(info.hostColor).toMatch(/^#[0-9a-f]{6}$/)
+    expect(info.hostPicture).toBeUndefined()
+
+    host.c.send({ type: 'set-avatar', image: JPEG })
+    await host.c.wait('avatar')
+    ;({ info } = await probeRoom(room))
+    expect(info.hostPicture).toMatch(/^[0-9a-f]{16}$/)
+    expect(await fetchHostPicture(room)).toBe(JPEG)
+    const first = info.hostPicture
+
+    // A new picture, a new hash; another participant's picture changes nothing.
+    await sleep(1000)
+    host.c.send({ type: 'set-avatar', image: PNG })
+    await host.c.wait('avatar', (m) => m.image === PNG)
+    const alice = await join(port, 'Alice')
+    alice.c.send({ type: 'set-avatar', image: JPEG })
+    await host.c.wait('avatar', (m) => m.from === alice.id)
+    ;({ info } = await probeRoom(room))
+    expect(info.hostPicture).not.toBe(first)
+    expect(await fetchHostPicture(room)).toBe(PNG)
   })
 
   it('ignores invalid pictures, repeats and floods; null removes it', async () => {

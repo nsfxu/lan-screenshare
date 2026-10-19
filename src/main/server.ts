@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import http from 'node:http'
 import https from 'node:https'
@@ -119,7 +120,8 @@ const COLORS = ['#e57373', '#f06292', '#ba68c8', '#9575cd', '#7986cb', '#64b5f6'
 /**
  * The per-room relay node, run by the host.
  *
- * - `GET /info` serves public room info for discovery probes.
+ * - `GET /info` serves public room info for discovery probes, and
+ *   `GET /host-picture` the host's profile picture it names by hash.
  * - `/ws` carries auth (PIN), chat, presence, moderation, and — for any
  *   participant who shares — WebRTC signaling between that streamer and the
  *   watchers who chose to watch it, plus binary media for the TCP fallback.
@@ -223,6 +225,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
   }
 
   getInfo(): RoomInfo {
+    const host = this.seats.get(HOST_ID)
     return {
       id: this.opts.roomId,
       name: this.name,
@@ -233,8 +236,19 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       streams: [...this.seats.values()].filter((s) => s.participant.stream).length,
       protocol: PROTOCOL_VERSION,
       appVersion: isAppVersion(this.opts.appVersion) ? this.opts.appVersion : undefined,
-      startedAt: this.startedAt
+      startedAt: this.startedAt,
+      hostColor: host?.participant.color,
+      hostPicture: host?.avatar ? this.pictureHash(host.avatar) : undefined
     }
+  }
+
+  /** The host's picture is probed every few seconds by everyone's room list: hash it once. */
+  private hashed: { image: string; hash: string } | null = null
+  private pictureHash(image: string): string {
+    if (this.hashed?.image !== image) {
+      this.hashed = { image, hash: createHash('sha256').update(image).digest('hex').slice(0, 16) }
+    }
+    return this.hashed.hash
   }
 
   getState(): RoomState {
@@ -258,6 +272,15 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' })
       res.end(body)
       return
+    }
+    if (req.method === 'GET' && req.url?.split('?')[0] === '/host-picture') {
+      // Public like the host's name in /info: the room list shows it next to the room.
+      const image = this.seats.get(HOST_ID)?.avatar
+      if (image) {
+        res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' })
+        res.end(JSON.stringify({ image }))
+        return
+      }
     }
     res.writeHead(404, { 'content-type': 'text/plain' })
     res.end('not found')

@@ -5,6 +5,7 @@ import net from 'node:net'
 import { createHash, X509Certificate } from 'node:crypto'
 import type { TLSSocket } from 'node:tls'
 import type { RoomEndpoint, RoomInfo } from '../shared/types'
+import { isAvatar, isColor, isPictureHash } from '../shared/images'
 import { isAppVersion } from '../shared/version'
 
 const VIRTUAL_ADAPTER = /vethernet|virtualbox|vmware|hyper-v|wsl|docker|vbox|loopback|bridge|utun/i
@@ -104,14 +105,41 @@ export interface ProbeResult {
  * is not validated against a CA; instead the fingerprint is returned (and
  * compared against `expectedFingerprint` when one is known from mDNS).
  */
-export function probeRoom(
+export async function probeRoom(
   ep: Pick<RoomEndpoint, 'address' | 'port' | 'tls'>,
   timeoutMs = 2500,
   expectedFingerprint?: string | null
 ): Promise<ProbeResult> {
   const started = Date.now()
+  const { body, fingerprint } = await getJson(ep, '/info', timeoutMs, expectedFingerprint)
+  const info = body as RoomInfo
+  if (typeof info?.id !== 'string' || typeof info.name !== 'string') throw new Error('not a room')
+  if (!isAppVersion(info.appVersion)) delete info.appVersion
+  if (!isColor(info.hostColor)) delete info.hostColor
+  if (!isPictureHash(info.hostPicture)) delete info.hostPicture
+  return { info, fingerprint, ms: Date.now() - started }
+}
+
+/** The host's profile picture (GET /host-picture), checked like any picture from the network. */
+export async function fetchHostPicture(
+  ep: Pick<RoomEndpoint, 'address' | 'port' | 'tls'>,
+  expectedFingerprint?: string | null
+): Promise<string> {
+  const { body } = await getJson(ep, '/host-picture', 2500, expectedFingerprint)
+  const image = (body as { image?: unknown })?.image
+  if (!isAvatar(image)) throw new Error('not a picture')
+  return image
+}
+
+/** GET a small JSON document from a room (see probeRoom about its certificate). */
+function getJson(
+  ep: Pick<RoomEndpoint, 'address' | 'port' | 'tls'>,
+  path: string,
+  timeoutMs: number,
+  expectedFingerprint?: string | null
+): Promise<{ body: unknown; fingerprint: string | null }> {
   return new Promise((resolve, reject) => {
-    const url = endpointUrl(ep, '/info')
+    const url = endpointUrl(ep, path)
     const options: https.RequestOptions = { timeout: timeoutMs, headers: { accept: 'application/json' } }
     if (ep.tls) {
       options.rejectUnauthorized = false
@@ -141,10 +169,7 @@ export function probeRoom(
       })
       res.on('end', () => {
         try {
-          const info = JSON.parse(body) as RoomInfo
-          if (typeof info?.id !== 'string' || typeof info.name !== 'string') throw new Error('not a room')
-          if (!isAppVersion(info.appVersion)) delete info.appVersion
-          resolve({ info, fingerprint, ms: Date.now() - started })
+          resolve({ body: JSON.parse(body) as unknown, fingerprint })
         } catch (err) {
           reject(err instanceof Error ? err : new Error(String(err)))
         }

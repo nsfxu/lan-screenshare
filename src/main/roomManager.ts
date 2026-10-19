@@ -14,7 +14,7 @@ import type {
 import { incompatibleRoomMessage } from '../shared/version'
 import { clampPinLength, generatePin, isValidPin, randomId, randomToken } from '../utils/crypto'
 import { MdnsDiscovery, type MdnsRoomRecord } from '../utils/mdns'
-import { endpointKey, fingerprintFromPem, getLocalAddresses, probeRoom } from '../utils/network'
+import { endpointKey, fetchHostPicture, fingerprintFromPem, getLocalAddresses, probeRoom } from '../utils/network'
 import { mainT } from './i18n'
 import { RoomServer, type Logger } from './server'
 import type { SettingsStore } from './settings'
@@ -26,6 +26,8 @@ interface Entry {
   fromMdns: boolean
   manual: boolean
   probing: boolean
+  /** The host's picture for the hash /info gave last, or why there is none. */
+  picture?: { hash: string; image: string | null; failedAt: number }
 }
 
 interface Hosting {
@@ -130,9 +132,10 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
         }
         if (existing) {
           existing.room = room
+          await this.refreshPicture(existing)
           this.emitRooms()
         }
-        return room
+        return existing?.room ?? room
       } catch (err) {
         lastErr = err
       }
@@ -389,10 +392,14 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
       entry.room = {
         ...entry.room,
         ...result.info,
+        // Fields a newer /info has and an older one doesn't: not kept from before.
+        hostColor: result.info.hostColor,
+        hostPicture: result.info.hostPicture,
         reachable: result.info.protocol === PROTOCOL_VERSION,
         lastSeen: Date.now(),
         probeMs: result.ms
       }
+      await this.refreshPicture(entry)
     } catch (err) {
       const stale = Date.now() - entry.room.lastSeen > ROOM_STALE_MS
       if (entry.room.reachable) this.log.debug(`probe failed for ${entry.room.key}: ${(err as Error).message}`)
@@ -404,6 +411,26 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
       entry.probing = false
     }
     this.emitRooms()
+  }
+
+  /**
+   * Fetch the host's picture when /info names a new one (by hash), and put it on the room. A failed
+   * fetch is retried a minute later, not on every probe.
+   */
+  private async refreshPicture(entry: Entry): Promise<void> {
+    const hash = entry.room.reachable ? entry.room.hostPicture : undefined
+    if (!hash) {
+      entry.picture = undefined
+    } else if (entry.picture?.hash !== hash || (!entry.picture.image && Date.now() - entry.picture.failedAt > 60_000)) {
+      const { address, port, tls } = entry.room
+      try {
+        entry.picture = { hash, image: await fetchHostPicture({ address, port, tls }, entry.advertisedFingerprint), failedAt: 0 }
+      } catch (err) {
+        this.log.debug(`host picture of ${entry.room.key}: ${(err as Error).message}`)
+        entry.picture = { hash, image: null, failedAt: Date.now() }
+      }
+    }
+    entry.room = { ...entry.room, hostImage: entry.picture?.image ?? undefined }
   }
 
   private trust(hostname: string, fingerprint: string): void {
