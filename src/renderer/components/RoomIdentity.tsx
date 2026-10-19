@@ -66,7 +66,7 @@ export function useRoomStatus(room: DiscoveredRoom | null): RoomStatus {
   }
 }
 
-/** The line under a room's name: "Live · Dani · 4 people", or why it can't be joined. */
+/** The line under a room's name: how many are inside, or why it can't be joined (live and private show on its picture). */
 export function RoomDetails({ room, status, busy }: { room: DiscoveredRoom; status: RoomStatus; busy: boolean }) {
   const { t } = useT()
   if (busy) return <span className="room-details">{t('rooms.joining')}</span>
@@ -77,19 +77,23 @@ export function RoomDetails({ room, status, busy }: { room: DiscoveredRoom; stat
       </span>
     )
   }
-  const parts = [
-    room.hostName,
-    status.full ? t('rooms.full') : t('rooms.people', { count: status.people })
-  ].filter(Boolean)
-  return (
-    <span className="room-details">
-      {room.streams > 0 ? (
-        <span className="room-details-live">{t('rooms.liveTag')}</span>
-      ) : (
-        room.privacy === 'private' && <span>{t('rooms.privateTag')}</span>
-      )}
-      {(room.streams > 0 || room.privacy === 'private') && ' · '}
-      {parts.join(' · ')}
-    </span>
-  )
+  return <span className="room-details">{status.full ? t('rooms.full') : t('rooms.people', { count: status.people })}</span>
+}
+
+/**
+ * What a screen reader says for a room's button: the picture's live dot and lock and the host's name
+ * aren't text, so they're spelled out here ("Join Alice's room, Live, Private, 2 people").
+ */
+export function useRoomLabel(): (room: DiscoveredRoom | null, name: string, status: RoomStatus) => string {
+  const { t } = useT()
+  return (room, name, status) =>
+    [
+      t('rooms.join', { name }),
+      room && !status.offline && room.streams > 0 && t('rooms.liveTag'),
+      room && !status.offline && room.privacy === 'private' && t('rooms.privateTag'),
+      room && !status.offline && room.hostName && t('rooms.hostedBy', { name: room.hostName }),
+      room && !status.offline && !status.versionProblem && t('rooms.people', { count: status.people })
+    ]
+      .filter(Boolean)
+      .join(', ')
 }

@@ -818,8 +818,14 @@ input[type='checkbox']:checked::after {
   font-size: 12px;
   color: var(--text-muted);
 }
-.room-details-live {
-  color: var(--bad-text);
+/* Read by screen readers, not shown (what a dot or an edge already says to the eye). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 .room-row-warn {
   color: var(--ok);

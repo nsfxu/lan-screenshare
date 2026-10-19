@@ -47,13 +47,14 @@ test("the room list shows each room's host, folds the ones that are offline, and
   await offline.click()
   await expect(win.getByRole('button', { name: 'Join Game night' })).toContainText('Last visited 2 days ago')
 
-  // Alice's room shows her picture, who's sharing and how many are in.
+  // Alice's room shows her picture and how many are in; screen readers also hear that it's live and who hosts it.
   await win.getByRole('button', { name: 'Join by IP' }).click()
   await win.getByPlaceholder(/^Host address/).fill(`127.0.0.1:${port}`)
   await win.getByPlaceholder(/^Host address/).press('Enter')
   // (By name: the same room can also be found on the computer's other addresses.)
   const row = win.locator('.rooms-sidebar').getByRole('button', { name: "Join Alice's room" })
-  await expect(row).toContainText('Live · Alice · 1 person')
+  await expect(row.locator('.room-details')).toHaveText('1 person')
+  await expect(row).toHaveAccessibleName("Join Alice's room, Live, Hosted by Alice, 1 person")
   await expect(row.locator('.room-avatar img')).toHaveAttribute('src', /^data:image\/jpeg;base64,/)
 
   // The centre offers it as a card too; joining from there works like the list.
@@ -64,7 +65,8 @@ test("the room list shows each room's host, folds the ones that are offline, and
   await expect(win.locator('.room')).toBeVisible()
   const current = win.locator('.room-row.current')
   await expect(current).toContainText("Alice's room")
-  await expect(current).toContainText("2 people · you're here")
+  await expect(current.locator('.room-details')).toContainText('2 people')
+  await expect(current.locator('.sr-only')).toHaveText(", Live, you're here")
   await expect(current.locator('.room-avatar img')).toBeVisible()
   if (shots) await win.screenshot({ path: `${shots}/2-in-room.png` })
 })

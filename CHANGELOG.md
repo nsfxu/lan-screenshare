@@ -12,7 +12,7 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ### Changed
 
-- **A clearer room list.** Each room shows its host's profile picture (or initials), with a red dot while someone shares, and a second line with who hosts it and how many people are inside, so long names fit. Rooms you've been in that don't answer are folded under **Offline**, with when you were last there, and while you're not in a room the middle shows the rooms on your network as cards to join. Pictures need the host on this version; older hosts show initials.
+- **A clearer room list.** Each room shows its host's profile picture (or initials), with a red dot while someone shares and a lock when it's private, and a second line with how many people are inside, so long names fit. Rooms you've been in that don't answer are folded under **Offline**, with when you were last there, and while you're not in a room the middle shows the rooms on your network as cards to join. Pictures need the host on this version; older hosts show initials.
 - **Settings, tidier.** One section at a time, chosen from a list with icons; **Notifications** and **Connection** are now together under **General**. Settings sit in boxes with what each one does under its name, the themes show a small preview of the app in their colours, **Advanced** says which codec Automatic usually sends and marks **Lowest latency** as needing a restart, and **About** gathers **Copy diagnostics**, **Save to file…** and **Open logs** under **Troubleshooting**.
 
 ## [2.6.0] - 2026-10-18

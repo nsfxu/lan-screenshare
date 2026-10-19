@@ -2,7 +2,7 @@ import { onePerRoom } from '../../shared/roomList'
 import type { DiscoveredRoom } from '../../shared/types'
 import { useT } from '../lib/i18n'
 import { Icon } from './Icon'
-import { RoomAvatar, RoomDetails, useRoomStatus } from './RoomIdentity'
+import { RoomAvatar, RoomDetails, useRoomLabel, useRoomStatus } from './RoomIdentity'
 
 /** The centre while you're not in a room: the rooms you can join, as cards, and making your own. */
 export function Welcome({
@@ -61,6 +61,7 @@ export function Welcome({
 function RoomCard({ room, busy, onJoin }: { room: DiscoveredRoom; busy: boolean; onJoin(): void }) {
   const { t } = useT()
   const status = useRoomStatus(room)
+  const roomLabel = useRoomLabel()
   const joinable = !busy && !status.full && !status.versionProblem && !status.offline
   return (
     <div className="room-card" title={status.versionProblem ?? undefined}>
@@ -78,7 +79,7 @@ function RoomCard({ room, busy, onJoin }: { room: DiscoveredRoom; busy: boolean;
       <button
         className={`btn small ${room.privacy === 'private' ? '' : 'primary'}`}
         disabled={!joinable}
-        aria-label={t('rooms.join', { name: room.name })}
+        aria-label={roomLabel(room, room.name, status)}
         onClick={onJoin}
       >
         {t('welcome.join')}

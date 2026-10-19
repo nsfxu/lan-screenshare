@@ -6,7 +6,7 @@ import { errorMessage, formatDuration } from '../lib/format'
 import { useT } from '../lib/i18n'
 import { Avatar } from './Avatar'
 import { Icon } from './Icon'
-import { RoomAvatar, RoomDetails, useRoomStatus } from './RoomIdentity'
+import { RoomAvatar, RoomDetails, useRoomLabel, useRoomStatus } from './RoomIdentity'
 
 /** The room you're in, as the sidebar shows it. */
 export interface CurrentRoom {
@@ -254,9 +254,11 @@ function CurrentRow({ current, members }: { current: CurrentRoom; members: React
             {current.name}
           </span>
           <span className="room-details">
-            {current.live > 0 && <span className="room-details-live">{t('rooms.liveTag')}</span>}
-            {current.live > 0 && ' · '}
-            {t('rooms.people', { count: current.people })} · {t('rooms.youreHere')}
+            {t('rooms.people', { count: current.people })}
+            {/* The live dot and the accent edge say these to the eye. */}
+            <span className="sr-only">
+              {current.live > 0 && `, ${t('rooms.liveTag')}`}, {t('rooms.youreHere')}
+            </span>
           </span>
         </span>
       </div>
@@ -349,6 +351,7 @@ function RoomRow({
   const { t, ago } = useT()
   const { room } = row
   const status = useRoomStatus(room)
+  const roomLabel = useRoomLabel()
   const title = [
     row.name,
     room?.hostName && t('rooms.hostedBy', { name: room.hostName }),
@@ -377,7 +380,7 @@ function RoomRow({
         title={title}
         disabled={busy || status.full || !!status.versionProblem}
         onClick={onJoin}
-        aria-label={t('rooms.join', { name: row.name })}
+        aria-label={roomLabel(room, row.name, status)}
       >
         <RoomAvatar
           name={row.name}
