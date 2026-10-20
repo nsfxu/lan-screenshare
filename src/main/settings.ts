@@ -5,7 +5,7 @@ import { DEFAULT_PORT, NAME_MAX_LENGTH } from '../shared/constants'
 import { isLanguageSetting } from '../shared/i18n'
 import { isAvatar } from '../shared/images'
 import { qualityPresets } from '../shared/quality'
-import { RECENT_ROOMS_MAX } from '../shared/roomList'
+import { RECENT_ROOMS_MAX, toRecentHost } from '../shared/roomList'
 import { DEFAULT_THEME, isThemeId } from '../shared/themes'
 import type { RecentRoom, RoomEndpoint, Settings } from '../shared/types'
 import { randomId } from '../utils/crypto'
@@ -128,8 +128,12 @@ function sanitize(s: Settings, fallback: Settings, options: SettingsOptions): Se
         .filter(isEndpoint)
         .slice(0, RECENT_ROOMS_MAX)
         .map((room): RecentRoom => {
-          const { lastVisited, ...ep } = room as RecentRoom
-          return typeof lastVisited === 'number' && Number.isFinite(lastVisited) && lastVisited > 0 ? { ...ep, lastVisited } : ep
+          const { lastVisited, host, ...ep } = room as RecentRoom
+          const recent: RecentRoom = ep
+          if (typeof lastVisited === 'number' && Number.isFinite(lastVisited) && lastVisited > 0) recent.lastVisited = lastVisited
+          const remembered = toRecentHost(host)
+          if (remembered) recent.host = remembered
+          return recent
         })
     : []
   const budget = Number(s.uploadBudgetMbps)

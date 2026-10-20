@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { pushRecentRoom, sameEndpoint } from '../shared/roomList'
+import { pushRecentRoom, rememberHost, sameEndpoint } from '../shared/roomList'
 import type { CodecSupport, DiscoveredRoom, RoomEndpoint, RoomState, Settings } from '../shared/types'
 import { ConfirmDialog, CreateRoomDialog, SettingsPanel, type CreateRoomResult } from './components/Dialogs'
 import { askConfirm } from './lib/confirm'
@@ -86,6 +86,17 @@ export function App() {
     setSettings(next)
     if (sessionRef.current) updateSessionSettings(sessionRef.current, next)
   }, [])
+
+  // The room list shows a room's host while it's offline: remember who hosts it, as seen inside.
+  // Runs again once joining has added the room to the list.
+  const currentHost = current?.host
+  const currentEndpoint = current?.endpoint
+  const remembered = settings?.recentRooms
+  useEffect(() => {
+    if (!currentEndpoint || !currentHost || !remembered) return
+    const next = rememberHost(remembered, currentEndpoint, currentHost)
+    if (next !== remembered) void updateSettings({ recentRooms: [...next] })
+  }, [currentEndpoint, currentHost, remembered, updateSettings])
 
   // --- joining -------------------------------------------------------------------
   const join = useCallback(
