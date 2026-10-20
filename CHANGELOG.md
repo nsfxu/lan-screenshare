@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Added
+
+- **Clickable links in chat.** Web addresses (`http://` or `https://`) in a message are links now and open in your browser.
+
 ## [2.7.0] - 2026-10-19
 
 ### Added
