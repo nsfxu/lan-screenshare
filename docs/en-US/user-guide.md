@@ -161,6 +161,8 @@ If a stream can't connect in 8 seconds (some VPNs and firewalls block it), the a
 
 While you **minimize** the app, or put one tile in full screen, the streams you can't see stop sending you video (you still hear them), which saves the streamer's upload and your network. The picture comes back within a second when you look again. The streamer sees you as "not looking" under your name. A stream in picture-in-picture or in its own window keeps playing.
 
+While you watch or share, your screen doesn't dim, go to sleep or lock by itself, like when you watch a video. It goes back to normal when you stop.
+
 ### Drawing on a stream
 
 To point at something on a stream you watch, turn on the pen: **Draw on the stream** (the pen under a focused stream). While it's on, your mouse over the stream shows to everyone watching, and to the person sharing, as a dot in your colour with your name. Click and drag to draw a quick mark; marks fade after a few seconds. **Clear my marks** (the eraser next to the pen) removes yours. Click the pen again to stop.

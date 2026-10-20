@@ -300,6 +300,14 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
     return () => void window.api.system.setViewerProtection(false)
   }, [watchingAny, room?.allowRecording])
 
+  // Nobody touches the mouse while watching, nor often while sharing: keep the screen from dimming or locking.
+  const keepAwake = watchingAny || sharing.sharing
+  useEffect(() => {
+    if (!keepAwake) return
+    window.api.system.keepAwake(true)
+    return () => window.api.system.keepAwake(false)
+  }, [keepAwake])
+
   // Optional: pause our share while minimized, resume when restored.
   useEffect(() => {
     return window.api.system.onWindowState((state) => {

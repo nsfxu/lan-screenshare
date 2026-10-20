@@ -163,6 +163,8 @@ Se uma transmissão não conectar em 8 segundos (algumas VPNs e firewalls bloque
 
 Enquanto você **minimiza** o app, ou deixa um quadro em tela cheia, as transmissões que você não consegue ver param de te mandar vídeo (o som continua), o que poupa o upload de quem transmite e a sua rede. A imagem volta em menos de um segundo quando você olha de novo. Quem transmite vê "não está olhando" embaixo do seu nome. Uma transmissão na janela flutuante ou numa janela só dela continua tocando.
 
+Enquanto você assiste ou transmite, a tela não escurece, não entra em repouso nem bloqueia sozinha, como quando você assiste um vídeo. Ela volta ao normal quando você para.
+
 ### Desenhar numa transmissão
 
 Para apontar algo numa transmissão que você assiste, ligue a caneta: **Desenhar na transmissão** (a caneta embaixo de uma transmissão em destaque). Enquanto ela está ligada, o seu mouse sobre a transmissão aparece para todo mundo que assiste, e para quem compartilha, como um ponto na sua cor com o seu nome. Clique e arraste para fazer um desenho rápido; os desenhos somem depois de alguns segundos. **Apagar meus desenhos** (a borracha ao lado da caneta) tira os seus. Clique na caneta de novo para parar.
