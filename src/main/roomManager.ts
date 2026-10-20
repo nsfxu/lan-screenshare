@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { generate as generateCert } from 'selfsigned'
-import { DEFAULT_PORT, PROBE_INTERVAL_MS, PROTOCOL_VERSION, ROOM_STALE_MS } from '../shared/constants'
+import { DEFAULT_PORT, PEOPLE_SHOWN_MAX, PROBE_INTERVAL_MS, PROTOCOL_VERSION, ROOM_STALE_MS } from '../shared/constants'
 import type {
   CreateRoomRequest,
   DiscoveredRoom,
@@ -14,7 +14,7 @@ import type {
 import { incompatibleRoomMessage } from '../shared/version'
 import { clampPinLength, generatePin, isValidPin, randomId, randomToken } from '../utils/crypto'
 import { MdnsDiscovery, type MdnsRoomRecord } from '../utils/mdns'
-import { endpointKey, fetchHostPicture, fingerprintFromPem, getLocalAddresses, probeRoom } from '../utils/network'
+import { endpointKey, fetchHostPicture, fetchPicture, fingerprintFromPem, getLocalAddresses, probeRoom } from '../utils/network'
 import { mainT } from './i18n'
 import { RoomServer, type Logger } from './server'
 import type { SettingsStore } from './settings'
@@ -395,6 +395,7 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
         // Fields a newer /info has and an older one doesn't: not kept from before.
         hostColor: result.info.hostColor,
         hostPicture: result.info.hostPicture,
+        people: result.info.people,
         reachable: result.info.protocol === PROTOCOL_VERSION,
         lastSeen: Date.now(),
         probeMs: result.ms
@@ -431,6 +432,49 @@ export class RoomManager extends EventEmitter<RoomManagerEvents> {
       }
     }
     entry.room = { ...entry.room, hostImage: entry.picture?.image ?? undefined }
+    await this.refreshPeoplePictures(entry)
+  }
+
+  /**
+   * Pictures of the people a public room lists, for the faces the room list shows (the first
+   * PEOPLE_SHOWN_MAX): each fetched once by hash and shared between rooms (the same person can be in
+   * several, or come back); a failed one is retried a minute later.
+   */
+  private peoplePictures = new Map<string, { image: string | null; failedAt: number }>()
+  private async refreshPeoplePictures(entry: Entry): Promise<void> {
+    const hashes = entry.room.reachable
+      ? (entry.room.people ?? []).slice(0, PEOPLE_SHOWN_MAX).flatMap((p) => (p.picture ? [p.picture] : []))
+      : []
+    const { address, port, tls } = entry.room
+    await Promise.all(
+      hashes.map(async (hash) => {
+        const known = this.peoplePictures.get(hash)
+        if (known && (known.image || Date.now() - known.failedAt < 60_000)) return
+        try {
+          const image = await fetchPicture({ address, port, tls }, hash, entry.advertisedFingerprint)
+          this.peoplePictures.set(hash, { image, failedAt: 0 })
+        } catch (err) {
+          this.log.debug(`picture ${hash} of ${entry.room.key}: ${(err as Error).message}`)
+          this.peoplePictures.set(hash, { image: null, failedAt: Date.now() })
+        }
+      })
+    )
+    const pictures: Record<string, string> = {}
+    for (const hash of hashes) {
+      const image = this.peoplePictures.get(hash)?.image
+      if (image) pictures[hash] = image
+    }
+    entry.room = { ...entry.room, pictures: hashes.length ? pictures : undefined }
+    this.forgetUnusedPictures()
+  }
+
+  /** Pictures nobody listed shows any more: only the faces on screen are kept. */
+  private forgetUnusedPictures(): void {
+    if (this.peoplePictures.size <= PEOPLE_SHOWN_MAX * this.entries.size) return
+    const used = new Set(
+      [...this.entries.values()].flatMap((e) => (e.room.people ?? []).slice(0, PEOPLE_SHOWN_MAX).map((p) => p.picture))
+    )
+    for (const hash of this.peoplePictures.keys()) if (!used.has(hash)) this.peoplePictures.delete(hash)
   }
 
   private trust(hostname: string, fingerprint: string): void {

@@ -360,7 +360,7 @@ function RoomRow({
     .join('\n')
   const answering = room && !status.offline ? room : null
   let details: ReactNode
-  if (answering) details = <RoomDetails room={answering} status={status} busy={busy} />
+  if (answering) details = <RoomDetails room={answering} status={status} busy={busy} faces={4} />
   else {
     const when = row.endpoint.lastVisited
     details = (
