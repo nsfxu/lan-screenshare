@@ -357,8 +357,12 @@ export interface Settings {
   uploadBudgetMbps: number
   /** Profile picture shown to others (square JPEG data URL), or null for initials. */
   avatar: string | null
-  /** Colour theme of the app (src/shared/themes.ts). */
+  /** Colour theme of the app (src/shared/themes.ts), unless it follows the computer's light or dark mode. */
   theme: ThemeId
+  /** Use darkTheme or lightTheme as the computer switches between dark and light mode (resolveTheme()). */
+  followSystemTheme: boolean
+  darkTheme: ThemeId
+  lightTheme: ThemeId
   /** Look for new versions on the releases page, and on Windows download them for a restart. */
   autoUpdate: boolean
   /** The app's language, or 'system' to follow the computer's (src/shared/i18n). */

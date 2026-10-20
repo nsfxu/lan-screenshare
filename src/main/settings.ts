@@ -6,7 +6,7 @@ import { isLanguageSetting } from '../shared/i18n'
 import { isAvatar } from '../shared/images'
 import { qualityPresets } from '../shared/quality'
 import { RECENT_ROOMS_MAX, toRecentHost } from '../shared/roomList'
-import { DEFAULT_THEME, isThemeId } from '../shared/themes'
+import { DEFAULT_DARK_THEME, DEFAULT_LIGHT_THEME, DEFAULT_THEME, isThemeId, isThemeOfKind } from '../shared/themes'
 import type { RecentRoom, RoomEndpoint, Settings } from '../shared/types'
 import { randomId } from '../utils/crypto'
 
@@ -56,6 +56,9 @@ function defaults(): Settings {
     uploadBudgetMbps: 100,
     avatar: null,
     theme: DEFAULT_THEME,
+    followSystemTheme: false,
+    darkTheme: DEFAULT_DARK_THEME,
+    lightTheme: DEFAULT_LIGHT_THEME,
     autoUpdate: true,
     language: 'system',
     lowLatency: false,
@@ -140,8 +143,10 @@ function sanitize(s: Settings, fallback: Settings, options: SettingsOptions): Se
   out.uploadBudgetMbps = Number.isInteger(budget) && budget >= 0 && budget <= 10_000 ? budget : fallback.uploadBudgetMbps
   out.avatar = s.avatar === null || isAvatar(s.avatar) ? s.avatar : fallback.avatar
   out.theme = isThemeId(s.theme) ? s.theme : fallback.theme
+  out.darkTheme = isThemeOfKind(s.darkTheme, 'dark') ? s.darkTheme : fallback.darkTheme
+  out.lightTheme = isThemeOfKind(s.lightTheme, 'light') ? s.lightTheme : fallback.lightTheme
   out.language = isLanguageSetting(s.language) ? s.language : fallback.language
-  for (const key of ['adaptiveQuality', 'forceTcp', 'useTls', 'autoRejoin', 'notifications', 'pauseOnMinimize', 'showStatsOverlay', 'shareAudio', 'excludeDiscordAudio', 'appAudioOnly', 'autoUpdate', 'lowLatency', 'allowDrawing'] as const) {
+  for (const key of ['adaptiveQuality', 'forceTcp', 'useTls', 'autoRejoin', 'notifications', 'pauseOnMinimize', 'showStatsOverlay', 'shareAudio', 'excludeDiscordAudio', 'appAudioOnly', 'autoUpdate', 'lowLatency', 'allowDrawing', 'followSystemTheme'] as const) {
     out[key] = typeof s[key] === 'boolean' ? s[key] : fallback[key]
   }
   return out

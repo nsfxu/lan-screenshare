@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { isThemeId, type ThemeId } from '../../shared/themes'
 
 const KEY = 'screenshare.theme'
@@ -23,4 +24,19 @@ export function applyRememberedTheme(): void {
   } catch {
     // storage unavailable: the default theme until the settings load
   }
+}
+
+const DARK_MODE = '(prefers-color-scheme: dark)'
+
+/** Whether the computer is in dark mode now, following it as it changes (e.g. at sunset). */
+export function useSystemDark(): boolean {
+  const [dark, setDark] = useState(() => window.matchMedia(DARK_MODE).matches)
+  useEffect(() => {
+    const query = window.matchMedia(DARK_MODE)
+    const onChange = (): void => setDark(query.matches)
+    query.addEventListener('change', onChange)
+    onChange()
+    return () => query.removeEventListener('change', onChange)
+  }, [])
+  return dark
 }

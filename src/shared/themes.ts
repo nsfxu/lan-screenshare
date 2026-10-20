@@ -33,7 +33,47 @@ export const THEMES: readonly Theme[] = [
 ]
 
 export const DEFAULT_THEME: ThemeId = 'classic'
+/** The themes used when following the computer, until others are picked. */
+export const DEFAULT_DARK_THEME: ThemeId = 'classic'
+export const DEFAULT_LIGHT_THEME: ThemeId = 'light'
 
 export function isThemeId(value: unknown): value is ThemeId {
   return THEMES.some((t) => t.id === value)
+}
+
+export function themeKind(id: ThemeId): Theme['kind'] {
+  return THEMES.find((t) => t.id === id)?.kind ?? 'dark'
+}
+
+export function isThemeOfKind(value: unknown, kind: Theme['kind']): value is ThemeId {
+  return isThemeId(value) && themeKind(value) === kind
+}
+
+/** The theme settings: one theme, or one dark and one light that follow the computer's mode. */
+export interface ThemeSettings {
+  theme: ThemeId
+  followSystemTheme: boolean
+  darkTheme: ThemeId
+  lightTheme: ThemeId
+}
+
+/** The theme to show now, given whether the computer is in dark mode. */
+export function resolveTheme(s: ThemeSettings, systemDark: boolean): ThemeId {
+  if (!s.followSystemTheme) return s.theme
+  return systemDark ? s.darkTheme : s.lightTheme
+}
+
+/** What picking `id` in Settings changes: the one theme, or the dark or light one while following the computer. */
+export function pickTheme(s: ThemeSettings, id: ThemeId): Partial<ThemeSettings> {
+  if (!s.followSystemTheme) return { theme: id }
+  return themeKind(id) === 'dark' ? { darkTheme: id } : { lightTheme: id }
+}
+
+/**
+ * Turning "follow the computer" on or off without a jump: on, the theme in use becomes the dark
+ * or light one (by its kind); off, the theme shown now stays as the one theme.
+ */
+export function followSystem(s: ThemeSettings, on: boolean, systemDark: boolean): Partial<ThemeSettings> {
+  if (!on) return { followSystemTheme: false, theme: resolveTheme(s, systemDark) }
+  return { followSystemTheme: true, ...(themeKind(s.theme) === 'dark' ? { darkTheme: s.theme } : { lightTheme: s.theme }) }
 }

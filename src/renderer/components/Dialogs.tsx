@@ -16,13 +16,14 @@ import { formatDiagnostics } from '../../shared/diagnostics'
 import { qualityPresets } from '../../shared/quality'
 import { qualityLabel } from '../lib/quality'
 import { LANGUAGES, type LanguageSetting } from '../../shared/i18n'
-import { THEMES } from '../../shared/themes'
+import { followSystem, pickTheme, THEMES } from '../../shared/themes'
 import type { AppInfo, AudioChoice, CodecSupport, DiscoveredRoom, Privacy, Settings } from '../../shared/types'
 import { autoCodec, codecDisplayName } from '../../shared/codecs'
 import { errorMessage } from '../lib/format'
 import { loadPicture, renderAvatar } from '../lib/images'
 import { useConfirmRequest } from '../lib/confirm'
 import { systemLanguage, useT } from '../lib/i18n'
+import { useSystemDark } from '../lib/theme'
 import { useUpdateStatus } from '../lib/update'
 import { Avatar } from './Avatar'
 import { Icon, type IconName } from './Icon'
@@ -324,6 +325,7 @@ export function SettingsPanel({
   onClose(): void
 }) {
   const { t } = useT()
+  const systemDark = useSystemDark()
   const [info, setInfo] = useState<AppInfo | null>(null)
   const [avatarError, setAvatarError] = useState<string | null>(null)
   const [cropping, setCropping] = useState<{ picture: ImageBitmap; url: string } | null>(null)
@@ -447,48 +449,80 @@ export function SettingsPanel({
         </SettingsGroup>
         <div className="settings-group">
           <h3 className="settings-group-title">{t('settings.theme')}</h3>
-          <div className="theme-groups" role="radiogroup" aria-label={t('settings.theme')}>
-            {(['dark', 'light'] as const).map((kind) => (
-              <div key={kind} className="theme-group">
-                <span className="muted small">{kind === 'dark' ? t('settings.themesDark') : t('settings.themesLight')}</span>
-                <div className="theme-picker">
-                  {THEMES.filter((theme) => theme.kind === kind).map((theme) => {
-                    const [background, panel, accent, live] = theme.swatches
-                    const selected = settings.theme === theme.id
-                    return (
-                      <button
-                        key={theme.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={selected}
-                        className={`theme-option ${selected ? 'selected' : ''}`}
-                        onClick={() => onChange({ theme: theme.id })}
-                      >
-                        {/* The app in miniature: the room list, a stream with its live mark, a button. */}
-                        <span className="theme-preview" aria-hidden="true" style={{ background }}>
-                          <span className="theme-preview-side" style={{ background: panel }}>
-                            <span style={{ background: accent }} />
-                            <span />
-                            <span />
-                          </span>
-                          <span className="theme-preview-stage">
-                            <span className="theme-preview-tile">
-                              <span style={{ background: live }} />
+          <label className="toggle-row settings-row">
+            <span className="settings-row-text">
+              <span>{t('settings.followSystemTheme')}</span>
+              <span className="muted small">{t('settings.followSystemThemeHint')}</span>
+            </span>
+            <input
+              type="checkbox"
+              checked={settings.followSystemTheme}
+              onChange={(e) => onChange(followSystem(settings, e.target.checked, systemDark))}
+            />
+          </label>
+          {/* Following the computer, one theme is picked in each group; otherwise one in all. */}
+          <div
+            className="theme-groups"
+            role={settings.followSystemTheme ? undefined : 'radiogroup'}
+            aria-label={settings.followSystemTheme ? undefined : t('settings.theme')}
+          >
+            {(['dark', 'light'] as const).map((kind) => {
+              const label = settings.followSystemTheme
+                ? kind === 'dark'
+                  ? t('settings.themesDarkFollowing')
+                  : t('settings.themesLightFollowing')
+                : kind === 'dark'
+                ? t('settings.themesDark')
+                : t('settings.themesLight')
+              return (
+                <div
+                  key={kind}
+                  className="theme-group"
+                  role={settings.followSystemTheme ? 'radiogroup' : undefined}
+                  aria-label={settings.followSystemTheme ? label : undefined}
+                >
+                  <span className="muted small">{label}</span>
+                  <div className="theme-picker">
+                    {THEMES.filter((theme) => theme.kind === kind).map((theme) => {
+                      const [background, panel, accent, live] = theme.swatches
+                      const selected = settings.followSystemTheme
+                        ? theme.id === (kind === 'dark' ? settings.darkTheme : settings.lightTheme)
+                        : settings.theme === theme.id
+                      return (
+                        <button
+                          key={theme.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          className={`theme-option ${selected ? 'selected' : ''}`}
+                          onClick={() => onChange(pickTheme(settings, theme.id))}
+                        >
+                          {/* The app in miniature: the room list, a stream with its live mark, a button. */}
+                          <span className="theme-preview" aria-hidden="true" style={{ background }}>
+                            <span className="theme-preview-side" style={{ background: panel }}>
+                              <span style={{ background: accent }} />
+                              <span />
+                              <span />
                             </span>
-                            <span className="theme-preview-button" style={{ background: accent }} />
+                            <span className="theme-preview-stage">
+                              <span className="theme-preview-tile">
+                                <span style={{ background: live }} />
+                              </span>
+                              <span className="theme-preview-button" style={{ background: accent }} />
+                            </span>
                           </span>
-                        </span>
-                        <span className="theme-label">
-                          {t(`theme.${theme.id}`)}
-                          {selected && <Icon name="check" size={14} stroke={2.6} />}
-                        </span>
-                        <span className="muted small">{t(`theme.${theme.id}.description`)}</span>
-                      </button>
-                    )
-                  })}
+                          <span className="theme-label">
+                            {t(`theme.${theme.id}`)}
+                            {selected && <Icon name="check" size={14} stroke={2.6} />}
+                          </span>
+                          <span className="muted small">{t(`theme.${theme.id}.description`)}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
         <SettingsGroup title={t('settings.groupStreams')}>
