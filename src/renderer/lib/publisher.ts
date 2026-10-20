@@ -1,6 +1,7 @@
 import { NO_PROCESS_LOOPBACK, SNAPSHOT_INTERVAL_MS, SNAPSHOT_MAX_CHARS, SNAPSHOT_WIDTH, STATS_INTERVAL_MS } from '../../shared/constants'
 import {
   AdaptiveController,
+  degradationFor,
   RampGuard,
   encodingFor,
   encodingForWatcher,
@@ -849,10 +850,7 @@ export class Publisher extends Emitter<Events> {
     // An inactive encoding stops encoding and sending video to this watcher; audio is a separate sender.
     const enc = { ...encodingForWatcher(peer.controller.preset, source, limits), active }
     peer.capKbps = active ? Math.round(enc.maxBitrate / 1000) : null
-    // 'motion' content keeps the frame rate and trades resolution; 'detail' keeps text sharp, except while
-    // the connection's bandwidth estimate grows (RampGuard): keeping the resolution then gets it stuck.
-    const degradation =
-      this.contentHint === 'motion' || peer.ramp.active ? 'maintain-framerate' : 'maintain-resolution'
+    const degradation = degradationFor(this.contentHint, peer.ramp.active, this.sourceId)
     const key = JSON.stringify([enc, degradation])
     if (key === peer.applied) return
     const params = peer.sender.getParameters()
