@@ -75,6 +75,10 @@ export interface RecentRoom extends RoomEndpoint {
   lastVisited?: number
   /** Its host when you were last inside, to show while the room doesn't answer; missing for rooms remembered before 2.8.0. */
   host?: RecentHost
+  /** Kept at the top of the list, and never pushed out by newer rooms. */
+  pinned?: boolean
+  /** A name you gave it, shown instead of the room's own; only on this computer. */
+  nickname?: string
 }
 
 /** A room's host as remembered with the room: kept on this computer only. */

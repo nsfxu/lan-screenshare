@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { pushRecentRoom, rememberHost, sameEndpoint } from '../shared/roomList'
+import { PINNED_ROOMS_MAX, pinRecentRoom, pushRecentRoom, rememberHost, renameRecentRoom, sameEndpoint } from '../shared/roomList'
 import type { CodecSupport, DiscoveredRoom, RoomEndpoint, RoomState, Settings } from '../shared/types'
 import { ConfirmDialog, CreateRoomDialog, SettingsPanel, type CreateRoomResult } from './components/Dialogs'
 import { askConfirm } from './lib/confirm'
@@ -336,6 +336,16 @@ export function App() {
           onForgetRecent={(ep) =>
             void updateSettings({ recentRooms: settings.recentRooms.filter((r) => !sameEndpoint(r, ep)) })
           }
+          onPinRecent={(ep, pinned) => {
+            const next = pinRecentRoom(settings.recentRooms, ep, pinned)
+            if (next !== settings.recentRooms) void updateSettings({ recentRooms: [...next] })
+            else if (pinned) toast(t('rooms.pinnedFull', { count: PINNED_ROOMS_MAX }), 'error')
+          }}
+          onRenameRecent={(ep, name, roomName) => {
+            const next = renameRecentRoom(settings.recentRooms, ep, name, roomName)
+            if (next !== settings.recentRooms) void updateSettings({ recentRooms: [...next] })
+          }}
+          onToast={toast}
           onCreate={openCreate}
           onSettings={() => setSettingsOpen(true)}
           onRename={(displayName) => void updateSettings({ displayName })}
