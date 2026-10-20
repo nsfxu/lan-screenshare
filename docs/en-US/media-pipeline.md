@@ -155,7 +155,7 @@ Turning **Adaptive quality** off keeps each watcher at the maximum preset.
 
 **Its own cap isn't the network.** WebRTC says "limited by bandwidth" whenever the encoder can't reach the quality it wants within its maximum bitrate, and detailed content at a low step always hits that step's cap. Counted as the network, that kept the controller at the bottom for good (measured: 480p30 on the software encoder, a keyframe every second, with 16 Mbps available). So "limited by bandwidth" only counts as bad while the connection's estimate (`availableOutgoingBitrate`) is below the encoding's cap, and as good otherwise (`limitedByOwnCap`).
 
-**Ramping up a connection.** A new connection's bandwidth estimate starts at ~3 Mbps. Keeping the resolution (*Sharp text*), the encoder drops frames to fit; the connection then carries little, WebRTC sees it as limited by the app rather than the network and doesn't raise its estimate, and the watcher can stay at ~8 fps for good (measured, random per connection; it also happened with WebRTC's default pacing). Keeping the frame rate fills it and the estimate grows (11 Mbps within 12 s in 3 of 3 runs). So `RampGuard` (`src/shared/quality.ts`) has each connection keep the frame rate (`maintain-framerate`) until its estimate covers the encoding's cap, for at most 20 s, and again if it later drops below half its frame rate with no reason given while the estimate is below the cap. With both: detailed content, adaptive quality on, 2 viewers, measured from the first second, 57 fps (p5 56–57) and no freezes in 6 of 6 connections, at 720p/540p for the first ~25 s and 1080p from ~30 s.
+**Ramping up a connection.** A new connection's bandwidth estimate starts at ~3 Mbps. Keeping the resolution (*Sharp text*), the encoder drops frames to fit; the connection then carries little, WebRTC sees it as limited by the app rather than the network and doesn't raise its estimate, and the watcher can stay at ~8 fps for good (measured, random per connection; it also happened with WebRTC's default pacing). Keeping the frame rate fills it and the estimate grows (11 Mbps within 12 s in 3 of 3 runs). So `RampGuard` (`src/shared/quality.ts`) has each connection keep the frame rate (`maintain-framerate`) until its estimate covers the encoding's cap, for at most 20 s, and again if it later drops below half its frame rate with no reason given while the estimate is below the cap. With both: detailed content, adaptive quality on, 2 viewers, measured from the first second, 57 fps (p5 56–57) and no freezes in 6 of 6 connections, at 720p/540p for the first ~25 s and 1080p from ~30 s. Not for a shared window (`degradationFor`): scaled down, a window's odd size (e.g. 1586×892 → 1188×669) makes the NVIDIA hardware encoders fail, and WebRTC then encodes in software for the rest of the session (2.5.0 fell to 11–27 fps this way). Windows keep their resolution from the start: 57 fps with 2 viewers, no ramp-up problem measured.
 
 The same per-watcher samples feed `StruggleDetector` (`src/shared/struggle.ts`), which tells the streamer *why* quality drops: **cpu** (WebRTC reports a CPU limitation, or encoding takes longer than the frame budget), **bandwidth** (every visible watcher is bandwidth-limited, so it's our upload rather than one viewer's Wi-Fi) or **encoders** (some watchers got a hardware encoder and others a software one: the GPU ran out of encoder sessions). A condition must hold in 8 of the last 10 seconds; each kind is shown at most once every 10 minutes, and the notice goes away when the condition no longer holds. Hidden watchers are left out.
 
@@ -298,6 +298,17 @@ Measured with `npm run perf -- --viewers=2 --view-height=1080 --seconds=60 --lat
 | The app's estimate for the same frames | 31 ms | 34 ms |
 
 The estimate leaves out about 23 ms: the capture pipeline, the frames the viewer's browser and Windows queue before showing, and the pattern's own drawing to its screen (up to one refresh at 240 Hz). With adaptive quality on, the same detailed pattern dropped the stream to the software encoder at 30 fps (the controller steps down on "limited by bandwidth" and its lowest step's own bitrate cap keeps reporting it).
+
+### Faster capture (2.5.0)
+
+Two Chromium 152 features that copy each captured frame fewer times, tried on the RTX 4070 / Windows 10 PC (1080p60, 2 viewers at 1080p, NVIDIA HEVC). Neither is used:
+
+| Feature | Result |
+|---|---|
+| `ZeroCopyDesktopCapture` (screen frames straight into the capture buffer) | Capture alone works (57–58 fps), but the NVIDIA hardware encoders (H.264 and H.265) **hang** on its frames: sharing stops as soon as someone watches. Software VP8 kept working. |
+| `WebRtcAllowWgcUsingTexture` (Windows Graphics Capture frames kept on the GPU; windows on Windows 10, screens only from Windows 11 24H2) | Sharing a window: 57 fps, encode 3.3 vs 3.4 ms, app CPU 5 % either way. No measurable gain. |
+
+Capture costs this computer little already (the app's CPU ~5 % at 1080p60). Worth trying again on Windows 11 24H2, where the second one also covers whole screens.
 
 ### Sound and picture (2.4.1)
 
