@@ -53,7 +53,10 @@ test("Match my computer switches between a dark and a light theme with the compu
   await win.getByRole('radio', { name: /^Forest/ }).click()
 
   // Turning it on keeps Forest as the dark theme; Light is the light one until another is picked.
-  await win.getByRole('checkbox', { name: /^Match my computer/ }).check()
+  // The switch follows the saved settings, a moment after the click: wait for it rather than check().
+  const follow = win.getByRole('checkbox', { name: /^Match my computer/ })
+  await follow.click()
+  await expect(follow).toBeChecked()
   const dark = win.getByRole('radiogroup', { name: 'Dark, in dark mode' })
   const light = win.getByRole('radiogroup', { name: 'Light, in light mode' })
   await expect(dark.getByRole('radio', { name: /^Forest/ })).toHaveAttribute('aria-checked', 'true')
@@ -75,7 +78,8 @@ test("Match my computer switches between a dark and a light theme with the compu
   await win.emulateMedia({ colorScheme: 'light' })
   await win.getByRole('button', { name: 'Settings' }).click()
   await win.getByRole('button', { name: 'Appearance' }).click()
-  await win.getByRole('checkbox', { name: /^Match my computer/ }).uncheck()
+  await win.getByRole('checkbox', { name: /^Match my computer/ }).click()
+  await expect(win.getByRole('checkbox', { name: /^Match my computer/ })).not.toBeChecked()
   await expect(win.getByRole('radiogroup', { name: 'Theme' }).getByRole('radio', { checked: true })).toHaveAccessibleName(/^Paper/)
   await win.keyboard.press('Escape')
   await win.emulateMedia({ colorScheme: 'dark' })
