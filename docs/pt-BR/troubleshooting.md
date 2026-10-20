@@ -53,7 +53,7 @@ flowchart TD
 ## O vídeo não começa ou fica preto
 
 - **"Connecting…" por alguns segundos e depois toca**: normal quando a sua rede bloqueia o WebRTC (UDP). Depois de 8 segundos o app passa sozinho para a conexão TCP. **Tentar a conexão mais rápida de novo** no menu do botão direito da transmissão volta para o WebRTC.
-- **Nunca conecta**: confira se os dois computadores permitem o ScreenShare no firewall. Como último recurso, ligue **Configurações → Conexão → Sempre usar transporte TCP** no espectador.
+- **Nunca conecta**: confira se os dois computadores permitem o ScreenShare no firewall. Como último recurso, ligue **Configurações → Geral → Sempre usar transporte TCP** no espectador.
 - **Quem transmite vê a própria transmissão normal, mas você vê preto**: a pessoa pode ter minimizado o app com **Pausar o compartilhamento ao minimizar** ligado (o quadro mostra *Compartilhamento pausado*) ou compartilhado uma janela minimizada. Peça para ela usar **Trocar fonte**.
 - **Você não vê a sua própria transmissão**: é de propósito. Clique em **Mostrar minha transmissão** no seu próprio quadro.
 - **Capturas de tela do app saem pretas enquanto você assiste**: também é de propósito; gravar transmissões é bloqueado.
@@ -113,7 +113,7 @@ No Windows 10 (e no 11 anterior ao 24H2), compartilhar uma tela inteira mostra o
 
 Inclua, por favor:
 
-1. A versão do app (**Configurações → Sobre**) e o sistema operacional de cada computador envolvido.
+1. **Configurações → Sobre → Copiar diagnóstico** de cada computador envolvido, colado no relato (ou **Salvar em arquivo…** para anexar como arquivo). Ele traz a versão do app e do protocolo, o sistema operacional, a placa de vídeo e quais codecs rodam por hardware, os endereços de rede do computador, suas configurações e o fim do log. Nunca inclui PINs de sala, tokens de anfitrião nem o id pelo qual as salas te reconhecem, mas tem o seu nome, nomes de salas e endereços: dê uma olhada antes de publicar.
 2. O que você fez, o que esperava e o que aconteceu.
-3. O trecho relevante do `screenshare.log` de cada computador (**Configurações → Sobre → Abrir logs**). Tire antes qualquer informação privada.
+3. Se o problema aconteceu há um tempo, o trecho relevante do `screenshare.log` (**Configurações → Sobre → Abrir logs**): o diagnóstico só traz as últimas 300 linhas. Tire antes qualquer informação privada.
 4. Para problemas de qualidade: uma captura dos selos de estatística do quadro e do **Estatísticas da transmissão** de quem transmite.

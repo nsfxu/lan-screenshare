@@ -25,7 +25,7 @@ Everything that travels between apps in a room: discovery, the HTTP probe, the W
 - Every `hello` carries it. The server rejects a different version with the fatal error `version_mismatch`, whose message says who has to update, e.g. "This room runs ScreenShare 2.0.0, you have 1.2.0: update to join" (`incompatibleRoomMessage` in `src/shared/version.ts`; servers before 1.2.0 say "This room runs a different app version").
 - `GET /info` and the mDNS TXT record also report it, so the room list can show incompatible rooms. Since 1.2.0, `/info` also carries the host's `appVersion`, and the room list says **Update to join** or **Older version** with the same message.
 - Since 1.2.0, `hello` and `Participant` carry an optional `appVersion` (SemVer, e.g. `1.2.0`). The server drops a malformed one; older apps ignore the field. Others in the room use it to suggest updating when someone runs a newer version.
-- History: v3 introduced multi-stream (anyone can share). v4 added profile pictures (`set-avatar` / `avatar`) and the watcher's frame-rate choice in `view-size` / `watcher-view`.
+- History: v3 introduced multi-stream (anyone can share). v4 added profile pictures (`set-avatar` / `avatar`) and the watcher's frame-rate choice in `view-size` / `watcher-view`. 2.6.0 added drawing on a stream (`pointer`, `stroke`, `clear-marks`, `allow-drawing`, `marks-cleared`, and the optional `drawingAllowed` and `stream.drawing`) without a new version: older apps never see these messages, because a new app only offers the pen when the host's server and the streamer's app both say they support it.
 
 ## Transports at a glance
 
@@ -81,11 +81,15 @@ Returns `RoomInfo` as JSON, with no secrets:
   "streams": 2,
   "protocol": 4,
   "appVersion": "1.2.0",
-  "startedAt": 1790000000000
+  "startedAt": 1790000000000,
+  "hostColor": "#64b5f6",
+  "hostPicture": "3f9a0c1d2e4b5a69"
 }
 ```
 
-The probing side checks the certificate fingerprint against the one advertised over mDNS, if any (`probeRoom` in `src/utils/network.ts`). Any other path returns 404.
+The probing side checks the certificate fingerprint against the one advertised over mDNS, if any (`probeRoom` in `src/utils/network.ts`), and drops malformed `appVersion`, `hostColor` and `hostPicture` values.
+
+Since 2.7.0 the room list shows each room's host: `hostColor` is the host's colour (`#rrggbb`) for their initials, and `hostPicture`, present when the host has a profile picture, is the first 16 hex digits of its SHA-256. When the hash changes, the room list fetches the picture once from `GET /host-picture` (`{"image": "data:image/…"}`, 404 without one) and checks it like any profile picture (`isAvatar`). Both fields are missing from older hosts, whose rooms show initials or the room's first letter. Any other path returns 404.
 
 ## WebSocket: connection lifecycle
 
@@ -127,7 +131,7 @@ sequenceDiagram
 | `signal` | `to, stream, data` | Streamer ↔ one of its watchers | Relays as `signal` only if `to` and `stream` form an existing streamer↔watcher pair. |
 | `ping` | `t` | Anyone | Answers `pong`. |
 | `bye` | | Anyone | Frees the seat immediately. |
-| `stream-state` | `sharing, paused, audio` | Anyone | Starts, updates or ends this participant's stream. Announces start/stop in chat. |
+| `stream-state` | `sharing, paused, audio, drawing?` | Anyone | Starts, updates or ends this participant's stream. Announces start/stop in chat. |
 | `publisher-stats` | `encodeMs` | Streamer | Forwards to its watchers as `publisher-stats`. |
 | `snapshot` | `image` | Streamer only | Validates (JPEG/WebP ≤ 96 000 chars, ≤ 1 per second), stores, broadcasts to others. |
 | `watch` | `streamer, transport` | Anyone | Registers the subscription, sends `watch-request` to the streamer. Re-sending switches transport. Errors: `bad_request`, `not_sharing`. |
@@ -135,10 +139,14 @@ sequenceDiagram
 | `stats` | `streamer, stats, mediaState` | Watcher | Forwards to the streamer as `watcher-stats`. |
 | `keyframe-request` | `streamer` | TCP watcher | Forwards to the streamer (at most 1 per second per watcher). |
 | `view-size` | `streamer, height, fps` | Watcher | Validates (`height` 90–8640 or null, `fps` 1–240 or null) and forwards as `watcher-view`. Height 90 at 1 fps means the watcher can't see the stream ([media pipeline](media-pipeline.md#2-view-limit-only-send-what-is-shown)). |
+| `pointer` | `streamer, x, y` (0–1, or both null when it leaves) | Watcher of that stream | Only while the room (`drawingAllowed`) and the streamer (`stream.drawing`) allow drawing; ≤ 30 per second. Relayed to the streamer and its other watchers. |
+| `stroke` | `streamer, id, points, done` | Watcher of that stream | Same conditions; `id` ≤ 16 word characters, `points` 1–64 pairs of 0–1 numbers; ≤ 30 per second. Relayed the same way. |
+| `clear-marks` | `streamer` | Watcher of that stream, or its streamer | ≤ 5 per second. Relayed as `marks-cleared` (`all: true` when the streamer clears everyone's). |
 | `kick` | `userId` | Host | Bans the client id for this room session, closes its socket, announces it. |
 | `stop-stream` | `userId` | Host | Ends that stream, tells the streamer (`stream-stopped`) and its watchers. |
 | `delete-message` | `id` | Host | Removes the message from history, broadcasts `chat-deleted`. |
 | `mute-chat` | `muted` | Host | Toggles chat mute, broadcasts `room`. |
+| `allow-drawing` | `allowed` | Host | Lets watchers draw on streams in this room, or not (`drawingAllowed`), broadcasts `room`. |
 | `end-room` | | Host | Sends `room-ended` to everyone and shuts the server down. |
 
 Host-only messages from anyone else get the non-fatal error `host_only`.
@@ -149,7 +157,7 @@ Host-only messages from anyone else get the non-fatal error `host_only`.
 |---|---|---|
 | `welcome` | `selfId, resumeToken, room, participants, history` | The client that just joined or resumed |
 | `error` | `code, message, fatal, retryAfterMs?, attemptsLeft?` | The client concerned (fatal errors close the socket) |
-| `room` | `room` (`RoomState`: info + `chatMuted`) | Everyone, when room info changes |
+| `room` | `room` (`RoomState`: info + `chatMuted` + `drawingAllowed`, which hosts before 2.6.0 leave out) | Everyone, when room info changes |
 | `participants` | `participants` | Everyone, when presence, streams or watching change |
 | `chat` | `message` | Everyone |
 | `chat-deleted` | `id` | Everyone |
@@ -168,8 +176,11 @@ Host-only messages from anyone else get the non-fatal error `host_only`.
 | `stream-ended` | `streamer` | Watchers of a stream that ended |
 | `snapshot` | `from, image \| null` | Everyone except the streamer (null clears it) |
 | `avatar` | `from, image \| null` | Everyone, sender included (null removes it) |
+| `pointer` | `from, streamer, x, y` | The streamer and the stream's watchers, except the sender |
+| `stroke` | `from, streamer, id, points, done` | The same |
+| `marks-cleared` | `from, streamer, all` | The same |
 
-`Participant` (in `participants` and `welcome`) contains: `id`, `name`, `role` (`host` or `viewer`), `color`, `joinedAt`, `status` (`connected` or `reconnecting`), `slot` (0–255, used by the TCP relay), `stream` (`{paused, audio, startedAt}` or `null`) `watching` (ids of the streams this person watches) and `appVersion` (their app version, when their app sends one).
+`Participant` (in `participants` and `welcome`) contains: `id`, `name`, `role` (`host` or `viewer`), `color`, `joinedAt`, `status` (`connected` or `reconnecting`), `slot` (0–255, used by the TCP relay), `stream` (`{paused, audio, startedAt, drawing?}` or `null`; `drawing` comes only from apps on 2.6.0 or later) `watching` (ids of the streams this person watches) and `appVersion` (their app version, when their app sends one).
 
 ### Chat lines
 
@@ -294,6 +305,8 @@ Apps show errors in their own language by `code`; `message` is English, for olde
 | Preview size / interval / min interval | ≤ 96 000 chars / 60 s / 1 s | `SNAPSHOT_*` |
 | Profile picture size / min interval | ≤ 40 000 chars (128 px JPEG) / 1 s | `AVATAR_*` |
 | Max WebSocket message | 16 MB | `MAX_PAYLOAD_BYTES` (server) |
+| Marks: pointer / stroke pieces / clears per second | 30 / 30 / 5 | `POINTER_RATE`, `STROKE_RATE`, `CLEAR_RATE` (`shared/marks.ts`) |
+| Marks: points per piece / per stroke / stroke id | 64 / 2000 / 16 chars | `STROKE_MAX_POINTS`, `STROKE_TOTAL_POINTS`, `STROKE_ID_MAX` |
 | TCP relay queue per watcher | 2 MB | `TCP_MAX_BUFFERED_BYTES` |
 
 ## Changing the protocol

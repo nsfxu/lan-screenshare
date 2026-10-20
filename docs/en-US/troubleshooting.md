@@ -53,7 +53,7 @@ flowchart TD
 ## The video doesn't start or stays black
 
 - **"Connecting…" for a few seconds, then it plays**: normal when your network blocks WebRTC (UDP). After 8 seconds the app switches to the TCP connection by itself. **Try the faster connection again** in the stream's right-click menu goes back to WebRTC.
-- **It never connects**: make sure both computers allow ScreenShare through the firewall. As a last resort, enable **Settings → Connection → Always use TCP transport** on the viewer.
+- **It never connects**: make sure both computers allow ScreenShare through the firewall. As a last resort, enable **Settings → General → Always use TCP transport** on the viewer.
 - **The streamer sees their own stream is fine but you see black**: the streamer may have minimized their app with **Pause sharing while minimized** on (the tile says *Sharing paused*), or shared a window that is minimized. Ask them to use **Change source**.
 - **Your own stream isn't visible to you**: that's on purpose. Click **Show my stream** on your own tile.
 - **Screenshots of the app are black while watching**: also on purpose; recording streams is blocked.
@@ -113,7 +113,7 @@ On Windows 10 (and 11 before 24H2), sharing a whole screen shows the cursor even
 
 Please include:
 
-1. App version (**Settings → About**) and operating system on each computer involved.
+1. **Settings → About → Copy diagnostics** from each computer involved, pasted into the report (or **Save to file…** to attach it as a file). It has the app and protocol version, the operating system, the graphics card and which codecs run in hardware, the computer's network addresses, your settings and the end of the log. It never includes room PINs, host tokens or the id rooms know you by, but it does have your name, room names and addresses: look it over before posting it publicly.
 2. What you did, what you expected, what happened.
-3. The relevant part of `screenshare.log` from each computer (**Settings → About → Open logs**). Remove anything private first.
+3. If the problem happened a while ago, the relevant part of `screenshare.log` (**Settings → About → Open logs**): the diagnostics only have the last 300 lines. Remove anything private first.
 4. For quality problems: a screenshot of the tile's stats badges and of the streamer's **Stream stats**.

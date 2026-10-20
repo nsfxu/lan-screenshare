@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { CaptureSource, ScreenPermission } from '../../shared/types'
 import { errorMessage } from '../lib/format'
 import { useT } from '../lib/i18n'
+import { noteSources } from '../lib/lastShare'
 import { Icon } from './Icon'
 
 interface Props {
@@ -23,6 +24,7 @@ export function SourcePicker({ selected, onSelect }: Props) {
     try {
       const [list, perm] = await Promise.all([window.api.capture.listSources(), window.api.capture.permission()])
       setSources(list)
+      noteSources(list)
       setPermission(perm)
       if (!selected) {
         const first = list.find((s) => s.kind === 'screen') ?? list[0]

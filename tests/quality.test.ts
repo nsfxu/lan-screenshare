@@ -25,6 +25,7 @@ import {
   splitBudget,
   VIEW_HEIGHT_STEPS,
   viewHeightStep,
+  viewRequest,
   watchLimit,
   WATCH_QUALITIES,
   type NetworkSample
@@ -305,6 +306,35 @@ describe("hidden view (watcher can't see the stream)", () => {
     for (const q of WATCH_QUALITIES) {
       for (const step of [null, ...VIEW_HEIGHT_STEPS]) expect(isHiddenView(watchLimit(step, q))).toBe(false)
     }
+  })
+})
+
+describe('what a watcher asks for (tile, own window, picture-in-picture)', () => {
+  const auto = getWatchQuality('auto')
+
+  it('follows the tile while it can be seen, and asks for nothing while it cannot', () => {
+    expect(viewRequest({ step: 720, hidden: false, detached: false }, auto)).toEqual({ height: 720, fps: null })
+    expect(viewRequest({ step: 720, hidden: true, detached: false }, auto)).toEqual(HIDDEN_VIEW)
+    // In its own window it can be seen whatever the room does.
+    expect(viewRequest({ step: 1080, hidden: true, detached: true }, auto)).toEqual({ height: 1080, fps: null })
+  })
+
+  it('keeps a stream in picture-in-picture playing while the room cannot be seen, at that window’s size', () => {
+    expect(viewRequest({ step: 1080, hidden: true, detached: false, pip: 360 }, auto)).toEqual({ height: 360, fps: null })
+    expect(isHiddenView(viewRequest({ step: null, hidden: true, detached: false, pip: 360 }, auto))).toBe(false)
+  })
+
+  it('asks for the largest place the stream is seen', () => {
+    expect(viewRequest({ step: 480, hidden: false, detached: false, pip: 720 }, auto)).toEqual({ height: 720, fps: null })
+    expect(viewRequest({ step: 1080, hidden: false, detached: false, pip: 360 }, auto)).toEqual({ height: 1080, fps: null })
+    expect(viewRequest({ step: null, hidden: false, detached: false, pip: 360 }, auto)).toEqual({ height: null, fps: null })
+    expect(viewRequest({ step: 480, hidden: false, detached: false, pip: null }, auto)).toEqual({ height: null, fps: null })
+  })
+
+  it('still respects the quality the watcher chose', () => {
+    const q = getWatchQuality('480p30')
+    expect(viewRequest({ step: 1080, hidden: true, detached: false, pip: 720 }, q)).toEqual({ height: 480, fps: 30 })
+    expect(viewRequest({ step: 720, hidden: true, detached: false }, q)).toEqual(HIDDEN_VIEW)
   })
 })
 

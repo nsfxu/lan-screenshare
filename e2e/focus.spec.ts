@@ -87,13 +87,17 @@ test('click to focus, double-click for full screen; volume below a focused strea
 
   // ...and everything but the picture hides after a moment without the mouse moving.
   const opacity = (selector: string) => win.locator(selector).first().evaluate((el) => getComputedStyle(el).opacity)
-  const why = () =>
-    win.evaluate(() => ({
+  const why = async () => ({
+    // Where the real pointer is: on a desktop in use, it hovers whatever it rests on.
+    pointer: await bob.app.evaluate(({ screen }) => screen.getCursorScreenPoint()),
+    ...(await win.evaluate(() => ({
       stage: document.querySelector('.stage-area')?.className,
       active: document.activeElement?.tagName + ' ' + (document.activeElement?.getAttribute('aria-label') ?? ''),
       hovered: [...document.querySelectorAll(':hover')].map((e) => e.className).slice(-3),
-      menu: !!document.querySelector('[role=menu]')
-    }))
+      menu: !!document.querySelector('[role=menu]'),
+      size: [innerWidth, innerHeight]
+    })))
+  })
   for (const part of ['.stage-controls', '.spotlight-strip', '.spotlight-main .tile-bar']) {
     await expect
       .poll(() => opacity(part), { timeout: 6_000, message: `${part} hides` })
@@ -109,6 +113,14 @@ test('click to focus, double-click for full screen; volume below a focused strea
   await expect.poll(() => opacity('.spotlight-main .tile-bar')).toBe('1')
   await win.getByRole('button', { name: 'Exit full screen' }).click()
   await expect.poll(() => win.evaluate(() => !!document.fullscreenElement)).toBe(false)
+  // macOS animates the window out of full screen. Asking again before that's over ends with the window
+  // full screen and the page not (the late "left full screen" reaches the page after the new request).
+  if (process.platform === 'darwin') {
+    await expect
+      .poll(() => bob.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => !w.webContents.getURL().startsWith('about:'))!.isFullScreen()))
+      .toBe(false)
+    await win.waitForTimeout(1000)
+  }
 
   // Entering full screen with its button (which keeps focus after the click) still lets the controls hide.
   await win.locator('.stage-controls').getByRole('button', { name: 'Full screen' }).click()

@@ -75,6 +75,7 @@ describe('settings', () => {
     expect(store.get().theme).toBe('classic')
     expect(store.update({ theme: 'graphite' }).theme).toBe('graphite')
     expect(store.update({ theme: 'neon' as never }).theme).toBe('graphite')
+    expect(store.update({ theme: 'paper' }).theme).toBe('paper')
   })
 
   it('checks for updates by default, also for settings files from before the switch', () => {

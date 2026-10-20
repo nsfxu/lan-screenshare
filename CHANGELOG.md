@@ -14,6 +14,29 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 - **Sharing a window is smooth again.** Since 2.5.0, sharing a single window (not a whole screen) of detailed content could drop to about 10 frames a second on NVIDIA graphics cards, because the video was then encoded without the graphics card. Windows are now shared at full speed from the start, as before.
 
+## [2.7.0] - 2026-10-19
+
+### Added
+
+- **Six more themes** in **Settings → Appearance**, now grouped as dark and light. Dark: **Black** (true black, for OLED screens), **Forest** and **Ember**. Light, for bright rooms: **Light**, **Paper** and **Mist**; the room's stage stays dark in them, so streams and the controls over them look as usual.
+
+### Changed
+
+- **A clearer room list.** Each room shows its host's profile picture (or initials), with a red dot while someone shares and a lock when it's private, and a second line with how many people are inside, so long names fit. Rooms you've been in that don't answer are folded under **Offline**, with when you were last there, and while you're not in a room the middle shows the rooms on your network as cards to join. Pictures need the host on this version; older hosts show initials.
+- **More room for the picture.** The name bar on top of each stream now hides with the controls when you leave the mouse still, the people under a focused stream are smaller and centred, and the controls sit a little higher, with more space above them.
+- **A stream's right-click menu in sections**: View, Volume (a slider, with the speaker to mute) and Quality you receive, with **Stop watching** last, in red. Drawing stays under the stream, in the controls. The volume that pops up from the speaker is now a vertical slider. **Clear marks on my screen** is gone from the Sharing menu: marks fade by themselves.
+- **Room settings for the host** behind a new cog next to ⓘ: Public or Private (with the PIN), **Allow drawing on streams**, **Let viewers chat** (it was the Mute chat button over the chat) and **End room for everyone**. ⓘ now shows the room's details, the same for everyone, with the address to copy.
+- **Settings, tidier.** One section at a time, chosen from a list with icons; **Notifications** and **Connection** are now together under **General**. Settings sit in boxes with what each one does under its name, the themes show a small preview of the app in their colours, **Advanced** says which codec Automatic usually sends and marks **Lowest latency** as needing a restart, and **About** gathers **Copy diagnostics**, **Save to file…** and **Open logs** under **Troubleshooting**.
+
+## [2.6.0] - 2026-10-18
+
+### Added
+
+- **Picture in picture**: pop a stream you watch into a small window that stays on top of other apps, to keep watching while you play or work. It's next to the volume and full-screen buttons under a focused stream, and in the stream's right-click menu. It keeps playing when you minimize the room.
+- **Copy diagnostics** (Settings → About): one click copies what a bug report needs, or **Save…** saves it to a file. It has the app and system versions, the graphics card and codecs, network addresses, your settings and the end of the log, and never room PINs or tokens.
+- **Draw on a stream**: turn on the pen under a stream you watch to point at it (others see a dot with your name) and draw quick marks that fade after a few seconds. Everyone watching sees them, and so does the person sharing, on their own screen, without the marks showing up in the stream. Sharers can turn it off in **Settings → Sharing**, and hosts for the whole room. Needs the host and the sharer on this version.
+- **Share again**: next to **Share screen**, one click shares the same screen or window as last time, with the same sound options. It's remembered after a restart too; if that window is gone, the picker opens instead.
+
 ## [2.5.0] - 2026-10-18
 
 ### Added
@@ -158,7 +181,9 @@ The first release.
 - Reconnects after short network drops, and switches to TCP when a network blocks WebRTC.
 - Encrypted connections, the PIN kept only in memory, and the window hidden from screenshots while you watch.
 
-[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.5.0...HEAD
+[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.7.0...HEAD
+[2.7.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.6.0...v2.7.0
+[2.6.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.4.1...v2.5.0
 [2.4.1]: https://github.com/nsfxu/lan-screenshare/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.3.0...v2.4.0

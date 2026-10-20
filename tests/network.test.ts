@@ -3,7 +3,7 @@ import { generate } from 'selfsigned'
 import { createHash, X509Certificate } from 'node:crypto'
 import { RoomServer } from '../src/main/server'
 import { addressRank, endpointUrl, getMulticastAddresses, fingerprintFromPem, parseHostPort, probeRoom } from '../src/utils/network'
-import { chooseCodecOrder, mungeBitrates, mungeOpus } from '../src/shared/codecs'
+import { autoCodec, chooseCodecOrder, codecDisplayName, mungeBitrates, mungeOpus } from '../src/shared/codecs'
 
 describe('parseHostPort', () => {
   it('parses addresses with and without ports', () => {
@@ -65,6 +65,16 @@ describe('TLS rooms', () => {
 
 describe('codec selection', () => {
   const enc = (mime: string, hardware: boolean) => ({ mimeType: mime, hardware })
+
+  it('names what Automatic sends with, for Settings', () => {
+    const h264 = enc('video/H264', false)
+    const h265 = enc('video/H265', true)
+    expect(autoCodec([h264, h265, enc('video/VP8', false)])).toEqual(h265)
+    expect(autoCodec([enc('video/H264', true), h265])).toEqual(enc('video/H264', true))
+    expect(autoCodec([h264, enc('video/VP9', false)])).toEqual(h264)
+    expect(autoCodec([])).toBeNull()
+    expect(['video/H264', 'video/H265', 'video/VP9', 'video/AV1'].map(codecDisplayName)).toEqual(['H.264', 'H.265', 'VP9', 'AV1'])
+  })
 
   it('prefers hardware H.264 in auto mode', () => {
     const order = chooseCodecOrder(

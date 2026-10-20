@@ -41,7 +41,7 @@ test('a room on a newer, incompatible version says to update', async ({ people }
     // A room added while compatible whose host then upgrades: its row says so instead of "offline".
     protocol = PROTOCOL_VERSION
     await alice.win.locator('.manual-connect').getByRole('button', { name: 'Add' }).click()
-    const row = alice.win.getByRole('button', { name: 'Join Future room' })
+    const row = alice.win.locator('.rooms-sidebar').getByRole('button', { name: 'Join Future room' })
     await expect(row).toBeEnabled()
     protocol = 999
     await expect(row.locator('.room-row-warn')).toHaveText('Update to join')

@@ -40,6 +40,7 @@ import { Emitter } from './emitter'
 import { errorMessage } from './format'
 import { t } from './i18n'
 import { blobToDataUrl } from './images'
+import { rememberShare } from './lastShare'
 import { startNativeLoopback, type NativeAudioCapture } from './nativeAudio'
 import type { RoomClient } from './roomClient'
 import { TcpAudioEncoder, TcpEncoder } from './tcpStream'
@@ -225,6 +226,7 @@ export class Publisher extends Emitter<Events> {
     const previous = this.settings
     this.settings = settings
     if (this.track) this.track.contentHint = this.contentHint
+    if (previous.allowDrawing !== settings.allowDrawing && this.state.sharing) this.publishSharing()
     if (previous.maxQuality !== settings.maxQuality || previous.adaptiveQuality !== settings.adaptiveQuality) {
       void this.applyQuality()
     } else {
@@ -307,6 +309,7 @@ export class Publisher extends Emitter<Events> {
     this.audioChoice = audio
     this.sourceId = sourceId
     this.chosenSourceId = sourceId
+    void rememberShare(sourceId, audio).catch(() => {}) // for "Share again"
 
     if (oldVideo) {
       // Source switch: swap tracks on every live connection.
@@ -640,7 +643,8 @@ export class Publisher extends Emitter<Events> {
   private publishSharing(): void {
     const state = this.state
     const audio = state.sharing && state.hasAudio && !state.audioMuted && !state.paused
-    this.client.send({ type: 'stream-state', sharing: state.sharing, paused: state.paused, audio })
+    // drawing: whether people watching may draw on this stream (Settings → Allow drawing on my screen).
+    this.client.send({ type: 'stream-state', sharing: state.sharing, paused: state.paused, audio, drawing: this.settings.allowDrawing })
     this.emit('sharing', state)
   }
 

@@ -15,8 +15,18 @@ export type MenuItem =
     }
   | { kind: 'separator' }
   | { kind: 'heading'; label: string }
-  /** A slider row (volume): 0–1, applied while it moves; the menu stays open. */
-  | { kind: 'slider'; label: string; icon?: IconName; value: number; onChange(value: number): void }
+  /**
+   * A slider row (volume): 0–1, applied while it moves; the menu stays open. With `mute`, its icon is a
+   * button that mutes or unmutes and says where the slider is now.
+   */
+  | {
+      kind: 'slider'
+      label: string
+      icon?: IconName
+      value: number
+      onChange(value: number): void
+      mute?: { muteLabel: string; unmuteLabel: string; onToggle(): number }
+    }
 
 /** Where a menu opens: at the pointer (right-click), or above a button (`above`: y is the button's top). */
 export interface MenuAt {
@@ -135,9 +145,21 @@ export function Menu({ items, at, label, onClose }: { items: MenuItem[]; at: Men
 function SliderRow({ item }: { item: Extract<MenuItem, { kind: 'slider' }> }) {
   // The menu's items are built once when it opens: the slider keeps its own position from there.
   const [value, setValue] = useState(item.value)
+  const { mute } = item
   return (
-    <label className="menu-slider">
-      <span className="menu-icon">{item.icon && <Icon name={item.icon} size={14} />}</span>
+    <div className="menu-slider">
+      {mute ? (
+        <button
+          type="button"
+          className="menu-slider-mute"
+          aria-label={value === 0 ? mute.unmuteLabel : mute.muteLabel}
+          onClick={() => setValue(mute.onToggle())}
+        >
+          <Icon name={value === 0 ? 'volumeOff' : 'volume'} size={14} />
+        </button>
+      ) : (
+        <span className="menu-icon">{item.icon && <Icon name={item.icon} size={14} />}</span>
+      )}
       <input
         type="range"
         min={0}
@@ -152,6 +174,6 @@ function SliderRow({ item }: { item: Extract<MenuItem, { kind: 'slider' }> }) {
         }}
       />
       <span className="menu-slider-value">{Math.round(value * 100)}%</span>
-    </label>
+    </div>
   )
 }

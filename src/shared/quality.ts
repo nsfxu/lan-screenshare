@@ -443,6 +443,31 @@ export function watchLimit(viewStep: number | null, quality: WatchQuality): View
   return { height, fps: quality.maxFps }
 }
 
+/** Where a watched stream is shown, as far as the size it needs goes. */
+export interface ViewState {
+  /** Stepped height of its tile, or of its own window (null = full quality). */
+  step: number | null
+  /** Its tile can't be seen: behind something full screen, put away, or the room's window is minimized. */
+  hidden: boolean
+  /** Plays in a window of its own, which can be seen whatever the room's window and tile do. */
+  detached: boolean
+  /** Also shown in picture-in-picture, at this stepped height (null = full quality); undefined when not. */
+  pip?: number | null
+}
+
+/**
+ * What to ask the streamer for: enough for the largest place the stream can
+ * be seen (its tile or own window, and picture-in-picture, which plays on top
+ * of everything, even a minimized room), or HIDDEN_VIEW when it can't be seen.
+ */
+export function viewRequest(view: ViewState, quality: WatchQuality): ViewLimit {
+  const shown: (number | null)[] = []
+  if (view.detached || !view.hidden) shown.push(view.step)
+  if (view.pip !== undefined) shown.push(view.pip)
+  if (shown.length === 0) return HIDDEN_VIEW
+  return watchLimit(shown.includes(null) ? null : Math.max(...(shown as number[])), quality)
+}
+
 /**
  * Split an upload budget between watchers fairly (max-min / water-filling):
  * nobody gets more than they can use (`demands`), and what small viewers

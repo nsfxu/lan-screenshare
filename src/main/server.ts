@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import http from 'node:http'
 import https from 'node:https'
@@ -38,6 +39,7 @@ import type {
 } from '../shared/types'
 import { systemText } from '../shared/chat'
 import { isAvatar, isSnapshot } from '../shared/images'
+import { CLEAR_RATE, isStrokeId, isUnit, POINTER_RATE, RateWindow, STROKE_RATE, strokePoints } from '../shared/marks'
 import { isHiddenView } from '../shared/quality'
 import { incompatibleRoomMessage, isAppVersion } from '../shared/version'
 import { PinGuard, pinsEqual, randomId, randomToken } from '../utils/crypto'
@@ -105,6 +107,8 @@ interface Seat {
   /** Profile picture (data URL), kept across reconnects. */
   avatar: string | null
   lastAvatarAt: number
+  /** How fast this seat may send marks on streams it watches (shared/marks.ts). */
+  marks: { pointer: RateWindow; stroke: RateWindow; clear: RateWindow }
 }
 
 const HOST_ID = 'host'
@@ -116,7 +120,8 @@ const COLORS = ['#e57373', '#f06292', '#ba68c8', '#9575cd', '#7986cb', '#64b5f6'
 /**
  * The per-room relay node, run by the host.
  *
- * - `GET /info` serves public room info for discovery probes.
+ * - `GET /info` serves public room info for discovery probes, and
+ *   `GET /host-picture` the host's profile picture it names by hash.
  * - `/ws` carries auth (PIN), chat, presence, moderation, and — for any
  *   participant who shares — WebRTC signaling between that streamer and the
  *   watchers who chose to watch it, plus binary media for the TCP fallback.
@@ -140,6 +145,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
   private privacy: Privacy
   private pin: string | null
   private chatMuted = false
+  private drawingAllowed = true
   private boundPort = 0
   private ended = false
   private tcpFeedbackTimer: NodeJS.Timeout | null = null
@@ -219,6 +225,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
   }
 
   getInfo(): RoomInfo {
+    const host = this.seats.get(HOST_ID)
     return {
       id: this.opts.roomId,
       name: this.name,
@@ -229,12 +236,23 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       streams: [...this.seats.values()].filter((s) => s.participant.stream).length,
       protocol: PROTOCOL_VERSION,
       appVersion: isAppVersion(this.opts.appVersion) ? this.opts.appVersion : undefined,
-      startedAt: this.startedAt
+      startedAt: this.startedAt,
+      hostColor: host?.participant.color,
+      hostPicture: host?.avatar ? this.pictureHash(host.avatar) : undefined
     }
   }
 
+  /** The host's picture is probed every few seconds by everyone's room list: hash it once. */
+  private hashed: { image: string; hash: string } | null = null
+  private pictureHash(image: string): string {
+    if (this.hashed?.image !== image) {
+      this.hashed = { image, hash: createHash('sha256').update(image).digest('hex').slice(0, 16) }
+    }
+    return this.hashed.hash
+  }
+
   getState(): RoomState {
-    return { ...this.getInfo(), chatMuted: this.chatMuted, allowRecording: false }
+    return { ...this.getInfo(), chatMuted: this.chatMuted, allowRecording: false, drawingAllowed: this.drawingAllowed }
   }
 
   /** Change privacy and/or PIN. Existing participants stay connected. */
@@ -254,6 +272,15 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' })
       res.end(body)
       return
+    }
+    if (req.method === 'GET' && req.url?.split('?')[0] === '/host-picture') {
+      // Public like the host's name in /info: the room list shows it next to the room.
+      const image = this.seats.get(HOST_ID)?.avatar
+      if (image) {
+        res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' })
+        res.end(JSON.stringify({ image }))
+        return
+      }
     }
     res.writeHead(404, { 'content-type': 'text/plain' })
     res.end('not found')
@@ -507,6 +534,10 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
         if (streamer && sub) this.requestKeyframe(streamer, sub)
         return
       }
+      case 'pointer':
+      case 'stroke':
+      case 'clear-marks':
+        return this.handleMark(seat, msg)
     }
 
     if (me.role !== 'host') {
@@ -539,6 +570,11 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
         this.broadcast({ type: 'chat-deleted', id: msg.id })
         return
       }
+      case 'allow-drawing':
+        if (this.drawingAllowed === !!msg.allowed) return
+        this.drawingAllowed = !!msg.allowed
+        this.broadcastRoom()
+        return
       case 'mute-chat':
         if (this.chatMuted === !!msg.muted) return
         this.chatMuted = !!msg.muted
@@ -559,16 +595,49 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
     }
     const paused = !!msg.paused
     const audio = !!msg.audio && !paused
+    // Only apps that can show marks say whether they allow them (2.6.0+).
+    const drawing = msg.drawing === undefined ? {} : { drawing: !!msg.drawing }
     if (!p.stream) {
-      p.stream = { paused, audio, startedAt: Date.now() }
+      p.stream = { paused, audio, startedAt: Date.now(), ...drawing }
       this.systemMessage({ kind: 'started-sharing', name: p.name })
       this.broadcastParticipants()
       this.broadcastRoom()
       return
     }
-    if (p.stream.paused === paused && p.stream.audio === audio) return
-    p.stream = { ...p.stream, paused, audio }
+    if (p.stream.paused === paused && p.stream.audio === audio && p.stream.drawing === drawing.drawing) return
+    p.stream = { paused, audio, startedAt: p.stream.startedAt, ...drawing }
     this.broadcastParticipants()
+  }
+
+  /**
+   * A mark on a stream (shared/marks.ts): only from someone watching it (or,
+   * to clear everyone's, its streamer), only while the room and the streamer
+   * allow drawing, with 0–1 positions and rate limits. It goes to the
+   * streamer and everyone watching that stream, not back to its sender.
+   */
+  private handleMark(seat: Seat, msg: Extract<ClientMessage, { type: 'pointer' | 'stroke' | 'clear-marks' }>): void {
+    const me = seat.participant
+    const streamer = typeof msg.streamer === 'string' ? this.seats.get(msg.streamer) : undefined
+    if (!streamer?.participant.stream?.drawing || !this.drawingAllowed) return
+    const own = streamer === seat
+    if (!own && !streamer.watchers.has(me.id)) return
+    const stream = streamer.participant.id
+    const now = Date.now()
+    let out: ServerMessage
+    if (msg.type === 'pointer') {
+      const away = msg.x === null && msg.y === null
+      if (own || (!away && !(isUnit(msg.x) && isUnit(msg.y))) || !seat.marks.pointer.allow(now)) return
+      out = { type: 'pointer', from: me.id, streamer: stream, x: away ? null : msg.x, y: away ? null : msg.y }
+    } else if (msg.type === 'stroke') {
+      const points = strokePoints(msg.points)
+      if (own || !points || !isStrokeId(msg.id) || !seat.marks.stroke.allow(now)) return
+      out = { type: 'stroke', from: me.id, streamer: stream, id: msg.id, points, done: msg.done === true }
+    } else {
+      if (!seat.marks.clear.allow(now)) return
+      out = { type: 'marks-cleared', from: me.id, streamer: stream, all: own }
+    }
+    if (streamer !== seat) this.send(streamer.ws, out)
+    for (const sub of streamer.watchers.values()) if (sub.watcher !== seat) this.send(sub.watcher.ws, out)
   }
 
   /** End a seat's stream: its watchers are told and all subscriptions dropped. */
@@ -763,7 +832,8 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       snapshot: null,
       lastSnapshotAt: 0,
       avatar: null,
-      lastAvatarAt: 0
+      lastAvatarAt: 0,
+      marks: { pointer: new RateWindow(POINTER_RATE), stroke: new RateWindow(STROKE_RATE), clear: new RateWindow(CLEAR_RATE) }
     }
     this.seats.set(id, seat)
     return seat

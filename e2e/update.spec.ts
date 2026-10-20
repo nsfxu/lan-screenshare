@@ -8,7 +8,7 @@ const shots = process.env.E2E_SHOTS
 /** Tell the app where updates are, as the main process's Updater does. */
 async function setUpdate(person: Person, status: UpdateStatus): Promise<void> {
   await person.app.evaluate(
-    ({ BrowserWindow }, [channel, value]) => BrowserWindow.getAllWindows()[0].webContents.send(channel, value),
+    ({ BrowserWindow }, [channel, value]) => BrowserWindow.getAllWindows().find((w) => !w.webContents.getURL().startsWith('about:'))!.webContents.send(channel, value),
     [IPC.updateStatus, status] as const
   )
 }
