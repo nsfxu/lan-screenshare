@@ -1,4 +1,6 @@
-import type { DiscoveredRoom, RecentRoom, RoomEndpoint } from './types'
+import { NAME_MAX_LENGTH } from './constants'
+import { isAvatar, isColor } from './images'
+import type { DiscoveredRoom, RecentHost, RecentRoom, RoomEndpoint } from './types'
 
 /** How many rooms the sidebar remembers under "Recent rooms". */
 export const RECENT_ROOMS_MAX = 5
@@ -7,9 +9,39 @@ export function sameEndpoint(a: Pick<RoomEndpoint, 'address' | 'port'>, b: Pick<
   return a.address === b.address && a.port === b.port
 }
 
-/** `list` with `room` moved (or added) to the front, newest first, without duplicates. */
+/**
+ * `list` with `room` moved (or added) to the front, newest first, without duplicates. A room joined
+ * again keeps the host remembered with it until rememberHost() has a newer one.
+ */
 export function pushRecentRoom(list: readonly RecentRoom[], room: RecentRoom): RecentRoom[] {
-  return [room, ...list.filter((r) => !sameEndpoint(r, room))].slice(0, RECENT_ROOMS_MAX)
+  const host = room.host ?? list.find((r) => sameEndpoint(r, room))?.host
+  return [host ? { ...room, host } : room, ...list.filter((r) => !sameEndpoint(r, room))].slice(0, RECENT_ROOMS_MAX)
+}
+
+/** A remembered host as read from the settings file: anything unexpected is dropped. */
+export function toRecentHost(value: unknown): RecentHost | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const { name, color, image } = value as Record<string, unknown>
+  const trimmed = typeof name === 'string' ? name.trim().slice(0, NAME_MAX_LENGTH) : ''
+  if (!trimmed) return undefined
+  return { name: trimmed, ...(isColor(color) && { color }), ...(isAvatar(image) && { image }) }
+}
+
+/**
+ * `list` with the host of the room at `endpoint` set to `host` (as seen inside the room), or `list`
+ * itself when nothing changed, so the settings aren't written again for nothing.
+ */
+export function rememberHost(
+  list: readonly RecentRoom[],
+  endpoint: Pick<RoomEndpoint, 'address' | 'port'>,
+  host: { name: string; color?: string; image?: string | null }
+): readonly RecentRoom[] {
+  const next = toRecentHost(host)
+  const i = list.findIndex((r) => sameEndpoint(r, endpoint))
+  if (!next || i < 0) return list
+  const old = list[i].host
+  if (old?.name === next.name && old.color === next.color && old.image === next.image) return list
+  return list.map((r, j) => (j === i ? { ...r, host: next } : r))
 }
 
 /**

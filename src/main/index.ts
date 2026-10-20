@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, desktopCapturer, dialog, ipcMain, screen, session, shell } from 'electron'
+import { app, BrowserWindow, clipboard, desktopCapturer, dialog, ipcMain, powerSaveBlocker, screen, session, shell } from 'electron'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -382,6 +382,40 @@ function registerIpc(): void {
     // The room's window and any stream's own window (the marks window is always hidden from capture).
     for (const w of BrowserWindow.getAllWindows()) w.setContentProtection(viewerProtection || marksWindows.has(w.id))
   })
+  // One blocker for the app, held while any page (the main window, a stream's own window) asks for it.
+  const awake = new Set<number>()
+  let blocker: number | null = null
+  const updateBlocker = (): void => {
+    if (awake.size > 0 && blocker === null) {
+      blocker = powerSaveBlocker.start('prevent-display-sleep')
+      log.info('keeping the screen awake')
+    } else if (awake.size === 0 && blocker !== null) {
+      powerSaveBlocker.stop(blocker)
+      blocker = null
+      log.info('letting the screen sleep again')
+    }
+  }
+  const followed = new Set<number>()
+  ipcMain.on(IPC.keepAwake, (e, on: unknown) => {
+    const id = e.sender.id
+    if (on === true) awake.add(id)
+    else awake.delete(id)
+    // A page that's closed or reloaded can't say it's done.
+    if (!followed.has(id)) {
+      followed.add(id)
+      const done = (): void => {
+        awake.delete(id)
+        updateBlocker()
+      }
+      e.sender.on('did-navigate', done)
+      e.sender.once('destroyed', () => {
+        followed.delete(id)
+        done()
+      })
+    }
+    updateBlocker()
+  })
+
   ipcMain.on(IPC.log, (_e, level: 'info' | 'warn' | 'error', message: string) => {
     const fn = log[level] ?? log.info
     fn(`[renderer] ${String(message).slice(0, 2000)}`)
