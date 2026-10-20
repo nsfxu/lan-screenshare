@@ -1,4 +1,4 @@
-import { createRoom, expect, fakeScreenCapture, test, type Person } from './fixtures'
+import { createRoom, expect, fakeScreenCapture, joinByIp, resizeWindow, test, type Person } from './fixtures'
 
 const shots = process.env.E2E_SHOTS
 
@@ -69,4 +69,35 @@ test("the room list shows each room's host, folds the ones that are offline, and
   await expect(current.locator('.sr-only')).toHaveText(", Live, you're here")
   await expect(current.locator('.room-avatar img')).toBeVisible()
   if (shots) await win.screenshot({ path: `${shots}/2-in-room.png` })
+})
+
+test("a public room shows who's inside: their pictures, then +N", async ({ people }) => {
+  const [alice, bob, carol] = await people(3)
+  await givePicture(alice)
+  const port = await createRoom(alice)
+  await joinByIp(bob, port)
+  await expect(bob.win.locator('.room')).toBeVisible()
+
+  // Carol, not in the room, sees Alice's picture and Bob's initial; the count stays for screen readers.
+  const { win } = carol
+  // Three windows side by side are narrow: the rooms column opens from a button.
+  await resizeWindow(carol, 1280, 800)
+  await win.getByRole('button', { name: 'Join by IP' }).click()
+  await win.getByPlaceholder(/^Host address/).fill(`127.0.0.1:${port}`)
+  await win.getByPlaceholder(/^Host address/).press('Enter')
+  const row = win.locator('.rooms-sidebar').getByRole('button', { name: /^Join Alice's room/ })
+  const faces = row.locator('.room-people-face')
+  await expect(faces).toHaveCount(2, { timeout: 15_000 })
+  await expect(faces.nth(0).locator('img')).toHaveAttribute('src', /^data:image\/jpeg;base64,/)
+  await expect(faces.nth(1)).toHaveAttribute('title', 'Bob')
+  await expect(faces.nth(1)).toHaveText('B')
+  await expect(row.locator('.room-people .sr-only')).toHaveText('2 people')
+  await expect(win.locator('.room-card', { hasText: "Alice's room" }).locator('.room-people-face')).toHaveCount(2)
+  if (shots) await win.screenshot({ path: `${shots}/4-people.png` })
+
+  // Private: just the count.
+  await alice.win.locator('.room-settings-button').click()
+  await alice.win.locator('.room-settings').getByRole('button', { name: 'Private' }).click()
+  await expect(row.locator('.room-details')).toHaveText('2 people', { timeout: 15_000 })
+  await expect(row.locator('.room-people-face')).toHaveCount(0)
 })

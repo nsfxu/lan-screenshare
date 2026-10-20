@@ -4,7 +4,7 @@ import { HIDDEN_VIEW } from '../src/shared/quality'
 import { BINARY_FLAG_KEY, BINARY_KIND_AUDIO, BINARY_KIND_VIDEO } from '../src/shared/constants'
 import { RoomServer } from '../src/main/server'
 import type { Participant, ViewerStats } from '../src/shared/types'
-import { fetchHostPicture, probeRoom } from '../src/utils/network'
+import { fetchHostPicture, fetchPicture, probeRoom } from '../src/utils/network'
 import { TestClient } from './helpers'
 
 const HOST_TOKEN = 'host-secret-token'
@@ -580,6 +580,61 @@ describe('profile pictures', () => {
     ;({ info } = await probeRoom(room))
     expect(info.hostPicture).not.toBe(first)
     expect(await fetchHostPicture(room)).toBe(PNG)
+  })
+
+  it("lists who's inside a public room, with pictures by hash, and nobody for a private one", async () => {
+    const port = await startServer()
+    const room = { address: '127.0.0.1', port, tls: false }
+    const host = await join(port, 'Host', true)
+    await join(port, 'Bob')
+    const carol = await join(port, 'Carol')
+    carol.c.send({ type: 'set-avatar', image: JPEG })
+    await host.c.wait('avatar', (m) => m.from === carol.id)
+
+    // The host first, then the others as they came in; only Carol has a picture.
+    let { info } = await probeRoom(room)
+    expect(info.people?.map((p) => p.name)).toEqual(['Host', 'Bob', 'Carol'])
+    expect(info.people?.every((p) => /^#[0-9a-f]{6}$/.test(p.color))).toBe(true)
+    const [, b, c] = info.people!
+    expect(b.picture).toBeUndefined()
+    expect(c.picture).toMatch(/^[0-9a-f]{16}$/)
+    expect(await fetchPicture(room, c.picture!)).toBe(JPEG)
+    // Only the pictures of people listed, and only by a well-formed hash.
+    await expect(fetchPicture(room, '0123456789abcdef')).rejects.toThrow('HTTP 404')
+    const raw = await fetch(`http://127.0.0.1:${port}/picture?hash=../info`)
+    expect(raw.status).toBe(404)
+
+    // Those inside have the participants list instead: the room's state doesn't repeat it.
+    expect('people' in server!.getState()).toBe(false)
+
+    // Private: just the count, and no pictures (the host's own still shows on the room).
+    server!.update({ privacy: 'private', pin: '123456' })
+    ;({ info } = await probeRoom(room))
+    expect(info.people).toBeUndefined()
+    expect(info.viewerCount).toBe(2)
+    await expect(fetchPicture(room, c.picture!)).rejects.toThrow('HTTP 404')
+  })
+
+  it('lists at most twelve people', async () => {
+    // Rooms hold 10 by default: a bigger one shows the cap.
+    server = new RoomServer({
+      roomId: 'big',
+      name: 'Big room',
+      hostName: 'Host',
+      privacy: 'public',
+      pin: null,
+      hostToken: HOST_TOKEN,
+      port: 0,
+      bindAddress: '127.0.0.1',
+      maxUsers: 20
+    })
+    const port = await server.start()
+    await join(port, 'Host', true)
+    for (let i = 1; i <= 13; i++) await join(port, `Guest ${i}`)
+    const { info } = await probeRoom({ address: '127.0.0.1', port, tls: false })
+    expect(info.viewerCount).toBe(13)
+    expect(info.people).toHaveLength(12)
+    expect(info.people?.[0].name).toBe('Host')
   })
 
   it('ignores invalid pictures, repeats and floods; null removes it', async () => {

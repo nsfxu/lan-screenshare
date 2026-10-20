@@ -87,9 +87,20 @@ Returns `RoomInfo` as JSON, with no secrets:
 }
 ```
 
-The probing side checks the certificate fingerprint against the one advertised over mDNS, if any (`probeRoom` in `src/utils/network.ts`), and drops malformed `appVersion`, `hostColor` and `hostPicture` values.
+The probing side checks the certificate fingerprint against the one advertised over mDNS, if any (`probeRoom` in `src/utils/network.ts`), and drops malformed `appVersion`, `hostColor`, `hostPicture` and `people` values.
 
-Since 2.7.0 the room list shows each room's host: `hostColor` is the host's colour (`#rrggbb`) for their initials, and `hostPicture`, present when the host has a profile picture, is the first 16 hex digits of its SHA-256. When the hash changes, the room list fetches the picture once from `GET /host-picture` (`{"image": "data:image/…"}`, 404 without one) and checks it like any profile picture (`isAvatar`). Both fields are missing from older hosts, whose rooms show initials or the room's first letter. Any other path returns 404.
+Since 2.7.0 the room list shows each room's host: `hostColor` is the host's colour (`#rrggbb`) for their initials, and `hostPicture`, present when the host has a profile picture, is the first 16 hex digits of its SHA-256. When the hash changes, the room list fetches the picture once from `GET /host-picture` (`{"image": "data:image/…"}`, 404 without one) and checks it like any profile picture (`isAvatar`). Both fields are missing from older hosts, whose rooms show initials or the room's first letter.
+
+Since 2.8.0 a **public** room's `/info` also lists who's inside, host first, at most 12 (`PEOPLE_LISTED_MAX`):
+
+```json
+"people": [
+  { "name": "Alice", "color": "#64b5f6", "picture": "3f9a0c1d2e4b5a69" },
+  { "name": "Bob", "color": "#aed581" }
+]
+```
+
+`picture`, when the person has one, is the same kind of hash as `hostPicture`, and `GET /picture?hash=…` serves that picture (`{"image": …}`) for anyone listed; it returns 404 for a hash nobody listed has, a malformed hash, and in private rooms. A private room has no `people`, so the list shows only its count, and so do rooms on hosts before 2.8.0. The room list checks each person (`toRoomPeople` in `src/shared/people.ts`: name, `#rrggbb` colour, hash), shows the first 4 or 5 faces and "+N" from `viewerCount`, and fetches only those pictures, each once by hash, shared between rooms. The room's own state (`room` messages) doesn't carry `people`: those inside have the participants list. Any other path returns 404.
 
 ## WebSocket: connection lifecycle
 

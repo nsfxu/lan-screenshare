@@ -91,6 +91,7 @@ export const ptBR: Messages = {
   'rooms.offlineGroup': 'Offline ({count})',
   'rooms.lastVisited': 'Última visita {when}',
   'rooms.people': { one: '{count} pessoa', other: '{count} pessoas' },
+  'rooms.morePeople': '+{count}',
   'rooms.liveTag': 'Ao vivo',
   'rooms.privateTag': 'Privada',
   'rooms.youreHere': 'você está aqui',

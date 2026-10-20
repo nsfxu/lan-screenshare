@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Added
+
+- **See who's inside a room before joining.** Public rooms in the room list and on the home screen show the pictures of the people inside (then *+N*), instead of just how many; hover over one for the name. Private rooms still show only the count, and so do rooms whose host hasn't updated.
+
 ### Fixed
 
 - **Sharing a window is smooth again.** Since 2.5.0, sharing a single window (not a whole screen) of detailed content could drop to about 10 frames a second on NVIDIA graphics cards, because the video was then encoded without the graphics card. Windows are now shared at full speed from the start, as before.

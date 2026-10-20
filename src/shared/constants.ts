@@ -93,6 +93,10 @@ export const AVATAR_SIZE = 128
 export const AVATAR_MAX_CHARS = 40_000
 /** The server ignores profile picture changes sent more often than this. */
 export const AVATAR_MIN_INTERVAL_MS = 1_000
+/** How many people a public room's /info lists (RoomInfo.people). */
+export const PEOPLE_LISTED_MAX = 12
+/** How many of their pictures the room list shows (and so downloads) per room; the rest are "+N". */
+export const PEOPLE_SHOWN_MAX = 5
 
 /** Smallest view height (px) a watcher may report in `view-size`. */
 export const MIN_VIEW_HEIGHT = 90

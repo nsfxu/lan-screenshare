@@ -1,9 +1,11 @@
 import { PROTOCOL_VERSION } from '../../shared/constants'
 import type { DiscoveredRoom } from '../../shared/types'
+import { peopleShown } from '../../shared/people'
 import { incompatibleRoomMessage } from '../../shared/version'
 import { useAppVersion } from '../lib/appVersion'
 import { initials } from '../lib/format'
 import { useT } from '../lib/i18n'
+import { Avatar } from './Avatar'
 import { Icon } from './Icon'
 
 /**
@@ -66,14 +68,46 @@ export function useRoomStatus(room: DiscoveredRoom | null): RoomStatus {
   }
 }
 
-/** The line under a room's name: how many are inside, or why it can't be joined (live and private show on its picture). */
-export function RoomDetails({ room, status, busy }: { room: DiscoveredRoom; status: RoomStatus; busy: boolean }) {
+/**
+ * The line under a room's name: who's inside (their pictures, up to `faces`, then +N), else how many,
+ * or why it can't be joined (live and private show on its picture).
+ */
+export function RoomDetails({
+  room,
+  status,
+  busy,
+  faces
+}: {
+  room: DiscoveredRoom
+  status: RoomStatus
+  busy: boolean
+  faces: number
+}) {
   const { t } = useT()
   if (busy) return <span className="room-details">{t('rooms.joining')}</span>
   if (status.versionProblem) {
     return (
       <span className="room-details room-row-warn">
         {room.protocol > PROTOCOL_VERSION ? t('rooms.updateToJoin') : t('rooms.olderVersion')}
+      </span>
+    )
+  }
+  const shown = status.full ? null : peopleShown(room.people, status.people, faces)
+  if (shown) {
+    return (
+      <span className="room-details room-people">
+        <span className="sr-only">{t('rooms.people', { count: status.people })}</span>
+        {shown.shown.map((p, i) => (
+          // The name shows on hover; the list is read out as the count above.
+          <span key={i} className="room-people-face" title={p.name}>
+            <Avatar name={p.name} color={p.color} image={p.picture ? room.pictures?.[p.picture] : undefined} size="tiny" />
+          </span>
+        ))}
+        {shown.more > 0 && (
+          <span className="room-people-more" aria-hidden="true">
+            {t('rooms.morePeople', { count: shown.more })}
+          </span>
+        )}
       </span>
     )
   }

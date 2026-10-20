@@ -965,6 +965,38 @@ input[type='checkbox']:checked::after {
   font-size: 12px;
   color: var(--text-muted);
 }
+/* Who's inside a public room: overlapping faces, then +N. */
+.room-people {
+  display: flex;
+  align-items: center;
+  padding: 2px 0 2px 2px;
+}
+.room-people-face {
+  display: inline-flex;
+  margin-left: -5px;
+  border-radius: 50%;
+  /* A ring in the row's colour keeps the faces apart. */
+  box-shadow: 0 0 0 2px var(--bg-elev);
+}
+.sr-only + .room-people-face {
+  margin-left: 0;
+}
+.room-people .avatar.tiny {
+  width: 18px;
+  height: 18px;
+  font-size: 9px;
+}
+.room-card .room-people .avatar.tiny {
+  width: 20px;
+  height: 20px;
+  font-size: 10px;
+}
+.room-people-more {
+  margin-left: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
 /* Read by screen readers, not shown (what a dot or an edge already says to the eye). */
 .sr-only {
   position: absolute;

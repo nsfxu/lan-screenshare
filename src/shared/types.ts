@@ -32,6 +32,20 @@ export interface RoomInfo {
    * the list fetches the picture only when it changes. Missing for hosts before 2.7.0.
    */
   hostPicture?: string
+  /**
+   * Who's inside, host first, for the room list's pictures: only in public rooms (a private room's
+   * list shows just the count), at most PEOPLE_LISTED_MAX. Missing for hosts before 2.8.0.
+   */
+  people?: RoomPerson[]
+}
+
+/** Someone inside a public room, as /info lists them. */
+export interface RoomPerson {
+  name: string
+  /** #rrggbb */
+  color: string
+  /** A short hash of their profile picture, served by GET /picture?hash=…, when they have one. */
+  picture?: string
 }
 
 /** Full room state pushed to connected participants. */
@@ -59,6 +73,8 @@ export interface DiscoveredRoom extends RoomInfo {
   probeMs?: number
   /** The host's profile picture (data URL), fetched once per `hostPicture` hash. */
   hostImage?: string
+  /** Pictures (data URLs) of the first PEOPLE_SHOWN_MAX people listed, by their `picture` hash. */
+  pictures?: Record<string, string>
 }
 
 /** Where to connect: enough to build a wss:// URL. */
