@@ -48,3 +48,45 @@ export function chatText(m: ChatMessage, t: TFunction): string {
   }
   return m.text
 }
+
+/** A piece of a chat message: plain text, or a link to open in the browser. */
+export type ChatPart = { text: string; href?: string }
+
+const LINK = /\bhttps?:\/\/[^\s<>"'`]+/gi
+
+/**
+ * `text` split into plain text and http(s) links, for showing them clickable. Punctuation that
+ * ends a sentence isn't part of a link, nor is a closing bracket it doesn't open ("(see https://x.y/a)").
+ */
+export function chatParts(text: string): ChatPart[] {
+  const parts: ChatPart[] = []
+  let last = 0
+  for (const match of text.matchAll(LINK)) {
+    let link = match[0]
+    for (;;) {
+      const end = link.slice(-1)
+      const open = { ')': '(', ']': '[', '}': '{' }[end]
+      if (/[.,;:!?*]/.test(end) || (open && link.split(open).length <= link.split(end).length - 1)) link = link.slice(0, -1)
+      else break
+    }
+    const href = safeLink(link)
+    if (!href) continue
+    const start = match.index
+    if (start > last) parts.push({ text: text.slice(last, start) })
+    parts.push({ text: link, href })
+    last = start + link.length
+  }
+  if (last < text.length) parts.push({ text: text.slice(last) })
+  return parts
+}
+
+/** `url` if it's an http(s) address the browser can open, normalised; null otherwise. */
+export function safeLink(url: unknown): string | null {
+  if (typeof url !== 'string' || url.length > 2048) return null
+  try {
+    const parsed = new URL(url)
+    return (parsed.protocol === 'http:' || parsed.protocol === 'https:') && parsed.hostname ? parsed.href : null
+  } catch {
+    return null
+  }
+}

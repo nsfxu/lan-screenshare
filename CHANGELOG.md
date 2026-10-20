@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Added
+
+- **Clickable links in chat.** Web addresses (`http://` or `https://`) in a message are links now and open in your browser.
+
 ### Changed
 
 - **Offline rooms keep their host's picture.** A room you've been in that doesn't answer now shows, faded, its host's picture (or initials) from your last visit, instead of just a letter. It's kept on your computer only, and rooms remembered before this version get it the next time you join them.
