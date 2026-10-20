@@ -14,6 +14,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 - **Clickable links in chat.** Web addresses (`http://` or `https://`) in a message are links now and open in your browser.
 
+### Fixed
+
+- **Sharing a window is smooth again.** Since 2.5.0, sharing a single window (not a whole screen) of detailed content could drop to about 10 frames a second on NVIDIA graphics cards, because the video was then encoded without the graphics card. Windows are now shared at full speed from the start, as before.
+
 ## [2.7.0] - 2026-10-19
 
 ### Added
