@@ -78,6 +78,18 @@ describe('settings', () => {
     expect(store.update({ theme: 'paper' }).theme).toBe('paper')
   })
 
+  it("doesn't follow the computer at first, and keeps a dark and a light theme of the right kind", () => {
+    const store = new SettingsStore(tempDir())
+    expect(store.get()).toMatchObject({ followSystemTheme: false, darkTheme: 'classic', lightTheme: 'light' })
+    expect(store.update({ followSystemTheme: true, darkTheme: 'ember', lightTheme: 'mist' })).toMatchObject({
+      followSystemTheme: true,
+      darkTheme: 'ember',
+      lightTheme: 'mist'
+    })
+    // A light theme can't be the dark one, nor the other way round.
+    expect(store.update({ darkTheme: 'paper', lightTheme: 'black' })).toMatchObject({ darkTheme: 'ember', lightTheme: 'mist' })
+  })
+
   it('checks for updates by default, also for settings files from before the switch', () => {
     const dir = tempDir()
     fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ settingsVersion: SETTINGS_VERSION, displayName: 'Ana' }))

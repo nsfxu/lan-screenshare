@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Added
+
+- **Match my computer** in **Settings → Appearance**: the app switches between a dark theme and a light theme of your choice as your computer changes between dark and light mode.
+
 ## [2.7.0] - 2026-10-19
 
 ### Added
