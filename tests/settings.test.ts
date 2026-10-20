@@ -70,6 +70,22 @@ describe('settings', () => {
     expect(store.update({ recentRooms: [...many, { address: 5 } as never] }).recentRooms).toHaveLength(5)
   })
 
+  it('keeps the host remembered with a recent room, after checking it', () => {
+    const dir = tempDir()
+    const room = { address: '10.0.0.5', port: 47800, tls: true, lastVisited: 1000 }
+    const host = { name: 'Eve', color: '#ff7a59', image: 'data:image/png;base64,iVBORw0KGgo=' }
+    new SettingsStore(dir).update({
+      recentRooms: [
+        { ...room, host },
+        { ...room, address: '10.0.0.6', host: { name: 'Bob', color: 'javascript:alert(1)' } as never }
+      ]
+    })
+    expect(new SettingsStore(dir).get().recentRooms).toEqual([
+      { ...room, host },
+      { ...room, address: '10.0.0.6', host: { name: 'Bob' } }
+    ])
+  })
+
   it('starts on Classic, and ignores unknown themes', () => {
     const store = new SettingsStore(tempDir())
     expect(store.get().theme).toBe('classic')

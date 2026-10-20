@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Changed
+
+- **Offline rooms keep their host's picture.** A room you've been in that doesn't answer now shows, faded, its host's picture (or initials) from your last visit, instead of just a letter. It's kept on your computer only, and rooms remembered before this version get it the next time you join them.
+
 ### Fixed
 
 - **Sharing a window is smooth again.** Since 2.5.0, sharing a single window (not a whole screen) of detailed content could drop to about 10 frames a second on NVIDIA graphics cards, because the video was then encoded without the graphics card. Windows are now shared at full speed from the start, as before.
