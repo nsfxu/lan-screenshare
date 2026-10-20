@@ -77,7 +77,8 @@ const api: ScreenShareApi = {
     onWindowState: (cb) => subscribe<WindowState>(IPC.windowState, cb),
     onConfirmClose: (cb) => subscribe<void>(IPC.confirmClose, cb),
     closeConfirmed: () => ipcRenderer.invoke(IPC.closeConfirmed),
-    log: (level, message) => ipcRenderer.send(IPC.log, level, message)
+    log: (level, message) => ipcRenderer.send(IPC.log, level, message),
+    keepAwake: (on) => ipcRenderer.send(IPC.keepAwake, on)
   },
   perf: {
     // Read once, synchronously: subscriptions need the forced view height from their first message.

@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Fixed
+
+- **The screen stays on while you watch or share.** It could dim, sleep or lock in the middle of a stream when you didn't touch the mouse; now it only does that once you stop watching and sharing.
+
 ## [2.7.0] - 2026-10-19
 
 ### Added
