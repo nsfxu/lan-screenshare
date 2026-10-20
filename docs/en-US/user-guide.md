@@ -65,7 +65,7 @@ The window has three columns: **rooms** on the left, the room you're in (or a we
 
 The rooms column lists:
 
-- **Recent**: the last 5 rooms you joined, newest first, with the one you're in marked by a blue edge and its people under it. Click one to go back to it, even if it's on a VPN and not found by itself. Rooms that don't answer are folded under **Offline**, which says when you were last there. The **×** on a row forgets it.
+- **Recent**: the last 5 rooms you joined, newest first, with the one you're in marked by a blue edge and its people under it. Click one to go back to it, even if it's on a VPN and not found by itself. Rooms that don't answer are folded under **Offline**, which says when you were last there and shows, faded, the host's picture (or initials) from your last visit; it's kept on your computer only, with each room. The **×** on a row forgets it.
 - **On your network**: everything else found on your network. It updates by itself; the round arrow searches again right away.
 
 Each room shows its host's profile picture (or their initials, or the room's first letter for hosts before 2.7.0), with a red dot while someone shares and a lock for private rooms. Under its name: who's inside, as their pictures (up to 4 in the list and 5 on the cards, then *+N*; hover over one for the name), or just how many for private rooms and hosts before 2.8.0; hover over the room for who hosts it, how long it has been open and its address. A room on an incompatible version says *Update to join* or *Older version* (hover for who needs to update). Rooms you added by IP have a **×** to remove them from the list. Click a room to join it. If you're already in a room, you leave it first; the app asks before that ends a room you host or stops your share.
@@ -160,6 +160,8 @@ The **stats badges** on a stream show its frame rate, latency, resolution, codec
 If a stream can't connect in 8 seconds (some VPNs and firewalls block it), the app switches to a TCP connection by itself. It adds a little latency but keeps working.
 
 While you **minimize** the app, or put one tile in full screen, the streams you can't see stop sending you video (you still hear them), which saves the streamer's upload and your network. The picture comes back within a second when you look again. The streamer sees you as "not looking" under your name. A stream in picture-in-picture or in its own window keeps playing.
+
+While you watch or share, your screen doesn't dim, go to sleep or lock by itself, like when you watch a video. It goes back to normal when you stop.
 
 ### Drawing on a stream
 

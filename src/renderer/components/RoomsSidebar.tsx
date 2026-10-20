@@ -351,7 +351,7 @@ function RoomRow({
   const roomLabel = useRoomLabel()
   const title = [
     row.name,
-    room?.hostName && t('rooms.hostedBy', { name: room.hostName }),
+    (room?.hostName || row.endpoint.host?.name) && t('rooms.hostedBy', { name: room?.hostName || row.endpoint.host!.name }),
     room?.startedAt && room.reachable ? t('rooms.openFor', { duration: formatDuration(Date.now() - room.startedAt) }) : null,
     `${row.endpoint.address}:${row.endpoint.port}${row.endpoint.tls ? ' · TLS' : ''}`,
     status.versionProblem
@@ -381,7 +381,7 @@ function RoomRow({
       >
         <RoomAvatar
           name={row.name}
-          host={answering && { name: answering.hostName, color: answering.hostColor, image: answering.hostImage }}
+          host={answering ? { name: answering.hostName, color: answering.hostColor, image: answering.hostImage } : row.endpoint.host}
           live={!!answering && answering.streams > 0}
           locked={answering?.privacy === 'private'}
         />

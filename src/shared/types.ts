@@ -89,6 +89,17 @@ export interface RoomEndpoint {
 export interface RecentRoom extends RoomEndpoint {
   /** When you last joined it (ms since 1970); missing for rooms remembered before 2.7.0. */
   lastVisited?: number
+  /** Its host when you were last inside, to show while the room doesn't answer; missing for rooms remembered before 2.8.0. */
+  host?: RecentHost
+}
+
+/** A room's host as remembered with the room: kept on this computer only. */
+export interface RecentHost {
+  name: string
+  /** #rrggbb */
+  color?: string
+  /** Their profile picture, a data URL (see isAvatar). */
+  image?: string
 }
 
 export type MediaState = 'idle' | 'negotiating' | 'streaming' | 'failed'

@@ -69,6 +69,16 @@ test("the room list shows each room's host, folds the ones that are offline, and
   await expect(current.locator('.sr-only')).toHaveText(", Live, you're here")
   await expect(current.locator('.room-avatar img')).toBeVisible()
   if (shots) await win.screenshot({ path: `${shots}/2-in-room.png` })
+
+  // Once Alice ends her room, Bob's list still shows her picture on it, under Offline.
+  await win.getByRole('button', { name: 'Leave', exact: true }).click()
+  await alice.win.getByRole('button', { name: 'End room', exact: true }).click()
+  await alice.win.getByRole('dialog').getByRole('button', { name: 'End room' }).click()
+  await expect(win.getByRole('button', { name: /^Offline \(2\)/ })).toBeVisible({ timeout: 20_000 })
+  const gone = win.locator('.rooms-sidebar .room-row.offline', { hasText: "Alice's room" })
+  await expect(gone.locator('.room-avatar img')).toHaveAttribute('src', /^data:image\/jpeg;base64,/)
+  await expect(gone.getByRole('button', { name: /^Join Alice's room/ })).toHaveAttribute('title', /Hosted by Alice/)
+  if (shots) await win.screenshot({ path: `${shots}/3-offline.png` })
 })
 
 test("a public room shows who's inside: their pictures, then +N", async ({ people }) => {

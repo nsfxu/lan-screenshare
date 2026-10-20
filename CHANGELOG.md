@@ -14,8 +14,13 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 - **See who's inside a room before joining.** Public rooms in the room list and on the home screen show the pictures of the people inside (then *+N*), instead of just how many; hover over one for the name. Private rooms still show only the count, and so do rooms whose host hasn't updated.
 
+### Changed
+
+- **Offline rooms keep their host's picture.** A room you've been in that doesn't answer now shows, faded, its host's picture (or initials) from your last visit, instead of just a letter. It's kept on your computer only, and rooms remembered before this version get it the next time you join them.
+
 ### Fixed
 
+- **The screen stays on while you watch or share.** It could dim, sleep or lock in the middle of a stream when you didn't touch the mouse; now it only does that once you stop watching and sharing.
 - **Sharing a window is smooth again.** Since 2.5.0, sharing a single window (not a whole screen) of detailed content could drop to about 10 frames a second on NVIDIA graphics cards, because the video was then encoded without the graphics card. Windows are now shared at full speed from the start, as before.
 
 ## [2.7.0] - 2026-10-19

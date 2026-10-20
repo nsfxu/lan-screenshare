@@ -1033,6 +1033,11 @@ input[type='checkbox']:checked::after {
   margin: 0 2px;
   border-radius: 9px;
 }
+/* The host remembered from the last visit, faded: the room isn't there now. */
+.room-row.offline .room-avatar:not(.plain) {
+  opacity: 0.55;
+  filter: grayscale(0.7);
+}
 .room-avatar.large {
   width: 44px;
   height: 44px;
