@@ -70,6 +70,21 @@ describe('settings', () => {
     expect(store.update({ recentRooms: [...many, { address: 5 } as never] }).recentRooms).toHaveLength(5)
   })
 
+  it('keeps pinned rooms beyond the five recent ones, and checks names you gave rooms', () => {
+    const store = new SettingsStore(tempDir())
+    const rooms = Array.from({ length: 8 }, (_, i) => ({ address: `10.0.0.${i}`, port: 1, tls: false }))
+    const saved = store.update({
+      recentRooms: [
+        ...rooms.slice(0, 6),
+        { ...rooms[6], pinned: true, nickname: '  Home PC ' },
+        { ...rooms[7], pinned: 'yes' as never, nickname: 42 as never }
+      ]
+    }).recentRooms
+    expect(saved[0]).toEqual({ ...rooms[6], pinned: true, nickname: 'Home PC' })
+    expect(saved).toHaveLength(6)
+    expect(saved.slice(1).every((r) => !r.pinned && !r.nickname)).toBe(true)
+  })
+
   it('keeps the host remembered with a recent room, after checking it', () => {
     const dir = tempDir()
     const room = { address: '10.0.0.5', port: 47800, tls: true, lastVisited: 1000 }

@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Added
+
+- **Pin and rename your rooms.** Right-click a recent room (or use its **⋯**) to pin it to the top, where it stays even while it's offline, or give it a name of your own, like *Home PC*, that only you see. **Copy address** and **Forget this room** are there too.
+
 ### Changed
 
 - **Offline rooms keep their host's picture.** A room you've been in that doesn't answer now shows, faded, its host's picture (or initials) from your last visit, instead of just a letter. It's kept on your computer only, and rooms remembered before this version get it the next time you join them.
