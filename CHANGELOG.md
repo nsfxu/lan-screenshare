@@ -12,6 +12,7 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ### Added
 
+- **Match my computer** in **Settings → Appearance**: the app switches between a dark theme and a light theme of your choice as your computer changes between dark and light mode.
 - **Clickable links in chat.** Web addresses (`http://` or `https://`) in a message are links now and open in your browser.
 
 ### Changed

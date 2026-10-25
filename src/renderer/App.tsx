@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { pushRecentRoom, rememberHost, sameEndpoint } from '../shared/roomList'
+import { resolveTheme } from '../shared/themes'
 import type { CodecSupport, DiscoveredRoom, RoomEndpoint, RoomState, Settings } from '../shared/types'
 import { ConfirmDialog, CreateRoomDialog, SettingsPanel, type CreateRoomResult } from './components/Dialogs'
 import { askConfirm } from './lib/confirm'
@@ -12,7 +13,7 @@ import { detectDecoders, detectEncoders } from './lib/codecs'
 import { captureAudioWarning, errorMessage } from './lib/format'
 import { PANEL_STATES, ROOMS_DOCKED_MIN_WIDTH, useRemembered, useWindowWidth } from './lib/layout'
 import { applyLanguage, setSystemLanguages, translator, useT } from './lib/i18n'
-import { applyTheme } from './lib/theme'
+import { applyTheme, useSystemDark } from './lib/theme'
 import { audioDefaults } from './lib/publisher'
 import { disposeSession, hostRoom, joinRoom, JoinError, updateSessionSettings, type Session } from './lib/session'
 
@@ -75,7 +76,8 @@ export function App() {
     return window.api.rooms.onChanged(setRooms)
   }, [])
 
-  const theme = settings?.theme
+  const systemDark = useSystemDark()
+  const theme = settings && resolveTheme(settings, systemDark)
   useEffect(() => {
     if (theme) applyTheme(theme)
   }, [theme])
