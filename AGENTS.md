@@ -37,7 +37,7 @@ npm run perf -- --viewers=2   # measure a streamer and viewers (see docs/en-US/t
 | Quality maths (pure, tested) | `src/shared/quality.ts` |
 | UI text, translations | `src/shared/i18n/` (`en.ts` is the reference), `useT()` in `src/renderer/lib/i18n.tsx`, `mainT()` in `src/main/i18n.ts`; see [translations](docs/en-US/development.md#translations) |
 | UI | `src/renderer/App.tsx` (three columns), `src/renderer/components/` (`RoomsSidebar`, `RoomMembers`, `RoomView`, `RoomStage`, `RoomInfo`, `ChatPanel`), `src/renderer/styles.css`, layout helpers in `src/renderer/lib/layout.ts` |
-| macOS helper (Swift) | `native/mac-audio-capture/main.swift` (system audio through ScreenCaptureKit; Chromium's own loopback doesn't work on macOS) |
+| macOS helpers (Swift) | `native/mac-audio-capture/main.swift` (system audio through ScreenCaptureKit; Chromium's own loopback doesn't work on macOS), `native/mac-window-list/main.swift` (windows on every desktop for the share picker, with `src/shared/windowList.ts`) |
 | Windows helpers (C#) | `native/win-audio-capture/Program.cs` (system audio), `native/win-cursor-watch/Program.cs` (games hiding the cursor) |
 | Measuring performance | `scripts/perf/`, `src/shared/perf.ts`, `src/shared/perfSummary.ts`, [`plans/performance.md`](plans/performance.md) |
 | Tests | `tests/` (`TestClient` in `tests/helpers.ts`) |

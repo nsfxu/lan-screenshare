@@ -86,7 +86,7 @@ O botão no topo de cada coluna lateral a esconde (a coluna de salas vira uma fa
 
 1. Clique em **Criar sala**.
 2. Dê um nome e escolha **Pública** (qualquer pessoa da rede pode entrar) ou **Privada** (as pessoas precisam de um PIN, que é gerado para você; escolha 4, 5 ou 6 dígitos).
-3. Escolha o que compartilhar: uma **tela** inteira ou uma única **janela**.
+3. Escolha o que compartilhar: uma **tela** inteira ou uma única **janela**. No macOS, as janelas das suas outras mesas (Spaces) também aparecem, depois das desta mesa, com o ícone do app no lugar da prévia.
 4. **Compartilhar o áudio do sistema** envia tudo que está tocando no seu computador. No Windows e no macOS, **Deixar o Discord de fora** (ligado por padrão) deixa a sua chamada do Discord de fora, para quem está na mesma chamada não ouvir a própria voz pela sua transmissão. Quando você compartilha uma única **janela** no Windows, **Só o som deste app** (ligado por padrão) envia só o som daquele app, por exemplo só o seu jogo, sem Discord, música ou notificações.
 5. Clique em **Começar a compartilhar**.
 

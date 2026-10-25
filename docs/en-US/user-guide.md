@@ -84,7 +84,7 @@ The button at the top of each side column hides it (the rooms column shrinks to 
 
 1. Click **Create room**.
 2. Give it a name and choose **Public** (anyone on the network can join) or **Private** (people need a PIN, which is generated for you; pick 4, 5 or 6 digits).
-3. Choose what to share: a whole **screen** or a single **window**.
+3. Choose what to share: a whole **screen** or a single **window**. On macOS, windows on your other desktops (Spaces) are listed too, after the ones on this desktop, with their app's icon instead of a preview.
 4. **Share system audio** sends everything playing on your computer. On Windows and macOS, **Leave out Discord** (on by default) keeps your Discord call out of it, so people in the same call don't hear themselves through your stream. When you share a single **window** on Windows, **Only this app's sound** (on by default) sends just that app's sound, for example only your game, without Discord, music or notifications.
 5. Click **Start sharing**.
 

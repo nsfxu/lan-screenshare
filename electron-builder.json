@@ -74,6 +74,10 @@
       {
         "from": "native/bin/mac-audio-capture",
         "to": "mac-audio-capture"
+      },
+      {
+        "from": "native/bin/mac-window-list",
+        "to": "mac-window-list"
       }
     ],
     "identity": "-",
