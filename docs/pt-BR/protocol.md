@@ -87,9 +87,20 @@ Devolve um `RoomInfo` em JSON, sem segredos:
 }
 ```
 
-Quem consulta confere a impressão digital do certificado com a anunciada no mDNS, se houver (`probeRoom` em `src/utils/network.ts`), e descarta valores malformados de `appVersion`, `hostColor` e `hostPicture`.
+Quem consulta confere a impressão digital do certificado com a anunciada no mDNS, se houver (`probeRoom` em `src/utils/network.ts`), e descarta valores malformados de `appVersion`, `hostColor`, `hostPicture` e `people`.
 
-Desde o 2.7.0 a lista de salas mostra o anfitrião de cada sala: `hostColor` é a cor do anfitrião (`#rrggbb`) para as iniciais dele, e `hostPicture`, presente quando o anfitrião tem foto de perfil, são os 16 primeiros dígitos hexadecimais do SHA-256 dela. Quando o hash muda, a lista de salas busca a foto uma vez em `GET /host-picture` (`{"image": "data:image/…"}`, 404 sem foto) e a confere como qualquer foto de perfil (`isAvatar`). Os dois campos não vêm de anfitriões mais antigos, cujas salas mostram as iniciais ou a primeira letra da sala. Qualquer outro caminho devolve 404.
+Desde o 2.7.0 a lista de salas mostra o anfitrião de cada sala: `hostColor` é a cor do anfitrião (`#rrggbb`) para as iniciais dele, e `hostPicture`, presente quando o anfitrião tem foto de perfil, são os 16 primeiros dígitos hexadecimais do SHA-256 dela. Quando o hash muda, a lista de salas busca a foto uma vez em `GET /host-picture` (`{"image": "data:image/…"}`, 404 sem foto) e a confere como qualquer foto de perfil (`isAvatar`). Os dois campos não vêm de anfitriões mais antigos, cujas salas mostram as iniciais ou a primeira letra da sala.
+
+Desde o 2.8.0 o `/info` de uma sala **pública** também lista quem está dentro, o anfitrião primeiro, no máximo 12 (`PEOPLE_LISTED_MAX`):
+
+```json
+"people": [
+  { "name": "Alice", "color": "#64b5f6", "picture": "3f9a0c1d2e4b5a69" },
+  { "name": "Bob", "color": "#aed581" }
+]
+```
+
+`picture`, quando a pessoa tem foto, é o mesmo tipo de hash que `hostPicture`, e `GET /picture?hash=…` serve essa foto (`{"image": …}`) de qualquer pessoa listada; devolve 404 para um hash que ninguém listado tem, um hash malformado e em salas privadas. Uma sala privada não tem `people`, então a lista mostra só a contagem, assim como salas de anfitriões antes do 2.8.0. A lista de salas confere cada pessoa (`toRoomPeople` em `src/shared/people.ts`: nome, cor `#rrggbb`, hash), mostra os primeiros 4 ou 5 rostos e "+N" a partir de `viewerCount`, e busca só essas fotos, cada uma uma vez por hash, compartilhadas entre salas. O estado da própria sala (mensagens `room`) não traz `people`: quem está dentro tem a lista de participantes. Qualquer outro caminho devolve 404.
 
 ## WebSocket: ciclo de vida da conexão
 
@@ -126,7 +137,7 @@ sequenceDiagram
 | `type` | Campos | Quem pode enviar | O que o servidor faz |
 |---|---|---|---|
 | `hello` | `protocol, clientId, name, pin?, hostToken?, resumeToken?, decoders?, appVersion?` | Qualquer um, só como primeira mensagem | Autentica, cria ou retoma o assento, envia `welcome`. |
-| `chat` | `text` | Qualquer um | Valida (≤ 2000 caracteres, ≤ 5 por segundo, chat não silenciado) e envia `chat` a todos. |
+| `chat` | `text`, `replyTo?` | Qualquer um | Valida (≤ 2000 caracteres, ≤ 5 por segundo, chat não silenciado) e envia `chat` a todos. `replyTo` (2.8.0+) é o id da mensagem que ela responde: só fica quando essa mensagem está no histórico e não é um aviso da sala; senão é descartado. Os apps citam a mensagem respondida da própria lista, então uma que o anfitrião apaga some das respostas também; apps mais antigos mostram respostas como mensagens comuns. Menções (`@Nome`) são texto comum: cada app as encontra pelos nomes das pessoas por perto. |
 | `set-avatar` | `image: string \| null` | Qualquer um | Valida (data URL JPEG/WebP/PNG ≤ 40 000 caracteres, ≤ 1 troca por segundo, ignora repetições), guarda e envia `avatar` a todos, inclusive a quem mandou. |
 | `signal` | `to, stream, data` | Quem transmite ↔ um dos seus espectadores | Repassa como `signal` só se `to` e `stream` formarem um par transmissor↔espectador existente. |
 | `ping` | `t` | Qualquer um | Responde `pong`. |

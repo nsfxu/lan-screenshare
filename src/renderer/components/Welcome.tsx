@@ -1,3 +1,4 @@
+import { PEOPLE_SHOWN_MAX } from '../../shared/constants'
 import { onePerRoom } from '../../shared/roomList'
 import type { DiscoveredRoom } from '../../shared/types'
 import { useT } from '../lib/i18n'
@@ -74,7 +75,7 @@ function RoomCard({ room, busy, onJoin }: { room: DiscoveredRoom; busy: boolean;
       />
       <span className="room-card-text">
         <span className="room-card-name">{room.name}</span>
-        <RoomDetails room={room} status={status} busy={busy} />
+        <RoomDetails room={room} status={status} busy={busy} faces={PEOPLE_SHOWN_MAX} />
       </span>
       <button
         className={`btn small ${room.privacy === 'private' ? '' : 'primary'}`}

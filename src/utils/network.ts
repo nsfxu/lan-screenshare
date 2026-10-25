@@ -6,6 +6,7 @@ import { createHash, X509Certificate } from 'node:crypto'
 import type { TLSSocket } from 'node:tls'
 import type { RoomEndpoint, RoomInfo } from '../shared/types'
 import { isAvatar, isColor, isPictureHash } from '../shared/images'
+import { toRoomPeople } from '../shared/people'
 import { isAppVersion } from '../shared/version'
 
 const VIRTUAL_ADAPTER = /vethernet|virtualbox|vmware|hyper-v|wsl|docker|vbox|loopback|bridge|utun/i
@@ -117,6 +118,9 @@ export async function probeRoom(
   if (!isAppVersion(info.appVersion)) delete info.appVersion
   if (!isColor(info.hostColor)) delete info.hostColor
   if (!isPictureHash(info.hostPicture)) delete info.hostPicture
+  const people = toRoomPeople(info.people)
+  if (people) info.people = people
+  else delete info.people
   return { info, fingerprint, ms: Date.now() - started }
 }
 
@@ -126,6 +130,19 @@ export async function fetchHostPicture(
   expectedFingerprint?: string | null
 ): Promise<string> {
   const { body } = await getJson(ep, '/host-picture', 2500, expectedFingerprint)
+  const image = (body as { image?: unknown })?.image
+  if (!isAvatar(image)) throw new Error('not a picture')
+  return image
+}
+
+/** The picture of someone a room's /info lists (GET /picture), checked like any picture from the network. */
+export async function fetchPicture(
+  ep: Pick<RoomEndpoint, 'address' | 'port' | 'tls'>,
+  hash: string,
+  expectedFingerprint?: string | null
+): Promise<string> {
+  if (!isPictureHash(hash)) throw new Error('not a picture hash')
+  const { body } = await getJson(ep, `/picture?hash=${hash}`, 2500, expectedFingerprint)
   const image = (body as { image?: unknown })?.image
   if (!isAvatar(image)) throw new Error('not a picture')
   return image

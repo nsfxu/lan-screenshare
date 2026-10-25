@@ -137,6 +137,7 @@ src/
 native/
   win-audio-capture/Program.cs   auxiliar de áudio do Windows (C#, compilado com o compilador que vem no Windows)
   mac-audio-capture/main.swift   auxiliar de áudio do macOS (Swift, ScreenCaptureKit, compilado com o swiftc)
+  mac-window-list/main.swift     auxiliar do macOS que lista as janelas de todas as mesas, e os ícones dos apps (Swift)
   win-cursor-watch/Program.cs    auxiliar do Windows que avisa quando um jogo esconde o cursor (C#)
 scripts/build-native.cjs         compila os auxiliares antes do `dev`/`build` (não faz nada fora do Windows)
 tests/                           vitest: servidor, transmissões, qualidade, recorte, codecs/TLS, cripto e os
@@ -205,7 +206,7 @@ A lista completa de mensagens está na [referência do protocolo](protocol.md).
 
 ### ScreenCapture e NativeLoopback
 
-- `ScreenCapture` lista telas e janelas com miniaturas para o seletor do próprio app e depois responde ao pedido `getDisplayMedia()` do Chromium com a fonte escolhida (`setDisplayMediaRequestHandler`), com ou sem áudio de loopback.
+- `ScreenCapture` lista telas e janelas com miniaturas para o seletor do próprio app e depois responde ao pedido `getDisplayMedia()` do Chromium com a fonte escolhida (`setDisplayMediaRequestHandler`), com ou sem áudio de loopback. No macOS, o Chromium só lista as janelas da mesa atual; o `mac-window-list` lista as das outras mesas (`src/shared/windowList.ts` escolhe quais), que o Chromium captura sem problema quando recebe o id delas.
 - `NativeLoopback` sempre roda o `mac-audio-capture` no macOS (lá a faixa de loopback do Chromium termina assim que é criada) e, no Windows, roda o `win-audio-capture.exe` quando o Chromium não consegue capturar o áudio que precisamos (dispositivos surround, tudo menos o Discord, ou só o app da janela compartilhada) e repassa o PCM para o renderer via IPC. Veja [pipeline de mídia → áudio](media-pipeline.md#áudio-do-sistema).
 - `CursorWatch` roda o `win-cursor-watch.exe` durante o compartilhamento no Windows e avisa se o cursor está escondido e qual janela está na frente (em tela cheia ou não, em qual monitor). O renderer divide isso entre quem usa (`foregroundWatch.ts`): no Windows anterior ao 11 24H2, a janela de um jogo em tela cheia é compartilhada no lugar da tela enquanto ele esconde o cursor (veja [pipeline de mídia → jogos que escondem o cursor](media-pipeline.md#jogos-que-escondem-o-cursor-windows)); e o **Optimize for: Automatic** escolhe entre movimento suave e texto nítido (veja [captura](media-pipeline.md#captura)).
 

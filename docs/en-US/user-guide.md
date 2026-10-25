@@ -65,10 +65,10 @@ The window has three columns: **rooms** on the left, the room you're in (or a we
 
 The rooms column lists:
 
-- **Recent**: the last 5 rooms you joined, newest first, with the one you're in marked by a blue edge and its people under it. Click one to go back to it, even if it's on a VPN and not found by itself. Rooms that don't answer are folded under **Offline**, which says when you were last there and shows, faded, the host's picture (or initials) from your last visit; it's kept on your computer only, with each room. The **×** on a row forgets it.
+- **Recent**: the last 5 rooms you joined, newest first, with the one you're in marked by a blue edge and its people under it. Click one to go back to it, even if it's on a VPN and not found by itself. Rooms that don't answer are folded under **Offline**, which says when you were last there and shows, faded, the host's picture (or initials) from your last visit; it's kept on your computer only, with each room. Right-click a row, or point at it and click **⋯**, to **Pin to the top** (pinned rooms stay above the others, even when they don't answer, and newer rooms never push them out; up to 10), **Rename…** (your own name for it, only on your computer; the room's own name stays in its tooltip, and an empty name goes back to it), **Copy address** or **Forget this room**.
 - **On your network**: everything else found on your network. It updates by itself; the round arrow searches again right away.
 
-Each room shows its host's profile picture (or their initials, or the room's first letter for hosts before 2.7.0), with a red dot while someone shares and a lock for private rooms. Under its name: how many people are inside; hover over it for who hosts it, how long it has been open and its address. A room on an incompatible version says *Update to join* or *Older version* (hover for who needs to update). Rooms you added by IP have a **×** to remove them from the list. Click a room to join it. If you're already in a room, you leave it first; the app asks before that ends a room you host or stops your share.
+Each room shows its host's profile picture (or their initials, or the room's first letter for hosts before 2.7.0), with a red dot while someone shares and a lock for private rooms. Under its name: who's inside, as their pictures (up to 4 in the list and 5 on the cards, then *+N*; hover over one for the name), or just how many for private rooms and hosts before 2.8.0; hover over the room for who hosts it, how long it has been open and its address. A room on an incompatible version says *Update to join* or *Older version* (hover for who needs to update). Rooms you added by IP have a **×** to remove them from the list. Click a room to join it. If you're already in a room, you leave it first; the app asks before that ends a room you host or stops your share.
 
 While you're not in a room, the middle shows the rooms on your network as cards, each with a **Join** button, next to a card to create your own.
 
@@ -84,7 +84,7 @@ The button at the top of each side column hides it (the rooms column shrinks to 
 
 1. Click **Create room**.
 2. Give it a name and choose **Public** (anyone on the network can join) or **Private** (people need a PIN, which is generated for you; pick 4, 5 or 6 digits).
-3. Choose what to share: a whole **screen** or a single **window**.
+3. Choose what to share: a whole **screen** or a single **window**. On macOS, windows on your other desktops (Spaces) are listed too, after the ones on this desktop, with their app's icon instead of a preview.
 4. **Share system audio** sends everything playing on your computer. On Windows and macOS, **Leave out Discord** (on by default) keeps your Discord call out of it, so people in the same call don't hear themselves through your stream. When you share a single **window** on Windows, **Only this app's sound** (on by default) sends just that app's sound, for example only your game, without Discord, music or notifications.
 5. Click **Start sharing**.
 
@@ -175,7 +175,7 @@ When others draw on **your** stream, you see their marks on your own screen, ove
 
 ## Chat and people
 
-- **Chat** is on the right: messages with time and picture, and an emoji picker. Web links (`http://` or `https://`) can be clicked and open in your browser. Messages someone sends within 5 minutes of each other share one name and picture (hover over one to see its time). Hide the chat with the chat button at the top right of the room; while it's hidden, that button counts the new messages. Messages are kept only while the room exists.
+- **Chat** is on the right: messages with time and picture, and an emoji picker. Web links (`http://` or `https://`) can be clicked and open in your browser. Point at a message and click **Reply** to answer it: your message shows it quoted on top (click the quote to jump to it), and **Esc** or **×** cancels. Type **@** to mention someone: pick them from the list (arrows and **Enter** or **Tab**). Messages that mention you are highlighted, and if the app is in the background the notification says you were mentioned. Messages someone sends within 5 minutes of each other share one name and picture (hover over one to see its time). Hide the chat with the chat button at the top right of the room; while it's hidden, that button counts the new messages. Messages are kept only while the room exists.
 - **People** are listed under the room you're in, in the rooms column: who hosts it, who is **Live** (or **Paused**), and who is reconnecting. While you share, the people watching you show how it's going under their name (*watching you · 60 fps · 20 ms*, or *not looking*).
 
 If your network drops for a moment, the app reconnects on its own and puts you back in your seat without asking for the PIN again, as long as you're back within 30 seconds. Streams you were watching reconnect automatically.

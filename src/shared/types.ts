@@ -32,6 +32,20 @@ export interface RoomInfo {
    * the list fetches the picture only when it changes. Missing for hosts before 2.7.0.
    */
   hostPicture?: string
+  /**
+   * Who's inside, host first, for the room list's pictures: only in public rooms (a private room's
+   * list shows just the count), at most PEOPLE_LISTED_MAX. Missing for hosts before 2.8.0.
+   */
+  people?: RoomPerson[]
+}
+
+/** Someone inside a public room, as /info lists them. */
+export interface RoomPerson {
+  name: string
+  /** #rrggbb */
+  color: string
+  /** A short hash of their profile picture, served by GET /picture?hash=…, when they have one. */
+  picture?: string
 }
 
 /** Full room state pushed to connected participants. */
@@ -59,6 +73,8 @@ export interface DiscoveredRoom extends RoomInfo {
   probeMs?: number
   /** The host's profile picture (data URL), fetched once per `hostPicture` hash. */
   hostImage?: string
+  /** Pictures (data URLs) of the first PEOPLE_SHOWN_MAX people listed, by their `picture` hash. */
+  pictures?: Record<string, string>
 }
 
 /** Where to connect: enough to build a wss:// URL. */
@@ -75,6 +91,10 @@ export interface RecentRoom extends RoomEndpoint {
   lastVisited?: number
   /** Its host when you were last inside, to show while the room doesn't answer; missing for rooms remembered before 2.8.0. */
   host?: RecentHost
+  /** Kept at the top of the list, and never pushed out by newer rooms. */
+  pinned?: boolean
+  /** A name you gave it, shown instead of the room's own; only on this computer. */
+  nickname?: string
 }
 
 /** A room's host as remembered with the room: kept on this computer only. */
@@ -134,6 +154,11 @@ export interface ChatMessage {
    * (2.4.0+). `text` stays, in English, for older apps and as the fallback.
    */
   event?: SystemEvent
+  /**
+   * The id of the message this one answers, still in the room's history when it was sent (2.8.0+).
+   * Apps show it quoted from their own list, so a message the host deletes is gone from its replies too.
+   */
+  replyTo?: string
 }
 
 /** The room's announcements in the chat (see systemText in shared/chat.ts). */
@@ -237,7 +262,8 @@ export type ClientMessage =
       /** Our app version (e.g. "1.2.0"), shown to others in the room. Optional: older apps don't send it. */
       appVersion?: string
     }
-  | { type: 'chat'; text: string }
+  /** `replyTo`: the id of a message in the chat history (2.8.0+; older rooms ignore it). */
+  | { type: 'chat'; text: string; replyTo?: string }
   /** My profile picture (small JPEG/WebP/PNG data URL) or null to remove it; sent after every welcome. */
   | { type: 'set-avatar'; image: string | null }
   /**
@@ -420,6 +446,10 @@ export interface CaptureSource {
   displayId: string
   width?: number
   height?: number
+  /** macOS: a window on another desktop (or minimized), which has no thumbnail. */
+  offscreen?: boolean
+  /** Its app's icon, as a data URL. */
+  appIcon?: string
 }
 
 export interface SystemStats {

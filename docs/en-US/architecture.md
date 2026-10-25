@@ -137,6 +137,7 @@ src/
 native/
   win-audio-capture/Program.cs   Windows audio helper (C#, built with the compiler that ships with Windows)
   mac-audio-capture/main.swift   macOS audio helper (Swift, ScreenCaptureKit, built with swiftc)
+  mac-window-list/main.swift     macOS helper that lists the windows on every desktop, and app icons (Swift)
   win-cursor-watch/Program.cs    Windows helper that reports when a game hides the cursor (C#)
 scripts/build-native.cjs         builds the helpers before `dev`/`build` (no-op on Linux)
 tests/                           vitest: server, streams, quality, crop, codecs/TLS, crypto, and the
@@ -205,7 +206,7 @@ The full message list is in the [protocol reference](protocol.md).
 
 ### ScreenCapture and NativeLoopback
 
-- `ScreenCapture` lists screens and windows with thumbnails for the app's own picker, then answers Chromium's `getDisplayMedia()` request with the chosen source (`setDisplayMediaRequestHandler`), with or without loopback audio.
+- `ScreenCapture` lists screens and windows with thumbnails for the app's own picker, then answers Chromium's `getDisplayMedia()` request with the chosen source (`setDisplayMediaRequestHandler`), with or without loopback audio. On macOS, Chromium only lists the windows on the current desktop; `mac-window-list` lists the ones on other desktops (`src/shared/windowList.ts` picks which), which Chromium captures fine when given their id.
 - `NativeLoopback` always runs `mac-audio-capture` on macOS (Chromium's loopback track ends the moment it is created there), and on Windows runs `win-audio-capture.exe` when Chromium can't capture the audio we need (surround devices, everything except Discord, or only the shared window's app) and forwards its PCM to the renderer over IPC. See [media pipeline → audio](media-pipeline.md#system-audio).
 - `CursorWatch` runs `win-cursor-watch.exe` while sharing on Windows and reports whether the cursor is hidden and which window is in front (fullscreen or not, on which display). The renderer shares it between its users (`foregroundWatch.ts`): on Windows before 11 24H2, a fullscreen game's window is shared in place of the screen while it hides the cursor (see [media pipeline → games that hide the cursor](media-pipeline.md#games-that-hide-the-cursor-windows)); and **Optimize for: Automatic** picks smooth motion or sharp text (see [capture](media-pipeline.md#capture)).
 

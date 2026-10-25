@@ -5,7 +5,7 @@ import { DEFAULT_PORT, NAME_MAX_LENGTH } from '../shared/constants'
 import { isLanguageSetting } from '../shared/i18n'
 import { isAvatar } from '../shared/images'
 import { qualityPresets } from '../shared/quality'
-import { RECENT_ROOMS_MAX, toRecentHost } from '../shared/roomList'
+import { arrangeRecentRooms, PINNED_ROOMS_MAX, RECENT_ROOMS_MAX, toNickname, toRecentHost } from '../shared/roomList'
 import { DEFAULT_DARK_THEME, DEFAULT_LIGHT_THEME, DEFAULT_THEME, isThemeId, isThemeOfKind } from '../shared/themes'
 import type { RecentRoom, RoomEndpoint, Settings } from '../shared/types'
 import { randomId } from '../utils/crypto'
@@ -127,17 +127,22 @@ function sanitize(s: Settings, fallback: Settings, options: SettingsOptions): Se
   out.manualServers = Array.isArray(s.manualServers) ? s.manualServers.filter(isEndpoint).slice(0, 50) : []
   out.lastRoom = isEndpoint(s.lastRoom) ? s.lastRoom : null
   out.recentRooms = Array.isArray(s.recentRooms)
-    ? s.recentRooms
-        .filter(isEndpoint)
-        .slice(0, RECENT_ROOMS_MAX)
-        .map((room): RecentRoom => {
-          const { lastVisited, host, ...ep } = room as RecentRoom
-          const recent: RecentRoom = ep
-          if (typeof lastVisited === 'number' && Number.isFinite(lastVisited) && lastVisited > 0) recent.lastVisited = lastVisited
-          const remembered = toRecentHost(host)
-          if (remembered) recent.host = remembered
-          return recent
-        })
+    ? arrangeRecentRooms(
+        s.recentRooms
+          .filter(isEndpoint)
+          .slice(0, RECENT_ROOMS_MAX + PINNED_ROOMS_MAX)
+          .map((room): RecentRoom => {
+            const { lastVisited, host, pinned, nickname, ...ep } = room as RecentRoom
+            const recent: RecentRoom = ep
+            if (typeof lastVisited === 'number' && Number.isFinite(lastVisited) && lastVisited > 0) recent.lastVisited = lastVisited
+            const remembered = toRecentHost(host)
+            if (remembered) recent.host = remembered
+            if (pinned === true) recent.pinned = true
+            const name = toNickname(nickname)
+            if (name) recent.nickname = name
+            return recent
+          })
+      )
     : []
   const budget = Number(s.uploadBudgetMbps)
   out.uploadBudgetMbps = Number.isInteger(budget) && budget >= 0 && budget <= 10_000 ? budget : fallback.uploadBudgetMbps

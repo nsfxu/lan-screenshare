@@ -965,6 +965,38 @@ input[type='checkbox']:checked::after {
   font-size: 12px;
   color: var(--text-muted);
 }
+/* Who's inside a public room: overlapping faces, then +N. */
+.room-people {
+  display: flex;
+  align-items: center;
+  padding: 2px 0 2px 2px;
+}
+.room-people-face {
+  display: inline-flex;
+  margin-left: -5px;
+  border-radius: 50%;
+  /* A ring in the row's colour keeps the faces apart. */
+  box-shadow: 0 0 0 2px var(--bg-elev);
+}
+.sr-only + .room-people-face {
+  margin-left: 0;
+}
+.room-people .avatar.tiny {
+  width: 18px;
+  height: 18px;
+  font-size: 9px;
+}
+.room-card .room-people .avatar.tiny {
+  width: 20px;
+  height: 20px;
+  font-size: 10px;
+}
+.room-people-more {
+  margin-left: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
 /* Read by screen readers, not shown (what a dot or an edge already says to the eye). */
 .sr-only {
   position: absolute;
@@ -1075,6 +1107,41 @@ input[type='checkbox']:checked::after {
 .room-row:hover .room-row-remove,
 .room-row-remove:focus-visible {
   display: inline-grid;
+}
+/* A remembered room's menu: the dots show on hover, and stay while the menu is open. */
+.room-row-more {
+  display: none;
+  width: 24px;
+  height: 24px;
+  margin-right: 4px;
+}
+.room-row:hover .room-row-more,
+.room-row.menu-open .room-row-more,
+.room-row-more:focus-visible {
+  display: inline-grid;
+}
+.room-row.menu-open {
+  background: var(--bg-hover);
+}
+.room-pin {
+  display: inline-flex;
+  margin-right: 4px;
+  vertical-align: -1px;
+  color: var(--text-muted);
+}
+.room-row.renaming {
+  background: var(--bg-hover);
+}
+.room-rename {
+  width: 100%;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
 }
 .rooms-strip {
   flex: 1;
@@ -1665,6 +1732,46 @@ input[type='checkbox']:checked::after {
   height: 100%;
   object-fit: contain;
 }
+/* A window on another macOS desktop: its app's icon, and where it is. */
+.thumb.no-preview {
+  position: relative;
+  background: var(--bg-hover);
+}
+.thumb img.app-icon {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 14px; /* clear of the badge */
+}
+.source-where {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+}
+.source-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.source-groups .source-grid {
+  max-height: none;
+  overflow: visible;
+}
+.source-group {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
 .source-name {
   font-size: 12px;
   white-space: nowrap;
@@ -2139,9 +2246,104 @@ button.member-main {
 .chat-message {
   position: relative;
   display: flex;
-  gap: 10px;
+  flex-direction: column;
   padding: 6px 4px 2px;
   border-radius: var(--radius-sm);
+  transition: background 0.3s;
+}
+.chat-line {
+  display: flex;
+  gap: 10px;
+}
+/* A message that mentions you: tinted, with an accent edge. */
+.chat-message.mentioned {
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+/* A quoted message brought into view: it blinks once. */
+.chat-message.flash {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.chat-mention {
+  padding: 0 3px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+}
+/* The message a reply answers: one line above it. */
+.chat-quote {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  margin: 0 0 3px 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.chat-quote:disabled {
+  cursor: default;
+  font-style: italic;
+}
+.chat-quote:not(:disabled):hover .chat-quote-text {
+  color: var(--text);
+}
+.chat-quote-line {
+  flex-shrink: 0;
+  align-self: flex-end;
+  width: 14px;
+  height: 9px;
+  border: 2px solid var(--border);
+  border-right: 0;
+  border-bottom: 0;
+  border-top-left-radius: 6px;
+}
+.chat-quote .avatar.tiny {
+  width: 16px;
+  height: 16px;
+  font-size: 8px;
+}
+.chat-quote-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Reply (and Delete, for the host) over a message under the mouse. */
+.chat-tools {
+  position: absolute;
+  top: -10px;
+  right: 6px;
+  display: none;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev-2);
+  box-shadow: var(--shadow);
+}
+.chat-message:hover .chat-tools,
+.chat-tools:focus-within {
+  display: flex;
+}
+.chat-tools button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 24px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.chat-tools button:hover {
+  background: var(--bg-hover);
+  color: var(--text);
 }
 .chat-message.grouped {
   padding-top: 0;
@@ -2208,22 +2410,7 @@ button.member-main {
   border: 2px solid var(--bg-elev);
   box-sizing: content-box;
 }
-.chat-delete {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  display: none;
-  border: none;
-  background: var(--bg-hover);
-  color: var(--text-muted);
-  border-radius: 4px;
-  padding: 3px 5px;
-  cursor: pointer;
-}
-.chat-message:hover .chat-delete {
-  display: block;
-}
-.chat-delete:hover {
+.chat-tools .chat-delete:hover {
   color: var(--bad);
 }
 .chat-system {
@@ -2236,14 +2423,81 @@ button.member-main {
   padding: 6px 0;
 }
 .chat-input {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  position: relative;
   padding: 10px 12px;
   border-top: 1px solid var(--border);
 }
-.chat-input input {
+.chat-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.chat-input-row input {
   flex: 1;
+  min-width: 0;
+}
+/* Replying: who to, over the message box, with x to cancel. */
+.chat-replying {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding: 4px 4px 4px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev-2);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.chat-replying > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-replying .icon-btn {
+  width: 22px;
+  height: 22px;
+}
+/* People to mention, over the message box while typing @. */
+.chat-suggest {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc(100% - 4px);
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elev-2);
+  box-shadow: var(--shadow);
+  z-index: 10;
+}
+.chat-suggest-title {
+  padding: 4px 8px 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.chat-suggest button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.chat-suggest button.active,
+.chat-suggest button:hover {
+  background: var(--bg-hover);
 }
 .emoji-wrap {
   position: relative;

@@ -6,9 +6,10 @@
 //   - win-audio-capture: WASAPI loopback (surround devices, all audio except Discord)
 //   - win-cursor-watch:  reports when a game hides the mouse cursor
 //
-// macOS: native/mac-audio-capture/main.swift to native/bin/mac-audio-capture, a
-// universal (Apple Silicon + Intel) binary, with swiftc from the Xcode command
-// line tools (system audio through ScreenCaptureKit).
+// macOS: native/<name>/main.swift to native/bin/<name>, a universal (Apple
+// Silicon + Intel) binary, with swiftc from the Xcode command line tools:
+//   - mac-audio-capture: system audio through ScreenCaptureKit
+//   - mac-window-list:   the windows on every desktop, for the share picker
 const { execFileSync } = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
@@ -17,7 +18,8 @@ const root = path.join(__dirname, '..')
 const outDir = path.join(root, 'native', 'bin')
 
 if (process.platform === 'darwin') {
-  buildMacAudioCapture()
+  buildMacHelper('mac-audio-capture', 'system audio will be unavailable')
+  buildMacHelper('mac-window-list', 'windows on other desktops will be missing from the share picker')
   process.exit(0)
 }
 if (process.platform !== 'win32') process.exit(0)
@@ -66,9 +68,9 @@ function moveAsideIfRunning(file) {
   }
 }
 
-function buildMacAudioCapture() {
-  const source = path.join(root, 'native', 'mac-audio-capture', 'main.swift')
-  const output = path.join(outDir, 'mac-audio-capture')
+function buildMacHelper(name, without) {
+  const source = path.join(root, 'native', name, 'main.swift')
+  const output = path.join(outDir, name)
   if (fs.existsSync(output) && fs.statSync(output).mtimeMs >= fs.statSync(source).mtimeMs) return
   const parts = []
   try {
@@ -82,7 +84,7 @@ function buildMacAudioCapture() {
     execFileSync('lipo', ['-create', ...parts, '-output', output], { stdio: 'inherit' })
     console.log(`[native] built ${path.relative(root, output)}`)
   } catch (err) {
-    console.warn(`[native] could not build mac-audio-capture (is Xcode's swiftc installed?); system audio will be unavailable: ${err.message}`)
+    console.warn(`[native] could not build ${name} (is Xcode's swiftc installed?); ${without}: ${err.message}`)
   } finally {
     for (const part of parts) fs.rmSync(part, { force: true })
   }
