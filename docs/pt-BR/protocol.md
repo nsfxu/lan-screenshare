@@ -126,7 +126,7 @@ sequenceDiagram
 | `type` | Campos | Quem pode enviar | O que o servidor faz |
 |---|---|---|---|
 | `hello` | `protocol, clientId, name, pin?, hostToken?, resumeToken?, decoders?, appVersion?` | Qualquer um, só como primeira mensagem | Autentica, cria ou retoma o assento, envia `welcome`. |
-| `chat` | `text` | Qualquer um | Valida (≤ 2000 caracteres, ≤ 5 por segundo, chat não silenciado) e envia `chat` a todos. |
+| `chat` | `text`, `replyTo?` | Qualquer um | Valida (≤ 2000 caracteres, ≤ 5 por segundo, chat não silenciado) e envia `chat` a todos. `replyTo` (2.8.0+) é o id da mensagem que ela responde: só fica quando essa mensagem está no histórico e não é um aviso da sala; senão é descartado. Os apps citam a mensagem respondida da própria lista, então uma que o anfitrião apaga some das respostas também; apps mais antigos mostram respostas como mensagens comuns. Menções (`@Nome`) são texto comum: cada app as encontra pelos nomes das pessoas por perto. |
 | `set-avatar` | `image: string \| null` | Qualquer um | Valida (data URL JPEG/WebP/PNG ≤ 40 000 caracteres, ≤ 1 troca por segundo, ignora repetições), guarda e envia `avatar` a todos, inclusive a quem mandou. |
 | `signal` | `to, stream, data` | Quem transmite ↔ um dos seus espectadores | Repassa como `signal` só se `to` e `stream` formarem um par transmissor↔espectador existente. |
 | `ping` | `t` | Qualquer um | Responde `pong`. |

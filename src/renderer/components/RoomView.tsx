@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { WATCH_QUALITIES, qualityPresets, getWatchQuality, lowerPreset, type WatchQualityId } from '../../shared/quality'
-import { countUnread } from '../../shared/chat'
+import { countUnread, mentions } from '../../shared/chat'
 import { struggleMessage, type StruggleKind } from '../../shared/struggle'
 import { bestTileGrid } from '../../shared/tileGrid'
 import type {
@@ -161,8 +161,12 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
         lastCount = list.length
         const incoming = fresh.filter((m) => !m.system && m.userId !== client.selfId)
         if (incoming.length && settings.notifications && !document.hasFocus()) {
-          const m = incoming[incoming.length - 1]
-          new Notification(m.name, { body: m.text, silent: false })
+          // A message that mentions us says so first.
+          const me = client.participants.find((p) => p.id === client.selfId)?.name ?? settings.displayName
+          const names = client.participants.map((p) => p.name)
+          const m = incoming.findLast((x) => mentions(x.text, me, names)) ?? incoming[incoming.length - 1]
+          const title = mentions(m.text, me, names) ? t('chat.mentionedYou', { name: m.name }) : m.name
+          new Notification(title, { body: m.text, silent: false })
         }
       }),
       client.on('error', (e) => onToast(e.message, 'error')),
@@ -1000,10 +1004,12 @@ export function RoomView({ session, settings, onLeave, onChangeSettings, onToast
             messages={messages}
             roomName={room?.name ?? t('common.room')}
             avatars={avatars}
+            people={participants}
             selfId={client.selfId}
+            selfName={participants.find((p) => p.id === client.selfId)?.name ?? settings.displayName}
             isHost={isHost}
             muted={!!room?.chatMuted}
-            onSend={(text) => client.send({ type: 'chat', text })}
+            onSend={(text, replyTo) => client.send({ type: 'chat', text, ...(replyTo && { replyTo }) })}
             onDelete={(id) => client.send({ type: 'delete-message', id })}
           />
         </aside>

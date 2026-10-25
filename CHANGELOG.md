@@ -12,6 +12,7 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ### Added
 
+- **Reply to messages and mention people in chat.** Point at a message and click **Reply**: yours shows it quoted on top. Type **@** to mention someone from a list; messages that mention you are highlighted, and the notification says so when the app is in the background.
 - **Clickable links in chat.** Web addresses (`http://` or `https://`) in a message are links now and open in your browser.
 
 ### Changed

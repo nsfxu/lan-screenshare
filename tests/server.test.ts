@@ -183,6 +183,34 @@ describe('RoomServer', () => {
     await bob.wait('chat', (m) => m.message.text === 'host can still talk')
   })
 
+  it('keeps a reply to a message in the history, and drops one to anything else', async () => {
+    const port = await startServer()
+    const host = await connect(port, { hostToken: HOST_TOKEN })
+    await host.wait('welcome')
+    const bob = await connect(port, { name: 'Bob' })
+    await bob.wait('welcome')
+    const joined = await host.wait('chat', (m) => m.message.event?.kind === 'joined')
+
+    bob.send({ type: 'chat', text: 'which build?' })
+    const question = await host.wait('chat', (m) => m.message.text === 'which build?')
+    host.send({ type: 'chat', text: '2.8 beta', replyTo: question.message.id })
+    expect((await bob.wait('chat', (m) => m.message.text === '2.8 beta')).message.replyTo).toBe(question.message.id)
+
+    // Not a message anyone can see: a room announcement, an unknown id, a deleted message, or not an id at all.
+    host.send({ type: 'delete-message', id: question.message.id })
+    await bob.wait('chat-deleted')
+    for (const [text, replyTo] of [
+      ['to a system line', joined.message.id],
+      ['to nothing', 'no-such-id'],
+      ['to a deleted one', question.message.id],
+      ['to an object', { id: question.message.id }]
+    ] as const) {
+      bob.send({ type: 'chat', text, replyTo: replyTo as string })
+      const sent = await host.wait('chat', (m) => m.message.text === text)
+      expect(sent.message).not.toHaveProperty('replyTo')
+    }
+  })
+
   it('says what system lines are about, for each app to show in its language', async () => {
     const port = await startServer()
     const host = await connect(port, { hostToken: HOST_TOKEN })

@@ -62,3 +62,46 @@ test('links in chat open in the browser, and nothing else does', async ({ people
   await bob.win.evaluate(() => window.api.system.openLink('file:///C:/Windows/System32/calc.exe'))
   expect(await opened()).toEqual(['http://10.0.0.5:8080/notes'])
 })
+
+test('reply to a message, mention someone with @, and see what was answered', async ({ people }) => {
+  const [alice, bob] = await people(2)
+  const port = await createRoom(alice)
+  await joinByIp(bob, port)
+  await openChat(bob)
+  await sendChat(bob, 'which build are you on?')
+
+  // Alice answers it: Reply from the message's tools, then @ suggests Bob.
+  await openChat(alice)
+  // (By its own text: the answer quotes it too.)
+  const question = alice.win
+    .locator('.chat-message')
+    .filter({ has: alice.win.locator('.chat-text', { hasText: 'which build are you on?' }) })
+  await question.hover()
+  await question.getByRole('button', { name: 'Reply' }).click()
+  await expect(alice.win.locator('.chat-replying')).toHaveText(/Replying to Bob/)
+  const input = alice.win.getByLabel('Chat message')
+  await input.pressSequentially('@b')
+  await expect(alice.win.getByRole('option', { name: 'Bob' })).toHaveAttribute('aria-selected', 'true')
+  await input.press('Enter')
+  await expect(input).toHaveValue('@Bob ')
+  await input.pressSequentially('the 2.8 beta')
+  await input.press('Enter')
+  await expect(alice.win.locator('.chat-replying')).toHaveCount(0)
+
+  // Bob sees the answer quoting his question, and that it mentions him.
+  const answer = bob.win.locator('.chat-message', { hasText: 'the 2.8 beta' })
+  await expect(answer.locator('.chat-quote')).toContainText('which build are you on?')
+  await expect(answer.locator('.chat-mention')).toHaveText('@Bob')
+  await expect(answer).toHaveClass(/mentioned/)
+  if (shots) await bob.win.screenshot({ path: `${shots}/3-reply.png` })
+  // Clicking the quote brings the question back into view.
+  await answer.locator('.chat-quote').click()
+  await expect(bob.win.locator('.chat-message.flash')).toContainText('which build are you on?')
+  // Alice's own message doesn't stand out for her.
+  await expect(alice.win.locator('.chat-message', { hasText: 'the 2.8 beta' })).not.toHaveClass(/mentioned/)
+
+  // The host deletes the question: the answer no longer shows it.
+  await question.hover()
+  await question.getByRole('button', { name: 'Delete message' }).click()
+  await expect(answer.locator('.chat-quote')).toHaveText('Original message deleted')
+})
