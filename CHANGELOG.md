@@ -10,6 +10,8 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-10-25
+
 ### Added
 
 - **Match my computer** in **Settings → Appearance**: the app switches between a dark theme and a light theme of your choice as your computer changes between dark and light mode.
@@ -196,7 +198,8 @@ The first release.
 - Reconnects after short network drops, and switches to TCP when a network blocks WebRTC.
 - Encrypted connections, the PIN kept only in memory, and the window hidden from screenshots while you watch.
 
-[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.7.0...HEAD
+[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.8.0...HEAD
+[2.8.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.7.0...v2.8.0
 [2.7.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.4.1...v2.5.0
