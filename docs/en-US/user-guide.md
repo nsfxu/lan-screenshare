@@ -161,6 +161,8 @@ If a stream can't connect in 8 seconds (some VPNs and firewalls block it), the a
 
 While you **minimize** the app, or put one tile in full screen, the streams you can't see stop sending you video (you still hear them), which saves the streamer's upload and your network. The picture comes back within a second when you look again. The streamer sees you as "not looking" under your name. A stream in picture-in-picture or in its own window keeps playing.
 
+While you watch or share, your screen doesn't dim, go to sleep or lock by itself, like when you watch a video. It goes back to normal when you stop.
+
 ### Drawing on a stream
 
 To point at something on a stream you watch, turn on the pen: **Draw on the stream** (the pen under a focused stream). While it's on, your mouse over the stream shows to everyone watching, and to the person sharing, as a dot in your colour with your name. Click and drag to draw a quick mark; marks fade after a few seconds. **Clear my marks** (the eraser next to the pen) removes yours. Click the pen again to stop.
@@ -173,7 +175,7 @@ When others draw on **your** stream, you see their marks on your own screen, ove
 
 ## Chat and people
 
-- **Chat** is on the right: messages with time and picture, and an emoji picker. Messages someone sends within 5 minutes of each other share one name and picture (hover over one to see its time). Hide the chat with the chat button at the top right of the room; while it's hidden, that button counts the new messages. Messages are kept only while the room exists.
+- **Chat** is on the right: messages with time and picture, and an emoji picker. Web links (`http://` or `https://`) can be clicked and open in your browser. Messages someone sends within 5 minutes of each other share one name and picture (hover over one to see its time). Hide the chat with the chat button at the top right of the room; while it's hidden, that button counts the new messages. Messages are kept only while the room exists.
 - **People** are listed under the room you're in, in the rooms column: who hosts it, who is **Live** (or **Paused**), and who is reconnecting. While you share, the people watching you show how it's going under their name (*watching you · 60 fps · 20 ms*, or *not looking*).
 
 If your network drops for a moment, the app reconnects on its own and puts you back in your seat without asking for the PIN again, as long as you're back within 30 seconds. Streams you were watching reconnect automatically.

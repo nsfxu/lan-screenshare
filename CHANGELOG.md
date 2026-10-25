@@ -13,6 +13,7 @@ Each change adds its line under **Unreleased** in the same pull request, written
 ### Added
 
 - **Pin and rename your rooms.** Right-click a recent room (or use its **⋯**) to pin it to the top, where it stays even while it's offline, or give it a name of your own, like *Home PC*, that only you see. **Copy address** and **Forget this room** are there too.
+- **Clickable links in chat.** Web addresses (`http://` or `https://`) in a message are links now and open in your browser.
 
 ### Changed
 
@@ -20,6 +21,7 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ### Fixed
 
+- **The screen stays on while you watch or share.** It could dim, sleep or lock in the middle of a stream when you didn't touch the mouse; now it only does that once you stop watching and sharing.
 - **Sharing a window is smooth again.** Since 2.5.0, sharing a single window (not a whole screen) of detailed content could drop to about 10 frames a second on NVIDIA graphics cards, because the video was then encoded without the graphics card. Windows are now shared at full speed from the start, as before.
 
 ## [2.7.0] - 2026-10-19

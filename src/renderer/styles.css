@@ -2204,6 +2204,13 @@ button.member-main {
   overflow-wrap: anywhere;
   line-height: 1.45;
 }
+.chat-text a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.chat-text a:hover {
+  text-decoration: underline;
+}
 .chat-hover-time {
   display: block;
   padding-top: 3px;

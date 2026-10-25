@@ -62,6 +62,8 @@ export const IPC = {
   updateInstall: 'update:install',
   updateOpenPage: 'update:open-page',
   log: 'system:log',
+  openLink: 'system:open-link',
+  keepAwake: 'system:keep-awake',
   perfOptions: 'perf:options',
   perfSample: 'perf:sample'
 } as const
@@ -152,6 +154,10 @@ export interface ScreenShareApi {
     onConfirmClose(cb: () => void): () => void
     closeConfirmed(): Promise<void>
     log(level: 'info' | 'warn' | 'error', message: string): void
+    /** Open an http(s) link from the chat in the browser; anything else is ignored. */
+    openLink(url: string): Promise<void>
+    /** Keep the screen from dimming, sleeping or locking (while sharing or watching), or let it again. */
+    keepAwake(on: boolean): void
   }
   /** Measuring mode (`--perf-log`, `--perf-view-height`); does nothing without those switches. */
   perf: {
