@@ -34,13 +34,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # A branch that only changes words (docs, changelog fragments, plans, any .md) can't break the
+      # app: the job passes without running it. It's a required check, so it must still finish
+      # (a workflow skipped by a path filter would leave it waiting). main always runs everything.
+      - name: Only docs changed?
+        id: scope
+        run: |
+          if [ "$GITHUB_REF" = refs/heads/main ]; then exit 0; fi
+          changed=$(git diff --name-only "$(git merge-base origin/main HEAD)" HEAD)
+          if [ -n "$changed" ] && ! printf '%s\n' "$changed" | grep -qvE '^(docs|changes|plans)/|\.md$'; then
+            echo "Only docs changed since main, so the app needn't run:"
+            printf '  %s\n' $changed
+            echo "docs=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/setup-node@v4
+        if: steps.scope.outputs.docs != 'true'
         with:
           node-version: 22
           cache: npm
       - run: npm ci
+        if: steps.scope.outputs.docs != 'true'
       - run: npm run build
+        if: steps.scope.outputs.docs != 'true'
       - name: Run the app (Xvfb)
+        if: steps.scope.outputs.docs != 'true'
         run: xvfb-run -a -s "-screen 0 1920x1080x24" npx playwright test
       - name: Keep the report and screenshots
         if: failure()

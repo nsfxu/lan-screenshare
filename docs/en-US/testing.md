@@ -125,7 +125,7 @@ How `e2e/fixtures.ts` keeps them safe and repeatable:
 - **Your screen stays yours.** Set the screen to open the windows on with `E2E_DISPLAY=3`, or once in a git-ignored `e2e.local.json`: `{ "display": 3 }`. The windows then sit side by side on that screen (`--display`/`--tile`, see [development](development.md#running-several-people-on-one-computer)) and never take focus.
 - One test at a time (`workers: 1`): instances share ports and mDNS.
 
-When a test fails, Playwright prints the step and a page snapshot, and the fixture attaches a screenshot of every window (`test-results/`). In CI, [`ci.yml`](../../.github/workflows/ci.yml) runs them on every push and keeps the report as the `e2e-report` artifact, and the release workflow runs them before building installers.
+When a test fails, Playwright prints the step and a page snapshot, and the fixture attaches a screenshot of every window (`test-results/`). In CI, [`ci.yml`](../../.github/workflows/ci.yml) runs them on every push and keeps the report as the `e2e-report` artifact (a branch that only changes docs, changelog fragments, plans or other `.md` files passes the job without running them; `main` always runs them), and the release workflow runs them before building installers.
 
 To add a test, use the `people(n)` fixture and the flows in `e2e/fixtures.ts` (`createRoom`, `joinByIp`, `sendChat`, `decodedFrames`, `cornerColour`). Wait for what the user would see (`expect(locator).toBeVisible()`, `expect.poll`), never for fixed times.
 

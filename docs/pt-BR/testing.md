@@ -125,7 +125,7 @@ Como o `e2e/fixtures.ts` deixa os testes seguros e repetíveis:
 - **A sua tela continua sua.** Escolha a tela onde as janelas abrem com `E2E_DISPLAY=3`, ou uma vez num `e2e.local.json` ignorado pelo git: `{ "display": 3 }`. As janelas ficam lado a lado nessa tela (`--display`/`--tile`, veja [desenvolvimento](development.md#várias-pessoas-no-mesmo-computador)) e nunca pegam o foco.
 - Um teste de cada vez (`workers: 1`): as instâncias dividem portas e mDNS.
 
-Quando um teste falha, o Playwright mostra o passo e um retrato da página, e o fixture anexa uma captura de cada janela (`test-results/`). No CI, o [`ci.yml`](../../.github/workflows/ci.yml) roda os testes a cada push e guarda o relatório como o artefato `e2e-report`, e o workflow de versão os roda antes de gerar os instaladores.
+Quando um teste falha, o Playwright mostra o passo e um retrato da página, e o fixture anexa uma captura de cada janela (`test-results/`). No CI, o [`ci.yml`](../../.github/workflows/ci.yml) roda os testes a cada push e guarda o relatório como o artefato `e2e-report` (um branch que só muda documentação, fragmentos do changelog, planos ou outros arquivos `.md` passa no job sem rodá-los; o `main` sempre os roda), e o workflow de versão os roda antes de gerar os instaladores.
 
 Para adicionar um teste, use o fixture `people(n)` e os fluxos do `e2e/fixtures.ts` (`createRoom`, `joinByIp`, `sendChat`, `decodedFrames`, `cornerColour`). Espere pelo que o usuário veria (`expect(locator).toBeVisible()`, `expect.poll`), nunca por tempos fixos.
 

@@ -2,11 +2,13 @@
 //
 //   npm run release -- <major | minor | patch | x.y.z> [--dry-run]
 //
-// 1. Checks that there are no uncommitted changes and that CHANGELOG.md has
-//    entries under [Unreleased].
+// 1. Checks that there are no uncommitted changes and that there are changes to
+//    release: fragments in changes/ (one per pull request, see scripts/changelog.cjs)
+//    or entries left under [Unreleased] in CHANGELOG.md.
 // 2. Works out the version. A PROTOCOL_VERSION change since the last release
 //    must be a major version: older apps can't join its rooms.
-// 3. Moves the Unreleased entries into a dated section for the version.
+// 3. Gathers them into a dated section for the version, in the order the
+//    fragments were added, and deletes the fragments.
 // 4. Sets the version in package.json and package-lock.json.
 // 5. Writes docs/releases/v<version>.md from the entries, with TODO markers
 //    for the parts a person writes (the release workflow refuses notes that
@@ -17,6 +19,7 @@
 const { execSync } = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
+const { mergeEntries, parseEntries } = require('./changelog.cjs')
 
 const root = path.join(__dirname, '..')
 const file = (...p) => path.join(root, ...p)
@@ -84,8 +87,27 @@ if (unreleasedAt < 0) fail('CHANGELOG.md has no "## [Unreleased]" section')
 const bodyStart = unreleasedAt + '## [Unreleased]\n'.length
 const nextSection = changelog.slice(bodyStart).search(/^## \[|^\[Unreleased\]:/m)
 const bodyEnd = nextSection < 0 ? changelog.length : bodyStart + nextSection
-const entries = changelog.slice(bodyStart, bodyEnd).trim()
-if (!/^- /m.test(entries)) fail('nothing under [Unreleased] in CHANGELOG.md: add the changes first')
+// One fragment per pull request in changes/, oldest first (when it was added), then by name.
+const changesDir = file('changes')
+const addedAt = (name) => Number(git(`log --diff-filter=A --format=%at -1 -- "changes/${name}"`)) || Infinity
+const fragments = fs.existsSync(changesDir)
+  ? fs
+      .readdirSync(changesDir)
+      .filter((name) => name.endsWith('.md') && name !== 'README.md')
+      .map((name) => ({ name, at: addedAt(name) }))
+      .sort((a, b) => a.at - b.at || a.name.localeCompare(b.name))
+      .map(({ name }) => name)
+  : []
+let entries
+try {
+  entries = mergeEntries([
+    parseEntries(changelog.slice(bodyStart, bodyEnd), 'CHANGELOG.md [Unreleased]'),
+    ...fragments.map((name) => parseEntries(fs.readFileSync(path.join(changesDir, name), 'utf8'), `changes/${name}`))
+  ])
+} catch (err) {
+  fail(err.message)
+}
+if (!/^- /m.test(entries)) fail('no changes to release: add fragments to changes/ first (see changes/README.md)')
 
 const today = new Date().toISOString().slice(0, 10)
 const compare = /^\[Unreleased\]: (.+)\/compare\/(v[^.]+\.[^.]+\.[^.]+)\.\.\.HEAD$/m.exec(changelog)
@@ -140,18 +162,19 @@ TODO: resumo em português.
 // --- write ------------------------------------------------------------------------
 console.log(`release: ${current} → ${next}${protocolChanged ? ` (protocol ${protocolBefore} → ${protocolNow})` : ''}`)
 if (dryRun) {
-  console.log(`\n--- CHANGELOG.md section\n## [${next}] - ${today}\n\n${entries}`)
+  console.log(`\n--- CHANGELOG.md section (from ${fragments.length} fragments)\n## [${next}] - ${today}\n\n${entries}`)
   console.log(`\n--- ${path.relative(root, notesPath)}${fs.existsSync(notesPath) ? ' (exists, kept)' : ''}\n${notes}`)
   process.exit(0)
 }
 
 fs.writeFileSync(changelogPath, updatedChangelog)
+for (const name of fragments) fs.unlinkSync(path.join(changesDir, name))
 execSync(`npm version ${next} --no-git-tag-version`, { cwd: root, stdio: 'ignore' })
 const wroteNotes = !fs.existsSync(notesPath)
 if (wroteNotes) fs.writeFileSync(notesPath, notes)
 
 console.log(`
-Updated CHANGELOG.md, package.json and package-lock.json.
+Updated CHANGELOG.md, package.json and package-lock.json${fragments.length ? `, and deleted ${fragments.length} fragments from changes/` : ''}.
 ${wroteNotes ? `Wrote ${path.relative(root, notesPath)}` : `Kept the existing ${path.relative(root, notesPath)}`}: replace its TODOs (intro, Portuguese summary).
 
 Then:
