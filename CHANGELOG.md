@@ -13,6 +13,8 @@ Each change adds its line under **Unreleased** in the same pull request, written
 ### Added
 
 - **Match my computer** in **Settings → Appearance**: the app switches between a dark theme and a light theme of your choice as your computer changes between dark and light mode.
+- **See who's inside a room before joining.** Public rooms in the room list and on the home screen show the pictures of the people inside (then *+N*), instead of just how many; hover over one for the name. Private rooms still show only the count, and so do rooms whose host hasn't updated.
+
 - **Clickable links in chat.** Web addresses (`http://` or `https://`) in a message are links now and open in your browser.
 
 ### Changed

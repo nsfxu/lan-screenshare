@@ -97,6 +97,7 @@ export const en = {
   'rooms.offlineGroup': 'Offline ({count})',
   'rooms.lastVisited': 'Last visited {when}',
   'rooms.people': { one: '{count} person', other: '{count} people' },
+  'rooms.morePeople': '+{count}',
   'rooms.liveTag': 'Live',
   'rooms.privateTag': 'Private',
   'rooms.youreHere': "you're here",

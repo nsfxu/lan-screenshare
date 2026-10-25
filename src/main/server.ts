@@ -15,6 +15,7 @@ import {
   MAX_USERS,
   MIN_VIEW_HEIGHT,
   NAME_MAX_LENGTH,
+  PEOPLE_LISTED_MAX,
   PORT_SEARCH_RANGE,
   PROTOCOL_VERSION,
   RESUME_GRACE_MS,
@@ -32,13 +33,14 @@ import type {
   Participant,
   Privacy,
   RoomInfo,
+  RoomPerson,
   RoomState,
   ServerMessage,
   SystemEvent,
   Transport
 } from '../shared/types'
 import { systemText } from '../shared/chat'
-import { isAvatar, isSnapshot } from '../shared/images'
+import { isAvatar, isPictureHash, isSnapshot } from '../shared/images'
 import { CLEAR_RATE, isStrokeId, isUnit, POINTER_RATE, RateWindow, STROKE_RATE, strokePoints } from '../shared/marks'
 import { isHiddenView } from '../shared/quality'
 import { incompatibleRoomMessage, isAppVersion } from '../shared/version'
@@ -121,7 +123,8 @@ const COLORS = ['#e57373', '#f06292', '#ba68c8', '#9575cd', '#7986cb', '#64b5f6'
  * The per-room relay node, run by the host.
  *
  * - `GET /info` serves public room info for discovery probes, and
- *   `GET /host-picture` the host's profile picture it names by hash.
+ *   `GET /host-picture` the host's profile picture it names by hash, and
+ *   `GET /picture?hash=…` the picture of anyone it lists (public rooms).
  * - `/ws` carries auth (PIN), chat, presence, moderation, and — for any
  *   participant who shares — WebRTC signaling between that streamer and the
  *   watchers who chose to watch it, plus binary media for the TCP fallback.
@@ -238,21 +241,40 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       appVersion: isAppVersion(this.opts.appVersion) ? this.opts.appVersion : undefined,
       startedAt: this.startedAt,
       hostColor: host?.participant.color,
-      hostPicture: host?.avatar ? this.pictureHash(host.avatar) : undefined
+      hostPicture: host?.avatar ? this.pictureHash(host.avatar) : undefined,
+      // Who's inside is for the room list of public rooms only: a private room shows just the count.
+      people: this.privacy === 'public' ? this.listedSeats().map((s) => this.person(s)) : undefined
     }
   }
 
-  /** The host's picture is probed every few seconds by everyone's room list: hash it once. */
-  private hashed: { image: string; hash: string } | null = null
+  /** The people /info lists: the host first, then the others in the order they came in. */
+  private listedSeats(): Seat[] {
+    const host = this.seats.get(HOST_ID)
+    return [...(host ? [host] : []), ...this.viewerSeats()].slice(0, PEOPLE_LISTED_MAX)
+  }
+
+  private person(seat: Seat): RoomPerson {
+    const { name, color } = seat.participant
+    return seat.avatar ? { name, color, picture: this.pictureHash(seat.avatar) } : { name, color }
+  }
+
+  /** Pictures are listed by hash in /info, probed every few seconds by everyone's room list: hash each once. */
+  private hashes = new Map<string, string>()
   private pictureHash(image: string): string {
-    if (this.hashed?.image !== image) {
-      this.hashed = { image, hash: createHash('sha256').update(image).digest('hex').slice(0, 16) }
+    let hash = this.hashes.get(image)
+    if (!hash) {
+      // Only the pictures of the people inside are ever asked for; old ones just go.
+      if (this.hashes.size >= PEOPLE_LISTED_MAX * 2) this.hashes.clear()
+      hash = createHash('sha256').update(image).digest('hex').slice(0, 16)
+      this.hashes.set(image, hash)
     }
-    return this.hashed.hash
+    return hash
   }
 
   getState(): RoomState {
-    return { ...this.getInfo(), chatMuted: this.chatMuted, allowRecording: false, drawingAllowed: this.drawingAllowed }
+    // The people inside get their own list (participants); the room list's copy isn't needed.
+    const { people: _people, ...info } = this.getInfo()
+    return { ...info, chatMuted: this.chatMuted, allowRecording: false, drawingAllowed: this.drawingAllowed }
   }
 
   /** Change privacy and/or PIN. Existing participants stay connected. */
@@ -272,6 +294,19 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
       res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' })
       res.end(body)
       return
+    }
+    if (req.method === 'GET' && req.url?.split('?')[0] === '/picture') {
+      // The picture of someone /info lists by its hash: public rooms only, like the list itself.
+      const hash = new URLSearchParams(req.url.split('?')[1] ?? '').get('hash')
+      const seat =
+        this.privacy === 'public' && isPictureHash(hash)
+          ? this.listedSeats().find((s) => s.avatar && this.pictureHash(s.avatar) === hash)
+          : undefined
+      if (seat?.avatar) {
+        res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' })
+        res.end(JSON.stringify({ image: seat.avatar }))
+        return
+      }
     }
     if (req.method === 'GET' && req.url?.split('?')[0] === '/host-picture') {
       // Public like the host's name in /info: the room list shows it next to the room.
