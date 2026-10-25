@@ -21,6 +21,7 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ### Changed
 
+- **More even spacing.** Gaps and margins across the app now follow one scale, so panels, menus and Settings line up the same way everywhere; a few spots get a little more room.
 - **Offline rooms keep their host's picture.** A room you've been in that doesn't answer now shows, faded, its host's picture (or initials) from your last visit, instead of just a letter. It's kept on your computer only, and rooms remembered before this version get it the next time you join them.
 
 ### Fixed
