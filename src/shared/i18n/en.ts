@@ -386,6 +386,10 @@ export const en = {
   'source.loading': 'Loading sources…',
   'source.noScreens': 'No screens available',
   'source.noWindows': 'No windows available',
+  'source.thisDesktop': 'On this desktop',
+  'source.otherDesktops': 'On other desktops',
+  'source.otherDesktop': 'Other desktop',
+  'source.otherDesktopsHint': 'These windows are on another desktop or minimized, so they have no preview.',
 
   // --- Sound with a share -------------------------------------------------------------------
   'audio.share': 'Share system audio',

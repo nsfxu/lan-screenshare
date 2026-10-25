@@ -10,7 +10,11 @@ interface Props {
   onSelect(id: string): void
 }
 
-/** Grid of screens and windows with live thumbnails. */
+/**
+ * Grid of screens and windows with live thumbnails. On macOS, windows on other
+ * desktops come after the others, with their app's icon: there's no thumbnail
+ * of them until sharing starts.
+ */
 export function SourcePicker({ selected, onSelect }: Props) {
   const { t } = useT()
   const [sources, setSources] = useState<CaptureSource[] | null>(null)
@@ -43,6 +47,39 @@ export function SourcePicker({ selected, onSelect }: Props) {
   }, [])
 
   const visible = (sources ?? []).filter((s) => s.kind === tab)
+  const here = visible.filter((s) => !s.offscreen)
+  const elsewhere = visible.filter((s) => s.offscreen)
+
+  const grid = (list: CaptureSource[]) => (
+    <div className="source-grid">
+      {list.map((s) => (
+        <button
+          type="button"
+          key={s.id}
+          className={`source ${selected === s.id ? 'selected' : ''}`}
+          onClick={() => onSelect(s.id)}
+          title={s.name}
+        >
+          <div className={`thumb ${s.offscreen ? 'no-preview' : ''}`}>
+            {s.thumbnail ? (
+              <img src={s.thumbnail} alt="" />
+            ) : s.appIcon ? (
+              <img className="app-icon" src={s.appIcon} alt="" />
+            ) : (
+              <Icon name="screen" size={32} />
+            )}
+            {s.offscreen && <span className="source-where">{t('source.otherDesktop')}</span>}
+          </div>
+          <span className="source-name">{s.name}</span>
+          {s.width && s.height ? (
+            <span className="muted small">
+              {s.width}×{s.height}
+            </span>
+          ) : null}
+        </button>
+      ))}
+    </div>
+  )
 
   return (
     <div className="source-picker">
@@ -79,27 +116,19 @@ export function SourcePicker({ selected, onSelect }: Props) {
         <div className="source-grid empty-small muted">
           {tab === 'screen' ? t('source.noScreens') : t('source.noWindows')}
         </div>
+      ) : elsewhere.length === 0 ? (
+        grid(visible)
       ) : (
-        <div className="source-grid">
-          {visible.map((s) => (
-            <button
-              type="button"
-              key={s.id}
-              className={`source ${selected === s.id ? 'selected' : ''}`}
-              onClick={() => onSelect(s.id)}
-              title={s.name}
-            >
-              <div className="thumb">
-                {s.thumbnail ? <img src={s.thumbnail} alt="" /> : <Icon name="screen" size={32} />}
-              </div>
-              <span className="source-name">{s.name}</span>
-              {s.width && s.height ? (
-                <span className="muted small">
-                  {s.width}×{s.height}
-                </span>
-              ) : null}
-            </button>
-          ))}
+        <div className="source-groups">
+          {here.length > 0 && (
+            <>
+              <h3 className="source-group">{t('source.thisDesktop')}</h3>
+              {grid(here)}
+            </>
+          )}
+          <h3 className="source-group">{t('source.otherDesktops')}</h3>
+          {grid(elsewhere)}
+          <p className="muted small source-hint">{t('source.otherDesktopsHint')}</p>
         </div>
       )}
     </div>

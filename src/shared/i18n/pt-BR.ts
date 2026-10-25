@@ -380,6 +380,10 @@ export const ptBR: Messages = {
   'source.loading': 'Carregando fontes…',
   'source.noScreens': 'Nenhuma tela disponível',
   'source.noWindows': 'Nenhuma janela disponível',
+  'source.thisDesktop': 'Nesta mesa',
+  'source.otherDesktops': 'Em outras mesas',
+  'source.otherDesktop': 'Outra mesa',
+  'source.otherDesktopsHint': 'Estas janelas estão em outra mesa ou minimizadas, por isso não têm prévia.',
 
   // --- Sound with a share -------------------------------------------------------------------
   'audio.share': 'Compartilhar o áudio do sistema',

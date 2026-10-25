@@ -10,6 +10,10 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 ## [Unreleased]
 
+### Added
+
+- **Share windows from your other desktops on macOS.** The share picker only showed the windows on the desktop (Space) you were on. Windows on your other desktops are now listed too, after the others, with their app's icon instead of a preview, and you can share them without moving them.
+
 ### Changed
 
 - **Offline rooms keep their host's picture.** A room you've been in that doesn't answer now shows, faded, its host's picture (or initials) from your last visit, instead of just a letter. It's kept on your computer only, and rooms remembered before this version get it the next time you join them.

@@ -1,5 +1,9 @@
-import { desktopCapturer, screen, shell, systemPreferences, type Session } from 'electron'
+import { execFile } from 'node:child_process'
+import fs from 'node:fs'
+import path from 'node:path'
+import { app, desktopCapturer, screen, shell, systemPreferences, type DesktopCapturerSource, type Session } from 'electron'
 import type { CaptureSource, ScreenPermission } from '../shared/types'
+import { offscreenWindows, parseNativeWindows, windowName, windowSourceId, type NativeWindow } from '../shared/windowList'
 import type { Logger } from './server'
 
 /**
@@ -20,24 +24,32 @@ import type { Logger } from './server'
  * System audio uses loopback capture: WASAPI loopback on Windows (the whole
  * system mix, even when a single window is shared) and ScreenCaptureKit audio
  * on macOS 13+ (behind Chromium feature flags enabled in index.ts).
+ *
+ * On macOS, Chromium only lists the windows on the current desktop (Space).
+ * native/mac-window-list lists the others, which Chromium captures fine when
+ * given their id; the picker shows them with their app's icon (shared/windowList.ts).
  */
 export class ScreenCapture {
   private selectedId: string | null = null
   private withAudio = false
+  /** App icons of windows on other desktops, by bundle path. */
+  private readonly icons = new Map<string, string>()
 
   constructor(private readonly log: Logger) {}
 
   install(session: Session): void {
     session.setDisplayMediaRequestHandler(
       (_request, callback) => {
-        desktopCapturer
-          .getSources({ types: ['screen', 'window'], thumbnailSize: { width: 0, height: 0 } })
-          .then((sources) => {
+        Promise.all([
+          desktopCapturer.getSources({ types: ['screen', 'window'], thumbnailSize: { width: 0, height: 0 } }),
+          this.nativeWindows()
+        ])
+          .then(([sources, windows]) => {
             // Never capture something other than what was chosen: a window can
             // be missing from the list (closed, or minimized like a fullscreen
             // game after alt-tab), and getDisplayMedia() should fail then.
             const source = this.selectedId
-              ? sources.find((s) => s.id === this.selectedId)
+              ? (sources.find((s) => s.id === this.selectedId) ?? this.offscreenSource(this.selectedId, windows))
               : sources.find((s) => s.id.startsWith('screen:'))
             if (!source) {
               this.log.warn(`capture source not available: ${this.selectedId ?? 'no screen'}`)
@@ -59,13 +71,16 @@ export class ScreenCapture {
   }
 
   async listSources(): Promise<CaptureSource[]> {
-    const sources = await desktopCapturer.getSources({
-      types: ['screen', 'window'],
-      thumbnailSize: { width: 320, height: 180 },
-      fetchWindowIcons: false
-    })
+    const [sources, windows] = await Promise.all([
+      desktopCapturer.getSources({
+        types: ['screen', 'window'],
+        thumbnailSize: { width: 320, height: 180 },
+        fetchWindowIcons: false
+      }),
+      this.nativeWindows()
+    ])
     const displays = screen.getAllDisplays()
-    return sources
+    const listed = sources
       .filter((s) => !s.thumbnail.isEmpty() || s.id.startsWith('screen:'))
       .map((s) => {
         const display = displays.find((d) => String(d.id) === s.display_id)
@@ -79,6 +94,65 @@ export class ScreenCapture {
           height: display ? Math.round(display.size.height * display.scaleFactor) : undefined
         }
       })
+    const others = offscreenWindows(windows, new Set(listed.map((s) => s.id)), process.pid)
+    const elsewhere = await Promise.all(
+      others.map(async (w) => ({
+        id: windowSourceId(w.id),
+        name: windowName(w),
+        kind: 'window' as const,
+        thumbnail: '',
+        displayId: '',
+        offscreen: true,
+        appIcon: w.bundle ? await this.appIcon(w.bundle) : undefined
+      }))
+    )
+    return [...listed, ...elsewhere]
+  }
+
+  /** A window on another desktop that Chromium didn't list, if it's still there. */
+  private offscreenSource(id: string, windows: NativeWindow[]): DesktopCapturerSource | undefined {
+    const w = offscreenWindows(windows, new Set(), process.pid).find((x) => windowSourceId(x.id) === id)
+    // Chromium only needs the id; the rest of a DesktopCapturerSource is for pickers.
+    return w ? ({ id, name: windowName(w) } as DesktopCapturerSource) : undefined
+  }
+
+  private get windowListPath(): string {
+    return app.isPackaged
+      ? path.join(process.resourcesPath, 'mac-window-list')
+      : path.join(app.getAppPath(), 'native', 'bin', 'mac-window-list')
+  }
+
+  /** Every window on every desktop (macOS, from native/mac-window-list); none elsewhere or if it fails. */
+  private nativeWindows(): Promise<NativeWindow[]> {
+    if (process.platform !== 'darwin' || !fs.existsSync(this.windowListPath)) return Promise.resolve([])
+    return new Promise((resolve) => {
+      execFile(this.windowListPath, { timeout: 3000, maxBuffer: 4 * 1024 * 1024 }, (err, stdout) => {
+        try {
+          if (err) throw err
+          resolve(parseNativeWindows(stdout))
+        } catch (e) {
+          this.log.warn('listing the windows on other desktops failed', e)
+          resolve([])
+        }
+      })
+    })
+  }
+
+  /** The app's icon as a data URL (from native/mac-window-list), cached by bundle. */
+  private appIcon(bundle: string): Promise<string | undefined> {
+    const cached = this.icons.get(bundle)
+    if (cached) return Promise.resolve(cached)
+    return new Promise((resolve) => {
+      execFile(this.windowListPath, ['--icon', bundle], { encoding: 'buffer', timeout: 3000 }, (err, stdout) => {
+        if (err || stdout.length === 0) {
+          resolve(undefined)
+          return
+        }
+        const icon = `data:image/png;base64,${stdout.toString('base64')}`
+        this.icons.set(bundle, icon)
+        resolve(icon)
+      })
+    })
   }
 
   select(id: string, audio: boolean): void {

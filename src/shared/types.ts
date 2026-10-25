@@ -416,6 +416,10 @@ export interface CaptureSource {
   displayId: string
   width?: number
   height?: number
+  /** macOS: a window on another desktop (or minimized), which has no thumbnail. */
+  offscreen?: boolean
+  /** Its app's icon, as a data URL. */
+  appIcon?: string
 }
 
 export interface SystemStats {
