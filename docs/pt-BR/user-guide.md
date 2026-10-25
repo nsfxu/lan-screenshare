@@ -163,6 +163,8 @@ Se uma transmissão não conectar em 8 segundos (algumas VPNs e firewalls bloque
 
 Enquanto você **minimiza** o app, ou deixa um quadro em tela cheia, as transmissões que você não consegue ver param de te mandar vídeo (o som continua), o que poupa o upload de quem transmite e a sua rede. A imagem volta em menos de um segundo quando você olha de novo. Quem transmite vê "não está olhando" embaixo do seu nome. Uma transmissão na janela flutuante ou numa janela só dela continua tocando.
 
+Enquanto você assiste ou transmite, a tela não escurece, não entra em repouso nem bloqueia sozinha, como quando você assiste um vídeo. Ela volta ao normal quando você para.
+
 ### Desenhar numa transmissão
 
 Para apontar algo numa transmissão que você assiste, ligue a caneta: **Desenhar na transmissão** (a caneta embaixo de uma transmissão em destaque). Enquanto ela está ligada, o seu mouse sobre a transmissão aparece para todo mundo que assiste, e para quem compartilha, como um ponto na sua cor com o seu nome. Clique e arraste para fazer um desenho rápido; os desenhos somem depois de alguns segundos. **Apagar meus desenhos** (a borracha ao lado da caneta) tira os seus. Clique na caneta de novo para parar.
@@ -175,7 +177,7 @@ Quando outras pessoas desenham na **sua** transmissão, você vê os desenhos na
 
 ## Chat e pessoas
 
-- O **chat** fica à direita: mensagens com horário e foto, e um seletor de emojis. Mensagens que alguém manda com até 5 minutos de diferença ficam sob um só nome e foto (passe o mouse numa delas para ver o horário). Esconda o chat com o botão de chat no canto de cima à direita da sala; enquanto ele está escondido, o botão conta as mensagens novas. As mensagens só existem enquanto a sala existir.
+- O **chat** fica à direita: mensagens com horário e foto, e um seletor de emojis. Links da web (`http://` ou `https://`) são clicáveis e abrem no seu navegador. Mensagens que alguém manda com até 5 minutos de diferença ficam sob um só nome e foto (passe o mouse numa delas para ver o horário). Esconda o chat com o botão de chat no canto de cima à direita da sala; enquanto ele está escondido, o botão conta as mensagens novas. As mensagens só existem enquanto a sala existir.
 - As **pessoas** aparecem embaixo da sala em que você está, na coluna de salas: quem hospeda, quem está ao vivo (**Ao vivo**, ou **Pausado**) e quem está reconectando. Enquanto você compartilha, quem está te assistindo mostra como está indo embaixo do nome (*assistindo você · 60 fps · 20 ms*, ou *não está olhando*).
 
 Se a sua rede cair por um instante, o app reconecta sozinho e te coloca de volta no mesmo lugar sem pedir o PIN de novo, desde que você volte em até 30 segundos. As transmissões que você assistia reconectam automaticamente.
