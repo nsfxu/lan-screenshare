@@ -13,6 +13,7 @@ Each change adds its line under **Unreleased** in the same pull request, written
 ### Added
 
 - **Share windows from your other desktops on macOS.** The share picker only showed the windows on the desktop (Space) you were on. Windows on your other desktops are now listed too, after the others, with their app's icon instead of a preview, and you can share them without moving them.
+- **Clickable links in chat.** Web addresses (`http://` or `https://`) in a message are links now and open in your browser.
 
 ### Changed
 

@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
-import { chatText, startsGroup } from '../../shared/chat'
+import { chatParts, chatText, startsGroup } from '../../shared/chat'
 import { CHAT_MAX_LENGTH } from '../../shared/constants'
 import type { ChatMessage } from '../../shared/types'
 import { formatTime } from '../lib/format'
@@ -103,7 +103,25 @@ export function ChatPanel({ messages, roomName, avatars, selfId, isHost, muted, 
                     <time>{formatTime(m.ts)}</time>
                   </div>
                 )}
-                <p className="chat-text">{m.text}</p>
+                <p className="chat-text">
+                  {chatParts(m.text).map((part, j) =>
+                    part.href ? (
+                      <a
+                        key={j}
+                        href={part.href}
+                        title={part.href}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          void window.api.system.openLink(part.href!)
+                        }}
+                      >
+                        {part.text}
+                      </a>
+                    ) : (
+                      part.text
+                    )
+                  )}
+                </p>
               </div>
               {isHost && (
                 <button className="chat-delete" title={t('chat.delete')} onClick={() => onDelete(m.id)}>

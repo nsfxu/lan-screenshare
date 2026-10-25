@@ -2,6 +2,7 @@ import { app, BrowserWindow, clipboard, desktopCapturer, dialog, ipcMain, powerS
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { safeLink } from '../shared/chat'
 import { APP_NAME, DEFAULT_PORT, MARKS_WINDOW_NAME, STREAM_WINDOW_PREFIX, TITLE_BAR_HEIGHT } from '../shared/constants'
 import { IPC } from '../shared/ipc'
 import { parsePerfArgs, type PerfRendererOptions } from '../shared/perf'
@@ -322,6 +323,11 @@ function registerIpc(): void {
   )
   ipcMain.handle(IPC.copyText, (_e, text: string) => clipboard.writeText(String(text)))
   ipcMain.handle(IPC.openLogs, () => shell.openPath(log.dir))
+  // Chat links come from other people: only ever http(s), opened by the browser, never by the app.
+  ipcMain.handle(IPC.openLink, async (_e, url: unknown) => {
+    const href = safeLink(url)
+    if (href) await shell.openExternal(href)
+  })
   ipcMain.handle(IPC.placeMarksWindow, async (_e, sourceId: unknown) => {
     const overlay = BrowserWindow.getAllWindows().find((w) => marksWindows.has(w.id))
     if (!overlay || typeof sourceId !== 'string') return
