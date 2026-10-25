@@ -473,7 +473,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
         return
       }
       case 'chat':
-        return this.handleChat(seat, msg.text)
+        return this.handleChat(seat, msg.text, msg.replyTo)
       case 'bye':
         this.removeSeat(seat, true)
         seat.ws?.close(1000, 'bye')
@@ -705,7 +705,7 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
     return changed
   }
 
-  private handleChat(seat: Seat, raw: unknown): void {
+  private handleChat(seat: Seat, raw: unknown, replyTo: unknown): void {
     if (typeof raw !== 'string') return
     const text = raw.trim()
     if (!text) return
@@ -725,7 +725,9 @@ export class RoomServer extends EventEmitter<RoomServerEvents> {
     }
     seat.chatTimes.push(now)
     const p = seat.participant
-    this.pushChat({ id: randomId(), userId: p.id, name: p.name, color: p.color, text, ts: now })
+    // A reply names a message people can still see: one in the history, not a room announcement.
+    const answers = typeof replyTo === 'string' ? this.history.find((m) => m.id === replyTo && !m.system) : undefined
+    this.pushChat({ id: randomId(), userId: p.id, name: p.name, color: p.color, text, ts: now, ...(answers && { replyTo: answers.id }) })
   }
 
   /** A line from the room in the chat: in English for apps before 2.4.0, and as an event each app says in its language. */

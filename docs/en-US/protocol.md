@@ -137,7 +137,7 @@ sequenceDiagram
 | `type` | Fields | Who may send | What the server does |
 |---|---|---|---|
 | `hello` | `protocol, clientId, name, pin?, hostToken?, resumeToken?, decoders?, appVersion?` | Anyone, first message only | Authenticates, creates or resumes the seat, sends `welcome`. |
-| `chat` | `text` | Anyone | Validates (≤ 2000 chars, ≤ 5 per second, not muted) and broadcasts `chat`. |
+| `chat` | `text`, `replyTo?` | Anyone | Validates (≤ 2000 chars, ≤ 5 per second, not muted) and broadcasts `chat`. `replyTo` (2.8.0+) is the id of the message it answers: kept only when that message is in the history and isn't a room announcement, dropped otherwise. Apps quote the answered message from their own list, so one the host deletes disappears from its replies too; older apps show replies as plain messages. Mentions (`@Name`) are plain text: each app finds them by the names of the people around. |
 | `set-avatar` | `image: string \| null` | Anyone | Validates (JPEG/WebP/PNG data URL ≤ 40 000 chars, ≤ 1 change per second, ignores repeats), stores it, broadcasts `avatar` to everyone including the sender. |
 | `signal` | `to, stream, data` | Streamer ↔ one of its watchers | Relays as `signal` only if `to` and `stream` form an existing streamer↔watcher pair. |
 | `ping` | `t` | Anyone | Answers `pong`. |

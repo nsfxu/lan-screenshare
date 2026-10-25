@@ -154,6 +154,11 @@ export interface ChatMessage {
    * (2.4.0+). `text` stays, in English, for older apps and as the fallback.
    */
   event?: SystemEvent
+  /**
+   * The id of the message this one answers, still in the room's history when it was sent (2.8.0+).
+   * Apps show it quoted from their own list, so a message the host deletes is gone from its replies too.
+   */
+  replyTo?: string
 }
 
 /** The room's announcements in the chat (see systemText in shared/chat.ts). */
@@ -257,7 +262,8 @@ export type ClientMessage =
       /** Our app version (e.g. "1.2.0"), shown to others in the room. Optional: older apps don't send it. */
       appVersion?: string
     }
-  | { type: 'chat'; text: string }
+  /** `replyTo`: the id of a message in the chat history (2.8.0+; older rooms ignore it). */
+  | { type: 'chat'; text: string; replyTo?: string }
   /** My profile picture (small JPEG/WebP/PNG data URL) or null to remove it; sent after every welcome. */
   | { type: 'set-avatar'; image: string | null }
   /**
