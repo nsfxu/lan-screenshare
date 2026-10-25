@@ -78,6 +78,7 @@ const api: ScreenShareApi = {
     onConfirmClose: (cb) => subscribe<void>(IPC.confirmClose, cb),
     closeConfirmed: () => ipcRenderer.invoke(IPC.closeConfirmed),
     log: (level, message) => ipcRenderer.send(IPC.log, level, message),
+    openLink: (url) => ipcRenderer.invoke(IPC.openLink, url),
     keepAwake: (on) => ipcRenderer.send(IPC.keepAwake, on)
   },
   perf: {
