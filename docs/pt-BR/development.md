@@ -189,7 +189,7 @@ O ScreenShare segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/)
 | **Menor** (minor) | Novidades que ainda funcionam com outros apps da mesma versão maior | 1.0.0 → 1.1.0 |
 | **Correção** (patch) | Só correções | 1.1.0 → 1.1.1 |
 
-O [`CHANGELOG.md`](../../CHANGELOG.md) (em inglês, no formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/)) lista toda mudança que o usuário percebe. **Cada pull request adiciona a sua linha em `## [Unreleased]`**, no grupo certo (`### Added`, `### Changed`, `### Fixed`, `### Removed`), escrita para quem usa o app: *"Viewers no longer see your cursor over fullscreen games that hide it"*, e não *"Add GameCursorGuard"*. Mudanças internas (refatorações, testes, documentação) não precisam de linha.
+O [`CHANGELOG.md`](../../CHANGELOG.md) (em inglês, no formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/)) lista toda mudança que o usuário percebe. **Cada pull request adiciona um arquivo em [`changes/`](../../changes/README.md)** em vez de editá-lo, para os pull requests não entrarem em conflito ali: uma ou mais entradas no grupo certo (`### Added`, `### Changed`, `### Fixed`, `### Removed`), escritas para quem usa o app: *"Viewers no longer see your cursor over fullscreen games that hide it"*, e não *"Add GameCursorGuard"*. Os testes unitários conferem cada arquivo ali. Mudanças internas (refatorações, testes, documentação) não precisam de um.
 
 Não mude o `version` do `package.json` à mão; o `npm run release` faz isso.
 
@@ -207,8 +207,8 @@ flowchart LR
 ```
 
 1. Prepare com `npm run release -- minor` (ou `major`, `patch`, ou uma versão exata como `1.2.0`) num branch atualizado a partir da `main`, sem mudanças pendentes. Ele:
-   - recusa se o `[Unreleased]` do `CHANGELOG.md` estiver vazio, ou se o `PROTOCOL_VERSION` mudou desde a última versão e o aumento não for maior;
-   - move as entradas de Unreleased para uma seção datada `## [1.2.0]` e atualiza os links de comparação;
+   - recusa se não houver nada para lançar (nenhum arquivo em `changes/` e nada em `[Unreleased]`), ou se o `PROTOCOL_VERSION` mudou desde a última versão e o aumento não for maior;
+   - junta os arquivos de `changes/` (na ordem em que foram adicionados) numa seção datada `## [1.2.0]`, apaga-os e atualiza os links de comparação;
    - ajusta a versão no `package.json` e no `package-lock.json` (os nomes dos instaladores usam esse valor);
    - faz um rascunho de `docs/releases/v1.2.0.md`: tabela de downloads, se todos precisam atualizar, e as entradas do changelog. Troque os `TODO`s (uma introdução curta e o resumo em português) e deixe o texto bom para os usuários.
 

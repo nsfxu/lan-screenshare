@@ -189,7 +189,7 @@ ScreenShare follows [Semantic Versioning](https://semver.org/), where "breaking"
 | **Minor** | New features that still work with other apps of the same major version | 1.0.0 → 1.1.0 |
 | **Patch** | Fixes only | 1.1.0 → 1.1.1 |
 
-[`CHANGELOG.md`](../../CHANGELOG.md) (English, [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format) lists every user-visible change. **Each pull request adds its line under `## [Unreleased]`**, in the right group (`### Added`, `### Changed`, `### Fixed`, `### Removed`), written for the people using the app: *"Viewers no longer see your cursor over fullscreen games that hide it"*, not *"Add GameCursorGuard"*. Internal changes (refactors, tests, docs) don't need a line.
+[`CHANGELOG.md`](../../CHANGELOG.md) (English, [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format) lists every user-visible change. **Each pull request adds a file to [`changes/`](../../changes/README.md)** instead of editing it, so pull requests don't conflict with each other there: one or more entries under their group (`### Added`, `### Changed`, `### Fixed`, `### Removed`), written for the people using the app: *"Viewers no longer see your cursor over fullscreen games that hide it"*, not *"Add GameCursorGuard"*. The unit tests check every file there. Internal changes (refactors, tests, docs) don't need one.
 
 Don't edit `version` in `package.json` by hand; `npm run release` does it.
 
@@ -207,8 +207,8 @@ flowchart LR
 ```
 
 1. Prepare it with `npm run release -- minor` (or `major`, `patch`, or an exact version like `1.2.0`) on an up-to-date branch from `main`, with no uncommitted changes. It:
-   - refuses if `[Unreleased]` in `CHANGELOG.md` is empty, or if `PROTOCOL_VERSION` changed since the last release and the bump isn't major;
-   - moves the Unreleased entries into a dated `## [1.2.0]` section and updates the comparison links;
+   - refuses if there's nothing to release (no files in `changes/` and nothing left under `[Unreleased]`), or if `PROTOCOL_VERSION` changed since the last release and the bump isn't major;
+   - gathers the files in `changes/` (in the order they were added) into a dated `## [1.2.0]` section, deletes them, and updates the comparison links;
    - sets the version in `package.json` and `package-lock.json` (installer names use it);
    - drafts `docs/releases/v1.2.0.md`: download table, whether everyone must update, and the changelog entries. Replace its `TODO`s (a short intro and the Portuguese summary) and polish it for users.
 

@@ -55,7 +55,7 @@ npm run perf -- --viewers=2   # measure a streamer and viewers (see docs/en-US/t
 9. **Docs are bilingual.** When behaviour changes, update the matching page in both `docs/en-US/` and `docs/pt-BR/` (same file names). Keep the root READMEs short.
 10. **Keep changes scoped** to the task: don't bump the protocol, change defaults, or reformat unrelated files unless asked.
 11. **Never write secrets** (PINs, host tokens, resume tokens) to disk or logs.
-12. **User-visible changes get a line in `CHANGELOG.md`** under `## [Unreleased]`, written for users, in the same change. Never edit the version in `package.json` by hand: releases are prepared with `npm run release` (see [versions](docs/en-US/development.md#versions-and-the-changelog)).
+12. **User-visible changes get a changelog fragment**: a new file in `changes/` (see [`changes/README.md`](changes/README.md)), written for users, in the same change. Don't edit `CHANGELOG.md` itself: `npm run release` gathers the fragments, and pull requests then don't conflict there. Never edit the version in `package.json` by hand: releases are prepared with `npm run release` (see [versions](docs/en-US/development.md#versions-and-the-changelog)).
 
 ## Verifying your work
 

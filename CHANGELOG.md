@@ -6,7 +6,7 @@ Every user-visible change to ScreenShare, newest first. The format follows [Keep
 - **Minor** (1.1.0): new features that still work with other 1.x apps.
 - **Patch** (1.0.1): fixes only.
 
-Each change adds its line under **Unreleased** in the same pull request, written for the people using the app. `npm run release` turns that section into a version.
+Each pull request with a user-visible change adds a file to [`changes/`](changes/README.md) rather than a line here, written for the people using the app, so pull requests don't conflict with each other. `npm run release` gathers those files into the version's section.
 
 ## [Unreleased]
 
