@@ -14,6 +14,7 @@ Each change adds its line under **Unreleased** in the same pull request, written
 
 - **Match my computer** in **Settings → Appearance**: the app switches between a dark theme and a light theme of your choice as your computer changes between dark and light mode.
 - **See who's inside a room before joining.** Public rooms in the room list and on the home screen show the pictures of the people inside (then *+N*), instead of just how many; hover over one for the name. Private rooms still show only the count, and so do rooms whose host hasn't updated.
+- **Pin and rename your rooms.** Right-click a recent room (or use its **⋯**) to pin it to the top, where it stays even while it's offline, or give it a name of your own, like *Home PC*, that only you see. **Copy address** and **Forget this room** are there too.
 
 - **Clickable links in chat.** Web addresses (`http://` or `https://`) in a message are links now and open in your browser.
 

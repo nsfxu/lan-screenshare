@@ -1,11 +1,12 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
-import { PIN_MAX_LENGTH, PIN_MIN_LENGTH, PROTOCOL_VERSION } from '../../shared/constants'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { PIN_MAX_LENGTH, PIN_MIN_LENGTH, PROTOCOL_VERSION, ROOM_NAME_MAX_LENGTH } from '../../shared/constants'
 import { roomListRows, sameEndpoint, type RoomRow as Row } from '../../shared/roomList'
 import type { DiscoveredRoom, RoomEndpoint, Settings } from '../../shared/types'
 import { errorMessage, formatDuration } from '../lib/format'
 import { useT } from '../lib/i18n'
 import { Avatar } from './Avatar'
 import { Icon } from './Icon'
+import { Menu, type MenuAt, type MenuItem } from './Menu'
 import { RoomAvatar, RoomDetails, useRoomLabel, useRoomStatus } from './RoomIdentity'
 
 /** The room you're in, as the sidebar shows it. */
@@ -50,6 +51,10 @@ interface Props {
   /** A recent room that isn't in the list right now: try it anyway. */
   onJoinEndpoint(endpoint: RoomEndpoint): void
   onForgetRecent(endpoint: RoomEndpoint): void
+  onPinRecent(endpoint: RoomEndpoint, pinned: boolean): void
+  /** Your own name for a recent room ('' for the room's own); `roomName` is what the room calls itself. */
+  onRenameRecent(endpoint: RoomEndpoint, name: string, roomName: string | undefined): void
+  onToast(message: string): void
   onCreate(): void
   onSettings(): void
   onRename(name: string): void
@@ -82,15 +87,23 @@ export function RoomsSidebar(props: Props) {
     row.room?.reachable ? props.onJoin(row.room) : props.onJoinEndpoint(row.endpoint)
   const recentRow = (row: Row<DiscoveredRoom>) =>
     isCurrent(row.endpoint) && current ? (
-      <CurrentRow key={row.key} current={current} members={props.members} />
+      // Your name for it, and its pin, show while you're inside too.
+      <CurrentRow key={row.key} current={{ ...current, name: row.name }} pinned={!!row.endpoint.pinned} members={props.members} />
     ) : (
       <div key={row.key}>
         <RoomRow
           row={row}
           busy={props.busyKey === row.key}
           onJoin={() => join(row)}
-          onRemove={() => props.onForgetRecent(row.endpoint)}
-          removeLabel={t('rooms.forget')}
+          remembered={{
+            onPin: (pinned) => props.onPinRecent(row.endpoint, pinned),
+            onRename: (name) => props.onRenameRecent(row.endpoint, name, row.room?.name || row.endpoint.name),
+            onCopyAddress: () =>
+              void window.api.system
+                .copyText(`${row.endpoint.address}:${row.endpoint.port}`)
+                .then(() => props.onToast(t('common.addressCopied'))),
+            onForget: () => props.onForgetRecent(row.endpoint)
+          }}
         />
         {props.pin?.key === row.key && pinForm}
       </div>
@@ -240,7 +253,7 @@ function isOffline(room: DiscoveredRoom | null): boolean {
   return !room || (!room.reachable && (room.protocol === 0 || room.protocol === PROTOCOL_VERSION))
 }
 
-function CurrentRow({ current, members }: { current: CurrentRoom; members: ReactNode }) {
+function CurrentRow({ current, pinned = false, members }: { current: CurrentRoom; pinned?: boolean; members: ReactNode }) {
   const { t } = useT()
   return (
     <div className="current-room">
@@ -248,6 +261,7 @@ function CurrentRow({ current, members }: { current: CurrentRoom; members: React
         <RoomAvatar name={current.name} host={current.host} live={current.live > 0} />
         <span className="room-row-text">
           <span className="room-row-name" title={current.name}>
+            {pinned && <PinMark />}
             {current.name}
           </span>
           <span className="room-details">
@@ -337,20 +351,35 @@ function RoomRow({
   busy,
   onJoin,
   onRemove,
-  removeLabel
+  removeLabel,
+  remembered
 }: {
   row: Row<DiscoveredRoom>
   busy: boolean
   onJoin(): void
+  /** A room added by IP: the x takes it off the list. */
   onRemove?: () => void
-  removeLabel: string
+  removeLabel?: string
+  /** A room you've been in: its menu (the dots, or a right-click) pins, renames, copies the address or forgets it. */
+  remembered?: {
+    onPin(pinned: boolean): void
+    onRename(name: string): void
+    onCopyAddress(): void
+    onForget(): void
+  }
 }) {
   const { t, ago } = useT()
   const { room } = row
   const status = useRoomStatus(room)
   const roomLabel = useRoomLabel()
+  const [menuAt, setMenuAt] = useState<MenuAt | null>(null)
+  const [renaming, setRenaming] = useState(false)
+  const pinned = !!row.endpoint.pinned
+  // What the room calls itself, when you gave it a name of your own.
+  const roomName = row.endpoint.nickname ? room?.name || row.endpoint.name : undefined
   const title = [
     row.name,
+    roomName && t('rooms.roomName', { name: roomName }),
     (room?.hostName || row.endpoint.host?.name) && t('rooms.hostedBy', { name: room?.hostName || row.endpoint.host!.name }),
     room?.startedAt && room.reachable ? t('rooms.openFor', { duration: formatDuration(Date.now() - room.startedAt) }) : null,
     `${row.endpoint.address}:${row.endpoint.port}${row.endpoint.tls ? ' · TLS' : ''}`,
@@ -370,32 +399,138 @@ function RoomRow({
     )
   }
 
+  const avatar = (
+    <RoomAvatar
+      name={row.name}
+      host={answering ? { name: answering.hostName, color: answering.hostColor, image: answering.hostImage } : row.endpoint.host}
+      live={!!answering && answering.streams > 0}
+      locked={answering?.privacy === 'private'}
+    />
+  )
+  if (renaming && remembered) {
+    return (
+      <div className={`room-row renaming ${status.offline ? 'offline' : ''}`}>
+        <div className="room-row-main">
+          {avatar}
+          <RenameField
+            name={row.name}
+            roomName={roomName ?? row.name}
+            onDone={(name) => {
+              setRenaming(false)
+              if (name !== null) remembered.onRename(name)
+            }}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  const items: MenuItem[] = remembered
+    ? [
+        { label: pinned ? t('rooms.unpin') : t('rooms.pin'), icon: 'pin', onSelect: () => remembered.onPin(!pinned) },
+        { label: t('rooms.rename'), icon: 'pen', onSelect: () => setRenaming(true) },
+        { label: t('common.copyAddress'), icon: 'copy', onSelect: remembered.onCopyAddress },
+        { kind: 'separator' },
+        { label: t('rooms.forget'), icon: 'x', danger: true, onSelect: remembered.onForget }
+      ]
+    : []
   return (
-    <div className={`room-row ${status.offline ? 'offline' : ''}`}>
+    <div
+      className={`room-row ${status.offline ? 'offline' : ''} ${menuAt ? 'menu-open' : ''}`}
+      onContextMenu={
+        remembered
+          ? (e) => {
+              e.preventDefault()
+              setMenuAt({ x: e.clientX, y: e.clientY })
+            }
+          : undefined
+      }
+    >
       <button
         className="room-row-main"
         title={title}
         disabled={busy || status.full || !!status.versionProblem}
         onClick={onJoin}
-        aria-label={roomLabel(room, row.name, status)}
+        aria-label={[roomLabel(room, row.name, status), pinned && t('rooms.pinned')].filter(Boolean).join(', ')}
       >
-        <RoomAvatar
-          name={row.name}
-          host={answering ? { name: answering.hostName, color: answering.hostColor, image: answering.hostImage } : row.endpoint.host}
-          live={!!answering && answering.streams > 0}
-          locked={answering?.privacy === 'private'}
-        />
+        {avatar}
         <span className="room-row-text">
-          <span className="room-row-name">{row.name}</span>
+          <span className="room-row-name">
+            {pinned && <PinMark />}
+            {row.name}
+          </span>
           {details}
         </span>
       </button>
+      {remembered && (
+        <button
+          className="icon-btn room-row-more"
+          title={t('rooms.more', { name: row.name })}
+          aria-label={t('rooms.more', { name: row.name })}
+          aria-haspopup="menu"
+          aria-expanded={!!menuAt}
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect()
+            setMenuAt((open) => (open ? null : { x: rect.left, y: rect.bottom + 4 }))
+          }}
+        >
+          <Icon name="more" size={15} stroke={2.6} />
+        </button>
+      )}
+      {menuAt && <Menu items={items} at={menuAt} label={row.name} onClose={() => setMenuAt(null)} />}
       {onRemove && (
         <button className="icon-btn room-row-remove" title={removeLabel} aria-label={removeLabel} onClick={onRemove}>
           <Icon name="x" size={13} />
         </button>
       )}
     </div>
+  )
+}
+
+/** Before a pinned room's name; screen readers hear "Pinned" from the row's label. */
+function PinMark() {
+  return (
+    <span className="room-pin" aria-hidden="true">
+      <Icon name="pin" size={11} stroke={2.2} />
+    </span>
+  )
+}
+
+/** Your own name for a room, typed in place of its name: Enter or leaving the field saves, Esc cancels. */
+function RenameField({ name, roomName, onDone }: { name: string; roomName: string; onDone(name: string | null): void }) {
+  const { t } = useT()
+  const [value, setValue] = useState(name)
+  const done = useRef(false)
+  const finish = (result: string | null): void => {
+    if (done.current) return
+    done.current = true
+    onDone(result)
+  }
+  return (
+    <span className="room-row-text">
+      <input
+        className="room-rename"
+        autoFocus
+        aria-label={t('rooms.renameLabel')}
+        aria-describedby="room-rename-hint"
+        value={value}
+        maxLength={ROOM_NAME_MAX_LENGTH}
+        onFocus={(e) => e.currentTarget.select()}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={() => finish(value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') finish(value)
+          if (e.key === 'Escape') {
+            // Only this field: the rooms column stays open.
+            e.stopPropagation()
+            finish(null)
+          }
+        }}
+      />
+      <span id="room-rename-hint" className="room-details">
+        {t('rooms.renameHint', { name: roomName })}
+      </span>
+    </span>
   )
 }
 
