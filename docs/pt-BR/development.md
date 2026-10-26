@@ -212,10 +212,12 @@ As versões são geradas pelo GitHub Actions (`.github/workflows/release.yml`) n
 
 ```mermaid
 flowchart LR
-  S["Actions → Release → Run workflow<br/>versão v1.2.0<br/>(ou enviar a tag)"] --> C["Typecheck + testes<br/>versão = package.json?"]
-  C --> W["Instaladores do Windows<br/>windows-latest"]
-  C --> M["macOS .dmg<br/>macos-latest (pode falhar)"]
-  W --> R["GitHub Release v1.2.0<br/>notas = docs/releases/v1.2.0.md"]
+  S["Actions → Release → Run workflow<br/>versão v1.2.0<br/>(ou enviar a tag)"] --> V["Versão<br/>= package.json? changelog? notas?"]
+  V --> C["Typecheck + testes<br/>(pulados se o CI passou neste commit)"]
+  V --> W["Instaladores do Windows<br/>windows-latest"]
+  V --> M["macOS .dmg<br/>macos-latest (pode falhar)"]
+  C --> R["GitHub Release v1.2.0<br/>notas = docs/releases/v1.2.0.md"]
+  W --> R
   M --> R
 ```
 
@@ -229,7 +231,7 @@ flowchart LR
 2. Inicie a publicação de um destes jeitos:
    - No GitHub: **Actions → Release → Run workflow**, branch `main`, versão `v1.2.0`. O próprio workflow cria a tag.
    - Ou envie uma tag do seu computador: `git tag v1.2.0 && git push origin v1.2.0`. Se não houver arquivo de notas, a mensagem de uma tag anotada vira as notas.
-3. O workflow confere se a versão bate com o `package.json`, se o `CHANGELOG.md` tem a seção dela e se as notas não têm mais `TODO`, roda as verificações, gera os instaladores e publica a versão com eles anexados, junto com o `latest.yml`: os apps do Windows já instalados leem esse arquivo para achar a versão nova (a entrada `publish` do `electron-builder.json` aponta para este repositório). Sem ele a publicação falha. O job do macOS pode falhar sem impedir uma versão só para Windows.
+3. O workflow confere se a versão bate com o `package.json`, se o `CHANGELOG.md` tem a seção dela e se as notas não têm mais `TODO`. Depois gera os instaladores enquanto roda as verificações (a não ser que o CI já tenha passado neste mesmo commit, como acontece depois de juntar o pull request da versão), e publica a versão com eles anexados, junto com o `latest.yml`: os apps do Windows já instalados leem esse arquivo para achar a versão nova (a entrada `publish` do `electron-builder.json` aponta para este repositório). Sem ele a publicação falha. O job do macOS pode falhar sem impedir uma versão só para Windows.
 4. Quando o protocolo mudar, as notas avisam que todos na sala precisam da versão nova (o rascunho já faz isso).
 
 Rodar o workflow sem versão é um teste: ele gera os instaladores, lista o que seria publicado e guarda os instaladores como artefatos da execução.
