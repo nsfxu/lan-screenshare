@@ -36,30 +36,24 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      # A branch that only changes words (docs, changelog fragments, plans, any .md) can't break the
-      # app: the job passes without running it. It's a required check, so it must still finish
-      # (a workflow skipped by a path filter would leave it waiting). main always runs everything.
-      - name: Only docs changed?
+      # The job passes without running the app when that would test nothing new: only docs or the
+      # version changed (a release commit), or a merge into main has exactly the files of a branch
+      # that already passed (scripts/ci-scope.cjs). It's a required check, so it must still finish
+      # (a workflow skipped by a path filter would leave it waiting).
+      - name: Anything new to test?
         id: scope
-        run: |
-          if [ "$GITHUB_REF" = refs/heads/main ]; then exit 0; fi
-          changed=$(git diff --name-only "$(git merge-base origin/main HEAD)" HEAD)
-          if [ -n "$changed" ] && ! printf '%s\n' "$changed" | grep -qvE '^(docs|changes|plans)/|\.md$'; then
-            echo "Only docs changed since main, so the app needn't run:"
-            printf '  %s\n' $changed
-            echo "docs=true" >> "$GITHUB_OUTPUT"
-          fi
+        run: node scripts/ci-scope.cjs
       - uses: actions/setup-node@v4
-        if: steps.scope.outputs.docs != 'true'
+        if: steps.scope.outputs.app != 'false'
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-        if: steps.scope.outputs.docs != 'true'
+        if: steps.scope.outputs.app != 'false'
       - run: npm run build
-        if: steps.scope.outputs.docs != 'true'
+        if: steps.scope.outputs.app != 'false'
       - name: Run the app (Xvfb)
-        if: steps.scope.outputs.docs != 'true'
+        if: steps.scope.outputs.app != 'false'
         run: xvfb-run -a -s "-screen 0 1920x1080x24" npx playwright test
       - name: Keep the report and screenshots
         if: failure()

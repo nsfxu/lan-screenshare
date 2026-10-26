@@ -29,9 +29,11 @@ permissions:
 env:
   VERSION: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
 
+# The installers are built while the tests run; nothing is published unless
+# both the version check and the tests passed.
 jobs:
-  check:
-    name: Typecheck and tests
+  version:
+    name: Version
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,17 +58,47 @@ jobs:
             echo "::error::docs/releases/${VERSION}.md still has TODOs"
             exit 1
           fi
+
+  check:
+    name: Typecheck and tests
+    needs: version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      # CI (ci.yml) runs the same tests on every push: when its run on this very
+      # commit passed, there's nothing new to test. Otherwise (a tag pushed on
+      # another commit, CI failed or still running), they run here.
+      - name: Already tested by CI?
+        id: ci
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          passed=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --commit "$GITHUB_SHA" \
+            --json conclusion --jq '[.[] | select(.conclusion == "success")] | length')
+          if [ "$passed" -gt 0 ]; then
+            echo "CI passed on $GITHUB_SHA, so the tests needn't run again."
+            echo "passed=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/setup-node@v4
+        if: steps.ci.outputs.passed != 'true'
         with:
           node-version: 22
           cache: npm
       - run: npm ci
+        if: steps.ci.outputs.passed != 'true'
       - run: npm run typecheck
+        if: steps.ci.outputs.passed != 'true'
       - run: npm test
+        if: steps.ci.outputs.passed != 'true'
       # Two real app instances in a room (see e2e/): don't publish a release
       # that can't share or watch.
       - run: npm run build
+        if: steps.ci.outputs.passed != 'true'
       - name: End-to-end tests (Xvfb)
+        if: steps.ci.outputs.passed != 'true'
         run: xvfb-run -a -s "-screen 0 1920x1080x24" npx playwright test
       - name: Keep the end-to-end report
         if: failure()
@@ -80,7 +112,7 @@ jobs:
 
   windows:
     name: Windows installer
-    needs: check
+    needs: version
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -103,7 +135,7 @@ jobs:
 
   macos:
     name: macOS disk image
-    needs: check
+    needs: version
     runs-on: macos-latest
     # The macOS build is still untested; it must not block a release.
     continue-on-error: true
@@ -166,10 +198,11 @@ jobs:
 
   release:
     name: Release
-    needs: [windows, macos]
-    # Runs whenever the Windows installer was built, so a dry run also checks
-    # what would be published. It only publishes when there is a version.
-    if: ${{ !cancelled() && needs.windows.result == 'success' }}
+    needs: [check, windows, macos]
+    # Runs whenever the tests passed and the Windows installer was built, so a
+    # dry run also checks what would be published. It only publishes when
+    # there is a version.
+    if: ${{ !cancelled() && needs.check.result == 'success' && needs.windows.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
