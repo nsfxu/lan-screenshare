@@ -13,6 +13,7 @@ How to set up the project, run it, debug it and build installers.
 - [How the build works](#how-the-build-works)
 - [Debugging](#debugging)
 - [Building installers](#building-installers)
+  - [The macOS signing certificate](#the-macos-signing-certificate)
 - [Translations](#translations)
 - [Versions and the changelog](#versions-and-the-changelog)
 - [Releasing](#releasing)
@@ -147,7 +148,7 @@ Keep to C# 5: no string interpolation (`$"..."`), no `?.`, no `nameof`, no expre
 npm run dist:win
 ```
 
-This produces `release/<version>/ScreenShare-Setup-<version>-<arch>.exe`: an NSIS installer that lets the user pick the folder and creates a desktop shortcut.
+This produces `release/<version>/ScreenShare-Setup-<version>-<arch>.exe`: an NSIS installer that lets the user pick the folder and creates a desktop shortcut. Its `nsis.guid` in `electron-builder.json` is the one electron-builder derived from the app's first id, `com.screenshare.lan` (it's now `com.nsfxu.screenshare.lan`): Windows knows the installed app by it, so never change it, or updates install a second copy instead of replacing the first.
 
 **macOS** (on a Mac):
 
@@ -155,7 +156,19 @@ This produces `release/<version>/ScreenShare-Setup-<version>-<arch>.exe`: an NSI
 npm run dist:mac
 ```
 
-This produces two disk images: `ScreenShare-<version>-arm64.dmg` for Apple Silicon and `ScreenShare-<version>-x64.dmg` for Intel Macs. Without a certificate, `electron-builder.json` signs the app ad hoc (`mac.identity` `"-"`, hardened runtime off): an app with no valid signature is reported as "damaged" on Apple Silicon once it has been downloaded, with no way to open it. An ad-hoc signature turns that into the usual "can't verify the developer" warning, which **Open Anyway** gets past. Removing the warning needs an Apple Developer ID certificate for signing and notarisation (set `mac.identity` to it and turn the hardened runtime back on); see electron-builder's documentation. The macOS build hasn't been tested much yet.
+This produces two disk images: `ScreenShare-<version>-arm64.dmg` for Apple Silicon and `ScreenShare-<version>-x64.dmg` for Intel Macs. `scripts/mac-sign.cjs` signs the app (`mac.sign` in `electron-builder.json`): with the project's certificate when `MAC_SIGNING_IDENTITY` is set (the release workflow does that, see below), otherwise ad hoc (hardened runtime off). An app with no valid signature at all is reported as "damaged" on Apple Silicon once it has been downloaded, with no way to open it; either signature turns that into the usual "can't verify the developer" warning, which **Open Anyway** gets past. Removing the warning needs an Apple Developer ID certificate for signing and notarisation (and the hardened runtime back on); see electron-builder's documentation. The macOS build hasn't been tested much yet.
+
+### The macOS signing certificate
+
+An ad-hoc signature identifies the app by the hash of that exact build, so macOS forgets ScreenShare's **Screen Recording** permission on every update: the switch in System Settings still looks on, but sharing shows only the wallpaper and the app's own windows. Signed with a certificate, the app is identified by its bundle id and the certificate instead (`codesign -d -r- ScreenShare.app` shows `certificate leaf = H"…"`, not `cdhash H"…"`), and the permission survives every update signed with the same certificate.
+
+The certificate is self-signed (free; Apple doesn't know it, so it doesn't remove **Open Anyway**). electron-builder only looks for certificates macOS trusts and would skip it, so `scripts/mac-sign.cjs` hands it to `codesign` by its SHA-1 instead. To set it up, once:
+
+1. On a Mac, run `sh scripts/mac-signing-cert.sh <folder outside the repository>`. It makes the certificate and its private key (`screenshare-signing.p12`), a password for it, and the base64 for the secret.
+2. Add the repository secrets `MAC_CERT_P12` (the base64) and `MAC_CERT_PASSWORD`; the script prints the `gh secret set` commands. The release workflow's macOS job imports them into a keychain of its own, signs with them, and fails if the app doesn't come out signed with the certificate. Without the secrets (forks), it signs ad hoc as before.
+3. Back up the `.p12` and its password offline, for example in a password manager, and delete the folder.
+
+Keep the same certificate for every release. A new one (or losing it) means every Mac user allows Screen Recording once more; anyone who has it can sign an app that macOS treats as ScreenShare, permission included. The first release signed with it also needs that one last "allow again", from people updating from an ad-hoc version: say so in its release notes.
 
 ## Translations
 
@@ -225,7 +238,7 @@ Each system gets one installer per processor type: `-x64` (most Windows PCs, Int
 
 To keep the installers small, they only include Chromium's English and Portuguese language files (`electronLanguages` in `electron-builder.json`). On a computer set to another language, the few texts Chromium draws itself fall back to US English (the app's own text follows [Translations](#translations)). A new language gets its line there too.
 
-The installers are not code-signed yet: Windows shows a SmartScreen warning (*More info → Run anyway*) and macOS blocks the first launch until you click **Open Anyway** in *System Settings → Privacy & Security* (the macOS installers are signed ad hoc, see [building installers](#building-installers)).
+The installers are not code-signed yet: Windows shows a SmartScreen warning (*More info → Run anyway*) and macOS blocks the first launch until you click **Open Anyway** in *System Settings → Privacy & Security* (the macOS installers are signed with a self-signed certificate, or ad hoc without it; see [the macOS signing certificate](#the-macos-signing-certificate)).
 
 ## Tech stack
 
