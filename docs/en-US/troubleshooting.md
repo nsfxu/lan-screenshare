@@ -107,7 +107,8 @@ On Windows 10 (and 11 before 24H2), sharing a whole screen shows the cursor even
 ## Updates
 
 - **"Couldn't check for updates"**: the computer can't reach GitHub (no internet, or a firewall or proxy blocks it). Download the new version from the [releases page](https://github.com/nsfxu/lan-screenshare/releases) instead; the installer updates the app in place and keeps your settings.
-- **No "Restart to update" button although a new version is out**: versions before 2.2.0 don't update themselves, and on macOS the app only shows **Update to …**. Also check that **Settings → About → Check for updates automatically** is on, or click **Check now**.
+- **No "Restart to update" button although a new version is out**: versions before 2.2.0 don't update themselves, nor Mac versions up to 2.8.0. On a Mac, the app also needs to be in **Applications** (move it there from the disk image or Downloads, and open it from there); otherwise it only shows **Update to …**. Also check that **Settings → About → Check for updates automatically** is on, or click **Check now**.
+- **On a Mac, Restart to update turns into Update to …**: macOS refused to install the downloaded version (the log has an `updater error:` line). Download it from the page that opens; the next updates should install by themselves again.
 - **The update downloads again after each restart**: the downloaded installer is kept in the app's update cache; something (a cleaner or antivirus) may be deleting it. The log (**Settings → About → Open logs**) has `updater:` lines.
 
 ## Collecting information for a bug report

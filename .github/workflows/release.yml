@@ -193,7 +193,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: macos-dmg
-          path: release/*/ScreenShare-*.dmg
+          # The zips and latest-mac.yml are for installed apps that update themselves (src/main/updater.ts).
+          path: |
+            release/*/ScreenShare-*.dmg
+            release/*/ScreenShare-*.zip
+            release/*/latest-mac.yml
           if-no-files-found: error
 
   release:
@@ -215,7 +219,7 @@ jobs:
       - name: Collect the installers
         # Artifacts keep their folders (for example 1.0.0/…), so look for the files.
         run: |
-          find installers -type f \( -name '*.exe' -o -name '*.dmg' -o -name 'latest.yml' \) | sort > files.txt
+          find installers -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.zip' -o -name 'latest.yml' -o -name 'latest-mac.yml' \) | sort > files.txt
           if [ ! -s files.txt ]; then
             echo "::error::No installers found"
             exit 1
@@ -224,6 +228,10 @@ jobs:
           if ! grep -q '/latest.yml$' files.txt; then
             echo "::error::No latest.yml: the Windows apps couldn't update to this version"
             exit 1
+          fi
+          # The macOS build may fail without blocking a release; then Macs only see it on the download page.
+          if ! grep -q '/latest-mac.yml$' files.txt; then
+            echo "::warning::No latest-mac.yml: Macs won't update themselves to this version"
           fi
           while read -r f; do ls -l "$f"; done < files.txt
       - name: Find the release notes

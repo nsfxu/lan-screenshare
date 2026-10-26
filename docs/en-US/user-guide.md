@@ -242,7 +242,7 @@ It changes at once, without a restart. Everyone sees the room in their own langu
 The app looks for a new version on the [releases page](https://github.com/nsfxu/lan-screenshare/releases) shortly after it starts and every few hours.
 
 - **Windows**: a new version downloads quietly in the background. When it's ready, a green **Restart to update** button appears in the title bar (and in **Settings → About**). Click it when it suits you: the app closes, installs the update and opens again. If you're in a room it asks first, because restarting leaves the room (or ends it, if you host). Nothing installs by itself when you close the app.
-- **macOS**: the title bar shows **Update to …**, which opens the download page. Apple only lets signed apps replace themselves, and ScreenShare isn't signed yet.
+- **macOS**: the same as on Windows, from the first version that updates itself on a Mac (the one after 2.8.0, which you download by hand once). It needs ScreenShare in your **Applications** folder: run from the disk image or from Downloads, it can't replace itself, and the title bar shows **Update to …** instead, which opens the download page. So does a Mac app that couldn't install an update when you restarted.
 
 **Settings → About** shows where things are and has **Check now**. Turn off **Check for updates automatically** if you don't want the app to contact GitHub; you can still check by hand. Versions before 2.2.0 don't update themselves: download 2.2.0 once, and later versions come by themselves.
 

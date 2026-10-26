@@ -1,8 +1,11 @@
+import { execFile } from 'node:child_process'
 import { EventEmitter } from 'node:events'
-import { net, shell } from 'electron'
+import path from 'node:path'
+import { app, net, shell } from 'electron'
 import type { AppUpdater } from 'electron-updater'
 import { RELEASES_REPO, RELEASES_URL, UPDATE_CHECK_INTERVAL_MS } from '../shared/constants'
 import type { UpdateStatus } from '../shared/types'
+import { macCanUpdateItself, releasePage } from '../shared/updates'
 import { newerRelease } from '../shared/version'
 import { mainT } from './i18n'
 import type { Logger } from './server'
@@ -21,13 +24,19 @@ export interface UpdaterEvents {
  *   installer for this computer's architecture in the background (checked
  *   against its SHA-512), and waits: the person restarts when it suits them.
  *   Nothing installs by itself when the app closes.
- * - macOS: an unsigned app can't replace itself, so we only ask GitHub for
- *   the latest release and offer its page.
+ * - macOS, signed with the project's certificate and in Applications: the
+ *   same, from latest-mac.yml and the release's zip; Squirrel.Mac installs it
+ *   on the restart (shared/updates.ts says why it needs both).
+ * - Other Macs (ad-hoc builds, or run from the disk image): we only ask GitHub
+ *   for the latest release and offer its page. So does a Mac whose install
+ *   fails on the restart.
  */
 export class Updater extends EventEmitter<UpdaterEvents> {
   private current: UpdateStatus
   private timer: NodeJS.Timeout | null = null
   private updater: AppUpdater | null = null
+  /** Whether this Mac app can replace itself; asked once. */
+  private macSelfUpdate: Promise<boolean> | null = null
 
   constructor(
     private readonly log: Logger,
@@ -67,8 +76,9 @@ export class Updater extends EventEmitter<UpdaterEvents> {
     }
     this.set({ state: 'checking' })
     try {
-      if (this.platform === 'win32') await this.checkWindows()
-      else await this.checkByRelease()
+      if (this.platform === 'win32' || (this.platform === 'darwin' && (await this.canMacUpdateItself()))) {
+        await this.checkWithUpdater()
+      } else await this.checkByRelease()
     } catch (err) {
       const message = (err as Error).message
       this.log.warn(`update check failed: ${message}`)
@@ -81,7 +91,8 @@ export class Updater extends EventEmitter<UpdaterEvents> {
   install(): void {
     if (this.current.state !== 'ready' || !this.updater) return
     this.log.info(`restarting to install ${this.current.version}`)
-    // Silent install (the installer already knows where the app is), then start the app again.
+    // Silent install (the installer already knows where the app is), then start the app again. On macOS,
+    // Squirrel.Mac checks the new version's signature now, and quits once it's in place (or fails: see 'error').
     this.updater.quitAndInstall(true, true)
   }
 
@@ -96,16 +107,16 @@ export class Updater extends EventEmitter<UpdaterEvents> {
     this.emit('status', status)
   }
 
-  private async checkWindows(): Promise<void> {
-    const updater = this.windowsUpdater()
+  private async checkWithUpdater(): Promise<void> {
+    const updater = this.electronUpdater()
     const result = await updater.checkForUpdates()
     // checkForUpdates() resolves once it knows; the download goes on through the events below.
     if (!result?.isUpdateAvailable) this.set({ state: 'idle', checkedAt: Date.now() })
   }
 
-  private windowsUpdater(): AppUpdater {
+  private electronUpdater(): AppUpdater {
     if (this.updater) return this.updater
-    // Loaded only when needed: it isn't used in development or on macOS.
+    // Loaded only when needed: it isn't used in development or on Macs that can't update themselves.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { autoUpdater } = require('electron-updater') as typeof import('electron-updater')
     autoUpdater.autoDownload = true
@@ -132,9 +143,31 @@ export class Updater extends EventEmitter<UpdaterEvents> {
       this.log.warn(`updater error: ${err.message}`)
       // A failed download is tried again at the next check.
       if (this.current.state === 'downloading') this.set({ state: 'idle', checkedAt: null })
+      // macOS: Squirrel.Mac refused to install it (on the restart). Offer it to download instead.
+      else if (this.current.state === 'ready' && this.platform === 'darwin') {
+        this.set({ state: 'available', version: this.current.version, url: releasePage(this.current.version) })
+      }
     })
     this.updater = autoUpdater
     return autoUpdater
+  }
+
+  private canMacUpdateItself(): Promise<boolean> {
+    this.macSelfUpdate ??= this.readMacSelfUpdate()
+    return this.macSelfUpdate
+  }
+
+  private async readMacSelfUpdate(): Promise<boolean> {
+    // ScreenShare.app, from ScreenShare.app/Contents/MacOS/ScreenShare.
+    const bundle = path.resolve(process.execPath, '..', '..', '..')
+    const requirement = await new Promise<string>((resolve) => {
+      execFile('/usr/bin/codesign', ['-dr', '-', bundle], { timeout: 10_000 }, (err, stdout, stderr) =>
+        resolve(err ? '' : `${stdout}${stderr}`)
+      )
+    })
+    const can = macCanUpdateItself(requirement, app.isInApplicationsFolder())
+    this.log.info(`macOS updates: ${can ? 'installs them itself' : 'offers the download page'}`)
+    return can
   }
 
   private async checkByRelease(): Promise<void> {
