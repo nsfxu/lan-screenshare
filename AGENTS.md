@@ -28,6 +28,7 @@ npm run perf -- --viewers=2   # measure a streamer and viewers (see docs/en-US/t
 | Limits, timings, protocol version | `src/shared/constants.ts` |
 | Room server (auth, relay, moderation) | `src/main/server.ts` |
 | Hosting, discovery, TLS identity | `src/main/roomManager.ts`, `src/utils/` |
+| macOS signing (keeps permissions across updates) | `scripts/mac-sign.cjs`, `scripts/mac-signing-cert.sh`, the macOS job in `.github/workflows/release.yml`; see [the macOS signing certificate](docs/en-US/development.md#the-macos-signing-certificate) |
 | Updates (GitHub releases) | `src/main/updater.ts`, `publish` in `electron-builder.json`, `latest.yml` in `.github/workflows/release.yml` |
 | IPC surface (`window.api`) | `src/shared/ipc.ts`, `src/preload/index.ts`, `registerIpc()` in `src/main/index.ts` |
 | Sharing (capture, per-watcher connections, quality) | `src/renderer/lib/publisher.ts` |

@@ -81,6 +81,7 @@
       }
     ],
     "identity": "-",
+    "sign": "scripts/mac-sign.cjs",
     "hardenedRuntime": false,
     "entitlements": "build/entitlements.mac.plist",
     "entitlementsInherit": "build/entitlements.mac.plist",

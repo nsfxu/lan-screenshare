@@ -107,9 +107,15 @@ jobs:
     runs-on: macos-latest
     # The macOS build is still untested; it must not block a release.
     continue-on-error: true
-    # No Developer ID certificate yet: electron-builder.json signs ad hoc
-    # (mac.identity "-"). Without a valid signature, Apple Silicon Macs call a
-    # downloaded app "damaged" and offer no way to open it.
+    # Signed with the self-signed certificate in the MAC_CERT_P12 secret
+    # (scripts/mac-signing-cert.sh), so macOS keeps the app's Screen Recording
+    # permission across updates; see scripts/mac-sign.cjs. Without the secret
+    # (forks), ad hoc: without any valid signature, Apple Silicon Macs call a
+    # downloaded app "damaged" and offer no way to open it. Not notarised either
+    # way (that needs an Apple Developer ID), so the first launch still needs
+    # Open Anyway.
+    env:
+      HAS_MAC_CERT: ${{ secrets.MAC_CERT_P12 != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -118,7 +124,40 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - name: Signing certificate
+        if: env.HAS_MAC_CERT == 'true'
+        env:
+          MAC_CERT_P12: ${{ secrets.MAC_CERT_P12 }}
+          MAC_CERT_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+        run: |
+          # A keychain of its own, on the search list (codesign only finds identities there).
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password=$(openssl rand -hex 16)
+          printf '%s' "$MAC_CERT_P12" | base64 --decode > "$RUNNER_TEMP/signing.p12"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$RUNNER_TEMP/signing.p12" -k "$keychain" -P "$MAC_CERT_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/signing.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$keychain_password" "$keychain" > /dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          # Not trusted (self-signed), so not in `find-identity -v`; codesign signs with it by its hash.
+          identity=$(security find-identity -p codesigning "$keychain" | awk '/^ *1\)/ { print $2; exit }')
+          [ -n "$identity" ] || { echo "::error::No code-signing identity in MAC_CERT_P12"; exit 1; }
+          echo "MAC_SIGNING_IDENTITY=$identity" >> "$GITHUB_ENV"
       - run: npx electron-builder --mac --config electron-builder.json --publish never
+      - name: Check the signature
+        run: |
+          for app in release/*/mac*/ScreenShare.app; do
+            codesign --verify --deep --strict "$app"
+            requirement=$(codesign -d -r- "$app" 2>&1 | grep designated)
+            echo "$app: $requirement"
+            # With the certificate, the requirement must name it: a build-hash one (cdhash) would lose permissions on update.
+            if [ "$HAS_MAC_CERT" = true ] && ! echo "$requirement" | grep -q 'certificate leaf'; then
+              echo "::error::$app isn't signed with the certificate"
+              exit 1
+            fi
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: macos-dmg

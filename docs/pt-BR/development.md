@@ -13,6 +13,7 @@ Como preparar o projeto, rodar, depurar e gerar instaladores.
 - [Como o build funciona](#como-o-build-funciona)
 - [Depuração](#depuração)
 - [Gerando instaladores](#gerando-instaladores)
+  - [O certificado de assinatura do macOS](#o-certificado-de-assinatura-do-macos)
 - [Traduções](#traduções)
 - [Versões e o changelog](#versões-e-o-changelog)
 - [Publicando uma versão](#publicando-uma-versão)
@@ -155,7 +156,19 @@ Gera `release/<versão>/ScreenShare-Setup-<versão>-<arch>.exe`: um instalador N
 npm run dist:mac
 ```
 
-Gera duas imagens de disco: `ScreenShare-<versão>-arm64.dmg` para Apple Silicon e `ScreenShare-<versão>-x64.dmg` para Macs Intel. Sem certificado, o `electron-builder.json` assina o app ad hoc (`mac.identity` `"-"`, hardened runtime desligado): um app sem assinatura válida aparece como "danificado" no Apple Silicon depois de baixado, sem nenhum jeito de abrir. Uma assinatura ad hoc transforma isso no aviso de sempre, "não é possível verificar o desenvolvedor", que **Abrir Mesmo Assim** resolve. Para tirar o aviso é preciso um certificado Apple Developer ID para assinar e notarizar (coloque-o em `mac.identity` e ligue de novo o hardened runtime); veja a documentação do electron-builder. O build de macOS ainda foi pouco testado.
+Gera duas imagens de disco: `ScreenShare-<versão>-arm64.dmg` para Apple Silicon e `ScreenShare-<versão>-x64.dmg` para Macs Intel. O `scripts/mac-sign.cjs` assina o app (`mac.sign` no `electron-builder.json`): com o certificado do projeto quando `MAC_SIGNING_IDENTITY` está definido (o workflow de release faz isso, veja abaixo), senão ad hoc (hardened runtime desligado). Um app sem nenhuma assinatura válida aparece como "danificado" no Apple Silicon depois de baixado, sem nenhum jeito de abrir; qualquer uma das duas assinaturas transforma isso no aviso de sempre, "não é possível verificar o desenvolvedor", que **Abrir Mesmo Assim** resolve. Para tirar o aviso é preciso um certificado Apple Developer ID para assinar e notarizar (e o hardened runtime ligado de novo); veja a documentação do electron-builder. O build de macOS ainda foi pouco testado.
+
+### O certificado de assinatura do macOS
+
+Uma assinatura ad hoc identifica o app pelo hash daquele build exato, então o macOS esquece a permissão de **Gravação de Tela** do ScreenShare a cada atualização: a chave nos Ajustes do Sistema continua parecendo ligada, mas o compartilhamento mostra só o papel de parede e as janelas do próprio app. Assinado com um certificado, o app passa a ser identificado pelo bundle id e pelo certificado (`codesign -d -r- ScreenShare.app` mostra `certificate leaf = H"…"`, não `cdhash H"…"`), e a permissão sobrevive a toda atualização assinada com o mesmo certificado.
+
+O certificado é autoassinado (de graça; a Apple não o conhece, então ele não tira o **Abrir Mesmo Assim**). O electron-builder só procura certificados em que o macOS confia e o ignoraria, então o `scripts/mac-sign.cjs` o entrega ao `codesign` pelo SHA-1. Para configurar, uma vez:
+
+1. Num Mac, rode `sh scripts/mac-signing-cert.sh <pasta fora do repositório>`. Ele cria o certificado e a chave privada (`screenshare-signing.p12`), uma senha para ele e o base64 para o secret.
+2. Adicione os secrets do repositório `MAC_CERT_P12` (o base64) e `MAC_CERT_PASSWORD`; o script mostra os comandos `gh secret set`. O job de macOS do workflow de release os importa num keychain só dele, assina com eles e falha se o app não sair assinado com o certificado. Sem os secrets (forks), assina ad hoc como antes.
+3. Guarde o `.p12` e a senha num lugar seguro e offline, por exemplo num gerenciador de senhas, e apague a pasta.
+
+Use o mesmo certificado em todas as versões. Um novo (ou perder este) faz todo usuário de Mac permitir a Gravação de Tela mais uma vez; quem tiver o certificado consegue assinar um app que o macOS trata como o ScreenShare, permissão incluída. A primeira versão assinada com ele também precisa desse último "permitir de novo", para quem atualiza de uma versão ad hoc: diga isso nas notas dela.
 
 ## Traduções
 
@@ -225,7 +238,7 @@ Cada sistema tem um instalador por tipo de processador: `-x64` (a maioria dos PC
 
 Para os instaladores ficarem menores, eles só levam os arquivos de idioma do Chromium em inglês e português (`electronLanguages` no `electron-builder.json`). Num computador configurado em outro idioma, os poucos textos que o próprio Chromium desenha voltam para o inglês dos EUA (os textos do app seguem as [traduções](#traduções)). Um idioma novo também ganha a sua linha ali.
 
-Os instaladores ainda não são assinados: o Windows mostra um aviso do SmartScreen (*Mais informações → Executar assim mesmo*) e o macOS bloqueia a primeira abertura até você clicar em **Abrir Mesmo Assim** em *Ajustes do Sistema → Privacidade e Segurança* (os instaladores de macOS têm assinatura ad hoc, veja [gerando instaladores](#gerando-instaladores)).
+Os instaladores ainda não são assinados: o Windows mostra um aviso do SmartScreen (*Mais informações → Executar assim mesmo*) e o macOS bloqueia a primeira abertura até você clicar em **Abrir Mesmo Assim** em *Ajustes do Sistema → Privacidade e Segurança* (os instaladores de macOS são assinados com um certificado autoassinado, ou ad hoc sem ele; veja [o certificado de assinatura do macOS](#o-certificado-de-assinatura-do-macos)).
 
 ## Tecnologias
 
