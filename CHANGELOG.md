@@ -10,6 +10,16 @@ Each pull request with a user-visible change adds a file to [`changes/`](changes
 
 ## [Unreleased]
 
+## [2.9.0] - 2026-10-26
+
+### Added
+
+- **The Mac app updates itself.** Like on Windows, a new version downloads in the background and **Restart to update** appears in the title bar; nothing installs until you click it. It works from this version on, for ScreenShare in your Applications folder: download this one by hand once. Run from the disk image or Downloads, the app keeps offering the download page instead.
+
+### Changed
+
+- **macOS remembers the Screen Recording permission across updates.** Until now every update made macOS forget it: the switch still looked on, but sharing showed only your wallpaper and ScreenShare's own windows until you removed ScreenShare from the list and allowed it again. The Mac app is now signed with the project's own certificate, so after updating to this version you allow it one last time (macOS may also ask once more for Local Network access).
+
 ## [2.8.0] - 2026-10-25
 
 ### Added
@@ -198,7 +208,8 @@ The first release.
 - Reconnects after short network drops, and switches to TCP when a network blocks WebRTC.
 - Encrypted connections, the PIN kept only in memory, and the window hidden from screenshots while you watch.
 
-[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.8.0...HEAD
+[Unreleased]: https://github.com/nsfxu/lan-screenshare/compare/v2.9.0...HEAD
+[2.9.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.8.0...v2.9.0
 [2.8.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.7.0...v2.8.0
 [2.7.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/nsfxu/lan-screenshare/compare/v2.5.0...v2.6.0
