@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "com.screenshare.lan",
+  "appId": "com.nsfxu.screenshare.lan",
   "productName": "ScreenShare",
   "copyright": "ScreenShare",
   "publish": [
@@ -47,6 +47,7 @@
     ]
   },
   "nsis": {
+    "guid": "af6863a9-5d89-54d3-8716-659bd8c1632e",
     "oneClick": false,
     "perMachine": false,
     "allowToChangeInstallationDirectory": true,

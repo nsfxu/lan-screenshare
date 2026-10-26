@@ -7,7 +7,7 @@
 //
 // Why: an ad-hoc app's designated requirement is the hash of that exact build,
 // so macOS forgets its Screen Recording permission on every update. Signed with
-// a certificate, it becomes `identifier "com.screenshare.lan" and certificate
+// a certificate, it becomes `identifier "com.nsfxu.screenshare.lan" and certificate
 // leaf = <the certificate>`, which every later version signed with it meets.
 //
 // The certificate is self-signed, which macOS doesn't trust: electron-builder

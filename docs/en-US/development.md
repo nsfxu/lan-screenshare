@@ -148,7 +148,7 @@ Keep to C# 5: no string interpolation (`$"..."`), no `?.`, no `nameof`, no expre
 npm run dist:win
 ```
 
-This produces `release/<version>/ScreenShare-Setup-<version>-<arch>.exe`: an NSIS installer that lets the user pick the folder and creates a desktop shortcut.
+This produces `release/<version>/ScreenShare-Setup-<version>-<arch>.exe`: an NSIS installer that lets the user pick the folder and creates a desktop shortcut. Its `nsis.guid` in `electron-builder.json` is the one electron-builder derived from the app's first id, `com.screenshare.lan` (it's now `com.nsfxu.screenshare.lan`): Windows knows the installed app by it, so never change it, or updates install a second copy instead of replacing the first.
 
 **macOS** (on a Mac):
 

@@ -229,7 +229,7 @@ final class ProcessTapCapture {
       return excludedPrefixes.contains { id.hasPrefix($0) }
     }
     if !matches.isEmpty { return matches.map { ($0.object, $0.bundleId) } }
-    // This app's own helpers have the app's bundle id plus a suffix ("com.screenshare.lan.helper").
+    // This app's own helpers have the app's bundle id plus a suffix ("com.nsfxu.screenshare.lan.helper").
     guard let fallbackPid = fallbackPid, let own = all.first(where: { $0.pid == fallbackPid }), !own.bundleId.isEmpty
     else { return [] }
     let prefix = own.bundleId.lowercased()

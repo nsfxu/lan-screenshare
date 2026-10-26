@@ -148,7 +148,7 @@ Mantenha o C# 5: nada de interpolação de strings (`$"..."`), `?.`, `nameof`, m
 npm run dist:win
 ```
 
-Gera `release/<versão>/ScreenShare-Setup-<versão>-<arch>.exe`: um instalador NSIS que deixa o usuário escolher a pasta e cria um atalho na área de trabalho.
+Gera `release/<versão>/ScreenShare-Setup-<versão>-<arch>.exe`: um instalador NSIS que deixa o usuário escolher a pasta e cria um atalho na área de trabalho. O `nsis.guid` dele no `electron-builder.json` é o que o electron-builder derivou do primeiro id do app, `com.screenshare.lan` (hoje `com.nsfxu.screenshare.lan`): o Windows reconhece o app instalado por ele, então nunca o mude, senão as atualizações instalam uma segunda cópia em vez de substituir a primeira.
 
 **macOS** (num Mac):
 
