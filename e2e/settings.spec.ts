@@ -19,6 +19,11 @@ test('Settings shows one section at a time, chosen from the list on the side', a
   await expect(win.getByRole('checkbox', { name: 'Rejoin last room on startup' })).toBeVisible()
   await expect(win.getByRole('checkbox', { name: /^Chat notifications/ })).toBeVisible()
   await expect(win.getByLabel('Hosting port')).toBeVisible()
+  // TCP only when it's needed: folded away until opened.
+  const tcp = win.getByRole('checkbox', { name: /^Always use TCP transport/ })
+  await expect(tcp).toBeHidden()
+  await win.getByText('Connection troubleshooting').click()
+  await expect(tcp).not.toBeChecked()
   await expect(win.getByLabel('Display name')).toHaveCount(0)
 
   // Sharing explains the choice that's made, and Advanced what Automatic sends with.

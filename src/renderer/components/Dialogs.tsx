@@ -605,7 +605,15 @@ export function SettingsPanel({
         </SettingsGroup>
         <SettingsGroup title={t('settings.groupNetwork')}>
           {toggle('useTls', t('settings.useTls'), t('settings.useTlsHint'))}
-          {toggle('forceTcp', t('settings.forceTcp'), t('settings.forceTcpHint'))}
+          {/* Folded away: TCP only helps when a VPN or firewall blocks UDP, and it adds delay. Open while it's on. */}
+          <details className="codec-details" open={settings.forceTcp || undefined}>
+            <summary>
+              <Icon name="chevronRight" size={14} />
+              <span className="codec-details-title">{t('settings.connectionTroubleshooting')}</span>
+              {settings.forceTcp && <span className="muted small">{t('settings.forceTcpIsOn')}</span>}
+            </summary>
+            {toggle('forceTcp', t('settings.forceTcp'), t('settings.forceTcpHint'))}
+          </details>
           <SelectRow id="port" label={t('settings.port')}>
             <input
               id="port"

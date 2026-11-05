@@ -507,6 +507,8 @@ export const en = {
   'settings.useTls': 'Encrypt connections (TLS)',
   'settings.useTlsHint': 'Chat and signaling use TLS; video is always DTLS-SRTP encrypted',
   'settings.forceTcp': 'Always use TCP transport',
+  'settings.connectionTroubleshooting': 'Connection troubleshooting',
+  'settings.forceTcpIsOn': 'TCP is on',
   'settings.forceTcpHint': 'For VPNs/firewalls that block UDP (adds some latency)',
   'settings.port': 'Hosting port',
   'settings.codec': 'Video codec',

@@ -221,7 +221,7 @@ Abra as configurações pelo ícone de engrenagem embaixo da coluna de salas. A 
 | Geral | Notificações do chat | ligado | Quando a janela está em segundo plano. |
 | Geral | Voltar para a última sala ao abrir | desligado | Entra automaticamente na última sala quando o app abre. |
 | Geral | Criptografar conexões (TLS) | ligado | Cifra o chat e a sinalização. O vídeo é sempre cifrado. |
-| Geral | Sempre usar transporte TCP | desligado | Para redes que bloqueiam UDP. Acrescenta um pouco de atraso. |
+| Geral | Sempre usar transporte TCP | desligado | Em **Solução de problemas de conexão**, recolhido. Para redes que bloqueiam UDP. Acrescenta um pouco de atraso, e as transmissões já passam sozinhas para TCP quando não conseguem conectar. |
 | Geral | Porta para hospedar | 47800 | A primeira porta tentada quando você hospeda. |
 | Avançado | Codec de vídeo | Automático | O automático prefere H.264 quando a sua placa de vídeo o codifica, depois H.265 quando as duas placas de vídeo dão conta; a linha embaixo dele diz o que ele normalmente envia no seu computador. Dá para forçar H.264, H.265, VP9 ou AV1 se os dois lados suportarem. **Codecs suportados** embaixo dele mostra quais codecs a sua placa de vídeo ou o processador processam. |
 | Avançado | Qualidade adaptativa | ligado | Reduz resolução/taxa de quadros por espectador quando a rede dele sofre. |

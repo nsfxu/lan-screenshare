@@ -501,6 +501,8 @@ export const ptBR: Messages = {
   'settings.useTls': 'Criptografar conexões (TLS)',
   'settings.useTlsHint': 'O chat e a sinalização usam TLS; o vídeo é sempre criptografado (DTLS-SRTP)',
   'settings.forceTcp': 'Sempre usar transporte TCP',
+  'settings.connectionTroubleshooting': 'Solução de problemas de conexão',
+  'settings.forceTcpIsOn': 'TCP ligado',
   'settings.forceTcpHint': 'Para VPNs e firewalls que bloqueiam UDP (aumenta um pouco o atraso)',
   'settings.port': 'Porta para hospedar',
   'settings.codec': 'Codec de vídeo',
