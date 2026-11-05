@@ -13,13 +13,14 @@
 const FAST_PACING = 'WebRTC-ProbingScreenshareBwe/10.0,2875,80,40,-60,3/WebRTC-Video-Pacing/factor:10.0/'
 
 /**
- * Lowest latency (Settings → Advanced): a playout delay of 0 makes the viewer use WebRTC's low-latency
- * rendering, showing each frame as soon as it's decoded instead of smoothing over network jitter
- * (video/rtp_video_stream_receiver2.cc, modules/video_coding/timing/timing.cc). Measured on a wired LAN:
- * 54 → 29–33 ms screen to screen. Without that smoothing, Wi-Fi or a VPN can make the picture stutter.
+ * Latency Automatic or Lowest (Settings → Advanced, src/shared/latency.ts): a playout delay of 0 makes the
+ * viewer use WebRTC's low-latency rendering, showing each frame as soon as it's decoded instead of smoothing
+ * over network jitter (video/rtp_video_stream_receiver2.cc, modules/video_coding/timing/timing.cc). Measured
+ * on a wired LAN: 50 → 25 ms screen to screen. Over Wi-Fi or a VPN the picture can stutter without that
+ * smoothing, so Automatic gives each stream that stutters a jitter buffer of its own (subscription.ts).
  */
 const ZERO_PLAYOUT_DELAY = 'WebRTC-ForcePlayoutDelay/min_ms:0,max_ms:0/'
 
-export function fieldTrials(options: { lowLatency: boolean }): string {
-  return FAST_PACING + (options.lowLatency ? ZERO_PLAYOUT_DELAY : '')
+export function fieldTrials(options: { zeroPlayoutDelay: boolean }): string {
+  return FAST_PACING + (options.zeroPlayoutDelay ? ZERO_PLAYOUT_DELAY : '')
 }

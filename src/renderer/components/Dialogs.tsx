@@ -19,6 +19,7 @@ import { LANGUAGES, type LanguageSetting } from '../../shared/i18n'
 import { followSystem, pickTheme, THEMES } from '../../shared/themes'
 import type { AppInfo, AudioChoice, CodecSupport, DiscoveredRoom, Privacy, Settings } from '../../shared/types'
 import { autoCodec, codecDisplayName } from '../../shared/codecs'
+import type { LatencyMode } from '../../shared/latency'
 import { errorMessage } from '../lib/format'
 import { loadPicture, renderAvatar } from '../lib/images'
 import { useConfirmRequest } from '../lib/confirm'
@@ -383,6 +384,11 @@ export function SettingsPanel({
     detail: t('settings.optimizeDetailHint')
   }[settings.contentHint]
   const auto = autoCodec(encoders)
+  const latencyHint = {
+    auto: t('settings.latencyAutoHint'),
+    lowest: t('settings.latencyLowestHint'),
+    smooth: t('settings.latencySmoothHint')
+  }[settings.latency]
 
   const pages: Record<SettingsSection, ReactNode> = {
     profile: (
@@ -641,7 +647,18 @@ export function SettingsPanel({
             </select>
           </SelectRow>
           {toggle('adaptiveQuality', t('settings.adaptive'), t('settings.adaptiveHint'))}
-          {toggle('lowLatency', t('settings.lowLatency'), t('settings.lowLatencyHint'), t('settings.restartNeeded'))}
+          <SelectRow id="latency" label={t('settings.latency')} hint={latencyHint}>
+            <select
+              id="latency"
+              aria-describedby="latency-hint"
+              value={settings.latency}
+              onChange={(e) => onChange({ latency: e.target.value as LatencyMode })}
+            >
+              <option value="auto">{t('settings.latencyAuto')}</option>
+              <option value="lowest">{t('settings.latencyLowest')}</option>
+              <option value="smooth">{t('settings.latencySmooth')}</option>
+            </select>
+          </SelectRow>
         </SettingsGroup>
         <CodecTable encoders={encoders} decoders={decoders} />
       </>

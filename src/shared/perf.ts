@@ -74,6 +74,8 @@ export interface PerfReceiverCounters {
   jitterBufferTargetMs: number | null
   /** How long the audio waited in its jitter buffer, on average, in the last second (not cumulative). */
   audioJitterBufferMs?: number | null
+  /** The jitter buffer Latency Automatic asks for now, ms (null with another Latency setting). */
+  smoothingMs?: number | null
   /** In the last second, on average (not cumulative): from a frame's first packet to its last (frames of several packets). */
   assemblyMs?: number | null
   /** From a frame's first packet to decoded: assembly, jitter buffer and decoding together. */

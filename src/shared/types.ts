@@ -1,4 +1,5 @@
 import type { LanguageSetting } from './i18n'
+import type { LatencyMode } from './latency'
 import type { QualityPresetId } from './quality'
 import type { StruggleKind } from './struggle'
 import type { ThemeId } from './themes'
@@ -394,7 +395,8 @@ export interface Settings {
   /** The app's language, or 'system' to follow the computer's (src/shared/i18n). */
   language: LanguageSetting
   /** Show watched streams' frames as soon as they're decoded (zero playout delay); applies after a restart. */
-  lowLatency: boolean
+  /** How long watched streams wait before they're shown (src/shared/latency.ts); "smooth" applies after a restart. */
+  latency: LatencyMode
   /** Let people watching my stream point at it and draw on it (shared/marks.ts). */
   allowDrawing: boolean
 }

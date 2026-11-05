@@ -28,7 +28,13 @@ test('Settings shows one section at a time, chosen from the list on the side', a
   await expect(win.locator('#content-hint-hint')).toHaveText('Keeps the resolution and lowers the frame rate when needed.')
   await nav.getByRole('button', { name: 'Advanced' }).click()
   await expect(win.locator('#codec-hint')).toHaveText(/^Automatic usually sends (H\.264|H\.265|VP8|VP9|AV1), encoded by /)
-  await expect(win.getByText('Restart needed')).toBeVisible()
+  // Latency starts on Automatic; Smooth says it needs a restart, and the choice is kept.
+  const latency = win.getByLabel('Latency')
+  await expect(latency).toHaveValue('auto')
+  await expect(win.locator('#latency-hint')).toHaveText(/^Streams you watch are shown as soon as each frame arrives/)
+  await latency.selectOption('smooth')
+  await expect(win.locator('#latency-hint')).toHaveText(/applies after restarting ScreenShare\.$/)
+  await expect.poll(() => win.evaluate(() => window.api.settings.get().then((s) => s.latency))).toBe('smooth')
 
   await nav.getByRole('button', { name: 'About' }).click()
   await expect(win.getByRole('button', { name: 'Open logs' })).toBeInViewport()

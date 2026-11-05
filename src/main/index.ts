@@ -13,6 +13,7 @@ import { resolveLanguage } from '../shared/i18n'
 import { createFileLogger } from './logger'
 import { gatherDiagnostics } from './diagnostics'
 import { fieldTrials } from './fieldTrials'
+import { zeroPlayoutDelay } from '../shared/latency'
 import { mainT, setMainLanguage } from './i18n'
 import { CursorWatch } from './cursorWatch'
 import { NativeLoopback } from './nativeAudio'
@@ -101,11 +102,11 @@ const MIN_WINDOW_HEIGHT = 480
 
 const log = createFileLogger(logDir, !app.isPackaged)
 const settings = new SettingsStore(app.getPath('userData'), { highFps: perf.highFps })
-// WebRTC's field trials (faster pacing, and zero playout delay with Lowest latency, read at startup: changing
+// WebRTC's field trials (faster pacing, and zero playout delay unless Latency is Smooth, read at startup: changing
 // that setting applies after a restart). A --force-fieldtrials given on the command line (perf experiments)
 // replaces ours.
 if (!process.argv.some((a) => a.startsWith('--force-fieldtrials='))) {
-  app.commandLine.appendSwitch('force-fieldtrials', fieldTrials({ lowLatency: settings.get().lowLatency }))
+  app.commandLine.appendSwitch('force-fieldtrials', fieldTrials({ zeroPlayoutDelay: zeroPlayoutDelay(settings.get().latency) }))
 }
 const rooms = new RoomManager(settings, app.getPath('userData'), log, app.getVersion())
 const capture = new ScreenCapture(log)

@@ -4,6 +4,7 @@ import path from 'node:path'
 import { DEFAULT_PORT, NAME_MAX_LENGTH } from '../shared/constants'
 import { isLanguageSetting } from '../shared/i18n'
 import { isAvatar } from '../shared/images'
+import { DEFAULT_LATENCY, isLatencyMode } from '../shared/latency'
 import { qualityPresets } from '../shared/quality'
 import { arrangeRecentRooms, PINNED_ROOMS_MAX, RECENT_ROOMS_MAX, toNickname, toRecentHost } from '../shared/roomList'
 import { DEFAULT_DARK_THEME, DEFAULT_LIGHT_THEME, DEFAULT_THEME, isThemeId, isThemeOfKind } from '../shared/themes'
@@ -11,7 +12,7 @@ import type { RecentRoom, RoomEndpoint, Settings } from '../shared/types'
 import { randomId } from '../utils/crypto'
 
 /** Format version of settings.json written by this app; see migrate(). */
-export const SETTINGS_VERSION = 3
+export const SETTINGS_VERSION = 4
 
 /** Upgrades settings written by an older version of the app. */
 export function migrate(raw: Partial<Settings>): Partial<Settings> {
@@ -22,6 +23,13 @@ export function migrate(raw: Partial<Settings>): Partial<Settings> {
   if (version < 2 && out.contentHint === 'motion') out.contentHint = 'auto'
   // 3 (1.3.0): the room list remembers recent rooms; start with the last one.
   if (version < 3 && !out.recentRooms && out.lastRoom) out.recentRooms = [out.lastRoom]
+  // 4 (2.9.0): "Lowest latency" (on or off) became "Latency", Automatic by default. Whoever had chosen
+  // Lowest keeps it; off was the default, saved whether or not anyone chose it.
+  if (version < 4) {
+    const old = out as Partial<Settings> & { lowLatency?: unknown }
+    if (old.latency === undefined) out.latency = old.lowLatency === true ? 'lowest' : DEFAULT_LATENCY
+    delete old.lowLatency
+  }
   return out
 }
 
@@ -61,7 +69,7 @@ function defaults(): Settings {
     lightTheme: DEFAULT_LIGHT_THEME,
     autoUpdate: true,
     language: 'system',
-    lowLatency: false,
+    latency: DEFAULT_LATENCY,
     allowDrawing: true
   }
 }
@@ -148,10 +156,11 @@ function sanitize(s: Settings, fallback: Settings, options: SettingsOptions): Se
   out.uploadBudgetMbps = Number.isInteger(budget) && budget >= 0 && budget <= 10_000 ? budget : fallback.uploadBudgetMbps
   out.avatar = s.avatar === null || isAvatar(s.avatar) ? s.avatar : fallback.avatar
   out.theme = isThemeId(s.theme) ? s.theme : fallback.theme
+  out.latency = isLatencyMode(s.latency) ? s.latency : fallback.latency
   out.darkTheme = isThemeOfKind(s.darkTheme, 'dark') ? s.darkTheme : fallback.darkTheme
   out.lightTheme = isThemeOfKind(s.lightTheme, 'light') ? s.lightTheme : fallback.lightTheme
   out.language = isLanguageSetting(s.language) ? s.language : fallback.language
-  for (const key of ['adaptiveQuality', 'forceTcp', 'useTls', 'autoRejoin', 'notifications', 'pauseOnMinimize', 'showStatsOverlay', 'shareAudio', 'excludeDiscordAudio', 'appAudioOnly', 'autoUpdate', 'lowLatency', 'allowDrawing', 'followSystemTheme'] as const) {
+  for (const key of ['adaptiveQuality', 'forceTcp', 'useTls', 'autoRejoin', 'notifications', 'pauseOnMinimize', 'showStatsOverlay', 'shareAudio', 'excludeDiscordAudio', 'appAudioOnly', 'autoUpdate', 'allowDrawing', 'followSystemTheme'] as const) {
     out[key] = typeof s[key] === 'boolean' ? s[key] : fallback[key]
   }
   return out
