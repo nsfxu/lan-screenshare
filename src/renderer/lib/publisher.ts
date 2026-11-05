@@ -52,7 +52,15 @@ interface Peer {
   controller: AdaptiveController
   pendingCandidates: RTCIceCandidateInit[]
   remoteSet: boolean
-  prev: { ts: number; bytes: number; audioBytes: number; encodeTime: number; framesEncoded: number } | null
+  prev: {
+    ts: number
+    bytes: number
+    audioBytes: number
+    encodeTime: number
+    framesEncoded: number
+    sendDelay: number
+    packetsSent: number
+  } | null
   sample: PeerSample | null
   /** Last parameters applied, to skip redundant setParameters calls. */
   applied: string
@@ -1092,11 +1100,14 @@ export class Publisher extends Emitter<Events> {
     const audioBytes = Number(audioOut?.bytesSent ?? 0)
     const encodeTime = Number(out.totalEncodeTime ?? 0)
     const framesEncoded = Number(out.framesEncoded ?? 0)
+    const sendDelay = Number(out.totalPacketSendDelay ?? 0)
+    const packetsSent = Number(out.packetsSent ?? 0)
     const prev = peer.prev
-    peer.prev = { ts: now, bytes, audioBytes, encodeTime, framesEncoded }
+    peer.prev = { ts: now, bytes, audioBytes, encodeTime, framesEncoded, sendDelay, packetsSent }
     if (!prev) return
     const dt = (now - prev.ts) / 1000
     const frames = framesEncoded - prev.framesEncoded
+    const packets = packetsSent - prev.packetsSent
     const rtt = remote?.roundTripTime ?? pair?.currentRoundTripTime
     peer.sample = {
       bitrateKbps: dt > 0 ? ((bytes - prev.bytes) * 8) / 1000 / dt : 0,
@@ -1120,7 +1131,11 @@ export class Publisher extends Emitter<Events> {
         resolutionChanges: Number(out.qualityLimitationResolutionChanges ?? 0),
         targetKbps: typeof out.targetBitrate === 'number' ? Math.round(out.targetBitrate / 1000) : null,
         availableKbps:
-          typeof pair?.availableOutgoingBitrate === 'number' ? Math.round(pair.availableOutgoingBitrate / 1000) : null
+          typeof pair?.availableOutgoingBitrate === 'number' ? Math.round(pair.availableOutgoingBitrate / 1000) : null,
+        pacerMs:
+          packets > 0 && 'totalPacketSendDelay' in out
+            ? Math.round(((sendDelay - prev.sendDelay) / packets) * 10000) / 10
+            : null
       },
       route
     }

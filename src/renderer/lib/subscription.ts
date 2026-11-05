@@ -6,6 +6,7 @@ import {
   type WatchQuality,
   type WatchQualityId
 } from '../../shared/quality'
+import { SmoothingController, type LatencyMode } from '../../shared/latency'
 import type { PerfReceiverCounters } from '../../shared/perf'
 import type { MediaState, ServerMessage, SignalData, Transport, ViewerStats } from '../../shared/types'
 import { shortCodecName } from './codecs'
@@ -75,6 +76,8 @@ export class Subscription extends Emitter<Events> {
   } = { jitterBufferMs: null, freezeCount: null, freezeSeconds: null }
   private prevJbTarget: { delay: number; count: number } | null = null
   private prevAudioJb: { delay: number; count: number } | null = null
+  /** Per-frame stage totals at the last --perf-log sample (assembly, processing, decode). */
+  private prevStages: { assembly: number; assembled: number; processing: number; decode: number; decoded: number } | null = null
   /** Our own quality choice for this stream ('auto' follows the tile size). */
   quality: WatchQuality = getWatchQuality('auto')
   /** Stepped pixel height we display the stream at (null = full quality). */
@@ -89,11 +92,17 @@ export class Subscription extends Emitter<Events> {
   private pip: number | null | undefined = undefined
   private tick = 0
   private readonly log: (msg: string) => void
+  /** The video receiver, whose jitter buffer Latency Automatic adjusts (see src/shared/latency.ts). */
+  private videoReceiver: (RTCRtpReceiver & { jitterBufferTarget?: number | null }) | null = null
+  private smoothing = new SmoothingController()
+  private lostSeen: number | null = null
+  private freezesSeen: number | null = null
 
   constructor(
     private readonly client: RoomClient,
     readonly streamerId: string,
-    forceTcp: boolean
+    forceTcp: boolean,
+    private latency: LatencyMode = 'auto'
   ) {
     super()
     this.transport = forceTcp ? 'tcp' : 'webrtc'
@@ -274,13 +283,15 @@ export class Subscription extends Emitter<Events> {
     // synced, see Publisher); older streamers send both in one. Either way, keep them together.
     let tracks: MediaStream | null = null
     pc.ontrack = (e) => {
-      // Render frames as soon as they are decoded: this is a live screen, not a movie.
-      const receiver = e.receiver as RTCRtpReceiver & { jitterBufferTarget?: number }
-      try {
-        receiver.jitterBufferTarget = 0
-      } catch {
-        // unsupported
+      // Render frames as soon as they are decoded: this is a live screen, not a movie. Latency Automatic
+      // gives the video a buffer later if it stutters; a new connection starts without one.
+      if (e.track.kind === 'video') {
+        this.videoReceiver = e.receiver
+        this.smoothing = new SmoothingController()
+        this.lostSeen = null
+        this.freezesSeen = null
       }
+      this.setJitterTarget(e.receiver, window.api.perf.options.jitterTargetMs ?? 0)
       const incoming = e.streams[0] ?? new MediaStream([e.track])
       if (!tracks) tracks = incoming
       else if (tracks !== incoming && !tracks.getTracks().includes(e.track)) {
@@ -312,6 +323,46 @@ export class Subscription extends Emitter<Events> {
     }
   }
 
+  /** Latency setting changed: Lowest drops any buffer at once; Automatic starts over from none. */
+  setLatencyMode(mode: LatencyMode): void {
+    if (mode === this.latency) return
+    this.latency = mode
+    this.smoothing = new SmoothingController()
+    if (this.videoReceiver) this.setJitterTarget(this.videoReceiver, 0)
+  }
+
+  private setJitterTarget(receiver: RTCRtpReceiver & { jitterBufferTarget?: number | null }, ms: number): void {
+    try {
+      receiver.jitterBufferTarget = ms
+    } catch {
+      // unsupported
+    }
+  }
+
+  /** Latency Automatic: feed this second to the stream's smoothing, and apply the buffer it asks for. */
+  private adjustSmoothing(inb: Record<string, any>): void {
+    const lost = typeof inb.packetsLost === 'number' ? inb.packetsLost : null
+    const newLost = lost !== null && this.lostSeen !== null ? Math.max(0, lost - this.lostSeen) : 0
+    this.lostSeen = lost
+    const freezes = typeof inb.freezeCount === 'number' ? inb.freezeCount : null
+    const newFreezes = freezes !== null && this.freezesSeen !== null ? Math.max(0, freezes - this.freezesSeen) : 0
+    this.freezesSeen = freezes
+    if (this.latency !== 'auto' || !this.videoReceiver || window.api.perf.options.jitterTargetMs !== null) return
+    const was = this.smoothing.targetMs
+    const target = this.smoothing.update(
+      {
+        freezes: newFreezes,
+        packetJitterMs: typeof inb.jitter === 'number' ? inb.jitter * 1000 : null,
+        packetsLost: newLost
+      },
+      performance.now()
+    )
+    if (target !== was) {
+      this.log(`smoothing ${was} → ${target} ms`)
+      this.setJitterTarget(this.videoReceiver, target)
+    }
+  }
+
   /** Raw counters for the --perf-log file. */
   private receiverCounters(
     inb: Record<string, any>,
@@ -324,6 +375,22 @@ export class Subscription extends Emitter<Events> {
     const prevAudio = this.prevAudioJb
     this.prevAudioJb = Number.isFinite(audioDelay) && Number.isFinite(audioCount) ? { delay: audioDelay, count: audioCount } : null
     const audioEmitted = prevAudio && this.prevAudioJb ? audioCount - prevAudio.count : 0
+    // Per frame, over the last second: from its first packet to its last, to decoded, and decoding alone.
+    const stage = {
+      assembly: Number(inb.totalAssemblyTime ?? NaN),
+      assembled: Number(inb.framesAssembledFromMultiplePackets ?? NaN),
+      processing: Number(inb.totalProcessingDelay ?? NaN),
+      decode: Number(inb.totalDecodeTime ?? NaN),
+      decoded: Number(inb.framesDecoded ?? NaN)
+    }
+    const before = this.prevStages
+    this.prevStages = stage
+    const per = (total: 'assembly' | 'processing' | 'decode', count: 'assembled' | 'decoded'): number | null => {
+      if (!before) return null
+      const n = stage[count] - before[count]
+      const sum = stage[total] - before[total]
+      return n > 0 && Number.isFinite(sum) ? Math.round((sum / n) * 10000) / 10 : null
+    }
     const target = Number(inb.jitterBufferTargetDelay ?? NaN)
     const prev = this.prevJbTarget
     this.prevJbTarget = Number.isFinite(target) ? { delay: target, count: emitted } : null
@@ -339,7 +406,11 @@ export class Subscription extends Emitter<Events> {
       jitterBufferTargetMs:
         prev && count > 0 && Number.isFinite(target) ? Math.round(((target - prev.delay) / count) * 10000) / 10 : null,
       audioJitterBufferMs:
-        prevAudio && audioEmitted > 0 ? Math.round(((audioDelay - prevAudio.delay) / audioEmitted) * 10000) / 10 : null
+        prevAudio && audioEmitted > 0 ? Math.round(((audioDelay - prevAudio.delay) / audioEmitted) * 10000) / 10 : null,
+      smoothingMs: this.latency === 'auto' ? this.smoothing.targetMs : null,
+      assemblyMs: per('assembly', 'assembled'),
+      processingMs: per('processing', 'decoded'),
+      decodeMs: per('decode', 'decoded')
     }
   }
 
@@ -483,6 +554,7 @@ export class Subscription extends Emitter<Events> {
     const decodeMs = decoded > 0 ? ((cur.decodeTime - prev.decodeTime) / decoded) * 1000 : 0
     const frameMs = fps > 0 ? 1000 / fps : 16.7
     const latency = frameMs / 2 + (this.publisherEncodeMs ?? 5) + rttMs / 2 + jitterMs + decodeMs + 8
+    this.adjustSmoothing(inb)
     this.perfExtra = {
       jitterBufferMs: jbCount > 0 ? Math.round(jitterMs * 10) / 10 : null,
       freezeCount: typeof inb.freezeCount === 'number' ? inb.freezeCount : null,

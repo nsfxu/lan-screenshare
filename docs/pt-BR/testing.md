@@ -251,7 +251,7 @@ npm run perf -- --viewers=2 --source=fake       # o canvas animado dos testes e2
 
 Cada execução grava `perf-results/<data-hora>/` (ignorado pelo git):
 
-- `summary.md`: uma linha por espectador (o codificador que o streamer usou para ele, fps p50/p5, latência p50/p95, jitter buffer, travadas, quadros-chave recebidos, quadros descartados) e uma por streamer (CPU do app e do computador, tempo de codificação, fps enviado). Só conta o período medido, não o aquecimento.
+- `summary.md`: uma linha por espectador (o codificador que o streamer usou para ele, fps p50/p5, latência p50/p95, jitter buffer, travadas, quadros-chave recebidos, quadros descartados) e uma por streamer (CPU do app e do computador, tempo de codificação, fps enviado). **Stages of a frame** divide os quadros de cada espectador por etapa, a partir das estatísticas: codificação, pacer (quanto os pacotes esperam antes de sair), metade da ida e volta, montagem (do primeiro ao último pacote de um quadro), jitter buffer e decodificação; captura e exibição não são informadas, então a soma é menor que o total. Com `--latency`, **Where the time goes** divide cada quadro lido no momento em que o Chromium diz que o espectador o recebeu. Só conta o período medido, não o aquecimento.
 - `streamer.jsonl`, `viewer-<n>.jsonl`: uma amostra JSON por segundo por stream, como grava o `--perf-log`.
 - `run.json`: o comando, a versão do app, o sistema, a CPU e a placa de vídeo.
 
@@ -261,6 +261,7 @@ Para mandar os resultados, anexe a pasta (ou pelo menos `summary.md` e `run.json
 
 - `--perf-log=<arquivo>`: a cada segundo, o streamer grava o que envia a cada espectador (codificador, se é de hardware, fps, tamanho, taxa de bits, tempo de codificação, limitação, RTT, e contadores brutos: quadros-chave, quadros enormes, pedidos de quadro-chave e de reenvio, taxa alvo e disponível) com a CPU e a memória do app e do computador; o espectador grava o que recebe (fps, tamanho, latência estimada, atraso do jitter buffer naquele segundo, travadas, quadros descartados, decodificador, e contadores brutos: quadros-chave, pedidos de quadro-chave e de reenvio enviados, alvo do jitter buffer).
 - `--perf-view-height=<px>`: a altura forçada acima.
+- `--perf-jitter-target=<ms>` (experimento): o jitter buffer que cada espectador pede em vez de 0, para ver quanto um buffer custa. Medido com Menor latência ligada: pedir 80 ms deu 66 ms de tela a tela em vez de 25.
 
 O resumo é calculado por funções puras em `src/shared/perfSummary.ts` (testadas em `tests/perf.test.ts`).
 

@@ -29,12 +29,23 @@ describe('settings', () => {
     expect(store.update({ language: 'xx' as never }).language).toBe('pt-BR')
   })
 
-  it('keeps Lowest latency off until it is chosen', () => {
+  it('starts on Automatic latency, keeps a choice, and ignores unknown ones', () => {
     const dir = tempDir()
-    expect(new SettingsStore(dir).get().lowLatency).toBe(false)
-    new SettingsStore(dir).update({ lowLatency: true })
-    expect(new SettingsStore(dir).get().lowLatency).toBe(true)
-    expect(new SettingsStore(dir).update({ lowLatency: 'yes' as never }).lowLatency).toBe(true)
+    expect(new SettingsStore(dir).get().latency).toBe('auto')
+    new SettingsStore(dir).update({ latency: 'smooth' })
+    expect(new SettingsStore(dir).get().latency).toBe('smooth')
+    expect(new SettingsStore(dir).update({ latency: 'fast' as never }).latency).toBe('smooth')
+  })
+
+  it('turns the old Lowest latency into Latency: Lowest if chosen, Automatic otherwise', () => {
+    const write = (dir: string, data: object): void => fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify(data))
+    const chosen = tempDir()
+    write(chosen, { settingsVersion: 3, lowLatency: true })
+    expect(new SettingsStore(chosen).get().latency).toBe('lowest')
+    const off = tempDir()
+    write(off, { settingsVersion: 3, lowLatency: false })
+    expect(new SettingsStore(off).get().latency).toBe('auto')
+    expect(JSON.parse(fs.readFileSync(path.join(off, 'settings.json'), 'utf8'))).not.toHaveProperty('lowLatency')
   })
 
   it('starts new installs on automatic content hint', () => {

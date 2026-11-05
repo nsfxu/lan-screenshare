@@ -254,7 +254,15 @@ async function startReading(viewer: Instance, screenWidth: number, sound: boolea
     const canvas = new OffscreenCanvas(columns * cell + cell, rows * cell + cell)
     const ctx = canvas.getContext('2d', { willReadFrequently: true })!
     // Beeps only when there is sound to listen to (otherwise there's no sound table at all).
-    const state = { active: false, ages: [] as number[], unreadable: 0, beeps: listen ? ([] as number[]) : undefined }
+    const state = {
+      active: false,
+      ages: [] as number[],
+      unreadable: 0,
+      beeps: listen ? ([] as number[]) : undefined,
+      // Where each frame's time went: drawn → its last packet arrived, and the receiver's own processing.
+      arrived: [] as number[],
+      processing: [] as number[]
+    }
     ;(window as unknown as { latencyReading: typeof state }).latencyReading = state
     const onFrame = (_now: number, meta: VideoFrameCallbackMetadata): void => {
       if (state.active && video.videoWidth > 0) {
@@ -280,7 +288,15 @@ async function startReading(viewer: Instance, screenWidth: number, sound: boolea
         const age = code === null ? null : timeCodeAge(performance.timeOrigin + meta.expectedDisplayTime, code)
         // A code from the future, or one more than 10 s old, can only be misread.
         if (age === null || age < 0 || age > 10_000) state.unreadable++
-        else state.ages.push(age)
+        else {
+          state.ages.push(age)
+          // receiveTime: when Chromium says the viewer received the frame (with a jitter buffer, part of its wait
+          // comes before it). The rest of `age` is the viewer's: waiting, decoding, the screen's next refresh.
+          if (typeof meta.receiveTime === 'number' && meta.receiveTime > 0) {
+            state.arrived.push(age - (meta.expectedDisplayTime - meta.receiveTime))
+          }
+          if (typeof meta.processingDuration === 'number') state.processing.push(meta.processingDuration * 1000)
+        }
       }
       video.requestVideoFrameCallback(onFrame)
     }
@@ -337,10 +353,20 @@ function setReading(viewer: Instance, active: boolean): Promise<void> {
 async function readings(viewer: Instance): Promise<ScreenToScreen> {
   const state = await viewer.win.evaluate(
     () =>
-      (window as unknown as { latencyReading?: { ages: number[]; unreadable: number; beeps?: number[] } })
-        .latencyReading ?? null
+      (
+        window as unknown as {
+          latencyReading?: { ages: number[]; unreadable: number; beeps?: number[]; arrived: number[]; processing: number[] }
+        }
+      ).latencyReading ?? null
   )
-  return { viewer: viewer.name, ages: state?.ages ?? [], unreadable: state?.unreadable ?? 0, beeps: state?.beeps }
+  return {
+    viewer: viewer.name,
+    ages: state?.ages ?? [],
+    unreadable: state?.unreadable ?? 0,
+    beeps: state?.beeps,
+    arrived: state?.arrived,
+    processing: state?.processing
+  }
 }
 
 test('measure', async () => {

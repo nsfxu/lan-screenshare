@@ -49,6 +49,7 @@ export class WatchManager extends Emitter<Events> {
 
   updateSettings(settings: Settings): void {
     this.settings = settings
+    for (const sub of this.subs.values()) sub.setLatencyMode(settings.latency)
   }
 
   watch(streamerId: string): Subscription | null {
@@ -56,7 +57,7 @@ export class WatchManager extends Emitter<Events> {
     const existing = this.subs.get(streamerId)
     if (existing) return existing
     this.recentlyEnded.delete(streamerId)
-    const sub = new Subscription(this.client, streamerId, this.settings.forceTcp)
+    const sub = new Subscription(this.client, streamerId, this.settings.forceTcp, this.settings.latency)
     sub.setWindowHidden(this.windowHidden)
     sub.on('state', (state) => {
       if (state !== 'ended' || this.subs.get(streamerId) !== sub) return

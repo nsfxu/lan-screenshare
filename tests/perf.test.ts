@@ -4,14 +4,20 @@ import { parsePerfLog, percentiles, screenToScreenMarkdown, summarize, summaryMa
 
 describe('parsePerfArgs', () => {
   it('is off without the switches', () => {
-    expect(parsePerfArgs(['electron', '.', '--profile=a'])).toEqual({ logFile: null, viewHeight: null, highFps: false })
+    expect(parsePerfArgs(['electron', '.', '--profile=a'])).toEqual({
+      logFile: null,
+      viewHeight: null,
+      highFps: false,
+      jitterTargetMs: null
+    })
   })
 
   it('reads the log file and a view height in the range the server accepts', () => {
     expect(parsePerfArgs(['--perf-log=C:\\perf\\a b.jsonl', '--perf-view-height=1080'])).toEqual({
       logFile: 'C:\\perf\\a b.jsonl',
       viewHeight: 1080,
-      highFps: false
+      highFps: false,
+      jitterTargetMs: null
     })
     expect(parsePerfArgs(['--perf-high-fps']).highFps).toBe(true)
     expect(parsePerfArgs(['--perf-view-height=89']).viewHeight).toBeNull()
@@ -19,6 +25,13 @@ describe('parsePerfArgs', () => {
     expect(parsePerfArgs(['--perf-view-height=720.5']).viewHeight).toBeNull()
     expect(parsePerfArgs(['--perf-view-height=']).viewHeight).toBeNull()
     expect(parsePerfArgs(['--perf-log=']).logFile).toBeNull()
+  })
+
+  it('reads the jitter buffer target experiment', () => {
+    expect(parsePerfArgs(['--perf-jitter-target=80']).jitterTargetMs).toBe(80)
+    expect(parsePerfArgs(['--perf-jitter-target=0']).jitterTargetMs).toBe(0)
+    expect(parsePerfArgs(['--perf-jitter-target=-1']).jitterTargetMs).toBeNull()
+    expect(parsePerfArgs(['--perf-jitter-target=lots']).jitterTargetMs).toBeNull()
   })
 })
 

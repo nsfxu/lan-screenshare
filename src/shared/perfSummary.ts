@@ -60,6 +60,21 @@ export interface WatcherSummary {
   framesDropped: number
   /** Seconds the watcher had samples for. */
   seconds: number
+  /** Each stage a frame goes through, from the stats (p50 of the per-second averages, ms; WebRTC only). */
+  stages: FrameStages
+}
+
+/** The stages of a frame, from the streamer's and the watcher's stats, p50 in ms (null when not reported). */
+export interface FrameStages {
+  encode: number | null
+  /** Waiting in the streamer's pacer before being sent. */
+  pacer: number | null
+  /** Half the round trip. */
+  network: number | null
+  /** From a frame's first packet to its last, at the watcher. */
+  assembly: number | null
+  jitterBuffer: number | null
+  decode: number | null
 }
 
 export interface StreamerSummary {
@@ -96,6 +111,8 @@ function mode(values: readonly string[]): string {
 
 const numbers = (values: readonly (number | null)[]): number[] =>
   values.filter((v): v is number => typeof v === 'number' && Number.isFinite(v))
+
+const p50 = (values: readonly (number | null)[]): number | null => percentiles(numbers(values))?.p50 ?? null
 
 /** Growth of a cumulative counter over the window (it restarts from 0 with a new connection). */
 function growth(values: readonly number[]): number {
@@ -162,7 +179,15 @@ export function summarize(logs: readonly PerfLog[], from = -Infinity, to = Infin
         freezeSeconds: freezeSeconds.length ? Math.round(growth(freezeSeconds) * 10) / 10 : null,
         keyFrames: keyFrames.length ? growth(keyFrames) : null,
         framesDropped: growth(samples.map((s) => s.framesDropped)),
-        seconds: samples.length
+        seconds: samples.length,
+        stages: {
+          encode: p50(rows.map((r) => r.encodeMs)),
+          pacer: p50(rows.map((r) => r.counters?.pacerMs ?? null)),
+          network: p50(rows.map((r) => (r.rttMs === null ? null : r.rttMs / 2))),
+          assembly: p50(samples.map((s) => s.counters?.assemblyMs ?? null)),
+          jitterBuffer: p50(samples.map((s) => s.jitterBufferMs)),
+          decode: p50(samples.map((s) => s.counters?.decodeMs ?? null))
+        }
       })
     }
   }
@@ -201,6 +226,23 @@ export function summaryMarkdown(summary: PerfSummary, title: string): string {
         `${freezes} | ${w.keyFrames ?? '–'} | ${w.framesDropped} |`
     )
   }
+  if (summary.watchers.some((w) => Object.values(w.stages).some((v) => v !== null))) {
+    lines.push('', '## Stages of a frame', '')
+    lines.push(
+      'From the stats, p50 of each second\'s average. Capture and display aren\'t reported: the screen-to-screen ' +
+        'measurement (`--latency`) shows the whole.',
+      ''
+    )
+    lines.push('| Watcher | Encode | Pacer | Network (½ RTT) | Assembly | Jitter buffer | Decode | Sum |')
+    lines.push('|---|---|---|---|---|---|---|---|')
+    for (const w of summary.watchers) {
+      const s = w.stages
+      const parts = [s.encode, s.pacer, s.network, s.assembly, s.jitterBuffer, s.decode]
+      const sum = parts.reduce<number>((a, b) => a + (b ?? 0), 0)
+      const ms = (v: number | null): string => (v === null ? '–' : `${v.toFixed(1)} ms`)
+      lines.push(`| ${w.watcher} | ${parts.map(ms).join(' | ')} | ${sum.toFixed(1)} ms |`)
+    }
+  }
   lines.push('', '## Streamers', '')
   lines.push('| Streamer | App CPU p50 | App CPU p95 | Computer CPU p50 | Computer CPU p95 | Encode p50 | Encode p95 | Sent fps p50 | Capture fps |')
   lines.push('|---|---|---|---|---|---|---|---|---|')
@@ -223,6 +265,14 @@ export interface ScreenToScreen {
   unreadable: number
   /** With sound (`--audio`): how long after its mark each of the pattern's beeps arrived, in ms. */
   beeps?: number[]
+  /**
+   * For the frames read: from drawn to the moment Chromium says the viewer received them (requestVideoFrameCallback's
+   * receiveTime), in ms. Before it: capture, encoding, sending, the network, and with a jitter buffer part of the
+   * wait. After it: the rest of the wait, decoding and display.
+   */
+  arrived?: number[]
+  /** The viewer's processing of each frame read (requestVideoFrameCallback's processingDuration), in ms. */
+  processing?: number[]
 }
 
 /** The "Screen to screen" section of summary.md. */
@@ -242,6 +292,28 @@ export function screenToScreenMarkdown(rows: readonly ScreenToScreen[]): string 
     lines.push(
       `| ${r.viewer} | ${fmt(p?.p50)} ms | ${fmt(p?.p95)} ms | ${fmt(min)} ms | ${fmt(max)} ms | ${r.ages.length} | ${r.unreadable} |`
     )
+  }
+  if (rows.some((r) => r.arrived?.length)) {
+    lines.push('', '### Where the time goes', '')
+    lines.push(
+      "Each frame read, split at the moment Chromium says the viewer received it (requestVideoFrameCallback's " +
+        'receiveTime): before it, capture, encoding, sending and the network, and with a jitter buffer part of the ' +
+        "wait; after it, the rest of the viewer's wait, decoding and the screen's next refresh. p50 of each.",
+      ''
+    )
+    lines.push('| Viewer | Drawn → received | Received → shown | Of which processing | Total |')
+    lines.push('|---|---|---|---|---|')
+    for (const r of rows) {
+      const arrived = percentiles(r.arrived ?? [])
+      const after = percentiles(
+        (r.arrived ?? []).length === r.ages.length ? r.ages.map((age, i) => age - r.arrived![i]) : []
+      )
+      const processing = percentiles(r.processing ?? [])
+      lines.push(
+        `| ${r.viewer} | ${fmt(arrived?.p50)} ms | ${fmt(after?.p50)} ms | ${fmt(processing?.p50, 1)} ms | ` +
+          `${fmt(percentiles(r.ages)?.p50)} ms |`
+      )
+    }
   }
   if (rows.some((r) => r.beeps)) {
     lines.push('', '### Sound (beeps)', '')
