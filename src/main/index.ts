@@ -422,7 +422,12 @@ function registerIpc(): void {
   })
 
   ipcMain.on(IPC.perfOptions, (e) => {
-    const options: PerfRendererOptions = { logging: !!perf.logFile, viewHeight: perf.viewHeight, highFps: perf.highFps }
+    const options: PerfRendererOptions = {
+      logging: !!perf.logFile,
+      viewHeight: perf.viewHeight,
+      highFps: perf.highFps,
+      jitterTargetMs: perf.jitterTargetMs
+    }
     e.returnValue = options
   })
   if (perf.logFile) {

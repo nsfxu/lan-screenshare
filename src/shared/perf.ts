@@ -11,6 +11,8 @@ export interface PerfOptions {
   viewHeight: number | null
   /** `--perf-high-fps` (experiment): offer the 1080p @ 120 fps preset (HIGH_FPS_PRESET). */
   highFps: boolean
+  /** `--perf-jitter-target=<ms>` (experiment): the jitter buffer watchers ask for, instead of 0. */
+  jitterTargetMs: number | null
 }
 
 /** The part of PerfOptions the renderer needs (it never sees the file path). */
@@ -18,6 +20,7 @@ export interface PerfRendererOptions {
   logging: boolean
   viewHeight: number | null
   highFps: boolean
+  jitterTargetMs: number | null
 }
 
 /** Same range the server accepts in `view-size`. */
@@ -33,7 +36,9 @@ export function parsePerfArgs(argv: readonly string[]): PerfOptions {
   const height = Number(value('perf-view-height'))
   const viewHeight =
     Number.isInteger(height) && height >= VIEW_HEIGHT_MIN && height <= VIEW_HEIGHT_MAX ? height : null
-  return { logFile, viewHeight, highFps: argv.includes('--perf-high-fps') }
+  const jitter = Number(value('perf-jitter-target'))
+  const jitterTargetMs = value('perf-jitter-target') !== null && jitter >= 0 && jitter <= 4000 ? jitter : null
+  return { logFile, viewHeight, highFps: argv.includes('--perf-high-fps'), jitterTargetMs }
 }
 
 /** Cumulative counters from the sender's getStats, to see what happens around a freeze. */
@@ -51,6 +56,8 @@ export interface PerfSenderCounters {
   /** The encoder's target, and what congestion control thinks the path carries (not cumulative). */
   targetKbps: number | null
   availableKbps: number | null
+  /** How long the packets sent in the last second waited in the pacer before going out, on average (not cumulative). */
+  pacerMs?: number | null
 }
 
 /** Cumulative counters from the watcher's getStats. */
@@ -67,6 +74,12 @@ export interface PerfReceiverCounters {
   jitterBufferTargetMs: number | null
   /** How long the audio waited in its jitter buffer, on average, in the last second (not cumulative). */
   audioJitterBufferMs?: number | null
+  /** In the last second, on average (not cumulative): from a frame's first packet to its last (frames of several packets). */
+  assemblyMs?: number | null
+  /** From a frame's first packet to decoded: assembly, jitter buffer and decoding together. */
+  processingMs?: number | null
+  /** Decoding alone. */
+  decodeMs?: number | null
 }
 
 /** The streamer's side of one watcher's connection, in one second. */

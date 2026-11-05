@@ -251,7 +251,7 @@ npm run perf -- --viewers=2 --source=fake       # the animated canvas of the e2e
 
 Each run writes `perf-results/<date-time>/` (git-ignored):
 
-- `summary.md`: one row per viewer (the encoder the streamer used for it, fps p50/p5, latency p50/p95, jitter buffer, freezes, keyframes received, dropped frames) and one per streamer (the app's and the computer's CPU, encode time, sent fps). Only the measured window counts, not the warm-up.
+- `summary.md`: one row per viewer (the encoder the streamer used for it, fps p50/p5, latency p50/p95, jitter buffer, freezes, keyframes received, dropped frames) and one per streamer (the app's and the computer's CPU, encode time, sent fps). **Stages of a frame** splits each viewer's frames by stage from the stats: encode, pacer (how long packets wait before going out), half the round trip, assembly (first to last packet of a frame), jitter buffer and decode; capture and display aren't reported, so the sum is less than the whole. With `--latency`, **Where the time goes** splits each frame read at the moment Chromium says the viewer received it. Only the measured window counts, not the warm-up.
 - `streamer.jsonl`, `viewer-<n>.jsonl`: one JSON sample per second per stream, as written by `--perf-log`.
 - `run.json`: the command, the app version, the OS, CPU and graphics card.
 
@@ -261,6 +261,7 @@ To report results, attach the folder (or at least `summary.md` and `run.json`) t
 
 - `--perf-log=<file>`: every second, the streamer writes what it sends each watcher (encoder, hardware or not, fps, size, bitrate, encode time, limitation, RTT, and raw counters: keyframes, huge frames, keyframe and resend requests, target and available bitrate) with the app's and the computer's CPU and memory; a watcher writes what it receives (fps, size, latency estimate, jitter buffer delay of that second, freezes, dropped frames, decoder, and raw counters: keyframes, keyframe and resend requests sent, jitter buffer target).
 - `--perf-view-height=<px>`: the forced view height above.
+- `--perf-jitter-target=<ms>` (experiment): the jitter buffer each watcher asks for instead of 0, to see what a buffer costs. Measured with Lowest latency on: 80 ms asked gave 66 ms screen to screen instead of 25.
 
 The summary is computed by pure functions in `src/shared/perfSummary.ts` (tested in `tests/perf.test.ts`).
 

@@ -75,6 +75,8 @@ export class Subscription extends Emitter<Events> {
   } = { jitterBufferMs: null, freezeCount: null, freezeSeconds: null }
   private prevJbTarget: { delay: number; count: number } | null = null
   private prevAudioJb: { delay: number; count: number } | null = null
+  /** Per-frame stage totals at the last --perf-log sample (assembly, processing, decode). */
+  private prevStages: { assembly: number; assembled: number; processing: number; decode: number; decoded: number } | null = null
   /** Our own quality choice for this stream ('auto' follows the tile size). */
   quality: WatchQuality = getWatchQuality('auto')
   /** Stepped pixel height we display the stream at (null = full quality). */
@@ -277,7 +279,7 @@ export class Subscription extends Emitter<Events> {
       // Render frames as soon as they are decoded: this is a live screen, not a movie.
       const receiver = e.receiver as RTCRtpReceiver & { jitterBufferTarget?: number }
       try {
-        receiver.jitterBufferTarget = 0
+        receiver.jitterBufferTarget = window.api.perf.options.jitterTargetMs ?? 0
       } catch {
         // unsupported
       }
@@ -324,6 +326,22 @@ export class Subscription extends Emitter<Events> {
     const prevAudio = this.prevAudioJb
     this.prevAudioJb = Number.isFinite(audioDelay) && Number.isFinite(audioCount) ? { delay: audioDelay, count: audioCount } : null
     const audioEmitted = prevAudio && this.prevAudioJb ? audioCount - prevAudio.count : 0
+    // Per frame, over the last second: from its first packet to its last, to decoded, and decoding alone.
+    const stage = {
+      assembly: Number(inb.totalAssemblyTime ?? NaN),
+      assembled: Number(inb.framesAssembledFromMultiplePackets ?? NaN),
+      processing: Number(inb.totalProcessingDelay ?? NaN),
+      decode: Number(inb.totalDecodeTime ?? NaN),
+      decoded: Number(inb.framesDecoded ?? NaN)
+    }
+    const before = this.prevStages
+    this.prevStages = stage
+    const per = (total: 'assembly' | 'processing' | 'decode', count: 'assembled' | 'decoded'): number | null => {
+      if (!before) return null
+      const n = stage[count] - before[count]
+      const sum = stage[total] - before[total]
+      return n > 0 && Number.isFinite(sum) ? Math.round((sum / n) * 10000) / 10 : null
+    }
     const target = Number(inb.jitterBufferTargetDelay ?? NaN)
     const prev = this.prevJbTarget
     this.prevJbTarget = Number.isFinite(target) ? { delay: target, count: emitted } : null
@@ -339,7 +357,10 @@ export class Subscription extends Emitter<Events> {
       jitterBufferTargetMs:
         prev && count > 0 && Number.isFinite(target) ? Math.round(((target - prev.delay) / count) * 10000) / 10 : null,
       audioJitterBufferMs:
-        prevAudio && audioEmitted > 0 ? Math.round(((audioDelay - prevAudio.delay) / audioEmitted) * 10000) / 10 : null
+        prevAudio && audioEmitted > 0 ? Math.round(((audioDelay - prevAudio.delay) / audioEmitted) * 10000) / 10 : null,
+      assemblyMs: per('assembly', 'assembled'),
+      processingMs: per('processing', 'decoded'),
+      decodeMs: per('decode', 'decoded')
     }
   }
 
